@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.107.0
+ * Version: 0.108.0
  *
- * v0.107 focus:
- * - Reduce the six overview status tiles by another 10 pixels
- * - Use fixed 72 px and 56 px heights for a clearly compact layout
- * - Tighten vertical padding while preserving horizontal spacing
+ * v0.108 focus:
+ * - Move overview status icons 2 pixels down for optical centering
+ * - Reduce the spacing between primary and secondary status text
+ * - Tighten line heights while preserving font sizes
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.107.0";
+const ATZE_VERSION = "0.108.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6799,6 +6799,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           width: 38px;
           height: 38px;
           flex: 0 0 34px;
+          transform: translateY(2px);
         }
 
         .status.weather ha-icon {
@@ -6829,6 +6830,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           min-width: 0;
           font-size: 20px;
           font-weight: 650;
+          line-height: 1.05;
           white-space: nowrap;
         }
 
@@ -6839,9 +6841,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .status-sub {
-          margin-top: 3px;
+          margin-top: 1px;
           color: var(--home-muted);
           font-size: 14px;
+          line-height: 1.05;
           white-space: nowrap;
         }
 
