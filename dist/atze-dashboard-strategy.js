@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.80.0
+ * Version: 0.81.0
  *
- * v0.80 focus:
- * - HACS-ready repository layout with runtime files in dist/
- * - Add explicit /hacsfiles/ asset fallback while preserving module-relative loading
- * - Preserve all v0.79 Wartung, Sicherheit, room and kiosk features
+ * v0.81 focus:
+ * - Add a native hide-header fallback for strategy dashboards
+ * - Honor literal kiosk_mode.hide_header: true and kiosk_mode.kiosk: true
+ * - Keep ?disable_km usable and avoid depending on kiosk-mode raw-config parsing
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.80.0";
+const ATZE_VERSION = "0.81.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4655,6 +4655,126 @@ function hideAtzeDashboardScrollbars(enabled = true) {
 }
 
 
+const ATZE_HEADER_STYLE_ID =
+  "atze-dashboard-native-hide-header";
+
+function atzeCurrentPanelBase() {
+  const first = window.location.pathname
+    .split("/")
+    .filter(Boolean)[0];
+
+  return first ? `/${first}` : "/";
+}
+
+function atzeSamePanel(basePath) {
+  const current = atzeCurrentPanelBase();
+  return current === basePath;
+}
+
+function walkAtzeOpenRoots(root, callback) {
+  if (!root || typeof root.querySelectorAll !== "function") {
+    return;
+  }
+
+  callback(root);
+
+  for (const element of root.querySelectorAll("*")) {
+    if (element.shadowRoot) {
+      walkAtzeOpenRoots(element.shadowRoot, callback);
+    }
+  }
+}
+
+function syncAtzeNativeHeaderStyle(enabled) {
+  walkAtzeOpenRoots(document, (root) => {
+    const hostName = String(
+      root?.host?.localName || ""
+    ).toLowerCase();
+
+    // The Lovelace header lives in hui-root. Keeping the CSS scoped here
+    // avoids accidentally hiding headers in dialogs or unrelated panels.
+    if (hostName !== "hui-root") return;
+
+    const existing =
+      root.querySelector?.(`#${ATZE_HEADER_STYLE_ID}`);
+
+    if (!enabled) {
+      existing?.remove();
+      return;
+    }
+
+    if (existing) return;
+
+    const style = document.createElement("style");
+    style.id = ATZE_HEADER_STYLE_ID;
+    style.textContent = `
+      :host {
+        --header-height: 0px !important;
+        --app-header-height: 0px !important;
+      }
+
+      .header,
+      app-header {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+      }
+
+      ha-app-layout,
+      app-header-layout {
+        --header-height: 0px !important;
+        --app-header-height: 0px !important;
+      }
+    `;
+
+    root.appendChild(style);
+  });
+}
+
+function applyAtzeNativeKioskFallback(config) {
+  const kioskConfig =
+    config?.kiosk_mode &&
+    typeof config.kiosk_mode === "object"
+      ? config.kiosk_mode
+      : {};
+
+  const params = new URLSearchParams(
+    window.location.search || ""
+  );
+
+  const disabledByQuery = params.has("disable_km");
+
+  const hideHeader =
+    config.native_kiosk_fallback !== false &&
+    !disabledByQuery &&
+    (
+      kioskConfig.hide_header === true ||
+      kioskConfig.kiosk === true
+    );
+
+  const panelBase = atzeCurrentPanelBase();
+
+  const apply = () => {
+    if (!atzeSamePanel(panelBase)) return;
+
+    try {
+      syncAtzeNativeHeaderStyle(hideHeader);
+    } catch (_error) {
+      // Header hiding is a UI enhancement and must never block generation.
+    }
+  };
+
+  apply();
+  requestAnimationFrame(apply);
+  setTimeout(apply, 250);
+  setTimeout(apply, 1000);
+  setTimeout(apply, 2500);
+  setTimeout(apply, 5000);
+}
+
+
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -4667,6 +4787,8 @@ class AtzeDashboardStrategy extends HTMLElement {
     hideAtzeDashboardScrollbars(
       config.hide_scrollbar !== false
     );
+
+    applyAtzeNativeKioskFallback(config);
 
     const [areas, devices, entities, labels] = await Promise.all([
       hass.callWS({ type: "config/area_registry/list" }),
