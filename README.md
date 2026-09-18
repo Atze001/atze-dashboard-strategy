@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.98.0**
+Version **0.99.0**
 
 Enthalten sind unter anderem:
 
@@ -445,3 +445,19 @@ Rückweg zum breiteren alten Verhalten:
 ```yaml
 strict_room_entity_auto: false
 ```
+
+
+## v0.99 Neue Kachelbilder
+
+Die HACS-Installation enthält jetzt zwei weitere integrierte Bereichsbilder:
+
+- **3D-Drucker** – `dist/assets/3d-drucker.webp`
+- **Zentrale** – `dist/assets/zentrale.webp`
+
+Die Strategy ordnet die Bilder automatisch anhand der Area-ID oder des
+normalisierten Bereichsnamens zu. Dadurch funktionieren unter anderem
+`3d_drucker`, `3d-drucker` und der Bereichsname **3D-Drucker** ohne
+zusätzliche YAML-Konfiguration.
+
+Für **Zentrale** wird das Bild bei der Area-ID beziehungsweise dem
+Bereichsnamen `zentrale` automatisch verwendet.
