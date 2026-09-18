@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.118.0
+ * Version: 0.119.0
  *
- * v0.118 focus:
- * - Add live entity search to the favorites editor
+ * v0.119 focus:
+ * - Honor hidden search results despite flex row styling
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.118.0";
+const ATZE_VERSION = "0.119.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -10893,6 +10893,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           padding: 4px 18px 16px;
           color: var(--secondary-text-color);
           font-size: 13px;
+        }
+
+        /* Author display rules must not override the hidden attribute. */
+        .favorite-config-row[hidden],
+        .entity-area[data-favorite-area][hidden],
+        .favorite-filter-empty[hidden] {
+          display: none !important;
         }
 
         .toolbar {
