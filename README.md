@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.123.0**
+Version **0.124.0**
 
 Enthalten sind unter anderem:
 
@@ -23,6 +23,7 @@ Enthalten sind unter anderem:
 - grafische Auswahl der sichtbaren Räume und Entitäten
 - konfigurierbare Favoriten zwischen Status- und Raumkacheln
 - frei konfigurierbare eigene Dashboard-Seiten
+- automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
 
 ## Installation über HACS
 
@@ -72,6 +73,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.124.0
+
+- Oberhalb der Favoriten erscheinen automatisch kompakte Buttons für alle
+  unter **Eigene Seiten** angelegten Ansichten.
+- Icon und Titel werden aus der jeweiligen Ansichts-YAML übernommen; ein Tipp
+  navigiert direkt zum konfigurierten Pfad.
+- Auf kleinen Displays ist die Buttonleiste horizontal scrollbar.
+
 ### v0.123.0
 
 - Eigene Seiten werden jetzt im nativen Home-Assistant-YAML-Editor bearbeitet.
@@ -84,13 +93,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Eingabefelder unter **Eigene Seiten** bleiben während der Bearbeitung aktiv.
 - Laufende Home-Assistant-Statusaktualisierungen bauen den Editor nicht mehr
   neu auf und schließen dadurch auf Mobilgeräten nicht mehr die Tastatur.
-
-### v0.121.0
-
-- Neuer Einstellungsbereich **Eigene Seiten** für zusätzliche Lovelace-Seiten
-  mit frei wählbarem Titel, Pfad, Icon und Karten-Konfiguration.
-- Die Vorlage **Zeitpläne hinzufügen** erzeugt direkt eine Seite mit
-  `custom:scheduler-card`; weitere Karten können als JSON konfiguriert werden.
 
 ## Lizenz
 
