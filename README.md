@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.91.0**
+Version **0.92.0**
 
 Enthalten sind unter anderem:
 
@@ -300,3 +300,26 @@ erhalten.
 Über **Reihenfolge zurücksetzen** werden nur die automatisch gesetzten
 `order`-Werte entfernt; Namen, Icons, Spalten-Einstellungen und andere
 Overrides bleiben bestehen.
+
+
+## v0.92 Kiosk über die Uhrzeit umschalten
+
+Auf der Zuhause-Übersicht kann die Uhrzeit jetzt als unsichtbarer Kiosk-Schalter
+verwendet werden.
+
+- Tippen auf die Uhrzeit im Kiosk-Modus: Home-Assistant-Header wird eingeblendet.
+- Noch einmal auf die Uhrzeit tippen: Header wird wieder ausgeblendet.
+- Die Seite lädt dabei kurz neu, damit Kiosk Mode die Query-Parameter sicher neu
+  einliest.
+- Solange diese Funktion aktiv ist und eine Startseite vorhanden ist, wird der
+  zusätzliche Atze-Sidebar-Menüknopf nicht mehr angezeigt.
+
+Im grafischen Strategy-Editor gibt es dafür unter **Darstellung** den Schalter
+**Kiosk über Uhrzeit umschalten**.
+
+Die Funktion ist standardmäßig aktiviert und kann auch per YAML abgeschaltet
+werden:
+
+```yaml
+clock_kiosk_toggle: false
+```
