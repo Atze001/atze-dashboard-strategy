@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.100.0
+ * Version: 0.101.0
  *
- * v0.100 focus:
- * - Make AtzeHomeBase status resilient to late/unavailable entity states
- * - Use live HomeBase fallback candidates without requiring a page refresh
- * - Turn per-room setup sections into clear collapsible accordions
+ * v0.101 focus:
+ * - Make the main setup sections collapsible
+ * - Add accordions for Räume, Entitäten pro Raum, Ansichten and Darstellung
+ * - Preserve open/closed editor section state during live config updates
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.100.0";
+const ATZE_VERSION = "0.101.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -9406,6 +9406,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._loading = false;
     this._draggedAreaId = null;
     this._openEntityAreaIds = new Set();
+    this._openEditorSections = new Set([
+      "rooms",
+      "entities",
+      "views",
+      "display",
+    ]);
   }
 
   set hass(value) {
@@ -9980,6 +9986,73 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           border-radius: 16px;
           overflow: hidden;
         }
+
+        .editor-section > summary {
+          min-height: 72px;
+          padding: 0 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          cursor: pointer;
+          user-select: none;
+          list-style: none;
+        }
+
+        .editor-section > summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .editor-section > summary::marker {
+          content: "";
+        }
+
+        .editor-section-summary-main {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .editor-section-summary-main > ha-icon {
+          width: 28px;
+          height: 28px;
+          color: var(--primary-color);
+        }
+
+        .editor-section-summary-title {
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .editor-section-chevron {
+          width: 24px;
+          height: 24px;
+          color: var(--secondary-text-color);
+          transition: transform 160ms ease;
+          flex: 0 0 auto;
+        }
+
+        .editor-section[open]
+          > summary
+          .editor-section-chevron {
+          transform: rotate(90deg);
+        }
+
+        .editor-section-body {
+          border-top: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.18)
+          );
+        }
+
+        .editor-section-help {
+          padding: 14px 18px 12px;
+          color: var(--secondary-text-color);
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
         .header {
           padding: 16px 18px 12px;
         }
@@ -10255,137 +10328,206 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       </style>
 
       <div class="editor">
-        <section class="panel">
-          <div class="header">
-            <div class="title">
+        <details
+          class="panel editor-section"
+          data-editor-section="rooms"
+          ${this._openEditorSections.has("rooms") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
               <ha-icon icon="mdi:floor-plan"></ha-icon>
-              <span>Räume</span>
-            </div>
-            <div class="help">
+              <span class="editor-section-summary-title">Räume</span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
               Wähle aus, welche Bereiche angezeigt werden.
               Ziehe Räume am Griff nach oben oder unten, um ihre
               Reihenfolge zu ändern. Bereiche mit
               <b>no-strategy</b> bleiben immer ausgeblendet.
             </div>
-          </div>
 
-          <div class="toolbar">
-            <button id="select-all" type="button">Alle</button>
-            <button id="select-none" type="button">Keine</button>
-            <button id="reset-order" type="button">
-              Reihenfolge zurücksetzen
-            </button>
-          </div>
-
-          <div class="rows">
-            ${this._loading
-              ? '<div class="loading">Bereiche werden geladen …</div>'
-              : (
-                  areaRows ||
-                  '<div class="loading">Keine Bereiche gefunden.</div>'
-                )}
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="header">
-            <div class="title">
-              <ha-icon icon="mdi:format-list-checks"></ha-icon>
-              <span>Entitäten pro Raum</span>
+            <div class="toolbar">
+              <button id="select-all" type="button">Alle</button>
+              <button id="select-none" type="button">Keine</button>
+              <button id="reset-order" type="button">
+                Reihenfolge zurücksetzen
+              </button>
             </div>
-            <div class="help">
+
+            <div class="rows">
+              ${this._loading
+                ? '<div class="loading">Bereiche werden geladen …</div>'
+                : (
+                    areaRows ||
+                    '<div class="loading">Keine Bereiche gefunden.</div>'
+                  )}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="entities"
+          ${this._openEditorSections.has("entities") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:format-list-checks"></ha-icon>
+              <span class="editor-section-summary-title">
+                Entitäten pro Raum
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
               Auto zeigt nur typische Bedienelemente und sinnvolle
               Sicherheits-Sensoren. Sensorwerte, Diagnose-Entities,
               Regler und Konfiguration bleiben standardmäßig in
               Badges, Popups oder Wartung. Mit Anzeigen oder
               Ausblenden kannst du jede Entity gezielt überschreiben.
             </div>
-          </div>
 
-          <div class="rows">
-            ${this._toggleHtml(
-              "strict_room_entity_auto",
-              "Strenge automatische Auswahl",
-              "Empfohlen: technische Sensoren werden nicht als eigene Raumkarten angezeigt.",
-              true
-            )}
-          </div>
+            <div class="rows">
+              ${this._toggleHtml(
+                "strict_room_entity_auto",
+                "Strenge automatische Auswahl",
+                "Empfohlen: technische Sensoren werden nicht als eigene Raumkarten angezeigt.",
+                true
+              )}
+            </div>
 
-          <div class="entity-area-list">
-            ${this._loading
-              ? '<div class="loading">Entities werden geladen …</div>'
-              : (
-                  entityAreaPanels ||
-                  '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
-                )}
+            <div class="entity-area-list">
+              ${this._loading
+                ? '<div class="loading">Entities werden geladen …</div>'
+                : (
+                    entityAreaPanels ||
+                    '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
+                  )}
+            </div>
           </div>
-        </section>
+        </details>
 
-        <section class="panel">
-          <div class="header">
-            <div class="title">
+        <details
+          class="panel editor-section"
+          data-editor-section="views"
+          ${this._openEditorSections.has("views") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
               <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
-              <span>Ansichten</span>
-            </div>
-          </div>
-          <div class="rows">
-            ${this._toggleHtml(
-              "home_view",
-              "Startseite anzeigen",
-              "Zuhause-Übersicht mit Statuskarten und Räumen.",
-              true
-            )}
-            ${this._toggleHtml(
-              "security_view",
-              "Sicherheit anzeigen",
-              "Labelbasierte Sicherheitsansicht.",
-              true
-            )}
-            ${this._toggleHtml(
-              "maintenance_view",
-              "Wartung anzeigen",
-              "Batterie- und Wartungsansicht.",
-              true
-            )}
-            ${this._toggleHtml(
-              "single_room_navigation",
-              "Räume als Unterseiten",
-              "Raumansichten als Subviews öffnen.",
-              true
-            )}
-          </div>
-        </section>
+              <span class="editor-section-summary-title">Ansichten</span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
 
-        <section class="panel">
-          <div class="header">
-            <div class="title">
-              <ha-icon icon="mdi:tune-variant"></ha-icon>
-              <span>Darstellung</span>
+          <div class="editor-section-body">
+            <div class="rows">
+              ${this._toggleHtml(
+                "home_view",
+                "Startseite anzeigen",
+                "Zuhause-Übersicht mit Statuskarten und Räumen.",
+                true
+              )}
+              ${this._toggleHtml(
+                "security_view",
+                "Sicherheit anzeigen",
+                "Labelbasierte Sicherheitsansicht.",
+                true
+              )}
+              ${this._toggleHtml(
+                "maintenance_view",
+                "Wartung anzeigen",
+                "Batterie- und Wartungsansicht.",
+                true
+              )}
+              ${this._toggleHtml(
+                "single_room_navigation",
+                "Räume als Unterseiten",
+                "Raumansichten als Subviews öffnen.",
+                true
+              )}
             </div>
           </div>
-          <div class="rows">
-            ${this._toggleHtml(
-              "force_kiosk",
-              "Header ausblenden",
-              "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
-              false
-            )}
-            ${this._toggleHtml(
-              "clock_kiosk_toggle",
-              "Kiosk über Uhrzeit umschalten",
-              "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
-              true
-            )}
-            ${this._toggleHtml(
-              "hide_scrollbar",
-              "Scrollbalken ausblenden",
-              "Scrollen bleibt möglich.",
-              true
-            )}
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="display"
+          ${this._openEditorSections.has("display") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:tune-variant"></ha-icon>
+              <span class="editor-section-summary-title">Darstellung</span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="rows">
+              ${this._toggleHtml(
+                "force_kiosk",
+                "Header ausblenden",
+                "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
+                false
+              )}
+              ${this._toggleHtml(
+                "clock_kiosk_toggle",
+                "Kiosk über Uhrzeit umschalten",
+                "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
+                true
+              )}
+              ${this._toggleHtml(
+                "hide_scrollbar",
+                "Scrollbalken ausblenden",
+                "Scrollen bleibt möglich.",
+                true
+              )}
+            </div>
           </div>
-        </section>
+        </details>
       </div>
     `;
+
+    for (
+      const details of
+        this.shadowRoot.querySelectorAll(
+          ".editor-section[data-editor-section]"
+        )
+    ) {
+      details.addEventListener(
+        "toggle",
+        () => {
+          const sectionId =
+            details.dataset.editorSection;
+
+          if (!sectionId) return;
+
+          if (details.open) {
+            this._openEditorSections.add(sectionId);
+          } else {
+            this._openEditorSections.delete(sectionId);
+          }
+        }
+      );
+    }
 
     this.shadowRoot
       .querySelector("#select-all")
