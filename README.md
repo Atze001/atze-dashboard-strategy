@@ -1,5 +1,7 @@
 # Atze Dashboard Strategy
 
+![Atze Dashboard Strategy](dist/assets/wohnzimmer.jpg)
+
 Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
 Stil. Räume und Entities werden automatisch aus Home Assistant erzeugt und über
 YAML-Overrides angepasst.
