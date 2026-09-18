@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.99.0**
+Version **0.100.0**
 
 Enthalten sind unter anderem:
 
@@ -461,3 +461,31 @@ zusätzliche YAML-Konfiguration.
 
 Für **Zentrale** wird das Bild bei der Area-ID beziehungsweise dem
 Bereichsnamen `zentrale` automatisch verwendet.
+
+
+## v0.100 HomeBase-Live-Fallback und Raum-Akkordeons
+
+Der Status von **AtzeHomeBase** wird jetzt nicht mehr nur beim Erzeugen der
+Dashboard-Konfiguration festgelegt. Die Home-Übersicht erhält mehrere passende
+HomeBase-Status-Entities und wählt bei jedem Rendern den ersten tatsächlich
+verfügbaren Status.
+
+Eine explizit konfigurierte Entity wie
+
+```yaml
+home_homebase_entity: select.atzehomebase_guard_mode
+```
+
+bleibt bevorzugt, wird aber nicht mehr verworfen, wenn ihr Zustand beim
+Dashboard-Start noch nicht angekommen ist. Falls sie vorübergehend
+`unknown` oder `unavailable` ist, kann die Karte auf einen passenden
+HomeBase-Fallback ausweichen. Dadurch sollte kein manueller Seiten-Reload mehr
+nötig sein.
+
+Im grafischen Strategy-Editor sind die Abschnitte unter **Entitäten pro Raum**
+jetzt als deutliche Akkordeons aufgebaut:
+
+- Raum antippen zum Aufklappen
+- erneut antippen zum Zuklappen
+- Pfeil zeigt den Zustand
+- geöffnete Räume bleiben auch bei Editor-Neurendern geöffnet
