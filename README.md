@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.115.0**
+Version **0.116.0**
 
 Enthalten sind unter anderem:
 
@@ -21,6 +21,7 @@ Enthalten sind unter anderem:
 - Kiosk-Mode-Unterstützung
 - automatische Popups und technische Detailansichten
 - grafische Auswahl der sichtbaren Räume und Entitäten
+- konfigurierbare Favoriten zwischen Status- und Raumkacheln
 
 ## Installation über HACS
 
@@ -70,6 +71,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.116.0
+
+- Neuer Abschnitt **Favoriten** zwischen den sechs Statuskacheln und den
+  Raum-Bildern.
+- Favoriten lassen sich im grafischen Dashboard-Editor raumweise auswählen.
+- Lichter, Schalter, Lüfter, Media Player und Helfer lassen sich direkt
+  umschalten; Rollläden öffnen oder schließen. Andere Entitäten öffnen ihre
+  Detailansicht.
+
 ### v0.115.0
 
 - Die Symbole innerhalb der roten Warnkreise sind weiß.
@@ -79,13 +89,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 - Grüne Normalzustände der Statussymbole auf Raumkarten werden ausgeblendet.
 - Nur rote Warnzustände bleiben sichtbar und rücken automatisch zusammen.
-
-### v0.113.0
-
-- Neuer Schalter **Nicht verfügbare Entitäten ausblenden** unter
-  **Entitäten pro Raum**.
-- Deaktivierte, entfernte und nicht verfügbare Entitäten können damit aus den
-  Raumkarten ausgeblendet werden.
 
 ## Lizenz
 
