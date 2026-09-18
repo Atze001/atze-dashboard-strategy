@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.115.0
+ * Version: 0.116.0
  *
- * v0.115 focus:
- * - Use white icons inside red room warning badges
+ * v0.116 focus:
+ * - Add configurable favorite entities to the home overview
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.115.0";
+const ATZE_VERSION = "0.116.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4589,6 +4589,13 @@ function buildHomeOverviewView(
     smoke_entities: uniqueEntityIds(smokeEntities),
     security_entities: uniqueEntityIds(securityEntityIds),
     security_path: config.security_path || "sicherheit",
+    favorite_entities: asArray(config.favorite_entities)
+      .map(String)
+      .filter((entityId) =>
+        usableEntities.some(
+          (entity) => entity.entity_id === entityId
+        )
+      ),
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
     light_entities: uniqueEntityIds(lightEntities),
@@ -6096,6 +6103,81 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
+  _favoriteIcon(entityId, stateObj) {
+    if (stateObj?.attributes?.icon) {
+      return stateObj.attributes.icon;
+    }
+
+    return (
+      DOMAIN_META[domainOf(entityId)]?.icon ||
+      "mdi:star-outline"
+    );
+  }
+
+  async _activateFavorite(entityId) {
+    const stateObj = this._state(entityId);
+    if (!stateObj) return;
+
+    const domain = domainOf(entityId);
+
+    if (
+      [
+        "light",
+        "switch",
+        "input_boolean",
+        "fan",
+        "media_player",
+      ].includes(domain)
+    ) {
+      await this._hass.callService(
+        "homeassistant",
+        "toggle",
+        {},
+        { entity_id: entityId }
+      );
+      return;
+    }
+
+    if (domain === "cover") {
+      const position = this._coverPosition(entityId);
+      const state = String(stateObj.state || "").toLowerCase();
+      const isOpen =
+        position != null
+          ? position > 0
+          : state !== "closed";
+
+      await this._hass.callService(
+        "cover",
+        isOpen ? "close_cover" : "open_cover",
+        {},
+        { entity_id: entityId }
+      );
+      return;
+    }
+
+    if (["button", "input_button"].includes(domain)) {
+      await this._hass.callService(
+        domain,
+        "press",
+        {},
+        { entity_id: entityId }
+      );
+      return;
+    }
+
+    if (["scene", "script"].includes(domain)) {
+      await this._hass.callService(
+        domain,
+        "turn_on",
+        {},
+        { entity_id: entityId }
+      );
+      return;
+    }
+
+    this._moreInfo(entityId);
+  }
+
   async _allLightsOff() {
     const entities = this._config.light_entities || [];
     if (!entities.length) return;
@@ -6432,6 +6514,56 @@ class AtzeHomeOverviewCard extends HTMLElement {
         : securityEntityIds.length
           ? "Alles ok"
           : "Keine Daten";
+
+    const favoriteStates = asArray(
+      this._config.favorite_entities
+    )
+      .map((entityId) => ({
+        entityId,
+        stateObj: this._state(entityId),
+      }))
+      .filter((entry) => entry.stateObj);
+
+    const favoriteHtml = favoriteStates.length
+      ? `
+          <section class="favorites" aria-label="Favoriten">
+            <div class="section-heading">
+              <ha-icon icon="mdi:star"></ha-icon>
+              <span>Favoriten</span>
+            </div>
+            <div class="favorite-grid">
+              ${favoriteStates
+                .map(({ entityId, stateObj }) => {
+                  const name =
+                    stateObj.attributes?.friendly_name ||
+                    entityId;
+                  const state = this._formatted(entityId) || "—";
+                  const active = this._isActive(stateObj);
+
+                  return `
+                    <button
+                      type="button"
+                      class="favorite-card ${active ? "active" : ""}"
+                      data-entity-id="${entityId}"
+                      title="${name}"
+                    >
+                      <span class="favorite-icon">
+                        <ha-icon
+                          icon="${this._favoriteIcon(entityId, stateObj)}"
+                        ></ha-icon>
+                      </span>
+                      <span class="favorite-copy">
+                        <span class="favorite-name">${name}</span>
+                        <span class="favorite-state">${state}</span>
+                      </span>
+                    </button>
+                  `;
+                })
+                .join("")}
+            </div>
+          </section>
+        `
+      : "";
 
     const roomHtml = (this._config.room_tiles || [])
       .map((room) => {
@@ -6871,6 +7003,98 @@ class AtzeHomeOverviewCard extends HTMLElement {
           white-space: nowrap;
         }
 
+        .favorites {
+          margin: 2px 0 28px;
+        }
+
+        .section-heading {
+          margin: 0 4px 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--primary-text-color);
+          font-size: 18px;
+          font-weight: 650;
+        }
+
+        .section-heading ha-icon {
+          width: 21px;
+          height: 21px;
+          color: var(--home-yellow);
+        }
+
+        .favorite-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .favorite-card {
+          min-width: 0;
+          min-height: 74px;
+          padding: 10px 13px;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          border: 1px solid var(--home-card-border);
+          border-radius: 23px;
+          background: var(--home-card-bg);
+          color: var(--primary-text-color);
+          font: inherit;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .favorite-card:active {
+          transform: scale(0.98);
+        }
+
+        .favorite-icon {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          background: rgba(118,118,128,0.20);
+          color: rgba(235,235,245,0.86);
+        }
+
+        .favorite-icon ha-icon {
+          width: 23px;
+          height: 23px;
+        }
+
+        .favorite-card.active .favorite-icon {
+          background: rgba(255,214,10,0.18);
+          color: var(--home-yellow);
+        }
+
+        .favorite-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .favorite-name,
+        .favorite-state {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .favorite-name {
+          font-size: 15px;
+          font-weight: 650;
+        }
+
+        .favorite-state {
+          color: var(--home-muted);
+          font-size: 12px;
+        }
+
         .rooms {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7222,6 +7446,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
 
+          .favorite-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
           .quick {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -7305,6 +7533,39 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .status-sub {
             font-size: 12px;
+          }
+
+          .favorites {
+            margin-bottom: 24px;
+          }
+
+          .section-heading {
+            font-size: 17px;
+          }
+
+          .favorite-grid {
+            gap: 10px;
+          }
+
+          .favorite-card {
+            min-height: 66px;
+            padding: 8px 10px;
+            border-radius: 21px;
+          }
+
+          .favorite-icon {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+          }
+
+          .favorite-icon ha-icon {
+            width: 21px;
+            height: 21px;
+          }
+
+          .favorite-name {
+            font-size: 14px;
           }
 
           .rooms {
@@ -7527,6 +7788,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
           </div>
 
+          ${favoriteHtml}
+
           <div class="rooms">
             ${roomHtml}
           </div>
@@ -7617,6 +7880,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.stopPropagation();
           this._toggleRoomLights(element.dataset.areaId);
         });
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".favorite-card[data-entity-id]")
+      .forEach((element) => {
+        element.addEventListener("click", () =>
+          this._activateFavorite(
+            element.dataset.entityId
+          )
+        );
       });
 
     this.shadowRoot
@@ -9602,6 +9875,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._openEditorSections = new Set([
       "rooms",
       "entities",
+      "favorites",
       "views",
       "display",
     ]);
@@ -9976,6 +10250,72 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _setFavoriteEntity(entityId, checked) {
+    const favorites = asArray(
+      this._config.favorite_entities
+    ).map(String);
+
+    const nextFavorites = checked
+      ? [...new Set([...favorites, entityId])]
+      : favorites.filter((id) => id !== entityId);
+
+    const next = { ...this._config };
+
+    if (nextFavorites.length > 0) {
+      next.favorite_entities = nextFavorites;
+    } else {
+      delete next.favorite_entities;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
+  _favoriteEntityRows(area) {
+    const entities = this._entitiesForArea(area.area_id);
+    const favorites = new Set(
+      asArray(this._config.favorite_entities).map(String)
+    );
+
+    if (!entities.length) {
+      return `
+        <div class="entity-empty">
+          Keine Entities in diesem Bereich gefunden.
+        </div>
+      `;
+    }
+
+    return entities.map((entity) => {
+      const entityId = entity.entity_id;
+      const name = rawFriendlyName(
+        this._hass,
+        entityId,
+        entity
+      );
+
+      return `
+        <label class="entity-row favorite-config-row">
+          <span class="entity-copy">
+            <span class="entity-name">
+              ${this._escape(name)}
+            </span>
+            <span class="entity-meta">
+              ${this._escape(domainOf(entityId))}
+            </span>
+            <span class="entity-id">
+              ${this._escape(entityId)}
+            </span>
+          </span>
+          <input
+            class="favorite-toggle"
+            type="checkbox"
+            data-entity-id="${this._escape(entityId)}"
+            ${favorites.has(entityId) ? "checked" : ""}
+          />
+        </label>
+      `;
+    }).join("");
+  }
+
   _entityVisibilityRows(area) {
     const entities =
       this._entitiesForArea(area.area_id);
@@ -10160,6 +10500,54 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             </div>
           </details>
         `)
+        .join("");
+
+    const configuredFavorites = new Set(
+      asArray(this._config.favorite_entities).map(String)
+    );
+
+    const favoriteAreaPanels =
+      this._eligibleAreas()
+        .filter((area) => selected.has(area.area_id))
+        .map((area) => {
+          const entities = this._entitiesForArea(area.area_id);
+          const favoriteCount = entities.filter((entity) =>
+            configuredFavorites.has(entity.entity_id)
+          ).length;
+
+          return `
+            <details
+              class="entity-area"
+              data-favorite-area="${this._escape(area.area_id)}"
+              ${this._openEntityAreaIds.has(area.area_id) ? "open" : ""}
+            >
+              <summary>
+                <span class="entity-summary-main">
+                  <ha-icon
+                    icon="${this._escape(
+                      area.icon || "mdi:home-outline"
+                    )}"
+                  ></ha-icon>
+                  <span>${this._escape(area.name || area.area_id)}</span>
+                </span>
+
+                <span class="entity-summary-end">
+                  <span class="entity-count">
+                    ${favoriteCount} / ${entities.length}
+                  </span>
+                  <ha-icon
+                    class="entity-chevron"
+                    icon="mdi:chevron-right"
+                  ></ha-icon>
+                </span>
+              </summary>
+
+              <div class="entity-rows">
+                ${this._favoriteEntityRows(area)}
+              </div>
+            </details>
+          `;
+        })
         .join("");
 
     const areaRows = this._orderedAreas().map((area) => {
@@ -10702,6 +11090,43 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         <details
           class="panel editor-section"
+          data-editor-section="favorites"
+          ${this._openEditorSections.has("favorites") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:star-outline"></ha-icon>
+              <span class="editor-section-summary-title">
+                Favoriten
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Wähle die Entitäten aus, die auf der Startseite zwischen
+              den sechs Statuskacheln und den Raum-Bildern erscheinen sollen.
+              Bedienelemente lassen sich dort direkt schalten; Sensoren und
+              weitere Entitäten öffnen ihre Detailansicht.
+            </div>
+
+            <div class="entity-area-list">
+              ${this._loading
+                ? '<div class="loading">Entities werden geladen …</div>'
+                : (
+                    favoriteAreaPanels ||
+                    '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
+                  )}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
           data-editor-section="views"
           ${this._openEditorSections.has("views") ? "open" : ""}
         >
@@ -10912,14 +11337,15 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     for (
       const details of
         this.shadowRoot.querySelectorAll(
-          ".entity-area[data-entity-area]"
+          ".entity-area[data-entity-area], .entity-area[data-favorite-area]"
         )
     ) {
       details.addEventListener(
         "toggle",
         () => {
           const areaId =
-            details.dataset.entityArea;
+            details.dataset.entityArea ||
+            details.dataset.favoriteArea;
 
           if (!areaId) return;
 
@@ -10988,6 +11414,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           target.dataset.key,
           target.checked,
           target.dataset.default === "true"
+        );
+      });
+    }
+
+    for (
+      const input of
+        this.shadowRoot.querySelectorAll(".favorite-toggle")
+    ) {
+      input.addEventListener("change", (event) => {
+        const target = event.currentTarget;
+        this._setFavoriteEntity(
+          target.dataset.entityId,
+          target.checked
         );
       });
     }
