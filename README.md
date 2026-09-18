@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.88.0**
+Version **0.89.0**
 
 Enthalten sind unter anderem:
 
@@ -229,3 +229,27 @@ damit er sich besser in das Apple-Home-inspirierte Dashboard einfügt.
 Der zusätzliche Sidebar-Menüknopf wird jetzt ohne Kreis, Hintergrund oder
 Schatten dargestellt. Sichtbar ist nur noch das dezente Menü-Icon. Die
 Touch-Fläche bleibt mit 40 x 40 px ausreichend groß.
+
+
+## v0.89 Bereiche mit no-strategy ausblenden
+
+Ein Home-Assistant-Bereich wird automatisch vollständig von der Strategy
+ausgeschlossen, wenn der **Bereich selbst** das Label `no-strategy` trägt.
+
+Dafür ist keine zusätzliche Dashboard-YAML nötig.
+
+Der Bereich erscheint dann nicht mehr:
+
+- auf der Startseite,
+- als eigene Raumansicht,
+- in der Sicherheitsansicht,
+- in der Wartungs-/Batterieansicht,
+- und seine Entities fließen auch nicht mehr in die Strategy-Auswertung ein.
+
+Optional kann der verwendete Labelname geändert werden:
+
+```yaml
+no_strategy_label: no-strategy
+```
+
+Standard ist `no-strategy`.
