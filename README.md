@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.110.0**
+Version **0.111.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,16 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.111 Kein automatischer Kiosk-Neustart
+
+Beim normalen Öffnen des Dashboards werden keine Kiosk-Parameter mehr
+automatisch an die URL angehängt. Dadurch entfällt der vollständige
+Frontend-Neustart mit dem Home-Assistant-Bootlogo.
+
+Der virtuelle Schalter in der Uhr bleibt erhalten. Nur beim bewussten
+Umschalten des Kiosk-Modus über die Uhr wird die Seite weiterhin einmal neu
+geladen, damit der geänderte Modus wirksam wird.
 
 ## v0.110 Stabile Auswahl der Entity-Sichtbarkeit
 
