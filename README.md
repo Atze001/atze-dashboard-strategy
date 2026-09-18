@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.112.0**
+Version **0.113.0**
 
 Enthalten sind unter anderem:
 
@@ -20,6 +20,8 @@ Enthalten sind unter anderem:
 - Wartungs-/Batterieansicht nach Räumen
 - Kiosk-Mode-Unterstützung
 - automatische Popups und technische Detailansichten
+- Schalter zum Ausblenden deaktivierter, entfernter oder nicht verfügbarer
+  Entitäten unter **Entitäten pro Raum**
 
 ## Installation über HACS
 
