@@ -22,6 +22,8 @@ Enthalten sind unter anderem:
 - automatische Popups und technische Detailansichten
 - Schalter zum Ausblenden deaktivierter, entfernter oder nicht verfügbarer
   Entitäten unter **Entitäten pro Raum**
+- Die Statussymbole oben rechts auf Raumkarten erscheinen nur noch bei einer
+  Warnung; grüne Normalzustände werden vollständig ausgeblendet
 
 ## Installation über HACS
 
