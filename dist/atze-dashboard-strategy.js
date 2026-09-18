@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.90.0
+ * Version: 0.91.0
  *
- * v0.90 focus:
- * - Add a graphical Home Assistant strategy editor
- * - Select visible rooms without editing YAML
- * - Configure key dashboard views and kiosk options from the editor
+ * v0.91 focus:
+ * - Add drag-and-drop room ordering to the graphical strategy editor
+ * - Persist room order through existing area_overrides.<area>.order
+ * - Add a reset-order action while preserving all other area overrides
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.90.0";
+const ATZE_VERSION = "0.91.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -8895,6 +8895,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._areas = [];
     this._labels = [];
     this._loading = false;
+    this._draggedAreaId = null;
   }
 
   set hass(value) {
@@ -8982,9 +8983,16 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     );
   }
 
+  _orderedAreas() {
+    return [...this._areas].sort(
+      compareAreas(this._config)
+    );
+  }
+
   _eligibleAreas() {
     const blocked = this._blockedAreaIds();
-    return this._areas.filter(
+
+    return this._orderedAreas().filter(
       (area) => !blocked.has(area.area_id)
     );
   }
@@ -9049,6 +9057,80 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     });
   }
 
+  _setAreaOrder(areaIds) {
+    const areaOverrides = {
+      ...(this._config.area_overrides || {}),
+    };
+
+    areaIds.forEach((areaId, index) => {
+      areaOverrides[areaId] = {
+        ...(areaOverrides[areaId] || {}),
+        order: (index + 1) * 10,
+      };
+    });
+
+    this._fireConfigChanged({
+      ...this._config,
+      area_overrides: areaOverrides,
+    });
+  }
+
+  _moveArea(draggedAreaId, targetAreaId) {
+    if (
+      !draggedAreaId ||
+      !targetAreaId ||
+      draggedAreaId === targetAreaId
+    ) {
+      return;
+    }
+
+    const areaIds = this._eligibleAreas().map(
+      (area) => area.area_id
+    );
+
+    const from = areaIds.indexOf(draggedAreaId);
+    const to = areaIds.indexOf(targetAreaId);
+
+    if (from < 0 || to < 0) return;
+
+    const [moved] = areaIds.splice(from, 1);
+    areaIds.splice(to, 0, moved);
+
+    this._setAreaOrder(areaIds);
+  }
+
+  _resetAreaOrder() {
+    const current = {
+      ...(this._config.area_overrides || {}),
+    };
+
+    const nextOverrides = {};
+
+    for (const [areaId, value] of Object.entries(current)) {
+      const cleaned = {
+        ...(value || {}),
+      };
+
+      delete cleaned.order;
+
+      if (Object.keys(cleaned).length > 0) {
+        nextOverrides[areaId] = cleaned;
+      }
+    }
+
+    const next = {
+      ...this._config,
+    };
+
+    if (Object.keys(nextOverrides).length > 0) {
+      next.area_overrides = nextOverrides;
+    } else {
+      delete next.area_overrides;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
   _setBoolean(key, value, defaultValue) {
     const next = { ...this._config };
 
@@ -9095,16 +9177,28 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
 
-    const areaRows = this._areas.map((area) => {
+    const areaRows = this._orderedAreas().map((area) => {
       const blockedArea = blocked.has(area.area_id);
       const checked =
         !blockedArea &&
         selected.has(area.area_id);
 
       return `
-        <label class="row ${blockedArea ? "blocked" : ""}">
+        <label
+          class="row area-config-row ${blockedArea ? "blocked" : ""}"
+          data-area-row="${this._escape(area.area_id)}"
+          draggable="${blockedArea ? "false" : "true"}"
+        >
           <span class="area">
+            <span
+              class="drag-handle"
+              title="${blockedArea ? "" : "Ziehen zum Sortieren"}"
+              aria-hidden="true"
+            >
+              <ha-icon icon="mdi:drag-vertical"></ha-icon>
+            </span>
             <ha-icon
+              class="area-icon"
               icon="${this._escape(
                 area.icon || "mdi:home-outline"
               )}"
@@ -9222,10 +9316,36 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           align-items: center;
           gap: 12px;
         }
-        .area ha-icon {
+        .area-icon {
           width: 22px;
           height: 22px;
           color: var(--secondary-text-color);
+        }
+        .drag-handle {
+          width: 24px;
+          height: 32px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--secondary-text-color);
+          cursor: grab;
+          opacity: .72;
+        }
+        .drag-handle ha-icon {
+          width: 22px;
+          height: 22px;
+        }
+        .area-config-row.dragging {
+          opacity: .42;
+        }
+        .area-config-row.drag-over {
+          box-shadow:
+            inset 0 2px 0
+            var(--primary-color, #03a9f4);
+        }
+        .blocked .drag-handle {
+          cursor: default;
+          opacity: .18;
         }
         .copy {
           min-width: 0;
@@ -9264,13 +9384,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             </div>
             <div class="help">
               Wähle aus, welche Bereiche angezeigt werden.
-              Bereiche mit <b>no-strategy</b> bleiben immer ausgeblendet.
+              Ziehe Räume am Griff nach oben oder unten, um ihre
+              Reihenfolge zu ändern. Bereiche mit
+              <b>no-strategy</b> bleiben immer ausgeblendet.
             </div>
           </div>
 
           <div class="toolbar">
             <button id="select-all" type="button">Alle</button>
             <button id="select-none" type="button">Keine</button>
+            <button id="reset-order" type="button">
+              Reihenfolge zurücksetzen
+            </button>
           </div>
 
           <div class="rows">
@@ -9354,6 +9479,82 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       ?.addEventListener("click", () =>
         this._selectNoAreas()
       );
+
+    this.shadowRoot
+      .querySelector("#reset-order")
+      ?.addEventListener("click", () =>
+        this._resetAreaOrder()
+      );
+
+    for (
+      const row of
+        this.shadowRoot.querySelectorAll(
+          ".area-config-row[draggable='true']"
+        )
+    ) {
+      row.addEventListener("dragstart", (event) => {
+        const areaId = row.dataset.areaRow;
+        this._draggedAreaId = areaId || null;
+        row.classList.add("dragging");
+
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData(
+            "text/plain",
+            areaId || ""
+          );
+        }
+      });
+
+      row.addEventListener("dragend", () => {
+        this._draggedAreaId = null;
+
+        for (
+          const item of
+            this.shadowRoot.querySelectorAll(
+              ".area-config-row"
+            )
+        ) {
+          item.classList.remove(
+            "dragging",
+            "drag-over"
+          );
+        }
+      });
+
+      row.addEventListener("dragover", (event) => {
+        event.preventDefault();
+
+        if (
+          this._draggedAreaId &&
+          this._draggedAreaId !== row.dataset.areaRow
+        ) {
+          row.classList.add("drag-over");
+
+          if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = "move";
+          }
+        }
+      });
+
+      row.addEventListener("dragleave", () => {
+        row.classList.remove("drag-over");
+      });
+
+      row.addEventListener("drop", (event) => {
+        event.preventDefault();
+        row.classList.remove("drag-over");
+
+        const dragged =
+          this._draggedAreaId ||
+          event.dataTransfer?.getData("text/plain");
+
+        this._moveArea(
+          dragged,
+          row.dataset.areaRow
+        );
+      });
+    }
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
       input.addEventListener("change", (event) => {
