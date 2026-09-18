@@ -1,15 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.113.0
+ * Version: 0.114.0
  *
- * v0.113 focus:
- * - Add an editor toggle for hiding unavailable entities
- * - Keep disabled and missing entities out of room cards
+ * v0.114 focus:
+ * - Show room status badges only when attention is required
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.113.0";
+const ATZE_VERSION = "0.114.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6320,7 +6319,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }
     }
 
-    return badges;
+    // A safe state needs no permanent indicator on the room image.
+    // Keep the top-right badges focused on conditions that require attention.
+    return badges.filter((badge) => badge.active);
   }
 
   _formatPower() {
