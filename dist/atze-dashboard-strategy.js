@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.97.0
+ * Version: 0.98.0
  *
- * v0.97 focus:
- * - Hide sensor.flur_haustur_letzte_aktivitat
- * - Keep the remaining Flur sensor cleanup unchanged
- * - Preserve all existing Keypad Vision filtering
+ * v0.98 focus:
+ * - Switch room views to strict automatic entity selection
+ * - Add Auto / Anzeigen / Ausblenden overrides per entity
+ * - Add per-room entity controls to the graphical strategy editor
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.97.0";
+const ATZE_VERSION = "0.98.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -128,6 +128,108 @@ function shouldHideExactEntity(config, entityId) {
     RUNTIME_HIDDEN_ENTITY_IDS.has(entityId) ||
     customHidden.has(entityId)
   );
+}
+
+const AUTO_ROOM_PRIMARY_DOMAINS = new Set([
+  "light",
+  "switch",
+  "cover",
+  "climate",
+  "fan",
+  "lock",
+  "media_player",
+  "input_boolean",
+]);
+
+const AUTO_ROOM_SECURITY_DEVICE_CLASSES = new Set([
+  "door",
+  "window",
+  "opening",
+  "smoke",
+  "moisture",
+  "gas",
+  "carbon_monoxide",
+  "tamper",
+]);
+
+function roomEntityVisibilityMode(config, entityId) {
+  const override = getOverride(
+    config.entity_overrides,
+    entityId
+  );
+
+  const raw = String(
+    override.visibility || ""
+  ).toLowerCase();
+
+  if (
+    ["show", "visible", "anzeigen"].includes(raw) ||
+    override.visible === true
+  ) {
+    return "show";
+  }
+
+  if (
+    ["hide", "hidden", "ausblenden"].includes(raw) ||
+    override.visible === false ||
+    override.hidden === true ||
+    override.card === "hidden"
+  ) {
+    return "hide";
+  }
+
+  return "auto";
+}
+
+function shouldAutoShowRoomEntity(
+  hass,
+  entity,
+  config
+) {
+  if (config.strict_room_entity_auto === false) {
+    return true;
+  }
+
+  const domain = domainOf(entity.entity_id);
+
+  if (AUTO_ROOM_PRIMARY_DOMAINS.has(domain)) {
+    return true;
+  }
+
+  if (domain === "binary_sensor") {
+    const deviceClass =
+      entityDeviceClass(hass, entity);
+
+    if (
+      AUTO_ROOM_SECURITY_DEVICE_CLASSES.has(
+        deviceClass
+      )
+    ) {
+      return true;
+    }
+
+    const text = normalizedText(
+      `${entity.entity_id} ${rawFriendlyName(
+        hass,
+        entity.entity_id,
+        entity
+      )}`
+    );
+
+    return (
+      entity.entity_id ===
+        "binary_sensor.keypad_vision_725e_manipulation" ||
+      text.includes("manipulation") ||
+      text.includes("tamper") ||
+      text.includes("rauch") ||
+      text.includes("smoke")
+    );
+  }
+
+  // Sensors, selectors, numbers and similar technical helpers are
+  // intentionally not rendered as standalone room cards in Auto mode.
+  // They remain available to badges, device popups and maintenance views.
+  return false;
 }
 
 const AGGREGATE_DEVICE_PARENTS = {
@@ -4483,29 +4585,61 @@ function buildAreaView(
   const grouped = new Map();
 
   for (const entity of entities) {
-    // Popup children are rendered only inside their parent pop-up.
-    if (popupMap.childToParent.has(entity.entity_id)) continue;
-
     if (shouldHideExactEntity(config, entity.entity_id)) {
       continue;
     }
 
+    const visibility =
+      roomEntityVisibilityMode(
+        config,
+        entity.entity_id
+      );
+
+    if (visibility === "hide") continue;
+
+    const forceShow = visibility === "show";
+
+    // Popup children normally stay behind their parent. An explicit
+    // "Anzeigen" override intentionally pulls the entity back out.
     if (
+      !forceShow &&
+      popupMap.childToParent.has(entity.entity_id)
+    ) {
+      continue;
+    }
+
+    if (
+      !forceShow &&
       config.badge_entities_hide_from_sections !== false &&
       badgeSelection.entityIds.has(entity.entity_id)
     ) {
       continue;
     }
 
-    if (hideRoomMeterEntityFromSections(hass, entity, config)) {
-      continue;
-    }
-
-    if (shouldHideSensorFromRoom(hass, entity, config)) {
+    if (
+      !forceShow &&
+      hideRoomMeterEntityFromSections(
+        hass,
+        entity,
+        config
+      )
+    ) {
       continue;
     }
 
     if (
+      !forceShow &&
+      shouldHideSensorFromRoom(
+        hass,
+        entity,
+        config
+      )
+    ) {
+      continue;
+    }
+
+    if (
+      !forceShow &&
       config.hide_diagnostic_entities === true &&
       entity.entity_category === "diagnostic"
     ) {
@@ -4513,6 +4647,7 @@ function buildAreaView(
     }
 
     if (
+      !forceShow &&
       config.hide_unknown_config_entities !== false &&
       entity.entity_category === "config" &&
       hass.states[entity.entity_id]?.state === "unknown"
@@ -4520,9 +4655,27 @@ function buildAreaView(
       continue;
     }
 
+    if (
+      !forceShow &&
+      !shouldAutoShowRoomEntity(
+        hass,
+        entity,
+        config
+      )
+    ) {
+      continue;
+    }
+
     const domain = domainOf(entity.entity_id);
 
-    if (!allowedDomains.has(domain) || excludedDomains.has(domain)) continue;
+    if (excludedDomains.has(domain)) continue;
+
+    if (
+      !forceShow &&
+      !allowedDomains.has(domain)
+    ) {
+      continue;
+    }
 
     const groupKey = groupKeyForEntity(hass, entity, config);
 
@@ -9144,6 +9297,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._config = {};
     this._areas = [];
     this._labels = [];
+    this._devices = [];
+    this._entities = [];
     this._loading = false;
     this._draggedAreaId = null;
   }
@@ -9177,16 +9332,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._loading = true;
 
     try {
-      const [areas, labels] = await Promise.all([
-        this._hass.callWS({
-          type: "config/area_registry/list",
-        }),
-        this._hass
-          .callWS({
-            type: "config/label_registry/list",
-          })
-          .catch(() => []),
-      ]);
+      const [areas, labels, devices, entities] =
+        await Promise.all([
+          this._hass.callWS({
+            type: "config/area_registry/list",
+          }),
+          this._hass
+            .callWS({
+              type: "config/label_registry/list",
+            })
+            .catch(() => []),
+          this._hass.callWS({
+            type: "config/device_registry/list",
+          }),
+          this._hass.callWS({
+            type: "config/entity_registry/list",
+          }),
+        ]);
 
       this._areas = [...(areas || [])].sort((a, b) =>
         String(a?.name || a?.area_id || "")
@@ -9196,9 +9358,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           )
       );
       this._labels = labels || [];
+      this._devices = devices || [];
+      this._entities = entities || [];
     } catch (_error) {
       this._areas = [];
       this._labels = [];
+      this._devices = [];
+      this._entities = [];
     } finally {
       this._loading = false;
       this._render();
@@ -9381,6 +9547,175 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _deviceById() {
+    return new Map(
+      (this._devices || []).map(
+        (device) => [device.id, device]
+      )
+    );
+  }
+
+  _entitiesForArea(areaId) {
+    if (!areaId) return [];
+
+    const deviceById = this._deviceById();
+
+    return (this._entities || [])
+      .filter((entity) => {
+        if (!entity?.entity_id) return false;
+        if (entity.disabled_by) return false;
+        if (isBuiltInHiddenEntity(entity.entity_id)) {
+          return false;
+        }
+        if (
+          !this._hass?.states?.[entity.entity_id]
+        ) {
+          return false;
+        }
+
+        return (
+          effectiveAreaId(
+            entity,
+            deviceById
+          ) === areaId
+        );
+      })
+      .sort((a, b) => {
+        const an = rawFriendlyName(
+          this._hass,
+          a.entity_id,
+          a
+        );
+        const bn = rawFriendlyName(
+          this._hass,
+          b.entity_id,
+          b
+        );
+
+        return String(an).localeCompare(
+          String(bn),
+          "de",
+          {
+            numeric: true,
+            sensitivity: "base",
+          }
+        );
+      });
+  }
+
+  _setEntityVisibility(entityId, mode) {
+    const entityOverrides = {
+      ...(this._config.entity_overrides || {}),
+    };
+
+    const nextOverride = {
+      ...(entityOverrides[entityId] || {}),
+    };
+
+    delete nextOverride.visibility;
+    delete nextOverride.visible;
+    delete nextOverride.hidden;
+
+    if (nextOverride.card === "hidden") {
+      delete nextOverride.card;
+    }
+
+    if (mode === "show") {
+      nextOverride.visibility = "show";
+    } else if (mode === "hide") {
+      nextOverride.visibility = "hide";
+    }
+
+    if (Object.keys(nextOverride).length > 0) {
+      entityOverrides[entityId] = nextOverride;
+    } else {
+      delete entityOverrides[entityId];
+    }
+
+    const next = {
+      ...this._config,
+    };
+
+    if (Object.keys(entityOverrides).length > 0) {
+      next.entity_overrides = entityOverrides;
+    } else {
+      delete next.entity_overrides;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
+  _entityVisibilityRows(area) {
+    const entities =
+      this._entitiesForArea(area.area_id);
+
+    if (!entities.length) {
+      return `
+        <div class="entity-empty">
+          Keine Entities in diesem Bereich gefunden.
+        </div>
+      `;
+    }
+
+    return entities.map((entity) => {
+      const entityId = entity.entity_id;
+      const mode =
+        roomEntityVisibilityMode(
+          this._config,
+          entityId
+        );
+
+      const name = rawFriendlyName(
+        this._hass,
+        entityId,
+        entity
+      );
+
+      const domain = domainOf(entityId);
+      const automatic =
+        shouldAutoShowRoomEntity(
+          this._hass,
+          entity,
+          this._config
+        )
+          ? "Auto: sichtbar"
+          : "Auto: ausgeblendet";
+
+      return `
+        <div class="entity-row">
+          <span class="entity-copy">
+            <span class="entity-name">
+              ${this._escape(name)}
+            </span>
+            <span class="entity-meta">
+              ${this._escape(domain)} ·
+              ${this._escape(automatic)}
+            </span>
+            <span class="entity-id">
+              ${this._escape(entityId)}
+            </span>
+          </span>
+
+          <select
+            class="entity-visibility"
+            data-entity-id="${this._escape(entityId)}"
+            aria-label="Sichtbarkeit ${this._escape(name)}"
+          >
+            <option value="auto" ${mode === "auto" ? "selected" : ""}>
+              Auto
+            </option>
+            <option value="show" ${mode === "show" ? "selected" : ""}>
+              Anzeigen
+            </option>
+            <option value="hide" ${mode === "hide" ? "selected" : ""}>
+              Ausblenden
+            </option>
+          </select>
+        </div>
+      `;
+    }).join("");
+  }
+
   _setBoolean(key, value, defaultValue) {
     const next = { ...this._config };
 
@@ -9426,6 +9761,36 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
+
+    const entityAreaPanels =
+      this._eligibleAreas()
+        .filter((area) =>
+          selected.has(area.area_id)
+        )
+        .map((area) => `
+          <details class="entity-area">
+            <summary>
+              <span>
+                <ha-icon
+                  icon="${this._escape(
+                    area.icon || "mdi:home-outline"
+                  )}"
+                ></ha-icon>
+                ${this._escape(
+                  area.name || area.area_id
+                )}
+              </span>
+              <span class="entity-count">
+                ${this._entitiesForArea(area.area_id).length}
+              </span>
+            </summary>
+
+            <div class="entity-rows">
+              ${this._entityVisibilityRows(area)}
+            </div>
+          </details>
+        `)
+        .join("");
 
     const areaRows = this._orderedAreas().map((area) => {
       const blockedArea = blocked.has(area.area_id);
@@ -9623,6 +9988,124 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           padding: 20px 18px;
           color: var(--secondary-text-color);
         }
+
+        .entity-area {
+          border-top: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.14)
+          );
+        }
+
+        .entity-area:first-child {
+          border-top: 0;
+        }
+
+        .entity-area summary {
+          min-height: 54px;
+          padding: 10px 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .entity-area summary > span:first-child {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 600;
+        }
+
+        .entity-area summary ha-icon {
+          width: 20px;
+          height: 20px;
+          color: var(--primary-color);
+        }
+
+        .entity-count {
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+
+        .entity-rows {
+          border-top: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.10)
+          );
+        }
+
+        .entity-row {
+          min-height: 68px;
+          padding: 10px 18px 10px 48px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          border-bottom: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.10)
+          );
+        }
+
+        .entity-row:last-child {
+          border-bottom: 0;
+        }
+
+        .entity-copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .entity-name {
+          font-size: 14px;
+          font-weight: 550;
+        }
+
+        .entity-meta,
+        .entity-id {
+          color: var(--secondary-text-color);
+          font-size: 11px;
+          line-height: 1.25;
+          overflow-wrap: anywhere;
+        }
+
+        .entity-visibility {
+          min-width: 112px;
+          flex: 0 0 auto;
+          padding: 7px 8px;
+          border-radius: 9px;
+          border: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.22)
+          );
+          background: var(
+            --secondary-background-color,
+            rgba(127,127,127,.10)
+          );
+          color: var(--primary-text-color);
+          font: inherit;
+        }
+
+        .entity-empty {
+          padding: 16px 18px 16px 48px;
+          color: var(--secondary-text-color);
+          font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+          .entity-row {
+            padding-left: 18px;
+            align-items: flex-start;
+          }
+
+          .entity-visibility {
+            min-width: 102px;
+          }
+        }
       </style>
 
       <div class="editor">
@@ -9654,6 +10137,40 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               : (
                   areaRows ||
                   '<div class="loading">Keine Bereiche gefunden.</div>'
+                )}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="header">
+            <div class="title">
+              <ha-icon icon="mdi:format-list-checks"></ha-icon>
+              <span>Entitäten pro Raum</span>
+            </div>
+            <div class="help">
+              Auto zeigt nur typische Bedienelemente und sinnvolle
+              Sicherheits-Sensoren. Sensorwerte, Diagnose-Entities,
+              Regler und Konfiguration bleiben standardmäßig in
+              Badges, Popups oder Wartung. Mit Anzeigen oder
+              Ausblenden kannst du jede Entity gezielt überschreiben.
+            </div>
+          </div>
+
+          <div class="rows">
+            ${this._toggleHtml(
+              "strict_room_entity_auto",
+              "Strenge automatische Auswahl",
+              "Empfohlen: technische Sensoren werden nicht als eigene Raumkarten angezeigt.",
+              true
+            )}
+          </div>
+
+          <div class="entity-area-list">
+            ${this._loading
+              ? '<div class="loading">Entities werden geladen …</div>'
+              : (
+                  entityAreaPanels ||
+                  '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
                 )}
           </div>
         </section>
@@ -9820,6 +10337,25 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           target.checked
         );
       });
+    }
+
+    for (
+      const select of
+        this.shadowRoot.querySelectorAll(
+          ".entity-visibility"
+        )
+    ) {
+      select.addEventListener(
+        "change",
+        (event) => {
+          const target = event.currentTarget;
+
+          this._setEntityVisibility(
+            target.dataset.entityId,
+            target.value
+          );
+        }
+      );
     }
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
