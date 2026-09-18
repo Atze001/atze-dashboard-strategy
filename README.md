@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.81.0**
+Version **0.84.0**
 
 Enthalten sind unter anderem:
 
@@ -155,3 +155,33 @@ Kiosk-Mode-Schalter `?kiosk` abgebildet.
 
 Die Strategy ergänzt den Parameter automatisch; manuelles Anhängen ist nicht
 mehr nötig.
+
+
+## v0.84 Zuverlässiger Kiosk-Start
+
+Bei Strategy-Dashboards kann Home Assistant den Block `kiosk_mode:` aus der
+Konfiguration herausfiltern, bevor er an die Strategy übergeben wird.
+
+Deshalb gibt es jetzt einen Strategy-eigenen Schalter:
+
+```yaml
+force_kiosk: true
+```
+
+Damit ergänzt die Strategy automatisch den bei diesem Dashboard getesteten
+Kiosk-Mode-Schalter `?kiosk`.
+
+Die bisherige Kiosk-Mode-Konfiguration kann zusätzlich stehen bleiben:
+
+```yaml
+kiosk_mode:
+  hide_header: true
+force_kiosk: true
+```
+
+## HACS-Versionen
+
+Nach erfolgreicher HACS-Validierung erzeugt der gleiche GitHub-Actions-Workflow
+automatisch einen GitHub Release mit der aktuellen `ATZE_VERSION`.
+Dadurch kann HACS statt eines Commit-Hashes eine Versionsnummer wie
+`v0.84.0` anzeigen.
