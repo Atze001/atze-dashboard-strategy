@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.117.0**
+Version **0.118.0**
 
 Enthalten sind unter anderem:
 
@@ -71,6 +71,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.118.0
+
+- Im Favoriten-Editor steht jetzt das Suchfeld **Entität suchen …** zur
+  Verfügung.
+- Die Eingabe filtert live über alle Bereiche sowie **Ohne Bereich** nach
+  Anzeigename, Entity-ID und Domain und klappt passende Gruppen automatisch
+  auf.
+
 ### v0.117.0
 
 - Im Favoriten-Editor erscheint nach den Bereichen der zusätzliche Eintrag
@@ -86,11 +94,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Lichter, Schalter, Lüfter, Media Player und Helfer lassen sich direkt
   umschalten; Rollläden öffnen oder schließen. Andere Entitäten öffnen ihre
   Detailansicht.
-
-### v0.115.0
-
-- Die Symbole innerhalb der roten Warnkreise sind weiß.
-- Die Änderungshistorie zeigt nur noch die drei neuesten Versionen.
 
 ## Lizenz
 
