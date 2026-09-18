@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.86.0**
+Version **0.87.0**
 
 Enthalten sind unter anderem:
 
@@ -215,3 +215,10 @@ Die Dashboard-Konfiguration bleibt unverändert:
 type: custom:atze-dashboard
 force_kiosk: true
 ```
+
+
+## v0.87 Dezenter Menüknopf
+
+Der zusätzliche Sidebar-Menüknopf bei `force_kiosk: true` wurde optisch
+deutlich zurückgenommen: kleiner, ohne harten Rand und ohne starken Schatten,
+damit er sich besser in das Apple-Home-inspirierte Dashboard einfügt.
