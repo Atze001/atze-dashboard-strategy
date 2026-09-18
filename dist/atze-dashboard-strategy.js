@@ -1,16 +1,15 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.112.0
+ * Version: 0.113.0
  *
- * v0.112 focus:
- * - Add global Lichter an and Rollläden auf quick actions
- * - Keep the existing Lichter aus and Rollläden zu actions
- * - Arrange the four base actions as a compact 2 x 2 mobile grid
+ * v0.113 focus:
+ * - Add an editor toggle for hiding unavailable entities
+ * - Keep disabled and missing entities out of room cards
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.112.0";
+const ATZE_VERSION = "0.113.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -10680,6 +10679,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "Strenge automatische Auswahl",
                 "Empfohlen: technische Sensoren werden nicht als eigene Raumkarten angezeigt.",
                 true
+              )}
+              ${this._toggleHtml(
+                "hide_unavailable",
+                "Nicht verfügbare Entitäten ausblenden",
+                "Deaktivierte, entfernte oder nicht verfügbare Entitäten werden nicht als Raumkarten angezeigt.",
+                false
               )}
             </div>
 
