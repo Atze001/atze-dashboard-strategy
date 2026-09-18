@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.81.0
+ * Version: 0.82.0
  *
- * v0.81 focus:
- * - Add a native hide-header fallback for strategy dashboards
- * - Honor literal kiosk_mode.hide_header: true and kiosk_mode.kiosk: true
- * - Keep ?disable_km usable and avoid depending on kiosk-mode raw-config parsing
+ * v0.82 focus:
+ * - Use kiosk-mode's official URL switches for Strategy dashboard kiosk settings
+ * - Add automatic GitHub releases so HACS shows semantic versions
+ * - Preserve all HACS, Wartung, Sicherheit, room and popup features
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.81.0";
+const ATZE_VERSION = "0.82.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4655,125 +4655,110 @@ function hideAtzeDashboardScrollbars(enabled = true) {
 }
 
 
-const ATZE_HEADER_STYLE_ID =
-  "atze-dashboard-native-hide-header";
+function applyAtzeKioskQueryFallback(config) {
+  if (config.kiosk_query_fallback === false) return;
 
-function atzeCurrentPanelBase() {
-  const first = window.location.pathname
-    .split("/")
-    .filter(Boolean)[0];
-
-  return first ? `/${first}` : "/";
-}
-
-function atzeSamePanel(basePath) {
-  const current = atzeCurrentPanelBase();
-  return current === basePath;
-}
-
-function walkAtzeOpenRoots(root, callback) {
-  if (!root || typeof root.querySelectorAll !== "function") {
-    return;
-  }
-
-  callback(root);
-
-  for (const element of root.querySelectorAll("*")) {
-    if (element.shadowRoot) {
-      walkAtzeOpenRoots(element.shadowRoot, callback);
-    }
-  }
-}
-
-function syncAtzeNativeHeaderStyle(enabled) {
-  walkAtzeOpenRoots(document, (root) => {
-    const hostName = String(
-      root?.host?.localName || ""
-    ).toLowerCase();
-
-    // The Lovelace header lives in hui-root. Keeping the CSS scoped here
-    // avoids accidentally hiding headers in dialogs or unrelated panels.
-    if (hostName !== "hui-root") return;
-
-    const existing =
-      root.querySelector?.(`#${ATZE_HEADER_STYLE_ID}`);
-
-    if (!enabled) {
-      existing?.remove();
-      return;
-    }
-
-    if (existing) return;
-
-    const style = document.createElement("style");
-    style.id = ATZE_HEADER_STYLE_ID;
-    style.textContent = `
-      :host {
-        --header-height: 0px !important;
-        --app-header-height: 0px !important;
-      }
-
-      .header,
-      app-header {
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        overflow: hidden !important;
-      }
-
-      ha-app-layout,
-      app-header-layout {
-        --header-height: 0px !important;
-        --app-header-height: 0px !important;
-      }
-    `;
-
-    root.appendChild(style);
-  });
-}
-
-function applyAtzeNativeKioskFallback(config) {
   const kioskConfig =
     config?.kiosk_mode &&
     typeof config.kiosk_mode === "object"
       ? config.kiosk_mode
       : {};
 
-  const params = new URLSearchParams(
+  const rawQuery = String(
     window.location.search || ""
-  );
+  ).replace(/^\\?/, "");
 
-  const disabledByQuery = params.has("disable_km");
+  let parts = rawQuery
+    ? rawQuery.split("&").filter(Boolean)
+    : [];
 
-  const hideHeader =
-    config.native_kiosk_fallback !== false &&
-    !disabledByQuery &&
-    (
-      kioskConfig.hide_header === true ||
-      kioskConfig.kiosk === true
+  const keyOf = (part) =>
+    decodeURIComponent(
+      String(part).split("=")[0] || ""
     );
 
-  const panelBase = atzeCurrentPanelBase();
+  const hasKey = (key) =>
+    parts.some((part) => keyOf(part) === key);
 
-  const apply = () => {
-    if (!atzeSamePanel(panelBase)) return;
+  const removeKey = (key) => {
+    const before = parts.length;
 
-    try {
-      syncAtzeNativeHeaderStyle(hideHeader);
-    } catch (_error) {
-      // Header hiding is a UI enhancement and must never block generation.
-    }
+    parts = parts.filter(
+      (part) => keyOf(part) !== key
+    );
+
+    return parts.length !== before;
   };
 
-  apply();
-  requestAnimationFrame(apply);
-  setTimeout(apply, 250);
-  setTimeout(apply, 1000);
-  setTimeout(apply, 2500);
-  setTimeout(apply, 5000);
-}
+  if (hasKey("disable_km")) return;
 
+  const desired = [];
+
+  if (kioskConfig.kiosk === true) {
+    desired.push("kiosk");
+  } else {
+    if (kioskConfig.hide_header === true) {
+      desired.push("hide_header");
+    }
+
+    if (kioskConfig.hide_sidebar === true) {
+      desired.push("hide_sidebar");
+    }
+  }
+
+  const markerKey = "atze_km_auto";
+  const autoManaged = hasKey(markerKey);
+
+  const managedKeys = [
+    "kiosk",
+    "hide_header",
+    "hide_sidebar",
+  ];
+
+  let changed = false;
+
+  if (desired.length) {
+    if (autoManaged) {
+      for (const key of managedKeys) {
+        if (
+          !desired.includes(key) &&
+          removeKey(key)
+        ) {
+          changed = true;
+        }
+      }
+    }
+
+    for (const key of desired) {
+      if (!hasKey(key)) {
+        parts.push(key);
+        changed = true;
+      }
+    }
+
+    if (!autoManaged) {
+      parts.push(`${markerKey}=1`);
+      changed = true;
+    }
+  } else if (autoManaged) {
+    for (const key of managedKeys) {
+      if (removeKey(key)) changed = true;
+    }
+
+    if (removeKey(markerKey)) changed = true;
+  }
+
+  if (!changed) return;
+
+  const query = parts.length
+    ? `?${parts.join("&")}`
+    : "";
+
+  const target =
+    `${window.location.pathname}${query}${window.location.hash || ""}`;
+
+  window.location.replace(target);
+}
 
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
@@ -4784,11 +4769,11 @@ class AtzeDashboardStrategy extends HTMLElement {
   }
 
   static async generate(config, hass) {
+    applyAtzeKioskQueryFallback(config);
+
     hideAtzeDashboardScrollbars(
       config.hide_scrollbar !== false
     );
-
-    applyAtzeNativeKioskFallback(config);
 
     const [areas, devices, entities, labels] = await Promise.all([
       hass.callWS({ type: "config/area_registry/list" }),
