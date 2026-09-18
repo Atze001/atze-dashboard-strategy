@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.92.0**
+Version **0.93.0**
 
 Enthalten sind unter anderem:
 
@@ -323,3 +323,19 @@ werden:
 ```yaml
 clock_kiosk_toggle: false
 ```
+
+
+## v0.93 Thermostat-Zusatzwerte wieder im Popup
+
+Thermostat-Zusatzwerte wie Batterie, Spannung, Temperatur, Fensterstatus,
+Kalibrierung, Betriebszustand und Problemstatus werden wieder konsequent hinter
+dem Thermostat-Popup zusammengefasst.
+
+Dafür werden `sensor` und `binary_sensor` jetzt standardmäßig als
+Climate-Popup-Kinder berücksichtigt. Zusätzlich gibt es einen Fallback über den
+Entity-ID-Präfix, falls Home Assistant die Zusatz-Entities nicht exakt demselben
+Gerät wie die Climate-Entity zuordnet.
+
+Die Zusatzwerte verschwinden dadurch aus den normalen Raumgruppen wie
+**Sensoren** und **Sicherheit**, bleiben aber weiterhin unter
+**Thermostat → Einstellungen** erreichbar.
