@@ -11,6 +11,7 @@ home_icon: mdi:home
 home_path: home
 home_weather_entity: weather.berlin_tempelhof
 home_person_entity: person.alexander
+favorite_entities: []
 
 home_alarm_entity: alarm_control_panel.alarmo
 home_homebase_entity: select.atzehomebase_guard_mode
