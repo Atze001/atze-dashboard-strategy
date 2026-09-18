@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.100.0**
+Version **0.101.0**
 
 Enthalten sind unter anderem:
 
@@ -489,3 +489,21 @@ jetzt als deutliche Akkordeons aufgebaut:
 - erneut antippen zum Zuklappen
 - Pfeil zeigt den Zustand
 - geöffnete Räume bleiben auch bei Editor-Neurendern geöffnet
+
+
+## v0.101 Einklappbare Setup-Bereiche
+
+Die Hauptbereiche im grafischen Strategy-Editor sind jetzt vollständig
+ein- und ausklappbar:
+
+- **Räume**
+- **Entitäten pro Raum**
+- **Ansichten**
+- **Darstellung**
+
+Jeder Abschnitt besitzt einen Pfeil rechts und kann durch Antippen der
+Überschrift geöffnet oder geschlossen werden.
+
+Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
+Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
+bei automatischen Neurendern erhalten.
