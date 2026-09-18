@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.84.0**
+Version **0.85.0**
 
 Enthalten sind unter anderem:
 
@@ -185,3 +185,16 @@ Nach erfolgreicher HACS-Validierung erzeugt der gleiche GitHub-Actions-Workflow
 automatisch einen GitHub Release mit der aktuellen `ATZE_VERSION`.
 Dadurch kann HACS statt eines Commit-Hashes eine Versionsnummer wie
 `v0.84.0` anzeigen.
+
+
+## v0.85 Header-only Kiosk
+
+`force_kiosk: true` blendet jetzt nur noch den Home-Assistant-Header aus.
+Die Sidebar bleibt erreichbar.
+
+Die Strategy verwendet dafür den offiziellen Kiosk-Mode-Parameter
+`?hide_header`.
+
+Falls eine ältere Strategy-Version bereits automatisch `?kiosk` zusammen mit
+`atze_km_auto=1` gesetzt hat, migriert v0.85 die URL automatisch auf
+`?hide_header`.
