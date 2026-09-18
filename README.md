@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.96.0**
+Version **0.97.0**
 
 Enthalten sind unter anderem:
 
@@ -394,3 +394,15 @@ Damit bleibt der Manipulationsstatus unter **Sicherheit** erhalten, während
 technische und diagnostische Keypad-Vision-Entities wie Ladestatus,
 Temperaturwarnungen, PIR-Level, letzte Aktivität und ähnliche Werte nicht mehr
 in Raum-, Sicherheits- oder Wartungsansichten erscheinen.
+
+
+## v0.97 Flur Letzte Aktivität ausblenden
+
+Der Sensor
+
+```text
+sensor.flur_haustur_letzte_aktivitat
+```
+
+wird in den generierten Ansichten ausgeblendet. Weitere Flur-Sensoren bleiben
+unverändert.
