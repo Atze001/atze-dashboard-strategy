@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.93.0
+ * Version: 0.94.0
  *
- * v0.93 focus:
- * - Restore robust thermostat child grouping after the HACS migration
- * - Include sensor and binary_sensor entities in climate device popups by default
- * - Add a climate entity-id prefix fallback when HA device links are incomplete
+ * v0.94 focus:
+ * - Hide battery sensors from normal room sensor sections
+ * - Keep battery entities available in the maintenance view
+ * - Allow opt-out with hide_battery_sensors_in_rooms: false
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.93.0";
+const ATZE_VERSION = "0.94.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3370,6 +3370,16 @@ function shouldHideSensorFromRoom(hass, entity, config) {
 
   const deviceClass = entityDeviceClass(hass, entity);
   const friendly = normalizedFriendlyName(hass, entity);
+
+  if (
+    config.hide_battery_sensors_in_rooms !== false &&
+    (
+      deviceClass === "battery" ||
+      ["batterie", "battery", "akku"].includes(friendly)
+    )
+  ) {
+    return true;
+  }
 
   const hiddenDeviceClasses = new Set(
     asArray(config.hide_sensor_device_classes).length
