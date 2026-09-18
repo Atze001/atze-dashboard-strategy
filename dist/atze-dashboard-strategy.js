@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.123.0
+ * Version: 0.124.0
  *
- * v0.123 focus:
- * - Native Home Assistant YAML editor for custom views
+ * v0.124 focus:
+ * - Automatic custom page navigation buttons on the home view
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.123.0";
+const ATZE_VERSION = "0.124.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4596,6 +4596,11 @@ function buildHomeOverviewView(
           (entity) => entity.entity_id === entityId
         )
       ),
+    custom_pages: buildCustomPageViews(config).map((view) => ({
+      title: view.title,
+      path: view.path,
+      icon: view.icon || "mdi:view-dashboard-outline",
+    })),
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
     light_entities: uniqueEntityIds(lightEntities),
@@ -6145,6 +6150,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     window.dispatchEvent(new Event("location-changed"));
   }
 
+  _escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
   _moreInfo(entityId) {
     if (!entityId) return;
 
@@ -6577,6 +6591,31 @@ class AtzeHomeOverviewCard extends HTMLElement {
         stateObj: this._state(entityId),
       }))
       .filter((entry) => entry.stateObj);
+
+    const customPageLinks = asArray(this._config.custom_pages)
+      .filter((page) => page?.path && page?.title);
+
+    const customPageLinksHtml = customPageLinks.length
+      ? `
+          <nav class="custom-page-links" aria-label="Eigene Seiten">
+            ${customPageLinks
+              .map((page) => `
+                <button
+                  type="button"
+                  class="custom-page-link"
+                  data-path="${this._escapeHtml(page.path)}"
+                  title="${this._escapeHtml(page.title)}"
+                >
+                  <ha-icon
+                    icon="${this._escapeHtml(page.icon || "mdi:view-dashboard-outline")}"
+                  ></ha-icon>
+                  <span>${this._escapeHtml(page.title)}</span>
+                </button>
+              `)
+              .join("")}
+          </nav>
+        `
+      : "";
 
     const favoriteHtml = favoriteStates.length
       ? `
@@ -7054,6 +7093,47 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-muted);
           font-size: 14px;
           line-height: 1.05;
+          white-space: nowrap;
+        }
+
+        .custom-page-links {
+          margin: 0 0 20px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px;
+        }
+
+        .custom-page-link {
+          min-width: 0;
+          min-height: 42px;
+          padding: 7px 14px 7px 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--home-card-border);
+          border-radius: 999px;
+          background: var(--home-card-bg);
+          color: var(--primary-text-color);
+          font: inherit;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .custom-page-link:active {
+          transform: scale(0.97);
+        }
+
+        .custom-page-link ha-icon {
+          width: 23px;
+          height: 23px;
+          color: var(--primary-color, #03a9f4);
+        }
+
+        .custom-page-link span {
+          overflow: hidden;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
 
@@ -7593,6 +7673,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
             margin-bottom: 24px;
           }
 
+          .custom-page-links {
+            margin-bottom: 18px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+          }
+
+          .custom-page-links::-webkit-scrollbar {
+            display: none;
+          }
+
+          .custom-page-link {
+            flex: 0 0 auto;
+            min-height: 40px;
+            padding: 6px 13px 6px 9px;
+          }
+
           .section-heading {
             font-size: 17px;
           }
@@ -7842,6 +7939,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
           </div>
 
+          ${customPageLinksHtml}
+
           ${favoriteHtml}
 
           <div class="rooms">
@@ -7934,6 +8033,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.stopPropagation();
           this._toggleRoomLights(element.dataset.areaId);
         });
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".custom-page-link[data-path]")
+      .forEach((element) => {
+        element.addEventListener("click", () =>
+          this._navigate(element.dataset.path)
+        );
       });
 
     this.shadowRoot
