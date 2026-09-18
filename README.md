@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.87.0**
+Version **0.88.0**
 
 Enthalten sind unter anderem:
 
@@ -222,3 +222,10 @@ force_kiosk: true
 Der zusätzliche Sidebar-Menüknopf bei `force_kiosk: true` wurde optisch
 deutlich zurückgenommen: kleiner, ohne harten Rand und ohne starken Schatten,
 damit er sich besser in das Apple-Home-inspirierte Dashboard einfügt.
+
+
+## v0.88 Icon-only Menüknopf
+
+Der zusätzliche Sidebar-Menüknopf wird jetzt ohne Kreis, Hintergrund oder
+Schatten dargestellt. Sichtbar ist nur noch das dezente Menü-Icon. Die
+Touch-Fläche bleibt mit 40 x 40 px ausreichend groß.
