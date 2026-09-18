@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.85.0
+ * Version: 0.86.0
  *
- * v0.85 focus:
- * - force_kiosk: true now hides only the header, not the sidebar
- * - Use kiosk-mode's official ?hide_header switch
- * - Automatically migrate older auto-managed ?kiosk URLs to ?hide_header
+ * v0.86 focus:
+ * - Keep the Home Assistant header hidden with force_kiosk: true
+ * - Add a floating sidebar menu button because hide_header removes the native one
+ * - Open the native Home Assistant sidebar through hass-toggle-menu
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.85.0";
+const ATZE_VERSION = "0.86.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4768,6 +4768,124 @@ function applyAtzeKioskQueryFallback(config) {
   window.location.replace(target);
 }
 
+const ATZE_SIDEBAR_BUTTON_ID =
+  "atze-dashboard-sidebar-button";
+
+function openAtzeHomeAssistantSidebar() {
+  const homeAssistant =
+    document.querySelector("home-assistant");
+
+  const main =
+    homeAssistant?.shadowRoot?.querySelector(
+      "home-assistant-main"
+    );
+
+  const target =
+    main || homeAssistant || document.body;
+
+  target.dispatchEvent(
+    new CustomEvent("hass-toggle-menu", {
+      bubbles: true,
+      composed: true,
+      detail: { open: true },
+    })
+  );
+}
+
+function syncAtzeSidebarAccessButton(enabled) {
+  const existing =
+    document.getElementById(
+      ATZE_SIDEBAR_BUTTON_ID
+    );
+
+  if (!enabled) {
+    existing?.remove();
+    return;
+  }
+
+  if (existing) return;
+
+  const button =
+    document.createElement("button");
+
+  button.id = ATZE_SIDEBAR_BUTTON_ID;
+  button.type = "button";
+  button.setAttribute(
+    "aria-label",
+    "Home Assistant Menü öffnen"
+  );
+  button.title = "Menü";
+
+  button.innerHTML = `
+    <ha-icon icon="mdi:menu"></ha-icon>
+  `;
+
+  Object.assign(button.style, {
+    position: "fixed",
+    top: "10px",
+    left: "10px",
+    width: "42px",
+    height: "42px",
+    borderRadius: "21px",
+    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(30,30,30,0.82)",
+    color: "var(--primary-text-color, #fff)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0",
+    margin: "0",
+    cursor: "pointer",
+    zIndex: "2147483000",
+    boxShadow: "0 3px 12px rgba(0,0,0,0.28)",
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
+  });
+
+  const icon = button.querySelector("ha-icon");
+
+  if (icon) {
+    Object.assign(icon.style, {
+      width: "24px",
+      height: "24px",
+      color: "inherit",
+    });
+  }
+
+  button.addEventListener(
+    "click",
+    openAtzeHomeAssistantSidebar
+  );
+
+  document.body.appendChild(button);
+}
+
+function applyAtzeSidebarAccess(config) {
+  const params =
+    new URLSearchParams(
+      window.location.search || ""
+    );
+
+  const enabled =
+    config.force_kiosk === true &&
+    !params.has("disable_km");
+
+  const apply = () => {
+    try {
+      syncAtzeSidebarAccessButton(enabled);
+    } catch (_error) {
+      // Keep dashboard generation independent
+      // from the optional sidebar access button.
+    }
+  };
+
+  apply();
+  requestAnimationFrame(apply);
+  setTimeout(apply, 250);
+  setTimeout(apply, 1000);
+}
+
+
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -4778,6 +4896,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
   static async generate(config, hass) {
     applyAtzeKioskQueryFallback(config);
+    applyAtzeSidebarAccess(config);
 
     hideAtzeDashboardScrollbars(
       config.hide_scrollbar !== false
