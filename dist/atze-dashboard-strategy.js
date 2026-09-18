@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.89.0
+ * Version: 0.90.0
  *
- * v0.89 focus:
- * - Hide areas carrying the Home Assistant label "no-strategy"
- * - Exclude their entities from room, home, security and maintenance views
- * - Preserve all existing kiosk and HACS behavior
+ * v0.90 focus:
+ * - Add a graphical Home Assistant strategy editor
+ * - Select visible rooms without editing YAML
+ * - Configure key dashboard views and kiosk options from the editor
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.89.0";
+const ATZE_VERSION = "0.90.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4950,6 +4950,16 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 
+  static async getConfigElement() {
+    await customElements.whenDefined(
+      "atze-dashboard-strategy-editor"
+    );
+
+    return document.createElement(
+      "atze-dashboard-strategy-editor"
+    );
+  }
+
   static async generate(config, hass) {
     applyAtzeKioskQueryFallback(config);
     applyAtzeSidebarAccess(config);
@@ -4991,6 +5001,9 @@ class AtzeDashboardStrategy extends HTMLElement {
         )
         .map((area) => area.area_id)
     );
+
+    const includeAreasConfigured =
+      Array.isArray(config.include_areas);
 
     const includeAreas = new Set(asArray(config.include_areas));
     const excludeAreas = new Set(asArray(config.exclude_areas));
@@ -5148,7 +5161,10 @@ class AtzeDashboardStrategy extends HTMLElement {
         if (override.hidden === true) return false;
         if (noStrategyAreaIds.has(area.area_id)) return false;
         if (excludeAreas.has(area.area_id)) return false;
-        if (includeAreas.size > 0 && !includeAreas.has(area.area_id)) {
+        if (
+          includeAreasConfigured &&
+          !includeAreas.has(area.area_id)
+        ) {
           return false;
         }
 
@@ -8868,6 +8884,507 @@ if (!customElements.get("atze-status-badge-v1")) {
     AtzeStatusBadgeV1
   );
 }
+
+
+class AtzeDashboardStrategyEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._hass = null;
+    this._config = {};
+    this._areas = [];
+    this._labels = [];
+    this._loading = false;
+  }
+
+  set hass(value) {
+    const first = !this._hass;
+    this._hass = value;
+    if (first || this._areas.length === 0) {
+      this._loadRegistries();
+    } else {
+      this._render();
+    }
+  }
+
+  get hass() {
+    return this._hass;
+  }
+
+  setConfig(config) {
+    this._config = { ...(config || {}) };
+    this._render();
+  }
+
+  connectedCallback() {
+    this._loadRegistries();
+    this._render();
+  }
+
+  async _loadRegistries() {
+    if (!this._hass || this._loading) return;
+    this._loading = true;
+
+    try {
+      const [areas, labels] = await Promise.all([
+        this._hass.callWS({
+          type: "config/area_registry/list",
+        }),
+        this._hass
+          .callWS({
+            type: "config/label_registry/list",
+          })
+          .catch(() => []),
+      ]);
+
+      this._areas = [...(areas || [])].sort((a, b) =>
+        String(a?.name || a?.area_id || "")
+          .localeCompare(
+            String(b?.name || b?.area_id || ""),
+            "de"
+          )
+      );
+      this._labels = labels || [];
+    } catch (_error) {
+      this._areas = [];
+      this._labels = [];
+    } finally {
+      this._loading = false;
+      this._render();
+    }
+  }
+
+  _escape(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  _blockedAreaIds() {
+    const labelIds = matchingNoStrategyLabelIds(
+      this._labels,
+      this._config
+    );
+
+    return new Set(
+      this._areas
+        .filter((area) =>
+          areaHasNoStrategyLabel(
+            area,
+            labelIds,
+            this._config
+          )
+        )
+        .map((area) => area.area_id)
+    );
+  }
+
+  _eligibleAreas() {
+    const blocked = this._blockedAreaIds();
+    return this._areas.filter(
+      (area) => !blocked.has(area.area_id)
+    );
+  }
+
+  _selectedAreaIds() {
+    const blocked = this._blockedAreaIds();
+
+    if (Array.isArray(this._config.include_areas)) {
+      return new Set(
+        this._config.include_areas.filter(
+          (areaId) => !blocked.has(areaId)
+        )
+      );
+    }
+
+    return new Set(
+      this._eligibleAreas().map(
+        (area) => area.area_id
+      )
+    );
+  }
+
+  _fireConfigChanged(nextConfig) {
+    this._config = nextConfig;
+    this._render();
+
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config: nextConfig },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  _setArea(areaId, checked) {
+    const selected = this._selectedAreaIds();
+
+    if (checked) selected.add(areaId);
+    else selected.delete(areaId);
+
+    this._fireConfigChanged({
+      ...this._config,
+      include_areas: this._eligibleAreas()
+        .filter((area) =>
+          selected.has(area.area_id)
+        )
+        .map((area) => area.area_id),
+    });
+  }
+
+  _selectAllAreas() {
+    const next = { ...this._config };
+    delete next.include_areas;
+    this._fireConfigChanged(next);
+  }
+
+  _selectNoAreas() {
+    this._fireConfigChanged({
+      ...this._config,
+      include_areas: [],
+    });
+  }
+
+  _setBoolean(key, value, defaultValue) {
+    const next = { ...this._config };
+
+    if (value === defaultValue) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
+  _effectiveBoolean(key, defaultValue) {
+    const value = this._config?.[key];
+    return value == null
+      ? defaultValue
+      : value === true;
+  }
+
+  _toggleHtml(key, label, description, defaultValue) {
+    const checked =
+      this._effectiveBoolean(key, defaultValue);
+
+    return `
+      <label class="row">
+        <span class="copy">
+          <span class="name">${this._escape(label)}</span>
+          <span class="desc">${this._escape(description)}</span>
+        </span>
+        <input
+          class="setting-toggle"
+          type="checkbox"
+          data-key="${this._escape(key)}"
+          data-default="${defaultValue ? "true" : "false"}"
+          ${checked ? "checked" : ""}
+        />
+      </label>
+    `;
+  }
+
+  _render() {
+    if (!this.shadowRoot) return;
+
+    const blocked = this._blockedAreaIds();
+    const selected = this._selectedAreaIds();
+
+    const areaRows = this._areas.map((area) => {
+      const blockedArea = blocked.has(area.area_id);
+      const checked =
+        !blockedArea &&
+        selected.has(area.area_id);
+
+      return `
+        <label class="row ${blockedArea ? "blocked" : ""}">
+          <span class="area">
+            <ha-icon
+              icon="${this._escape(
+                area.icon || "mdi:home-outline"
+              )}"
+            ></ha-icon>
+            <span class="copy">
+              <span class="name">
+                ${this._escape(area.name || area.area_id)}
+              </span>
+              ${blockedArea
+                ? '<span class="desc">Label no-strategy</span>'
+                : ""}
+            </span>
+          </span>
+          <input
+            class="area-toggle"
+            type="checkbox"
+            data-area-id="${this._escape(area.area_id)}"
+            ${checked ? "checked" : ""}
+            ${blockedArea ? "disabled" : ""}
+          />
+        </label>
+      `;
+    }).join("");
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          color: var(--primary-text-color);
+          font-family: var(--ha-font-family-body, inherit);
+        }
+        .editor {
+          display: grid;
+          gap: 16px;
+          padding: 4px 0 24px;
+        }
+        .panel {
+          background: var(
+            --ha-card-background,
+            var(--card-background-color)
+          );
+          border: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.18)
+          );
+          border-radius: 16px;
+          overflow: hidden;
+        }
+        .header {
+          padding: 16px 18px 12px;
+        }
+        .title {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 18px;
+          font-weight: 600;
+        }
+        .title ha-icon {
+          color: var(--primary-color);
+        }
+        .help {
+          margin-top: 6px;
+          color: var(--secondary-text-color);
+          font-size: 13px;
+          line-height: 1.4;
+        }
+        .toolbar {
+          display: flex;
+          gap: 8px;
+          padding: 0 16px 12px;
+        }
+        .toolbar button {
+          border: 0;
+          border-radius: 10px;
+          padding: 8px 12px;
+          cursor: pointer;
+          background: var(
+            --secondary-background-color,
+            rgba(127,127,127,.12)
+          );
+          color: var(--primary-text-color);
+          font: inherit;
+        }
+        .rows {
+          border-top: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.18)
+          );
+        }
+        .row {
+          min-height: 58px;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 10px 18px;
+          border-bottom: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.12)
+          );
+          cursor: pointer;
+        }
+        .row:last-child {
+          border-bottom: 0;
+        }
+        .row.blocked {
+          opacity: .48;
+          cursor: default;
+        }
+        .area {
+          min-width: 0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .area ha-icon {
+          width: 22px;
+          height: 22px;
+          color: var(--secondary-text-color);
+        }
+        .copy {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+        .name {
+          font-size: 15px;
+          font-weight: 500;
+        }
+        .desc {
+          color: var(--secondary-text-color);
+          font-size: 12px;
+          line-height: 1.3;
+        }
+        input[type="checkbox"] {
+          width: 20px;
+          height: 20px;
+          flex: 0 0 auto;
+          accent-color: var(--primary-color, #03a9f4);
+          cursor: pointer;
+        }
+        .loading {
+          padding: 20px 18px;
+          color: var(--secondary-text-color);
+        }
+      </style>
+
+      <div class="editor">
+        <section class="panel">
+          <div class="header">
+            <div class="title">
+              <ha-icon icon="mdi:floor-plan"></ha-icon>
+              <span>Räume</span>
+            </div>
+            <div class="help">
+              Wähle aus, welche Bereiche angezeigt werden.
+              Bereiche mit <b>no-strategy</b> bleiben immer ausgeblendet.
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button id="select-all" type="button">Alle</button>
+            <button id="select-none" type="button">Keine</button>
+          </div>
+
+          <div class="rows">
+            ${this._loading
+              ? '<div class="loading">Bereiche werden geladen …</div>'
+              : (
+                  areaRows ||
+                  '<div class="loading">Keine Bereiche gefunden.</div>'
+                )}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="header">
+            <div class="title">
+              <ha-icon icon="mdi:view-dashboard-outline"></ha-icon>
+              <span>Ansichten</span>
+            </div>
+          </div>
+          <div class="rows">
+            ${this._toggleHtml(
+              "home_view",
+              "Startseite anzeigen",
+              "Zuhause-Übersicht mit Statuskarten und Räumen.",
+              true
+            )}
+            ${this._toggleHtml(
+              "security_view",
+              "Sicherheit anzeigen",
+              "Labelbasierte Sicherheitsansicht.",
+              true
+            )}
+            ${this._toggleHtml(
+              "maintenance_view",
+              "Wartung anzeigen",
+              "Batterie- und Wartungsansicht.",
+              true
+            )}
+            ${this._toggleHtml(
+              "single_room_navigation",
+              "Räume als Unterseiten",
+              "Raumansichten als Subviews öffnen.",
+              true
+            )}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="header">
+            <div class="title">
+              <ha-icon icon="mdi:tune-variant"></ha-icon>
+              <span>Darstellung</span>
+            </div>
+          </div>
+          <div class="rows">
+            ${this._toggleHtml(
+              "force_kiosk",
+              "Header ausblenden",
+              "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
+              false
+            )}
+            ${this._toggleHtml(
+              "hide_scrollbar",
+              "Scrollbalken ausblenden",
+              "Scrollen bleibt möglich.",
+              true
+            )}
+          </div>
+        </section>
+      </div>
+    `;
+
+    this.shadowRoot
+      .querySelector("#select-all")
+      ?.addEventListener("click", () =>
+        this._selectAllAreas()
+      );
+
+    this.shadowRoot
+      .querySelector("#select-none")
+      ?.addEventListener("click", () =>
+        this._selectNoAreas()
+      );
+
+    for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
+      input.addEventListener("change", (event) => {
+        const target = event.currentTarget;
+        this._setArea(
+          target.dataset.areaId,
+          target.checked
+        );
+      });
+    }
+
+    for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
+      input.addEventListener("change", (event) => {
+        const target = event.currentTarget;
+        this._setBoolean(
+          target.dataset.key,
+          target.checked,
+          target.dataset.default === "true"
+        );
+      });
+    }
+  }
+}
+
+if (!customElements.get("atze-dashboard-strategy-editor")) {
+  customElements.define(
+    "atze-dashboard-strategy-editor",
+    AtzeDashboardStrategyEditor
+  );
+}
+
 
 const strategyElement = `ll-strategy-dashboard-${STRATEGY_TYPE}`;
 
