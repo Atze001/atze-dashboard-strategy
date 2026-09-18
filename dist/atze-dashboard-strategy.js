@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.82.0
+ * Version: 0.83.0
  *
- * v0.82 focus:
- * - Use kiosk-mode's official URL switches for Strategy dashboard kiosk settings
- * - Add automatic GitHub releases so HACS shows semantic versions
- * - Preserve all HACS, Wartung, Sicherheit, room and popup features
+ * v0.83 focus:
+ * - Fix the automatic kiosk query handling
+ * - Map kiosk_mode.hide_header: true to the proven ?kiosk switch
+ * - Preserve automatic HACS release/version support
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.82.0";
+const ATZE_VERSION = "0.83.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4666,11 +4666,13 @@ function applyAtzeKioskQueryFallback(config) {
 
   const rawQuery = String(
     window.location.search || ""
-  ).replace(/^\\?/, "");
+  );
 
-  let parts = rawQuery
-    ? rawQuery.split("&").filter(Boolean)
-    : [];
+  let parts = rawQuery.startsWith("?")
+    ? rawQuery.slice(1).split("&").filter(Boolean)
+    : rawQuery
+      ? rawQuery.split("&").filter(Boolean)
+      : [];
 
   const keyOf = (part) =>
     decodeURIComponent(
@@ -4694,16 +4696,16 @@ function applyAtzeKioskQueryFallback(config) {
 
   const desired = [];
 
-  if (kioskConfig.kiosk === true) {
+  // On this dashboard installation the full ?kiosk switch is the
+  // confirmed working kiosk-mode entry point. Use that same switch
+  // whenever the strategy requests the header to be hidden.
+  if (
+    kioskConfig.kiosk === true ||
+    kioskConfig.hide_header === true
+  ) {
     desired.push("kiosk");
-  } else {
-    if (kioskConfig.hide_header === true) {
-      desired.push("hide_header");
-    }
-
-    if (kioskConfig.hide_sidebar === true) {
-      desired.push("hide_sidebar");
-    }
+  } else if (kioskConfig.hide_sidebar === true) {
+    desired.push("hide_sidebar");
   }
 
   const markerKey = "atze_km_auto";
