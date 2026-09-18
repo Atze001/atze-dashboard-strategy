@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.108.0
+ * Version: 0.109.0
  *
- * v0.108 focus:
- * - Move overview status icons 2 pixels down for optical centering
- * - Reduce the spacing between primary and secondary status text
- * - Tighten line heights while preserving font sizes
+ * v0.109 focus:
+ * - Move overview status icons farther down for optical centering
+ * - Increase the icon offset from 2 pixels to 6 pixels
+ * - Preserve the compact text layout unchanged
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.108.0";
+const ATZE_VERSION = "0.109.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6799,7 +6799,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           width: 38px;
           height: 38px;
           flex: 0 0 34px;
-          transform: translateY(2px);
+          transform: translateY(6px);
         }
 
         .status.weather ha-icon {
