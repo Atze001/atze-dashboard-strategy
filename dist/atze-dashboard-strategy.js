@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.92.0
+ * Version: 0.93.0
  *
- * v0.92 focus:
- * - Toggle kiosk mode by tapping the clock on the home overview
- * - Add an editor switch for the clock kiosk toggle
- * - Hide the fallback sidebar button when clock access is available
+ * v0.93 focus:
+ * - Restore robust thermostat child grouping after the HACS migration
+ * - Include sensor and binary_sensor entities in climate device popups by default
+ * - Add a climate entity-id prefix fallback when HA device links are incomplete
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.92.0";
+const ATZE_VERSION = "0.93.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -35,7 +35,14 @@ const SPECIAL_GROUP_META = {
 };
 
 const DEFAULT_DOMAINS = Object.keys(DOMAIN_META);
-const DEFAULT_POPUP_CHILD_DOMAINS = ["switch", "button", "select", "number"];
+const DEFAULT_POPUP_CHILD_DOMAINS = [
+  "switch",
+  "button",
+  "select",
+  "number",
+  "sensor",
+  "binary_sensor",
+];
 
 const DEFAULT_GENERIC_POPUP_PARENT_DOMAINS = ["switch", "light"];
 const DEFAULT_GENERIC_POPUP_CHILD_DOMAINS = [
@@ -2625,6 +2632,86 @@ function buildDevicePopupMap(hass, entities, config, deviceById, areaById) {
         child
       );
     }
+  }
+
+  // ---------------------------------------------------------------
+  // 1b) Climate prefix fallback
+  // ---------------------------------------------------------------
+  // Some integrations expose climate telemetry/status entities without
+  // linking them to exactly the same HA device. If their object id clearly
+  // belongs to a climate parent, keep them behind that thermostat popup.
+  const climateParents = entities.filter(
+    (entity) => domainOf(entity.entity_id) === "climate"
+  );
+
+  for (const child of entities) {
+    if (childToParent.has(child.entity_id)) continue;
+    if (!childDomains.has(domainOf(child.entity_id))) continue;
+    if (domainOf(child.entity_id) === "climate") continue;
+
+    const childOverride = getOverride(
+      config.entity_overrides,
+      child.entity_id
+    );
+
+    if (childOverride.popup === false) continue;
+
+    const childAreaId =
+      effectiveAreaId(child, deviceById);
+
+    const childObjectId =
+      child.entity_id.split(".").slice(1).join(".");
+
+    if (!childObjectId) continue;
+
+    const matches = climateParents
+      .filter((parent) => {
+        const parentAreaId =
+          effectiveAreaId(parent, deviceById);
+
+        if (
+          childAreaId &&
+          parentAreaId &&
+          childAreaId !== parentAreaId
+        ) {
+          return false;
+        }
+
+        const parentObjectId =
+          parent.entity_id
+            .split(".")
+            .slice(1)
+            .join(".");
+
+        if (!parentObjectId) return false;
+
+        return (
+          childObjectId === parentObjectId ||
+          childObjectId.startsWith(
+            `${parentObjectId}_`
+          ) ||
+          childObjectId.endsWith(
+            `_${parentObjectId}`
+          )
+        );
+      })
+      .sort((a, b) => {
+        const aId =
+          a.entity_id.split(".").slice(1).join(".");
+        const bId =
+          b.entity_id.split(".").slice(1).join(".");
+
+        return bId.length - aId.length;
+      });
+
+    if (!matches.length) continue;
+
+    addPopupChild(
+      parentToChildren,
+      childToParent,
+      matches[0].entity_id,
+      child
+    );
   }
 
   // ---------------------------------------------------------------
