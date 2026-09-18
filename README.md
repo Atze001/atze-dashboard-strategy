@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.103.0**
+Version **0.104.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,16 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.104 Lichtschalter auf den Raumkarten
+
+Raumkarten mit zugeordneten Licht-Entities zeigen oben mittig einen runden
+Lampen-Schalter. Ein Tipp schaltet alle Lichter des jeweiligen Raums gemeinsam
+ein oder aus, ohne die Raumansicht zu öffnen.
+
+Leuchtet mindestens eine Lampe im Raum, wird das Symbol gelb hervorgehoben.
+Ausgeschaltete Räume zeigen eine dezente graue Lampenkontur. Raumkarten ohne
+zugeordnetes Licht bleiben unverändert.
 
 ## v0.103 Statusanzeige ohne Symbole
 
