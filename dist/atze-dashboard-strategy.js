@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.83.0
+ * Version: 0.84.0
  *
- * v0.83 focus:
- * - Fix the automatic kiosk query handling
- * - Map kiosk_mode.hide_header: true to the proven ?kiosk switch
- * - Preserve automatic HACS release/version support
+ * v0.84 focus:
+ * - Add strategy-owned force_kiosk: true for reliable kiosk startup
+ * - Keep kiosk_mode compatibility when Home Assistant forwards it
+ * - Create semantic HACS versions through the validated release workflow
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.83.0";
+const ATZE_VERSION = "0.84.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4700,6 +4700,7 @@ function applyAtzeKioskQueryFallback(config) {
   // confirmed working kiosk-mode entry point. Use that same switch
   // whenever the strategy requests the header to be hidden.
   if (
+    config.force_kiosk === true ||
     kioskConfig.kiosk === true ||
     kioskConfig.hide_header === true
   ) {
