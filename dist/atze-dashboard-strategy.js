@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.111.0
+ * Version: 0.112.0
  *
- * v0.111 focus:
- * - Stop automatic kiosk URL redirects when opening the dashboard
- * - Prevent the Home Assistant boot screen during normal dashboard navigation
- * - Keep the clock button as the intentional kiosk-mode toggle
+ * v0.112 focus:
+ * - Add global Lichter an and Rollläden auf quick actions
+ * - Keep the existing Lichter aus and Rollläden zu actions
+ * - Arrange the four base actions as a compact 2 x 2 mobile grid
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.111.0";
+const ATZE_VERSION = "0.112.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6110,6 +6110,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
+  async _allLightsOn() {
+    const entities = this._config.light_entities || [];
+    if (!entities.length) return;
+
+    await this._hass.callService(
+      "light",
+      "turn_on",
+      {},
+      { entity_id: entities }
+    );
+  }
+
   async _toggleRoomLights(areaId) {
     const room = (this._config.room_tiles || []).find(
       (entry) => entry.area_id === areaId
@@ -6141,6 +6153,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
     await this._hass.callService(
       "cover",
       "close_cover",
+      {},
+      { entity_id: entities }
+    );
+  }
+
+  async _allCoversOpen() {
+    const entities = this._config.cover_entities || [];
+    if (!entities.length) return;
+
+    await this._hass.callService(
+      "cover",
+      "open_cover",
       {},
       { entity_id: entities }
     );
@@ -7518,6 +7542,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
               <span>Rollläden zu</span>
             </button>
 
+            <button class="lights" id="all-lights-on">
+              <ha-icon icon="mdi:lightbulb-on-outline"></ha-icon>
+              <span>Lichter an</span>
+            </button>
+
+            <button class="covers" id="all-covers-open">
+              <ha-icon icon="mdi:window-shutter-open"></ha-icon>
+              <span>Rollläden auf</span>
+            </button>
+
             ${
               this._config.lock_entity
                 ? `
@@ -7650,6 +7684,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelector("#all-covers")
       ?.addEventListener("click", () => this._allCoversClose());
+
+    this.shadowRoot
+      .querySelector("#all-lights-on")
+      ?.addEventListener("click", () => this._allLightsOn());
+
+    this.shadowRoot
+      .querySelector("#all-covers-open")
+      ?.addEventListener("click", () => this._allCoversOpen());
 
     this.shadowRoot
       .querySelector("#lock-info")
