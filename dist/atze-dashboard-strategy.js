@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.91.0
+ * Version: 0.92.0
  *
- * v0.91 focus:
- * - Add drag-and-drop room ordering to the graphical strategy editor
- * - Persist room order through existing area_overrides.<area>.order
- * - Add a reset-order action while preserving all other area overrides
+ * v0.92 focus:
+ * - Toggle kiosk mode by tapping the clock on the home overview
+ * - Add an editor switch for the clock kiosk toggle
+ * - Hide the fallback sidebar button when clock access is available
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.91.0";
+const ATZE_VERSION = "0.92.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4297,6 +4297,9 @@ function buildHomeOverviewView(
     cover_entities: uniqueEntityIds(coverEntities),
     lock_entity: lockEntity,
     night_entity: config.home_night_entity || null,
+    force_kiosk: config.force_kiosk === true,
+    clock_kiosk_toggle:
+      config.clock_kiosk_toggle !== false,
   };
 
   return {
@@ -4922,8 +4925,13 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
+  const clockKioskAccess =
+    config.home_view !== false &&
+    config.clock_kiosk_toggle !== false;
+
   const enabled =
     config.force_kiosk === true &&
+    !clockKioskAccess &&
     !params.has("disable_km");
 
   const apply = () => {
@@ -5313,6 +5321,72 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._clockTimer = setInterval(
       () => this._render(),
       30000
+    );
+  }
+
+  _toggleKioskMode() {
+    if (this._config?.clock_kiosk_toggle === false) {
+      return;
+    }
+
+    const rawQuery = String(
+      window.location.search || ""
+    );
+
+    let parts = rawQuery.startsWith("?")
+      ? rawQuery.slice(1).split("&").filter(Boolean)
+      : rawQuery
+        ? rawQuery.split("&").filter(Boolean)
+        : [];
+
+    const keyOf = (part) =>
+      decodeURIComponent(
+        String(part).split("=")[0] || ""
+      );
+
+    const hasKey = (key) =>
+      parts.some((part) => keyOf(part) === key);
+
+    const removeKey = (key) => {
+      parts = parts.filter(
+        (part) => keyOf(part) !== key
+      );
+    };
+
+    const active =
+      !hasKey("disable_km") &&
+      (
+        hasKey("hide_header") ||
+        hasKey("kiosk") ||
+        this._config?.force_kiosk === true
+      );
+
+    for (const key of [
+      "kiosk",
+      "hide_header",
+      "hide_sidebar",
+      "disable_km",
+      "atze_km_auto",
+    ]) {
+      removeKey(key);
+    }
+
+    if (active) {
+      parts.push("disable_km");
+    } else {
+      parts.push("hide_header");
+
+      if (this._config?.force_kiosk === true) {
+        parts.push("atze_km_auto=1");
+      }
+    }
+
+    const query = parts.length
+      ? `?${parts.join("&")}`
+      : "";
+
+    window.location.replace(
+      `${window.location.pathname}${query}${window.location.hash || ""}`
     );
   }
 
@@ -6231,6 +6305,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--primary-text-color);
         }
 
+        .time.kiosk-toggle {
+          cursor: pointer;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+
         .date {
           margin-top: 10px;
           color: var(--home-muted);
@@ -6817,7 +6898,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
             }
 
             <div class="clock">
-              <div class="time">${time}</div>
+              <div
+                class="time ${
+                  this._config.clock_kiosk_toggle !== false
+                    ? "kiosk-toggle"
+                    : ""
+                }"
+                ${
+                  this._config.clock_kiosk_toggle !== false
+                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Kiosk-Modus umschalten"'
+                    : ""
+                }
+              >${time}</div>
               <div class="date">${date}</div>
             </div>
           </div>
@@ -6965,6 +7057,27 @@ class AtzeHomeOverviewCard extends HTMLElement {
           this._moreInfo(this._config.person_entity);
         }
       });
+
+    const kioskClock =
+      this.shadowRoot.querySelector("#kiosk-clock");
+
+    kioskClock?.addEventListener(
+      "click",
+      () => this._toggleKioskMode()
+    );
+
+    kioskClock?.addEventListener(
+      "keydown",
+      (event) => {
+        if (
+          event.key === "Enter" ||
+          event.key === " "
+        ) {
+          event.preventDefault();
+          this._toggleKioskMode();
+        }
+      }
+    );
 
     this.shadowRoot
       .querySelector("#security-status")
@@ -9456,6 +9569,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               "Header ausblenden",
               "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
               false
+            )}
+            ${this._toggleHtml(
+              "clock_kiosk_toggle",
+              "Kiosk über Uhrzeit umschalten",
+              "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
+              true
             )}
             ${this._toggleHtml(
               "hide_scrollbar",
