@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.99.0
+ * Version: 0.100.0
  *
- * v0.99 focus:
- * - Bundle new tile images for 3D-Drucker and Zentrale
- * - Auto-assign bundled images by area id or normalized area name
- * - Keep all v0.98 strict entity-selection behavior unchanged
+ * v0.100 focus:
+ * - Make AtzeHomeBase status resilient to late/unavailable entity states
+ * - Use live HomeBase fallback candidates without requiring a page refresh
+ * - Turn per-room setup sections into clear collapsible accordions
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.99.0";
+const ATZE_VERSION = "0.100.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3767,20 +3767,30 @@ function selectHomeAlarmEntity(hass, usableEntities, config) {
   return alarms[0]?.entity.entity_id || null;
 }
 
-function selectHomeBaseStatusEntity(
+function selectHomeBaseStatusEntities(
   hass,
   usableEntities,
   config
 ) {
-  if (
-    config.home_homebase_entity &&
-    hass.states[config.home_homebase_entity]
-  ) {
-    return config.home_homebase_entity;
-  }
+  const ordered = [];
+
+  const add = (entityId) => {
+    if (
+      entityId &&
+      !ordered.includes(entityId)
+    ) {
+      ordered.push(entityId);
+    }
+  };
+
+  // Keep an explicitly configured HomeBase entity even when its state
+  // has not arrived yet. The custom card can then pick it up live later.
+  add(config.home_homebase_entity);
+
+  // Known legacy/default entity from this dashboard setup.
+  add("select.atzehomebase_guard_mode");
 
   const candidates = usableEntities
-    .filter((entity) => hass.states[entity.entity_id])
     .map((entity) => {
       const name = normalizedFriendlyName(hass, entity);
       const entityId = normalizedText(entity.entity_id);
@@ -3801,7 +3811,6 @@ function selectHomeBaseStatusEntity(
       if (deviceText.includes("atzehomebase")) score += 260;
       if (deviceText.includes("homebase")) score += 180;
 
-      // Prefer a sensor carrying the actual current mode over a selector.
       if (domain === "sensor") score += 100;
       if (domain === "select") score += 40;
 
@@ -3810,7 +3819,41 @@ function selectHomeBaseStatusEntity(
     .filter((entry) => entry.score >= 180)
     .sort((a, b) => b.score - a.score);
 
-  return candidates[0]?.entity.entity_id || null;
+  for (const entry of candidates) {
+    add(entry.entity.entity_id);
+  }
+
+  // Last-resort live-state discovery. This catches matching entities that
+  // were not part of usableEntities while the strategy was generated.
+  for (const entityId of Object.keys(hass.states || {})) {
+    const stateObj = hass.states[entityId];
+    const text = normalizedText(
+      `${entityId} ${stateObj?.attributes?.friendly_name || ""}`
+    );
+
+    if (
+      text.includes("atzehomebase") ||
+      text.includes("homebase")
+    ) {
+      add(entityId);
+    }
+  }
+
+  return ordered;
+}
+
+function selectHomeBaseStatusEntity(
+  hass,
+  usableEntities,
+  config
+) {
+  return (
+    selectHomeBaseStatusEntities(
+      hass,
+      usableEntities,
+      config
+    )[0] || null
+  );
 }
 
 
@@ -4526,6 +4569,11 @@ function buildHomeOverviewView(
       config
     ),
     homebase_entity: selectHomeBaseStatusEntity(
+      hass,
+      usableEntities,
+      config
+    ),
+    homebase_entities: selectHomeBaseStatusEntities(
       hass,
       usableEntities,
       config
@@ -5693,6 +5741,49 @@ class AtzeHomeOverviewCard extends HTMLElement {
       : null;
   }
 
+  _homeBaseStatus() {
+    const candidates = [
+      this._config?.homebase_entity,
+      ...asArray(
+        this._config?.homebase_entities
+      ),
+      "select.atzehomebase_guard_mode",
+    ].filter(Boolean);
+
+    let fallback = null;
+
+    for (const entityId of [...new Set(candidates)]) {
+      const stateObj = this._state(entityId);
+
+      if (!stateObj) continue;
+
+      const result = {
+        entityId,
+        stateObj,
+      };
+
+      if (!fallback) {
+        fallback = result;
+      }
+
+      const state = String(
+        stateObj.state || ""
+      ).toLowerCase();
+
+      if (
+        ![
+          "unknown",
+          "unavailable",
+          "",
+        ].includes(state)
+      ) {
+        return result;
+      }
+    }
+
+    return fallback;
+  }
+
   _isActive(stateObj) {
     const state = String(stateObj?.state || "").toLowerCase();
 
@@ -6239,11 +6330,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const alarmText = this._alarmText(alarmState);
     const alarmActive = this._alarmActive(alarmState);
 
+    const homeBaseStatus =
+      this._homeBaseStatus();
+
     const homeBaseState =
-      this._state(this._config.homebase_entity);
+      homeBaseStatus?.stateObj || null;
+
+    const homeBaseEntityId =
+      homeBaseStatus?.entityId || null;
 
     const homeBaseText = homeBaseState
-      ? this._formatted(this._config.homebase_entity)
+      ? this._formatted(homeBaseEntityId)
       : "Nicht verfügbar";
 
     const homeBaseIcon =
@@ -9308,6 +9405,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._entities = [];
     this._loading = false;
     this._draggedAreaId = null;
+    this._openEntityAreaIds = new Set();
   }
 
   set hass(value) {
@@ -9775,20 +9873,33 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           selected.has(area.area_id)
         )
         .map((area) => `
-          <details class="entity-area">
+          <details
+            class="entity-area"
+            data-entity-area="${this._escape(area.area_id)}"
+            ${this._openEntityAreaIds.has(area.area_id) ? "open" : ""}
+          >
             <summary>
-              <span>
+              <span class="entity-summary-main">
                 <ha-icon
                   icon="${this._escape(
                     area.icon || "mdi:home-outline"
                   )}"
                 ></ha-icon>
-                ${this._escape(
-                  area.name || area.area_id
-                )}
+                <span>
+                  ${this._escape(
+                    area.name || area.area_id
+                  )}
+                </span>
               </span>
-              <span class="entity-count">
-                ${this._entitiesForArea(area.area_id).length}
+
+              <span class="entity-summary-end">
+                <span class="entity-count">
+                  ${this._entitiesForArea(area.area_id).length}
+                </span>
+                <ha-icon
+                  class="entity-chevron"
+                  icon="mdi:chevron-right"
+                ></ha-icon>
               </span>
             </summary>
 
@@ -10016,19 +10127,47 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           gap: 12px;
           cursor: pointer;
           user-select: none;
+          list-style: none;
         }
 
-        .entity-area summary > span:first-child {
+        .entity-area summary::-webkit-details-marker {
+          display: none;
+        }
+
+        .entity-area summary::marker {
+          content: "";
+        }
+
+        .entity-summary-main,
+        .entity-summary-end {
           display: flex;
           align-items: center;
+        }
+
+        .entity-summary-main {
+          min-width: 0;
           gap: 10px;
           font-weight: 600;
+        }
+
+        .entity-summary-end {
+          gap: 8px;
+          flex: 0 0 auto;
         }
 
         .entity-area summary ha-icon {
           width: 20px;
           height: 20px;
           color: var(--primary-color);
+        }
+
+        .entity-chevron {
+          color: var(--secondary-text-color) !important;
+          transition: transform 160ms ease;
+        }
+
+        .entity-area[open] .entity-chevron {
+          transform: rotate(90deg);
         }
 
         .entity-count {
@@ -10344,6 +10483,29 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           target.checked
         );
       });
+    }
+
+    for (
+      const details of
+        this.shadowRoot.querySelectorAll(
+          ".entity-area[data-entity-area]"
+        )
+    ) {
+      details.addEventListener(
+        "toggle",
+        () => {
+          const areaId =
+            details.dataset.entityArea;
+
+          if (!areaId) return;
+
+          if (details.open) {
+            this._openEntityAreaIds.add(areaId);
+          } else {
+            this._openEntityAreaIds.delete(areaId);
+          }
+        }
+      );
     }
 
     for (
