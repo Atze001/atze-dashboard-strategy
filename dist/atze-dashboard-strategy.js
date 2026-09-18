@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.103.0
+ * Version: 0.104.0
  *
- * v0.103 focus:
- * - Keep the effective Sichtbar / Unsichtbar status in the setup editor
- * - Remove the eye icons from the visibility status line
- * - Keep Auto / Anzeigen / Ausblenden as the editable visibility control
+ * v0.104 focus:
+ * - Add a centered light toggle to every room card with assigned lights
+ * - Toggle all lights of the selected room without opening the room
+ * - Show the current room lighting state directly on the card
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.103.0";
+const ATZE_VERSION = "0.104.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4485,6 +4485,18 @@ function buildHomeOverviewView(
         .sort((a, b) => b.score - a.score)[0]?.entity.entity_id ||
       null;
 
+    const roomLightEntities = areaEntities
+      .filter(
+        (entity) =>
+          domainOf(entity.entity_id) === "light" &&
+          hass.states[entity.entity_id] &&
+          !popupMap.childToParent.has(entity.entity_id) &&
+          !shouldHideExactEntity(config, entity.entity_id)
+      )
+      .map((entity) => entity.entity_id);
+
+    lightEntities.push(...roomLightEntities);
+
     if (power) roomPowerEntities.push(power);
     if (occupancy) occupancyEntities.push(occupancy);
     if (windowEntity) warningEntities.push(windowEntity);
@@ -4516,6 +4528,7 @@ function buildHomeOverviewView(
       roller_sensor_entity: rollerEntity,
       cover_entity: coverEntity,
       lock_entity: lockEntity,
+      light_entities: roomLightEntities,
     });
 
     for (const entity of areaEntities) {
@@ -4523,10 +4536,6 @@ function buildHomeOverviewView(
       if (shouldHideExactEntity(config, entity.entity_id)) continue;
 
       const domain = domainOf(entity.entity_id);
-
-      if (domain === "light") {
-        lightEntities.push(entity.entity_id);
-      }
 
       if (domain === "cover") {
         coverEntities.push(entity.entity_id);
@@ -6102,6 +6111,30 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
+  async _toggleRoomLights(areaId) {
+    const room = (this._config.room_tiles || []).find(
+      (entry) => entry.area_id === areaId
+    );
+
+    const entities = (room?.light_entities || []).filter(
+      (entityId) => this._state(entityId)
+    );
+
+    if (!entities.length) return;
+
+    const anyLightOn = entities.some(
+      (entityId) =>
+        String(this._state(entityId)?.state || "").toLowerCase() === "on"
+    );
+
+    await this._hass.callService(
+      "light",
+      anyLightOn ? "turn_off" : "turn_on",
+      {},
+      { entity_id: entities }
+    );
+  }
+
   async _allCoversClose() {
     const entities = this._config.cover_entities || [];
     if (!entities.length) return;
@@ -6410,6 +6443,31 @@ class AtzeHomeOverviewCard extends HTMLElement {
               ? "Erkannt"
               : "Frei";
 
+        const roomLightEntities = (room.light_entities || []).filter(
+          (entityId) => this._state(entityId)
+        );
+
+        const roomLightsOn = roomLightEntities.some(
+          (entityId) =>
+            String(this._state(entityId)?.state || "").toLowerCase() === "on"
+        );
+
+        const roomLightHtml = roomLightEntities.length
+          ? `
+              <button
+                type="button"
+                class="room-light-toggle ${roomLightsOn ? "on" : "off"}"
+                data-area-id="${room.area_id}"
+                title="${roomLightsOn ? "Licht ausschalten" : "Licht einschalten"}"
+                aria-label="${roomLightsOn ? "Licht ausschalten" : "Licht einschalten"}"
+              >
+                <ha-icon
+                  icon="${roomLightsOn ? "mdi:lightbulb" : "mdi:lightbulb-outline"}"
+                ></ha-icon>
+              </button>
+            `
+          : "";
+
         const roomStatusBadges = this._roomStatusBadges(room);
 
         const roomStatusHtml = roomStatusBadges.length
@@ -6435,10 +6493,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
           : "";
 
         return `
-          <button
+          <div
             class="room ${power ? "has-power" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
+            role="button"
+            tabindex="0"
           >
             ${
               room.image
@@ -6453,6 +6513,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
             }
 
             <div class="room-shade"></div>
+
+            ${roomLightHtml}
 
             ${
               power
@@ -6516,7 +6578,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-          </button>
+          </div>
         `;
       })
       .join("");
@@ -6812,6 +6874,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           filter: brightness(0.92);
         }
 
+        .room:has(.room-light-toggle:active) {
+          transform: none;
+          filter: none;
+        }
+
         .room-chevron {
           display: none !important;
         }
@@ -6845,7 +6912,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room-top,
         .room-bottom,
         .room-status-badges,
-        .room-power {
+        .room-power,
+        .room-light-toggle {
           z-index: 2;
         }
 
@@ -6885,6 +6953,52 @@ class AtzeHomeOverviewCard extends HTMLElement {
           width: 15px;
           height: 15px;
           color: var(--home-yellow);
+        }
+
+        .room-light-toggle {
+          position: absolute;
+          top: 8px;
+          left: 50%;
+          width: 34px;
+          height: 34px;
+          padding: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.13);
+          background: rgba(32, 32, 35, 0.78);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          color: rgba(255,255,255,0.78);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+          cursor: pointer;
+          transform: translateX(-50%);
+          transition:
+            transform 120ms ease,
+            background 120ms ease,
+            border-color 120ms ease,
+            color 120ms ease;
+        }
+
+        .room-light-toggle:active {
+          transform: translateX(-50%) scale(0.92);
+        }
+
+        .room-light-toggle ha-icon {
+          --mdc-icon-size: 17px;
+          width: 17px;
+          height: 17px;
+        }
+
+        .room-light-toggle.on {
+          border-color: rgba(255,214,10,0.48);
+          background: rgba(116, 91, 7, 0.84);
+          color: var(--home-yellow);
+        }
+
+        .room-light-toggle.off {
+          color: rgba(255,255,255,0.76);
         }
 
 
@@ -7198,6 +7312,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
             height: 14px;
           }
 
+          .room-light-toggle {
+            top: 7px;
+            width: 30px;
+            height: 30px;
+          }
+
+          .room-light-toggle ha-icon {
+            --mdc-icon-size: 15px;
+            width: 15px;
+            height: 15px;
+          }
+
           .room-status-badges {
             top: 8px !important;
             right: 10px !important;
@@ -7434,6 +7560,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
           "click",
           () => this._navigate(element.dataset.path)
         );
+
+        element.addEventListener("keydown", (event) => {
+          if (event.target !== element) return;
+
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            this._navigate(element.dataset.path);
+          }
+        });
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".room-light-toggle")
+      .forEach((element) => {
+        element.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          this._toggleRoomLights(element.dataset.areaId);
+        });
       });
 
     this.shadowRoot
