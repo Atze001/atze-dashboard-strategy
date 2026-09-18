@@ -1,0 +1,145 @@
+type: custom:atze-dashboard
+
+kiosk_mode:
+  hide_header: true
+
+home_view: true
+single_room_navigation: true
+home_title: Zuhause
+home_subtitle: Schön, dass du da bist!
+home_icon: mdi:home
+home_path: home
+home_weather_entity: weather.berlin_tempelhof
+home_person_entity: person.alexander
+
+home_alarm_entity: alarm_control_panel.alarmo
+home_homebase_entity: select.atzehomebase_guard_mode
+
+default_card: bubble
+apple_home_style: true
+apple_card_layout: large
+apple_card_rows: 1
+apple_compact_rows: 1
+entity_id_prefix_popups: true
+
+include_areas:
+  - buro
+  - bad
+  - kuche
+  - schlafzimmer
+  - wohnzimmer
+  - balkon
+  - flur
+
+hide_unavailable: true
+hide_unknown: false
+hide_diagnostic_entities: true
+hide_unknown_config_entities: true
+
+hide_sensor_device_classes:
+  - atmospheric_pressure
+
+strip_area_name: true
+strip_generic_suffixes: true
+strip_template_suffix: true
+strip_channel_number: true
+
+auto_homepod_name: true
+smart_compact_names: true
+compact_scrolling: false
+header_layout: center
+
+environment_badges: true
+environment_badges_classes:
+  - temperature
+  - humidity
+  - power
+
+occupancy_badge: true
+smoke_badge: true
+window_badge: true
+roller_shutter_badge: true
+
+tech_popup_from_occupancy: true
+tech_popup_columns: 1
+badge_entities_hide_from_sections: true
+room_meter_group: true
+room_meter_hide_non_power: true
+
+device_popups: true
+popup_child_domains:
+  - switch
+  - button
+  - select
+  - number
+  - sensor
+  - binary_sensor
+
+climate_popup_columns: 2
+popup_hide_unknown: true
+popup_hide_unavailable: true
+popup_german_names: true
+popup_orphan_controls: true
+
+generic_device_popups: true
+generic_popup_parent_domains:
+  - switch
+  - light
+generic_popup_child_domains:
+  - sensor
+  - binary_sensor
+  - number
+  - select
+  - button
+
+device_popup_columns: 1
+generic_global_config_to_first: true
+auto_tech_group: true
+
+compact_domains:
+  - switch
+compact_groups:
+  - technik
+compact_columns: 2
+
+area_overrides:
+  buro:
+    name: Büro
+    icon: mdi:laptop
+    order: 1
+    max_columns: 3
+  bad:
+    name: Bad
+    icon: mdi:bathtub
+    order: 2
+    max_columns: 3
+  kuche:
+    name: Küche
+    icon: mdi:countertop
+    order: 3
+    max_columns: 3
+  schlafzimmer:
+    name: Schlafzimmer
+    icon: mdi:bed
+    order: 4
+    max_columns: 3
+  wohnzimmer:
+    name: Wohnzimmer
+    icon: mdi:sofa
+    order: 5
+    max_columns: 3
+  balkon:
+    name: Balkon
+    icon: mdi:balcony
+    order: 6
+    max_columns: 3
+  flur:
+    name: Flur
+    icon: mdi:door-open
+    order: 7
+    max_columns: 3
+
+entity_overrides:
+  select.kuche_decke_licht_power_on_behavior:
+    name: Startverhalten
+    popup_parent: light.kuche_decke_licht
