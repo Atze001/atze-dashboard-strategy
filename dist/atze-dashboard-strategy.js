@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.106.0
+ * Version: 0.107.0
  *
- * v0.106 focus:
- * - Reduce the vertical padding of the six overview status tiles
- * - Let the configured 82 px and 66 px tile heights take effect
- * - Preserve horizontal padding, typography, icons, and grid spacing
+ * v0.107 focus:
+ * - Reduce the six overview status tiles by another 10 pixels
+ * - Use fixed 72 px and 56 px heights for a clearly compact layout
+ * - Tighten vertical padding while preserving horizontal spacing
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.106.0";
+const ATZE_VERSION = "0.107.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6782,8 +6782,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .status {
-          min-height: 82px;
-          padding: 11px 18px;
+          height: 72px;
+          min-height: 72px;
+          padding: 6px 18px;
           display: flex;
           align-items: center;
           gap: 13px;
@@ -7266,9 +7267,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .status {
-            min-height: 66px;
-            border-radius: 23px;
-            padding: 8px 14px;
+            height: 56px;
+            min-height: 56px;
+            border-radius: 21px;
+            padding: 4px 14px;
           }
 
           .status-main {
