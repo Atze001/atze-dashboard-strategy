@@ -5,6 +5,7 @@
  * v0.113 focus:
  * - Add an editor toggle for hiding unavailable entities
  * - Keep disabled and missing entities out of room cards
+ * - Show room status badges only when attention is required
  *
  * License: MIT
  */
@@ -6320,7 +6321,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }
     }
 
-    return badges;
+    // A safe state needs no permanent indicator on the room image.
+    // Keep the top-right badges focused on conditions that require attention.
+    return badges.filter((badge) => badge.active);
   }
 
   _formatPower() {
