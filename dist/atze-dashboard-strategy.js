@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.109.0
+ * Version: 0.110.0
  *
- * v0.109 focus:
- * - Move overview status icons farther down for optical centering
- * - Increase the icon offset from 2 pixels to 6 pixels
- * - Preserve the compact text layout unchanged
+ * v0.110 focus:
+ * - Keep entity visibility selects open during Home Assistant updates
+ * - Preserve the expanded room panel while changing Auto / Anzeigen / Ausblenden
+ * - Apply queued editor refreshes after the select interaction ends
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.109.0";
+const ATZE_VERSION = "0.110.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -9555,6 +9555,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._entities = [];
     this._loading = false;
     this._draggedAreaId = null;
+    this._entityVisibilityActive = false;
+    this._pendingHassRender = false;
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set([
       "rooms",
@@ -9569,6 +9571,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._hass = value;
     if (first || this._areas.length === 0) {
       this._loadRegistries();
+    } else if (this._entityVisibilityActive) {
+      this._pendingHassRender = true;
     } else {
       this._render();
     }
@@ -9862,6 +9866,31 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           }
         );
       });
+  }
+
+  _beginEntityVisibilityInteraction() {
+    this._entityVisibilityActive = true;
+  }
+
+  _endEntityVisibilityInteraction() {
+    window.setTimeout(() => {
+      const activeElement = this.shadowRoot?.activeElement;
+
+      if (
+        activeElement?.classList?.contains(
+          "entity-visibility"
+        )
+      ) {
+        return;
+      }
+
+      this._entityVisibilityActive = false;
+
+      if (this._pendingHassRender) {
+        this._pendingHassRender = false;
+        this._render();
+      }
+    }, 150);
   }
 
   _setEntityVisibility(entityId, mode) {
@@ -10862,10 +10891,40 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           ".entity-visibility"
         )
     ) {
+      const beginInteraction = () =>
+        this._beginEntityVisibilityInteraction();
+
+      select.addEventListener(
+        "pointerdown",
+        beginInteraction
+      );
+
+      select.addEventListener(
+        "focus",
+        beginInteraction
+      );
+
+      select.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+
       select.addEventListener(
         "change",
         (event) => {
           const target = event.currentTarget;
+          const areaDetails = target.closest(
+            ".entity-area[data-entity-area]"
+          );
+          const areaId =
+            areaDetails?.dataset?.entityArea;
+
+          if (areaDetails?.open && areaId) {
+            this._openEntityAreaIds.add(areaId);
+          }
+
+          this._entityVisibilityActive = false;
+          this._pendingHassRender = false;
 
           this._setEntityVisibility(
             target.dataset.entityId,
