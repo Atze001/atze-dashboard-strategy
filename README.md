@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.108.0**
+Version **0.109.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,12 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.109 Symbole weiter nach unten versetzt
+
+Die Symbole der sechs Status-Kacheln wurden von 2 auf 6 Pixel vertikalen
+Versatz eingestellt. Schrift, Zeilenhöhe und Textabstand bleiben gegenüber
+Version 0.108 unverändert.
 
 ## v0.108 Ausrichtung der Status-Kacheln
 
