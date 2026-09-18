@@ -112,3 +112,28 @@ Optional kann der Strategy-Fallback abgeschaltet werden:
 ```yaml
 native_kiosk_fallback: false
 ```
+
+
+## Versionsanzeige in HACS
+
+Das Repository erzeugt bei jeder neuen Strategy-Version automatisch einen
+GitHub Release mit einem Tag wie `v0.82.0`.
+
+HACS verwendet diesen Release-Tag als sichtbare Versionsnummer. Ohne Releases
+würde HACS stattdessen nur die ersten sieben Zeichen des letzten Commit-SHA
+anzeigen.
+
+## Kiosk-Mode bei Strategy-Dashboards
+
+Die Strategy unterstützt weiterhin:
+
+```yaml
+kiosk_mode:
+  hide_header: true
+```
+
+Da `kiosk-mode` die erzeugte Root-Konfiguration eines Strategy-Dashboards
+nicht zuverlässig ausliest, setzt die Strategy für diese Einstellung
+automatisch den offiziellen URL-Schalter `?hide_header` und lädt die Seite
+einmal neu. Ein intern gesetzter Marker verhindert Endlosschleifen und erlaubt
+das automatische Entfernen wieder, wenn die Option später deaktiviert wird.
