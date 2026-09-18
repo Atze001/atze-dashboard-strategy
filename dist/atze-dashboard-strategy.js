@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.114.0
+ * Version: 0.115.0
  *
- * v0.114 focus:
- * - Show room status badges only when attention is required
+ * v0.115 focus:
+ * - Use white icons inside red room warning badges
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.114.0";
+const ATZE_VERSION = "0.115.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7083,7 +7083,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .room-status-badge.warning ha-icon {
-          color: var(--home-red);
+          color: #fff;
         }
 
         .room-icon {
