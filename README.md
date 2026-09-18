@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.101.0**
+Version **0.102.0**
 
 Enthalten sind unter anderem:
 
@@ -507,3 +507,16 @@ Jeder Abschnitt besitzt einen Pfeil rechts und kann durch Antippen der
 Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
+
+
+## v0.102 Effektiver Sichtbarkeitsstatus
+
+Im grafischen Strategy-Editor zeigt jede Entity jetzt direkt unter ihrem Namen
+den aktuell wirksamen Sichtbarkeitsstatus:
+
+- **Sichtbar**
+- **Unsichtbar**
+
+Zusätzlich wird klein angezeigt, ob dieser Zustand aus **Auto**, **Anzeigen**
+oder **Ausblenden** entsteht. Die Auswahl selbst bleibt weiterhin über das
+Dropdown steuerbar.
