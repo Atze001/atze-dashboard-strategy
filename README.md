@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.113.0**
+Version **0.114.0**
 
 Enthalten sind unter anderem:
 
