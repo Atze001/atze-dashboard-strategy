@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.102.0**
+Version **0.103.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,12 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.103 Statusanzeige ohne Symbole
+
+Im grafischen Strategy-Editor bleibt der farbige Text **Sichtbar** beziehungsweise
+**Unsichtbar** erhalten. Die Augen-Symbole wurden entfernt, damit die Statuszeile
+ruhiger und übersichtlicher wirkt.
 
 ## v0.102 Effektiver Sichtbarkeitsstatus
 
