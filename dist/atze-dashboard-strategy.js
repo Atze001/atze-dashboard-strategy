@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.120.0
+ * Version: 0.121.0
  *
- * v0.120 focus:
- * - Start dashboard settings with collapsed sections
+ * v0.121 focus:
+ * - Configurable custom dashboard pages
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.120.0";
+const ATZE_VERSION = "0.121.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4617,6 +4617,44 @@ function buildHomeOverviewView(
   };
 }
 
+function buildCustomPageViews(config) {
+  const usedPaths = new Set([
+    config.home_path || "home",
+    config.security_path || "sicherheit",
+    config.maintenance_path || "wartung",
+  ]);
+
+  return asArray(config.custom_pages)
+    .map((page, index) => {
+      if (!page || typeof page !== "object") return null;
+
+      const title = String(page.title || `Eigene Seite ${index + 1}`).trim();
+      const requestedPath = String(page.path || slugify(title)).trim();
+      const card = page.card;
+
+      if (!title || !requestedPath || !card || typeof card !== "object") {
+        return null;
+      }
+
+      let path = requestedPath;
+      let suffix = 2;
+      while (usedPaths.has(path)) {
+        path = `${requestedPath}-${suffix}`;
+        suffix += 1;
+      }
+      usedPaths.add(path);
+
+      return {
+        title,
+        path,
+        icon: page.icon || "mdi:view-dashboard-outline",
+        subview: page.subview === true,
+        cards: [{ ...card }],
+      };
+    })
+    .filter(Boolean);
+}
+
 function buildAreaView(
   hass,
   area,
@@ -5572,6 +5610,8 @@ class AtzeDashboardStrategy extends HTMLElement {
             config
           );
 
+    const customPageViews = buildCustomPageViews(config);
+
     const views =
       config.home_view === false
         ? [
@@ -5579,6 +5619,7 @@ class AtzeDashboardStrategy extends HTMLElement {
             ...(maintenanceView
               ? [maintenanceView]
               : []),
+            ...customPageViews,
             ...roomViews,
           ]
         : [
@@ -5596,6 +5637,7 @@ class AtzeDashboardStrategy extends HTMLElement {
             ...(maintenanceView
               ? [maintenanceView]
               : []),
+            ...customPageViews,
             ...roomViews,
           ];
 
@@ -10551,11 +10593,99 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     `;
   }
 
+  _customPages() {
+    return asArray(this._config.custom_pages).filter(
+      (page) => page && typeof page === "object"
+    );
+  }
+
+  _addCustomPage(template = "empty") {
+    const pages = [...this._customPages()];
+    const scheduler = template === "scheduler";
+
+    pages.push({
+      title: scheduler ? "Zeitpläne" : "Eigene Seite",
+      path: scheduler ? "zeitplaene" : `eigene-seite-${pages.length + 1}`,
+      icon: scheduler ? "mdi:calendar-clock" : "mdi:view-dashboard-outline",
+      card: {
+        type: scheduler ? "custom:scheduler-card" : "markdown",
+        ...(scheduler ? {} : { content: "# Eigene Seite" }),
+      },
+    });
+
+    this._fireConfigChanged({
+      ...this._config,
+      custom_pages: pages,
+    });
+  }
+
+  _updateCustomPage(index, key, value) {
+    const pages = this._customPages().map((page) => ({ ...page }));
+    if (!pages[index]) return;
+
+    pages[index][key] = value;
+    this._fireConfigChanged({
+      ...this._config,
+      custom_pages: pages,
+    });
+  }
+
+  _removeCustomPage(index) {
+    const pages = this._customPages().filter((_, itemIndex) => itemIndex !== index);
+    const next = { ...this._config };
+
+    if (pages.length > 0) next.custom_pages = pages;
+    else delete next.custom_pages;
+
+    this._fireConfigChanged(next);
+  }
+
+  _customPageHtml(page, index) {
+    const cardJson = JSON.stringify(
+      page.card || { type: "markdown", content: "# Eigene Seite" },
+      null,
+      2
+    );
+
+    return `
+      <div class="custom-page" data-custom-page="${index}">
+        <div class="custom-page-heading">
+          <strong>${this._escape(page.title || `Eigene Seite ${index + 1}`)}</strong>
+          <button class="custom-page-remove" type="button" data-index="${index}">
+            Entfernen
+          </button>
+        </div>
+        <label class="custom-page-field">
+          <span>Titel</span>
+          <input data-page-key="title" value="${this._escape(page.title || "")}" />
+        </label>
+        <label class="custom-page-field">
+          <span>Pfad</span>
+          <input data-page-key="path" value="${this._escape(page.path || "")}" />
+        </label>
+        <label class="custom-page-field">
+          <span>Icon</span>
+          <input data-page-key="icon" value="${this._escape(page.icon || "")}" placeholder="mdi:view-dashboard-outline" />
+        </label>
+        <label class="custom-page-field">
+          <span>Karten-Konfiguration (JSON)</span>
+          <textarea data-page-key="card" rows="6">${this._escape(cardJson)}</textarea>
+        </label>
+        <div class="custom-page-error" hidden>
+          Die Karten-Konfiguration ist kein gültiges JSON-Objekt.
+        </div>
+      </div>
+    `;
+  }
+
   _render() {
     if (!this.shadowRoot) return;
 
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
+    const customPagesHtml = this._customPages()
+      .map((page, index) => this._customPageHtml(page, index))
+      .join("");
 
     const entityAreaPanels =
       this._eligibleAreas()
@@ -10919,6 +11049,62 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           color: var(--primary-text-color);
           font: inherit;
         }
+        .custom-pages-list {
+          display: grid;
+          gap: 12px;
+          padding: 0 16px 16px;
+        }
+        .custom-page {
+          display: grid;
+          gap: 12px;
+          padding: 14px;
+          border: 1px solid var(--divider-color, rgba(127,127,127,.18));
+          border-radius: 13px;
+          background: var(--secondary-background-color, rgba(127,127,127,.08));
+        }
+        .custom-page-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .custom-page-remove {
+          border: 0;
+          background: transparent;
+          color: var(--error-color, #db4437);
+          cursor: pointer;
+          font: inherit;
+        }
+        .custom-page-field {
+          display: grid;
+          gap: 5px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+        }
+        .custom-page-field input,
+        .custom-page-field textarea {
+          box-sizing: border-box;
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid var(--divider-color, rgba(127,127,127,.22));
+          border-radius: 10px;
+          outline: 0;
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font: inherit;
+        }
+        .custom-page-field textarea {
+          resize: vertical;
+          font-family: var(--code-font-family, monospace);
+        }
+        .custom-page-field input:focus,
+        .custom-page-field textarea:focus {
+          border-color: var(--primary-color, #03a9f4);
+        }
+        .custom-page-error {
+          color: var(--error-color, #db4437);
+          font-size: 12px;
+        }
         .rows {
           border-top: 1px solid var(
             --divider-color,
@@ -11233,6 +11419,35 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         <details
           class="panel editor-section"
+          data-editor-section="custom-pages"
+          ${this._openEditorSections.has("custom-pages") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:card-multiple-outline"></ha-icon>
+              <span class="editor-section-summary-title">Eigene Seiten</span>
+            </span>
+            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Lege zusätzliche Dashboard-Seiten an. Die Karten-Konfiguration
+              entspricht der Lovelace-Kartenkonfiguration im JSON-Format.
+              Eigene Seiten erscheinen als normale Ansichten in der Navigation.
+            </div>
+            <div class="toolbar">
+              <button id="add-scheduler-page" type="button">Zeitpläne hinzufügen</button>
+              <button id="add-custom-page" type="button">Leere Seite</button>
+            </div>
+            <div class="custom-pages-list">
+              ${customPagesHtml || '<div class="loading">Noch keine eigene Seite angelegt.</div>'}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
           data-editor-section="entities"
           ${this._openEditorSections.has("entities") ? "open" : ""}
         >
@@ -11466,6 +11681,47 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       ?.addEventListener("click", () =>
         this._resetAreaOrder()
       );
+
+    this.shadowRoot
+      .querySelector("#add-scheduler-page")
+      ?.addEventListener("click", () =>
+        this._addCustomPage("scheduler")
+      );
+
+    this.shadowRoot
+      .querySelector("#add-custom-page")
+      ?.addEventListener("click", () =>
+        this._addCustomPage("empty")
+      );
+
+    for (const button of this.shadowRoot.querySelectorAll(".custom-page-remove")) {
+      button.addEventListener("click", () => {
+        this._removeCustomPage(Number(button.dataset.index));
+      });
+    }
+
+    for (const field of this.shadowRoot.querySelectorAll("[data-page-key]")) {
+      field.addEventListener("change", () => {
+        const container = field.closest("[data-custom-page]");
+        const index = Number(container?.dataset.customPage);
+        const key = field.dataset.pageKey;
+        let value = field.value;
+
+        if (key === "card") {
+          try {
+            value = JSON.parse(value);
+            if (!value || typeof value !== "object" || Array.isArray(value)) {
+              throw new Error("Card config must be an object");
+            }
+          } catch (_error) {
+            container?.querySelector(".custom-page-error")?.removeAttribute("hidden");
+            return;
+          }
+        }
+
+        this._updateCustomPage(index, key, value);
+      });
+    }
 
     for (
       const row of
