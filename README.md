@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.85.0**
+Version **0.86.0**
 
 Enthalten sind unter anderem:
 
@@ -198,3 +198,20 @@ Die Strategy verwendet dafür den offiziellen Kiosk-Mode-Parameter
 Falls eine ältere Strategy-Version bereits automatisch `?kiosk` zusammen mit
 `atze_km_auto=1` gesetzt hat, migriert v0.85 die URL automatisch auf
 `?hide_header`.
+
+
+## v0.86 Sidebar-Zugriff bei ausgeblendetem Header
+
+Home Assistant hat seit 2023.4 keine native Swipe-Geste mehr, um die Sidebar
+zu öffnen, wenn der Header beziehungsweise der Menüknopf ausgeblendet ist.
+
+Bei `force_kiosk: true` blendet die Strategy daher weiterhin nur den Header
+aus und zeigt zusätzlich einen kleinen Menüknopf oben links. Dieser öffnet die
+native Home-Assistant-Sidebar über `hass-toggle-menu`.
+
+Die Dashboard-Konfiguration bleibt unverändert:
+
+```yaml
+type: custom:atze-dashboard
+force_kiosk: true
+```
