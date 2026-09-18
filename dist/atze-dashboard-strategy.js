@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.104.0
+ * Version: 0.105.0
  *
- * v0.104 focus:
- * - Add a centered light toggle to every room card with assigned lights
- * - Toggle all lights of the selected room without opening the room
- * - Show the current room lighting state directly on the card
+ * v0.105 focus:
+ * - Reduce the height of the six overview status tiles by 10 pixels
+ * - Preserve their spacing, typography, icons, and responsive layout
+ * - Keep the compact two-column mobile arrangement
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.104.0";
+const ATZE_VERSION = "0.105.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6782,7 +6782,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .status {
-          min-height: 92px;
+          min-height: 82px;
           padding: 16px 18px;
           display: flex;
           align-items: center;
@@ -7266,7 +7266,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .status {
-            min-height: 76px;
+            min-height: 66px;
             border-radius: 23px;
             padding: 13px 14px;
           }
