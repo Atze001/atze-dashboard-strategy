@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.118.0**
+Version **0.119.0**
 
 Enthalten sind unter anderem:
 
@@ -71,6 +71,12 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.119.0
+
+- Der Favoriten-Suchfilter blendet nicht passende Zeilen jetzt zuverlässig aus.
+- Die Korrektur verhindert, dass das Flex-Layout versteckte Treffer wieder
+  sichtbar macht; die Suche gilt weiterhin auch für **Ohne Bereich**.
+
 ### v0.118.0
 
 - Im Favoriten-Editor steht jetzt das Suchfeld **Entität suchen …** zur
@@ -85,15 +91,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   **Ohne Bereich**.
 - Dort werden alle verfügbaren Entitäten ohne gültige Bereichszuordnung
   alphabetisch aufgelistet und können ebenfalls als Favoriten gewählt werden.
-
-### v0.116.0
-
-- Neuer Abschnitt **Favoriten** zwischen den sechs Statuskacheln und den
-  Raum-Bildern.
-- Favoriten lassen sich im grafischen Dashboard-Editor raumweise auswählen.
-- Lichter, Schalter, Lüfter, Media Player und Helfer lassen sich direkt
-  umschalten; Rollläden öffnen oder schließen. Andere Entitäten öffnen ihre
-  Detailansicht.
 
 ## Lizenz
 
