@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.121.0**
+Version **0.122.0**
 
 Enthalten sind unter anderem:
 
@@ -72,6 +72,12 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.122.0
+
+- Eingabefelder unter **Eigene Seiten** bleiben während der Bearbeitung aktiv.
+- Laufende Home-Assistant-Statusaktualisierungen bauen den Editor nicht mehr
+  neu auf und schließen dadurch auf Mobilgeräten nicht mehr die Tastatur.
+
 ### v0.121.0
 
 - Neuer Einstellungsbereich **Eigene Seiten** für zusätzliche Lovelace-Seiten
@@ -84,12 +90,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Beim Öffnen der Einstellungen sind alle Menüs und Raumgruppen zugeklappt.
 - Während der Bearbeitung bleiben manuell geöffnete Bereiche auch bei
   Statusaktualisierungen und Konfigurationsänderungen offen.
-
-### v0.119.0
-
-- Der Favoriten-Suchfilter blendet nicht passende Zeilen jetzt zuverlässig aus.
-- Die Korrektur verhindert, dass das Flex-Layout versteckte Treffer wieder
-  sichtbar macht; die Suche gilt weiterhin auch für **Ohne Bereich**.
 
 ## Lizenz
 

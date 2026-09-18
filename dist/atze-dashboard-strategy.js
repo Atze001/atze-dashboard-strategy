@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.121.0
+ * Version: 0.122.0
  *
- * v0.121 focus:
- * - Configurable custom dashboard pages
+ * v0.122 focus:
+ * - Keep the mobile keyboard open while editing custom pages
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.121.0";
+const ATZE_VERSION = "0.122.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -10277,7 +10277,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
       if (
         activeElement?.classList?.contains("entity-visibility") ||
-        activeElement?.classList?.contains("favorite-filter-input")
+        activeElement?.classList?.contains("favorite-filter-input") ||
+        activeElement?.matches?.("[data-page-key]")
       ) {
         return;
       }
@@ -11701,6 +11702,15 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
 
     for (const field of this.shadowRoot.querySelectorAll("[data-page-key]")) {
+      const beginInteraction = () =>
+        this._beginEntityVisibilityInteraction();
+
+      field.addEventListener("pointerdown", beginInteraction);
+      field.addEventListener("focus", beginInteraction);
+      field.addEventListener("blur", () =>
+        this._endEntityVisibilityInteraction()
+      );
+
       field.addEventListener("change", () => {
         const container = field.closest("[data-custom-page]");
         const index = Number(container?.dataset.customPage);
