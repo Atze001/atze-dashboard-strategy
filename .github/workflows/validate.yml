@@ -32,11 +32,12 @@ jobs:
         id: version
         shell: bash
         run: |
-          VERSION="$(sed -n 's/^const ATZE_VERSION = "\\([^"]*\\)";$/\\1/p' dist/atze-dashboard-strategy.js | head -n 1)"
+          VERSION="$(grep -m1 'const ATZE_VERSION = ' dist/atze-dashboard-strategy.js | cut -d '"' -f 2)"
           if [ -z "$VERSION" ]; then
             echo "Could not determine ATZE_VERSION"
             exit 1
           fi
+          echo "Detected version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
