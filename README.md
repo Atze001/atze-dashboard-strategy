@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.97.0**
+Version **0.98.0**
 
 Enthalten sind unter anderem:
 
@@ -406,3 +406,42 @@ sensor.flur_haustur_letzte_aktivitat
 
 wird in den generierten Ansichten ausgeblendet. Weitere Flur-Sensoren bleiben
 unverändert.
+
+
+## v0.98 Strenge Automatik plus Entity-Overrides
+
+Die Raumansichten arbeiten jetzt nach dem Prinzip **strenge Automatik +
+explizite Overrides**.
+
+Im Auto-Modus werden standardmäßig typische Bedienelemente wie Licht, Schalter,
+Rollläden, Klima, Lüfter, Schloss, Media Player und Helfer angezeigt.
+Technische Sensorwerte, Regler, Auswahl-Entities und Diagnosewerte erscheinen
+nicht mehr automatisch als eigene Raumkarten. Sie bleiben weiterhin für
+Badges, Geräte-Popups und die Wartungsansicht verfügbar.
+
+Sinnvolle Sicherheits-Binary-Sensoren wie Fenster/Tür, Rauch, Feuchtigkeit,
+Gas, CO und Manipulation können weiterhin automatisch erscheinen.
+
+Im grafischen Strategy-Editor gibt es jetzt **Entitäten pro Raum**. Für jede
+Entity stehen drei Zustände zur Verfügung:
+
+- **Auto** – die Strategy entscheidet nach der neuen strengen Automatik
+- **Anzeigen** – Entity immer als Raumkarte anzeigen
+- **Ausblenden** – Entity nicht als Raumkarte anzeigen
+
+Die Einstellung wird unter `entity_overrides` gespeichert:
+
+```yaml
+entity_overrides:
+  sensor.mein_spezialsensor:
+    visibility: show
+  binary_sensor.irgendwas:
+    visibility: hide
+```
+
+Die strenge Automatik ist standardmäßig aktiv. Für einen vorübergehenden
+Rückweg zum breiteren alten Verhalten:
+
+```yaml
+strict_room_entity_auto: false
+```
