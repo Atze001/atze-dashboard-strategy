@@ -137,3 +137,21 @@ nicht zuverlässig ausliest, setzt die Strategy für diese Einstellung
 automatisch den offiziellen URL-Schalter `?hide_header` und lädt die Seite
 einmal neu. Ein intern gesetzter Marker verhindert Endlosschleifen und erlaubt
 das automatische Entfernen wieder, wenn die Option später deaktiviert wird.
+
+
+## v0.83 Kiosk-Fix
+
+Die automatische Kiosk-URL-Behandlung wurde korrigiert.
+
+Für diese Strategy wird
+
+```yaml
+kiosk_mode:
+  hide_header: true
+```
+
+jetzt absichtlich auf den bei diesem Dashboard nachweislich funktionierenden
+Kiosk-Mode-Schalter `?kiosk` abgebildet.
+
+Die Strategy ergänzt den Parameter automatisch; manuelles Anhängen ist nicht
+mehr nötig.
