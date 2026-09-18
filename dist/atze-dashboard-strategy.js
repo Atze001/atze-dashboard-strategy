@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.88.0
+ * Version: 0.89.0
  *
- * v0.88 focus:
- * - Remove the circular background from the custom sidebar menu button
- * - Keep a generous invisible touch target with a subtle menu glyph only
- * - Preserve header-only kiosk behavior and sidebar access
+ * v0.89 focus:
+ * - Hide areas carrying the Home Assistant label "no-strategy"
+ * - Exclude their entities from room, home, security and maintenance views
+ * - Preserve all existing kiosk and HACS behavior
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.88.0";
+const ATZE_VERSION = "0.89.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3575,6 +3575,60 @@ function selectHomeBaseStatusEntity(
 }
 
 
+function matchingNoStrategyLabelIds(labels, config) {
+  const needle = normalizedText(
+    config.no_strategy_label || "no-strategy"
+  );
+
+  if (!needle) return new Set();
+
+  return new Set(
+    (labels || [])
+      .filter((label) => {
+        const labelId = String(
+          label?.label_id || label?.id || ""
+        );
+
+        const name = normalizedText(
+          label?.name || ""
+        );
+
+        const id = normalizedText(labelId);
+
+        return name === needle || id === needle;
+      })
+      .map((label) =>
+        String(label?.label_id || label?.id || "")
+      )
+      .filter(Boolean)
+  );
+}
+
+function areaHasNoStrategyLabel(
+  area,
+  noStrategyLabelIds,
+  config
+) {
+  const needle = normalizedText(
+    config.no_strategy_label || "no-strategy"
+  );
+
+  const assignedLabels = [
+    ...asArray(area?.labels),
+    ...asArray(area?.label_ids),
+  ];
+
+  return assignedLabels.some((labelId) => {
+    const raw = String(labelId || "");
+
+    return (
+      noStrategyLabelIds.has(raw) ||
+      normalizedText(raw) === needle
+    );
+  });
+}
+
+
 function matchingSecurityLabelIds(labels, config) {
   const needle = normalizedText(
     config.security_label || "Sicherheit"
@@ -4921,6 +4975,23 @@ class AtzeDashboardStrategy extends HTMLElement {
       entities.map((entity) => [entity.entity_id, entity])
     );
 
+    const noStrategyLabelIds = matchingNoStrategyLabelIds(
+      labels,
+      config
+    );
+
+    const noStrategyAreaIds = new Set(
+      areas
+        .filter((area) =>
+          areaHasNoStrategyLabel(
+            area,
+            noStrategyLabelIds,
+            config
+          )
+        )
+        .map((area) => area.area_id)
+    );
+
     const includeAreas = new Set(asArray(config.include_areas));
     const excludeAreas = new Set(asArray(config.exclude_areas));
     const excludeEntities = new Set(asArray(config.exclude_entities));
@@ -4935,6 +5006,13 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (
+        noStrategyAreaIds.has(
+          effectiveAreaId(entity, deviceById)
+        )
+      ) {
+        return false;
+      }
       if (config.include_hidden !== true && entity.hidden_by) {
         return false;
       }
@@ -4969,6 +5047,13 @@ class AtzeDashboardStrategy extends HTMLElement {
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
       if (
+        noStrategyAreaIds.has(
+          effectiveAreaId(entity, deviceById)
+        )
+      ) {
+        return false;
+      }
+      if (
         config.include_hidden !== true &&
         entity.hidden_by
       ) {
@@ -4996,6 +5081,13 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (
+        noStrategyAreaIds.has(
+          effectiveAreaId(entity, deviceById)
+        )
+      ) {
+        return false;
+      }
       if (config.include_hidden !== true && entity.hidden_by) return false;
       if (excludeEntities.has(entityId)) return false;
       if (config.hide_unavailable === true && isUnavailable(hass, entityId)) {
@@ -5054,6 +5146,7 @@ class AtzeDashboardStrategy extends HTMLElement {
         const override = getOverride(config.area_overrides, area.area_id);
 
         if (override.hidden === true) return false;
+        if (noStrategyAreaIds.has(area.area_id)) return false;
         if (excludeAreas.has(area.area_id)) return false;
         if (includeAreas.size > 0 && !includeAreas.has(area.area_id)) {
           return false;
