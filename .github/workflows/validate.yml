@@ -32,7 +32,7 @@ jobs:
         id: version
         shell: bash
         run: |
-          VERSION="$(grep -oP 'const ATZE_VERSION = "\\K[^"]+' dist/atze-dashboard-strategy.js)"
+          VERSION="$(sed -n 's/^const ATZE_VERSION = "\\([^"]*\\)";$/\\1/p' dist/atze-dashboard-strategy.js | head -n 1)"
           if [ -z "$VERSION" ]; then
             echo "Could not determine ATZE_VERSION"
             exit 1
