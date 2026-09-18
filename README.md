@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.80.0**
+Version **0.81.0**
 
 Enthalten sind unter anderem:
 
@@ -89,3 +89,26 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 ## Lizenz
 
 MIT
+
+
+## v0.81 Native Header-Ausblendung
+
+Bei Strategy-Dashboards kann `kiosk-mode` die von der Strategy erzeugte
+Root-Konfiguration nicht immer selbst auswerten. Deshalb besitzt die Strategy
+jetzt einen eigenen, auf den Lovelace-Header begrenzten Fallback.
+
+Die bestehende Konfiguration funktioniert weiter unverändert:
+
+```yaml
+kiosk_mode:
+  hide_header: true
+```
+
+Auch `kiosk_mode: { kiosk: true }` blendet über den Fallback den Header aus.
+`?disable_km` deaktiviert den nativen Fallback temporär ebenfalls.
+
+Optional kann der Strategy-Fallback abgeschaltet werden:
+
+```yaml
+native_kiosk_fallback: false
+```
