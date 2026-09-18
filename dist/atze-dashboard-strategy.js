@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.116.0
+ * Version: 0.117.0
  *
- * v0.116 focus:
- * - Add configurable favorite entities to the home overview
+ * v0.117 focus:
+ * - List unassigned entities as the final favorites group
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.116.0";
+const ATZE_VERSION = "0.117.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -10135,30 +10135,71 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     );
   }
 
+  _availableEntities() {
+    return (this._entities || []).filter((entity) => {
+      if (!entity?.entity_id) return false;
+      if (entity.disabled_by) return false;
+      if (isBuiltInHiddenEntity(entity.entity_id)) {
+        return false;
+      }
+
+      return Boolean(
+        this._hass?.states?.[entity.entity_id]
+      );
+    });
+  }
+
   _entitiesForArea(areaId) {
     if (!areaId) return [];
 
     const deviceById = this._deviceById();
 
-    return (this._entities || [])
+    return this._availableEntities()
       .filter((entity) => {
-        if (!entity?.entity_id) return false;
-        if (entity.disabled_by) return false;
-        if (isBuiltInHiddenEntity(entity.entity_id)) {
-          return false;
-        }
-        if (
-          !this._hass?.states?.[entity.entity_id]
-        ) {
-          return false;
-        }
-
         return (
           effectiveAreaId(
             entity,
             deviceById
           ) === areaId
         );
+      })
+      .sort((a, b) => {
+        const an = rawFriendlyName(
+          this._hass,
+          a.entity_id,
+          a
+        );
+        const bn = rawFriendlyName(
+          this._hass,
+          b.entity_id,
+          b
+        );
+
+        return String(an).localeCompare(
+          String(bn),
+          "de",
+          {
+            numeric: true,
+            sensitivity: "base",
+          }
+        );
+      });
+  }
+
+  _entitiesWithoutArea() {
+    const deviceById = this._deviceById();
+    const knownAreaIds = new Set(
+      this._areas.map((area) => area.area_id)
+    );
+
+    return this._availableEntities()
+      .filter((entity) => {
+        const areaId = effectiveAreaId(
+          entity,
+          deviceById
+        );
+
+        return !areaId || !knownAreaIds.has(areaId);
       })
       .sort((a, b) => {
         const an = rawFriendlyName(
@@ -10271,7 +10312,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _favoriteEntityRows(area) {
-    const entities = this._entitiesForArea(area.area_id);
+    return this._favoriteEntityRowsForEntities(
+      this._entitiesForArea(area.area_id)
+    );
+  }
+
+  _favoriteEntityRowsForEntities(entities) {
     const favorites = new Set(
       asArray(this._config.favorite_entities).map(String)
     );
@@ -10506,7 +10552,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       asArray(this._config.favorite_entities).map(String)
     );
 
-    const favoriteAreaPanels =
+    const assignedFavoriteAreaPanels =
       this._eligibleAreas()
         .filter((area) => selected.has(area.area_id))
         .map((area) => {
@@ -10549,6 +10595,42 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           `;
         })
         .join("");
+
+    const unassignedEntities = this._entitiesWithoutArea();
+    const unassignedFavoriteCount = unassignedEntities.filter(
+      (entity) => configuredFavorites.has(entity.entity_id)
+    ).length;
+    const unassignedAreaId = "__unassigned__";
+
+    const favoriteAreaPanels = `
+      ${assignedFavoriteAreaPanels}
+      <details
+        class="entity-area"
+        data-favorite-area="${unassignedAreaId}"
+        ${this._openEntityAreaIds.has(unassignedAreaId) ? "open" : ""}
+      >
+        <summary>
+          <span class="entity-summary-main">
+            <ha-icon icon="mdi:tray-remove"></ha-icon>
+            <span>Ohne Bereich</span>
+          </span>
+
+          <span class="entity-summary-end">
+            <span class="entity-count">
+              ${unassignedFavoriteCount} / ${unassignedEntities.length}
+            </span>
+            <ha-icon
+              class="entity-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </span>
+        </summary>
+
+        <div class="entity-rows">
+          ${this._favoriteEntityRowsForEntities(unassignedEntities)}
+        </div>
+      </details>
+    `;
 
     const areaRows = this._orderedAreas().map((area) => {
       const blockedArea = blocked.has(area.area_id);
