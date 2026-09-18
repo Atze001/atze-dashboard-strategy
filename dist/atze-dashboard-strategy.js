@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.102.0
+ * Version: 0.103.0
  *
- * v0.102 focus:
- * - Show the effective room visibility for every entity in the setup editor
- * - Display clear Sichtbar / Unsichtbar status below each entity name
+ * v0.103 focus:
+ * - Keep the effective Sichtbar / Unsichtbar status in the setup editor
+ * - Remove the eye icons from the visibility status line
  * - Keep Auto / Anzeigen / Ausblenden as the editable visibility control
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.102.0";
+const ATZE_VERSION = "0.103.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -9816,9 +9816,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               <span
                 class="entity-status ${effectiveVisible ? "visible" : "hidden"}"
               >
-                <ha-icon
-                  icon="${effectiveVisible ? "mdi:eye" : "mdi:eye-off"}"
-                ></ha-icon>
                 ${effectiveVisible ? "Sichtbar" : "Unsichtbar"}
               </span>
 
@@ -10323,16 +10320,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         .entity-status {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
           font-size: 12px;
           font-weight: 600;
           line-height: 1.25;
         }
 
-        .entity-status ha-icon {
-          width: 14px;
-          height: 14px;
-        }
 
         .entity-status.visible {
           color: #30D158;
