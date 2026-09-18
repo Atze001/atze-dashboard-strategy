@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.98.0
+ * Version: 0.99.0
  *
- * v0.98 focus:
- * - Switch room views to strict automatic entity selection
- * - Add Auto / Anzeigen / Ausblenden overrides per entity
- * - Add per-room entity controls to the graphical strategy editor
+ * v0.99 focus:
+ * - Bundle new tile images for 3D-Drucker and Zentrale
+ * - Auto-assign bundled images by area id or normalized area name
+ * - Keep all v0.98 strict entity-selection behavior unchanged
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.98.0";
+const ATZE_VERSION = "0.99.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3558,6 +3558,9 @@ const DEFAULT_HOME_ROOM_IMAGES = {
   wohnzimmer: new URL("wohnzimmer.jpg", ATZE_ASSET_BASE_URL).href,
   buro: new URL("buro.jpg", ATZE_ASSET_BASE_URL).href,
   balkon: new URL("balkon.jpg", ATZE_ASSET_BASE_URL).href,
+  "3d_drucker": new URL("3d-drucker.webp", ATZE_ASSET_BASE_URL).href,
+  "3d-drucker": new URL("3d-drucker.webp", ATZE_ASSET_BASE_URL).href,
+  zentrale: new URL("zentrale.webp", ATZE_ASSET_BASE_URL).href,
 };
 
 function bestEnvironmentEntity(
@@ -4450,7 +4453,11 @@ function buildHomeOverviewView(
       config.home_room_images?.[area.area_id];
 
     const defaultImage =
-      DEFAULT_HOME_ROOM_IMAGES[area.area_id] || null;
+      DEFAULT_HOME_ROOM_IMAGES[area.area_id] ||
+      DEFAULT_HOME_ROOM_IMAGES[
+        slugify(area.name || "")
+      ] ||
+      null;
 
     roomTiles.push({
       area_id: area.area_id,
