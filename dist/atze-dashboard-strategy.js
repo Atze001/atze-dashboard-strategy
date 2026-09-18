@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.94.0
+ * Version: 0.95.0
  *
- * v0.94 focus:
- * - Hide battery sensors from normal room sensor sections
- * - Keep battery entities available in the maintenance view
- * - Allow opt-out with hide_battery_sensors_in_rooms: false
+ * v0.95 focus:
+ * - Hide technical voltage sensors from normal room views
+ * - Hide device_temperature diagnostics while keeping real room temperatures
+ * - Keep battery room filtering from v0.94 unchanged
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.94.0";
+const ATZE_VERSION = "0.95.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3376,6 +3376,21 @@ function shouldHideSensorFromRoom(hass, entity, config) {
     (
       deviceClass === "battery" ||
       ["batterie", "battery", "akku"].includes(friendly)
+    )
+  ) {
+    return true;
+  }
+
+  const entityId = String(
+    entity.entity_id || ""
+  ).toLowerCase();
+
+  if (
+    config.hide_technical_sensors_in_rooms !== false &&
+    (
+      deviceClass === "voltage" ||
+      entityId.includes("device_temperature") ||
+      entityId.includes("_voltage")
     )
   ) {
     return true;
