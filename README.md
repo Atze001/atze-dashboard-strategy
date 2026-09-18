@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.104.0**
+Version **0.105.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,11 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.105 Kompaktere Status-Kacheln
+
+Die sechs Status-Kacheln unter dem Kopfbereich sind jetzt 10 Pixel niedriger.
+Breite, Abstände, Symbole und Schriftgrößen bleiben unverändert.
 
 ## v0.104 Lichtschalter auf den Raumkarten
 
