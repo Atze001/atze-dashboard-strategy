@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.101.0
+ * Version: 0.102.0
  *
- * v0.101 focus:
- * - Make the main setup sections collapsible
- * - Add accordions for Räume, Entitäten pro Raum, Ansichten and Darstellung
- * - Preserve open/closed editor section state during live config updates
+ * v0.102 focus:
+ * - Show the effective room visibility for every entity in the setup editor
+ * - Display clear Sichtbar / Unsichtbar status below each entity name
+ * - Keep Auto / Anzeigen / Ausblenden as the editable visibility control
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.101.0";
+const ATZE_VERSION = "0.102.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -9783,14 +9783,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       );
 
       const domain = domainOf(entityId);
-      const automatic =
+
+      const autoVisible =
         shouldAutoShowRoomEntity(
           this._hass,
           entity,
           this._config
-        )
-          ? "Auto: sichtbar"
-          : "Auto: ausgeblendet";
+        );
+
+      const effectiveVisible =
+        mode === "show"
+          ? true
+          : mode === "hide"
+            ? false
+            : autoVisible;
+
+      const modeLabel =
+        mode === "show"
+          ? "Anzeigen"
+          : mode === "hide"
+            ? "Ausblenden"
+            : "Auto";
 
       return `
         <div class="entity-row">
@@ -9798,10 +9811,26 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <span class="entity-name">
               ${this._escape(name)}
             </span>
-            <span class="entity-meta">
-              ${this._escape(domain)} ·
-              ${this._escape(automatic)}
+
+            <span class="entity-status-line">
+              <span
+                class="entity-status ${effectiveVisible ? "visible" : "hidden"}"
+              >
+                <ha-icon
+                  icon="${effectiveVisible ? "mdi:eye" : "mdi:eye-off"}"
+                ></ha-icon>
+                ${effectiveVisible ? "Sichtbar" : "Unsichtbar"}
+              </span>
+
+              <span class="entity-mode">
+                ${this._escape(modeLabel)}
+              </span>
             </span>
+
+            <span class="entity-meta">
+              ${this._escape(domain)}
+            </span>
+
             <span class="entity-id">
               ${this._escape(entityId)}
             </span>
@@ -10282,6 +10311,41 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         .entity-name {
           font-size: 14px;
           font-weight: 550;
+        }
+
+        .entity-status-line {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 2px;
+        }
+
+        .entity-status {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          font-weight: 600;
+          line-height: 1.25;
+        }
+
+        .entity-status ha-icon {
+          width: 14px;
+          height: 14px;
+        }
+
+        .entity-status.visible {
+          color: #30D158;
+        }
+
+        .entity-status.hidden {
+          color: var(--secondary-text-color);
+        }
+
+        .entity-mode {
+          color: var(--secondary-text-color);
+          font-size: 11px;
+          line-height: 1.25;
         }
 
         .entity-meta,
