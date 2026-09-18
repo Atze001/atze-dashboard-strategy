@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.122.0
+ * Version: 0.123.0
  *
- * v0.122 focus:
- * - Keep the mobile keyboard open while editing custom pages
+ * v0.123 focus:
+ * - Native Home Assistant YAML editor for custom views
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.122.0";
+const ATZE_VERSION = "0.123.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4628,11 +4628,14 @@ function buildCustomPageViews(config) {
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
-      const title = String(page.title || `Eigene Seite ${index + 1}`).trim();
-      const requestedPath = String(page.path || slugify(title)).trim();
-      const card = page.card;
+      const source =
+        page.view && typeof page.view === "object"
+          ? page.view
+          : page;
+      const title = String(source.title || `Eigene Seite ${index + 1}`).trim();
+      const requestedPath = String(source.path || slugify(title)).trim();
 
-      if (!title || !requestedPath || !card || typeof card !== "object") {
+      if (!title || !requestedPath) {
         return null;
       }
 
@@ -4644,12 +4647,21 @@ function buildCustomPageViews(config) {
       }
       usedPaths.add(path);
 
+      const { card, view, ...viewConfig } = source;
+      const hasNativeContent =
+        Array.isArray(viewConfig.cards) ||
+        Array.isArray(viewConfig.sections) ||
+        viewConfig.strategy;
+
       return {
+        ...viewConfig,
         title,
         path,
-        icon: page.icon || "mdi:view-dashboard-outline",
-        subview: page.subview === true,
-        cards: [{ ...card }],
+        icon: source.icon || "mdi:view-dashboard-outline",
+        subview: source.subview === true,
+        ...(!hasNativeContent && card && typeof card === "object"
+          ? { cards: [{ ...card }] }
+          : {}),
       };
     })
     .filter(Boolean);
@@ -9914,6 +9926,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._entityVisibilityActive = false;
     this._pendingHassRender = false;
     this._favoriteFilter = "";
+    this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set();
   }
@@ -9944,6 +9957,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._openEditorSections.clear();
     this._openEntityAreaIds.clear();
     this._favoriteFilter = "";
+    this._pendingCustomPageValues.clear();
     this._entityVisibilityActive = false;
     this._pendingHassRender = false;
     this._loadRegistries();
@@ -10608,10 +10622,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       title: scheduler ? "Zeitpläne" : "Eigene Seite",
       path: scheduler ? "zeitplaene" : `eigene-seite-${pages.length + 1}`,
       icon: scheduler ? "mdi:calendar-clock" : "mdi:view-dashboard-outline",
-      card: {
+      cards: [{
         type: scheduler ? "custom:scheduler-card" : "markdown",
         ...(scheduler ? {} : { content: "# Eigene Seite" }),
-      },
+      }],
     });
 
     this._fireConfigChanged({
@@ -10620,11 +10634,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     });
   }
 
-  _updateCustomPage(index, key, value) {
+  _updateCustomPage(index, value) {
     const pages = this._customPages().map((page) => ({ ...page }));
     if (!pages[index]) return;
 
-    pages[index][key] = value;
+    pages[index] = value;
     this._fireConfigChanged({
       ...this._config,
       custom_pages: pages,
@@ -10641,12 +10655,21 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _customPageView(page, index) {
+    return page.view && typeof page.view === "object"
+      ? page.view
+      : page.card && !page.cards && !page.sections
+        ? {
+            title: page.title || `Eigene Seite ${index + 1}`,
+            path: page.path || `eigene-seite-${index + 1}`,
+            icon: page.icon || "mdi:view-dashboard-outline",
+            cards: [{ ...page.card }],
+          }
+        : page;
+  }
+
   _customPageHtml(page, index) {
-    const cardJson = JSON.stringify(
-      page.card || { type: "markdown", content: "# Eigene Seite" },
-      null,
-      2
-    );
+    const view = this._customPageView(page, index);
 
     return `
       <div class="custom-page" data-custom-page="${index}">
@@ -10656,25 +10679,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             Entfernen
           </button>
         </div>
-        <label class="custom-page-field">
-          <span>Titel</span>
-          <input data-page-key="title" value="${this._escape(page.title || "")}" />
-        </label>
-        <label class="custom-page-field">
-          <span>Pfad</span>
-          <input data-page-key="path" value="${this._escape(page.path || "")}" />
-        </label>
-        <label class="custom-page-field">
-          <span>Icon</span>
-          <input data-page-key="icon" value="${this._escape(page.icon || "")}" placeholder="mdi:view-dashboard-outline" />
-        </label>
-        <label class="custom-page-field">
-          <span>Karten-Konfiguration (JSON)</span>
-          <textarea data-page-key="card" rows="6">${this._escape(cardJson)}</textarea>
-        </label>
-        <div class="custom-page-error" hidden>
-          Die Karten-Konfiguration ist kein gültiges JSON-Objekt.
-        </div>
+        <ha-yaml-editor
+          class="custom-page-yaml"
+          data-page-key="view"
+          data-index="${index}"
+          aria-label="YAML für ${this._escape(view.title || `Eigene Seite ${index + 1}`)}"
+        ></ha-yaml-editor>
       </div>
     `;
   }
@@ -11106,6 +11116,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           color: var(--error-color, #db4437);
           font-size: 12px;
         }
+        .custom-page-yaml {
+          display: block;
+          min-height: 220px;
+          --code-mirror-max-height: 55vh;
+        }
         .rows {
           border-top: 1px solid var(
             --divider-color,
@@ -11433,9 +11448,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Lege zusätzliche Dashboard-Seiten an. Die Karten-Konfiguration
-              entspricht der Lovelace-Kartenkonfiguration im JSON-Format.
-              Eigene Seiten erscheinen als normale Ansichten in der Navigation.
+              Lege zusätzliche Dashboard-Seiten an oder kopiere die YAML einer
+              vorhandenen Ansicht hinein. Verwende den Inhalt einer einzelnen
+              Ansicht mit title, path und cards oder sections – ohne den äußeren
+              Schlüssel views. Eigene Seiten erscheinen in der Navigation.
             </div>
             <div class="toolbar">
               <button id="add-scheduler-page" type="button">Zeitpläne hinzufügen</button>
@@ -11701,36 +11717,50 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       });
     }
 
-    for (const field of this.shadowRoot.querySelectorAll("[data-page-key]")) {
+    for (const field of this.shadowRoot.querySelectorAll(".custom-page-yaml")) {
       const beginInteraction = () =>
         this._beginEntityVisibilityInteraction();
+      const index = Number(field.dataset.index);
+      const commitPendingValue = () => {
+        const value = this._pendingCustomPageValues.get(index);
+        if (!value) return;
+
+        this._pendingCustomPageValues.delete(index);
+        this._updateCustomPage(index, value);
+      };
 
       field.addEventListener("pointerdown", beginInteraction);
-      field.addEventListener("focus", beginInteraction);
-      field.addEventListener("blur", () =>
-        this._endEntityVisibilityInteraction()
-      );
-
-      field.addEventListener("change", () => {
-        const container = field.closest("[data-custom-page]");
-        const index = Number(container?.dataset.customPage);
-        const key = field.dataset.pageKey;
-        let value = field.value;
-
-        if (key === "card") {
-          try {
-            value = JSON.parse(value);
-            if (!value || typeof value !== "object" || Array.isArray(value)) {
-              throw new Error("Card config must be an object");
-            }
-          } catch (_error) {
-            container?.querySelector(".custom-page-error")?.removeAttribute("hidden");
-            return;
-          }
-        }
-
-        this._updateCustomPage(index, key, value);
+      field.addEventListener("focusin", beginInteraction);
+      field.addEventListener("focusout", () => {
+        window.setTimeout(() => {
+          if (field.matches(":focus-within")) return;
+          commitPendingValue();
+          this._endEntityVisibilityInteraction();
+        }, 100);
       });
+
+      field.addEventListener("value-changed", (event) => {
+        event.stopPropagation();
+        const value = event.detail?.value;
+
+        if (
+          event.detail?.isValid &&
+          value &&
+          typeof value === "object" &&
+          !Array.isArray(value)
+        ) {
+          this._pendingCustomPageValues.set(index, value);
+        }
+      });
+
+      field.addEventListener("editor-save", commitPendingValue);
+
+      const page = this._customPages()[index];
+      const value = this._customPageView(page, index);
+      const initialize = () => field.setValue?.(value);
+
+      if (customElements.get("ha-yaml-editor")) initialize();
+      else customElements.whenDefined("ha-yaml-editor").then(initialize);
     }
 
     for (
