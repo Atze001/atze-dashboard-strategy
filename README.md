@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.109.0**
+Version **0.110.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,15 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.110 Stabile Auswahl der Entity-Sichtbarkeit
+
+Das Auswahlmenü für **Auto**, **Anzeigen** und **Ausblenden** bleibt jetzt
+während laufender Home-Assistant-Aktualisierungen geöffnet. Eine Aktualisierung
+des Editors wird bis zum Ende der Auswahl zurückgestellt.
+
+Nach einer Änderung bleibt außerdem der zuvor aufgeklappte Raumabschnitt
+geöffnet.
 
 ## v0.109 Symbole weiter nach unten versetzt
 
