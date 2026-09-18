@@ -20,8 +20,8 @@ custom_pages:
   - title: Zeitpläne
     path: zeitplaene
     icon: mdi:calendar-clock
-    card:
-      type: custom:scheduler-card
+    cards:
+      - type: custom:scheduler-card
 
 home_alarm_entity: alarm_control_panel.alarmo
 home_homebase_entity: select.atzehomebase_guard_mode

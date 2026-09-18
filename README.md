@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.122.0**
+Version **0.123.0**
 
 Enthalten sind unter anderem:
 
@@ -72,6 +72,13 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.123.0
+
+- Eigene Seiten werden jetzt im nativen Home-Assistant-YAML-Editor bearbeitet.
+- Die YAML einer einzelnen Lovelace-Ansicht kann mit `title`, `path`, `icon`,
+  `cards` oder `sections` direkt aus einem anderen Dashboard übernommen werden.
+- Bereits mit der bisherigen JSON-Eingabe angelegte Seiten bleiben kompatibel.
+
 ### v0.122.0
 
 - Eingabefelder unter **Eigene Seiten** bleiben während der Bearbeitung aktiv.
@@ -84,12 +91,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   mit frei wählbarem Titel, Pfad, Icon und Karten-Konfiguration.
 - Die Vorlage **Zeitpläne hinzufügen** erzeugt direkt eine Seite mit
   `custom:scheduler-card`; weitere Karten können als JSON konfiguriert werden.
-
-### v0.120.0
-
-- Beim Öffnen der Einstellungen sind alle Menüs und Raumgruppen zugeklappt.
-- Während der Bearbeitung bleiben manuell geöffnete Bereiche auch bei
-  Statusaktualisierungen und Konfigurationsänderungen offen.
 
 ## Lizenz
 
