@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.106.0**
+Version **0.107.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,13 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.107 Noch kompaktere Status-Kacheln
+
+Die sechs Status-Kacheln wurden nochmals um 10 Pixel verkleinert. Im
+Smartphone-Layout beträgt ihre feste Höhe jetzt 56 Pixel, auf größeren
+Ansichten 72 Pixel. Der vertikale Innenabstand wurde passend auf 4
+beziehungsweise 6 Pixel reduziert.
 
 ## v0.106 Reduzierter Innenabstand
 
