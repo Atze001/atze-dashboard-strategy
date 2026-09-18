@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.111.0**
+Version **0.112.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,17 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.112 Zusätzliche Schnellaktionen
+
+Unter den Raumkarten stehen jetzt vier globale Grundaktionen zur Verfügung:
+
+- **Lichter aus**
+- **Rollläden zu**
+- **Lichter an**
+- **Rollläden auf**
+
+Im Smartphone-Layout erscheinen sie als übersichtliches 2×2-Raster.
 
 ## v0.111 Kein automatischer Kiosk-Neustart
 
