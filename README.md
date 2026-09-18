@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.107.0**
+Version **0.108.0**
 
 Enthalten sind unter anderem:
 
@@ -508,6 +508,13 @@ Beim ersten Öffnen des Editors sind alle Hauptbereiche weiterhin geöffnet.
 Während der Bearbeitung bleibt der jeweilige Offen-/Geschlossen-Zustand auch
 bei automatischen Neurendern erhalten.
 
+
+## v0.108 Ausrichtung der Status-Kacheln
+
+Die Symbole der sechs Status-Kacheln wurden für eine optisch mittige
+Ausrichtung um 2 Pixel nach unten verschoben. Der Abstand zwischen Haupt- und
+Unterzeile beträgt jetzt nur noch 1 Pixel; zusätzlich wurden die Zeilenhöhen
+kompakter eingestellt.
 
 ## v0.107 Noch kompaktere Status-Kacheln
 
