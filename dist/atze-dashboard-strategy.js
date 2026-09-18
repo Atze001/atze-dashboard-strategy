@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.96.0
+ * Version: 0.97.0
  *
- * v0.96 focus:
- * - Hide Keypad Vision entities throughout the strategy
- * - Keep binary_sensor.keypad_vision_725e_manipulation visible
- * - Apply exact-entity hiding consistently to generated entity collections
+ * v0.97 focus:
+ * - Hide sensor.flur_haustur_letzte_aktivitat
+ * - Keep the remaining Flur sensor cleanup unchanged
+ * - Preserve all existing Keypad Vision filtering
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.96.0";
+const ATZE_VERSION = "0.97.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -94,6 +94,7 @@ const BUILT_IN_HIDDEN_ENTITIES = new Set([
   "binary_sensor.appletv_tastaturfokus",
   "sensor.bad_motionsensor_humidity",
   "sensor.bad_motionsensor_temperature",
+  "sensor.flur_haustur_letzte_aktivitat",
 ]);
 
 const KEYPAD_VISION_VISIBLE_ENTITIES = new Set([
