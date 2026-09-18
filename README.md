@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.90.0**
+Version **0.91.0**
 
 Enthalten sind unter anderem:
 
@@ -276,3 +276,27 @@ deaktiviert und bleiben unabhängig von der Auswahl ausgeschlossen.
 
 Die Raumauswahl schreibt weiterhin die bestehende Option
 `include_areas`, sodass bestehende YAML-Konfigurationen kompatibel bleiben.
+
+
+## v0.91 Raum-Reihenfolge per Drag & Drop
+
+Im grafischen Strategy-Editor können Räume jetzt per Drag & Drop sortiert
+werden. Dazu besitzt jede Raumzeile links einen Drag-Griff.
+
+Die Reihenfolge wird nicht in einer neuen Sonderoption gespeichert, sondern in
+der bereits vorhandenen Konfiguration:
+
+```yaml
+area_overrides:
+  wohnzimmer:
+    order: 10
+  kuche:
+    order: 20
+```
+
+Vorhandene weitere Eigenschaften eines `area_overrides`-Eintrags bleiben
+erhalten.
+
+Über **Reihenfolge zurücksetzen** werden nur die automatisch gesetzten
+`order`-Werte entfernt; Namen, Icons, Spalten-Einstellungen und andere
+Overrides bleiben bestehen.
