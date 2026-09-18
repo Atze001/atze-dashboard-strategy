@@ -13,6 +13,16 @@ home_weather_entity: weather.berlin_tempelhof
 home_person_entity: person.alexander
 favorite_entities: []
 
+# Zusätzliche Seiten erscheinen als normale Dashboard-Ansichten.
+# Für dieses Beispiel müssen Scheduler Card und die Scheduler-Integration
+# separat installiert sein.
+custom_pages:
+  - title: Zeitpläne
+    path: zeitplaene
+    icon: mdi:calendar-clock
+    card:
+      type: custom:scheduler-card
+
 home_alarm_entity: alarm_control_panel.alarmo
 home_homebase_entity: select.atzehomebase_guard_mode
 

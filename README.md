@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.120.0**
+Version **0.121.0**
 
 Enthalten sind unter anderem:
 
@@ -22,6 +22,7 @@ Enthalten sind unter anderem:
 - automatische Popups und technische Detailansichten
 - grafische Auswahl der sichtbaren Räume und Entitäten
 - konfigurierbare Favoriten zwischen Status- und Raumkacheln
+- frei konfigurierbare eigene Dashboard-Seiten
 
 ## Installation über HACS
 
@@ -71,6 +72,13 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.121.0
+
+- Neuer Einstellungsbereich **Eigene Seiten** für zusätzliche Lovelace-Seiten
+  mit frei wählbarem Titel, Pfad, Icon und Karten-Konfiguration.
+- Die Vorlage **Zeitpläne hinzufügen** erzeugt direkt eine Seite mit
+  `custom:scheduler-card`; weitere Karten können als JSON konfiguriert werden.
+
 ### v0.120.0
 
 - Beim Öffnen der Einstellungen sind alle Menüs und Raumgruppen zugeklappt.
@@ -82,14 +90,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Der Favoriten-Suchfilter blendet nicht passende Zeilen jetzt zuverlässig aus.
 - Die Korrektur verhindert, dass das Flex-Layout versteckte Treffer wieder
   sichtbar macht; die Suche gilt weiterhin auch für **Ohne Bereich**.
-
-### v0.118.0
-
-- Im Favoriten-Editor steht jetzt das Suchfeld **Entität suchen …** zur
-  Verfügung.
-- Die Eingabe filtert live über alle Bereiche sowie **Ohne Bereich** nach
-  Anzeigename, Entity-ID und Domain und klappt passende Gruppen automatisch
-  auf.
 
 ## Lizenz
 
