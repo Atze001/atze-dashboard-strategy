@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.93.0**
+Version **0.94.0**
 
 Enthalten sind unter anderem:
 
@@ -339,3 +339,22 @@ Gerät wie die Climate-Entity zuordnet.
 Die Zusatzwerte verschwinden dadurch aus den normalen Raumgruppen wie
 **Sensoren** und **Sicherheit**, bleiben aber weiterhin unter
 **Thermostat → Einstellungen** erreichbar.
+
+
+## v0.94 Batteriesensoren aus Raumansichten ausblenden
+
+Batterie-Entities von Sensoren werden nicht mehr als normale Karten im Bereich
+**Sensoren** eines Raums angezeigt.
+
+Erkannt werden standardmäßig Sensoren mit `device_class: battery` sowie
+typische Namen wie `Batterie`, `Battery` oder `Akku`.
+
+Die Entities bleiben weiterhin vollständig in der Wartungs-/Batterieansicht
+verfügbar.
+
+Falls Batterie-Sensoren ausnahmsweise wieder in Raumansichten erscheinen
+sollen:
+
+```yaml
+hide_battery_sensors_in_rooms: false
+```
