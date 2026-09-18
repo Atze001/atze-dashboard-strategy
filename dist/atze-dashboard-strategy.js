@@ -7083,7 +7083,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .room-status-badge.warning ha-icon {
-          color: var(--home-red);
+          color: #fff;
         }
 
         .room-icon {
