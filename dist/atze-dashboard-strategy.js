@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.110.0
+ * Version: 0.111.0
  *
- * v0.110 focus:
- * - Keep entity visibility selects open during Home Assistant updates
- * - Preserve the expanded room panel while changing Auto / Anzeigen / Ausblenden
- * - Apply queued editor refreshes after the select interaction ends
+ * v0.111 focus:
+ * - Stop automatic kiosk URL redirects when opening the dashboard
+ * - Prevent the Home Assistant boot screen during normal dashboard navigation
+ * - Keep the clock button as the intentional kiosk-mode toggle
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.110.0";
+const ATZE_VERSION = "0.111.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -5320,7 +5320,6 @@ class AtzeDashboardStrategy extends HTMLElement {
   }
 
   static async generate(config, hass) {
-    applyAtzeKioskQueryFallback(config);
     applyAtzeSidebarAccess(config);
 
     hideAtzeDashboardScrollbars(
