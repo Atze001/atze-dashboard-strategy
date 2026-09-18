@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.86.0
+ * Version: 0.87.0
  *
- * v0.86 focus:
- * - Keep the Home Assistant header hidden with force_kiosk: true
- * - Add a floating sidebar menu button because hide_header removes the native one
- * - Open the native Home Assistant sidebar through hass-toggle-menu
+ * v0.87 focus:
+ * - Refine the custom sidebar button for a subtler Apple-Home-style look
+ * - Keep the Home Assistant header hidden while preserving sidebar access
+ * - Reduce visual weight without changing kiosk behavior
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.86.0";
+const ATZE_VERSION = "0.87.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4822,14 +4822,14 @@ function syncAtzeSidebarAccessButton(enabled) {
 
   Object.assign(button.style, {
     position: "fixed",
-    top: "10px",
-    left: "10px",
-    width: "42px",
-    height: "42px",
-    borderRadius: "21px",
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(30,30,30,0.82)",
-    color: "var(--primary-text-color, #fff)",
+    top: "12px",
+    left: "12px",
+    width: "32px",
+    height: "32px",
+    borderRadius: "16px",
+    border: "none",
+    background: "rgba(38,38,40,0.72)",
+    color: "rgba(255,255,255,0.92)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -4837,17 +4837,18 @@ function syncAtzeSidebarAccessButton(enabled) {
     margin: "0",
     cursor: "pointer",
     zIndex: "2147483000",
-    boxShadow: "0 3px 12px rgba(0,0,0,0.28)",
-    backdropFilter: "blur(10px)",
-    WebkitBackdropFilter: "blur(10px)",
+    boxShadow: "none",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    opacity: "0.86",
   });
 
   const icon = button.querySelector("ha-icon");
 
   if (icon) {
     Object.assign(icon.style, {
-      width: "24px",
-      height: "24px",
+      width: "19px",
+      height: "19px",
       color: "inherit",
     });
   }
