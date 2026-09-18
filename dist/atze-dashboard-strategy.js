@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.117.0
+ * Version: 0.118.0
  *
- * v0.117 focus:
- * - List unassigned entities as the final favorites group
+ * v0.118 focus:
+ * - Add live entity search to the favorites editor
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.117.0";
+const ATZE_VERSION = "0.118.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -9871,6 +9871,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._draggedAreaId = null;
     this._entityVisibilityActive = false;
     this._pendingHassRender = false;
+    this._favoriteFilter = "";
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set([
       "rooms",
@@ -10233,9 +10234,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       const activeElement = this.shadowRoot?.activeElement;
 
       if (
-        activeElement?.classList?.contains(
-          "entity-visibility"
-        )
+        activeElement?.classList?.contains("entity-visibility") ||
+        activeElement?.classList?.contains("favorite-filter-input")
       ) {
         return;
       }
@@ -10360,6 +10360,58 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         </label>
       `;
     }).join("");
+  }
+
+  _applyFavoriteFilter() {
+    if (!this.shadowRoot) return;
+
+    const query = String(this._favoriteFilter || "")
+      .trim()
+      .toLocaleLowerCase("de");
+    let visibleRows = 0;
+
+    for (
+      const details of
+        this.shadowRoot.querySelectorAll(
+          ".entity-area[data-favorite-area]"
+        )
+    ) {
+      const rows = [
+        ...details.querySelectorAll(
+          ".favorite-config-row"
+        ),
+      ];
+
+      let matchesInArea = 0;
+
+      for (const row of rows) {
+        const searchText = String(row.textContent || "")
+          .toLocaleLowerCase("de");
+        const matches =
+          !query || searchText.includes(query);
+
+        row.hidden = !matches;
+
+        if (matches) {
+          matchesInArea += 1;
+          visibleRows += 1;
+        }
+      }
+
+      details.hidden = Boolean(query) && matchesInArea === 0;
+
+      if (query && matchesInArea > 0) {
+        details.open = true;
+      }
+    }
+
+    const empty = this.shadowRoot.querySelector(
+      ".favorite-filter-empty"
+    );
+
+    if (empty) {
+      empty.hidden = !query || visibleRows > 0;
+    }
   }
 
   _entityVisibilityRows(area) {
@@ -10788,6 +10840,61 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           font-size: 13px;
           line-height: 1.4;
         }
+
+        .favorite-filter-wrap {
+          margin: 0 16px 14px;
+          min-height: 46px;
+          padding: 0 13px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.22)
+          );
+          border-radius: 13px;
+          background: var(
+            --secondary-background-color,
+            rgba(127,127,127,.10)
+          );
+        }
+
+        .favorite-filter-wrap:focus-within {
+          border-color: var(--primary-color, #03a9f4);
+          box-shadow: 0 0 0 1px var(--primary-color, #03a9f4);
+        }
+
+        .favorite-filter-wrap ha-icon {
+          width: 22px;
+          height: 22px;
+          flex: 0 0 auto;
+          color: var(--secondary-text-color);
+        }
+
+        .favorite-filter-input {
+          min-width: 0;
+          width: 100%;
+          height: 44px;
+          padding: 0;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          color: var(--primary-text-color);
+          font: inherit;
+          font-size: 15px;
+        }
+
+        .favorite-filter-input::placeholder {
+          color: var(--secondary-text-color);
+          opacity: 1;
+        }
+
+        .favorite-filter-empty {
+          padding: 4px 18px 16px;
+          color: var(--secondary-text-color);
+          font-size: 13px;
+        }
+
         .toolbar {
           display: flex;
           gap: 8px;
@@ -11196,6 +11303,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               weitere Entitäten öffnen ihre Detailansicht.
             </div>
 
+            <div class="favorite-filter-wrap">
+              <ha-icon icon="mdi:magnify"></ha-icon>
+              <input
+                class="favorite-filter-input"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="Entität suchen …"
+                aria-label="Favoriten-Entitäten durchsuchen"
+                value="${this._escape(this._favoriteFilter)}"
+              />
+            </div>
+
+            <div class="favorite-filter-empty" hidden>
+              Keine passende Entität gefunden.
+            </div>
+
             <div class="entity-area-list">
               ${this._loading
                 ? '<div class="loading">Entities werden geladen …</div>'
@@ -11512,6 +11636,29 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         );
       });
     }
+
+    const favoriteFilter = this.shadowRoot.querySelector(
+      ".favorite-filter-input"
+    );
+
+    if (favoriteFilter) {
+      favoriteFilter.addEventListener(
+        "focus",
+        () => this._beginEntityVisibilityInteraction()
+      );
+
+      favoriteFilter.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+
+      favoriteFilter.addEventListener("input", (event) => {
+        this._favoriteFilter = event.currentTarget.value;
+        this._applyFavoriteFilter();
+      });
+    }
+
+    this._applyFavoriteFilter();
   }
 }
 
