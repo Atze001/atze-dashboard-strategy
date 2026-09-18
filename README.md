@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.119.0**
+Version **0.120.0**
 
 Enthalten sind unter anderem:
 
@@ -71,6 +71,12 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.120.0
+
+- Beim Öffnen der Einstellungen sind alle Menüs und Raumgruppen zugeklappt.
+- Während der Bearbeitung bleiben manuell geöffnete Bereiche auch bei
+  Statusaktualisierungen und Konfigurationsänderungen offen.
+
 ### v0.119.0
 
 - Der Favoriten-Suchfilter blendet nicht passende Zeilen jetzt zuverlässig aus.
@@ -84,13 +90,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Die Eingabe filtert live über alle Bereiche sowie **Ohne Bereich** nach
   Anzeigename, Entity-ID und Domain und klappt passende Gruppen automatisch
   auf.
-
-### v0.117.0
-
-- Im Favoriten-Editor erscheint nach den Bereichen der zusätzliche Eintrag
-  **Ohne Bereich**.
-- Dort werden alle verfügbaren Entitäten ohne gültige Bereichszuordnung
-  alphabetisch aufgelistet und können ebenfalls als Favoriten gewählt werden.
 
 ## Lizenz
 

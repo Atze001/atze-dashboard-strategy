@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.119.0
+ * Version: 0.120.0
  *
- * v0.119 focus:
- * - Honor hidden search results despite flex row styling
+ * v0.120 focus:
+ * - Start dashboard settings with collapsed sections
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.119.0";
+const ATZE_VERSION = "0.120.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -9873,13 +9873,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingHassRender = false;
     this._favoriteFilter = "";
     this._openEntityAreaIds = new Set();
-    this._openEditorSections = new Set([
-      "rooms",
-      "entities",
-      "favorites",
-      "views",
-      "display",
-    ]);
+    this._openEditorSections = new Set();
   }
 
   set hass(value) {
@@ -9904,6 +9898,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   connectedCallback() {
+    // Reset only on opening the editor, not on config or state updates.
+    this._openEditorSections.clear();
+    this._openEntityAreaIds.clear();
+    this._favoriteFilter = "";
+    this._entityVisibilityActive = false;
+    this._pendingHassRender = false;
     this._loadRegistries();
     this._render();
   }
