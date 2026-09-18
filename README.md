@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.94.0**
+Version **0.95.0**
 
 Enthalten sind unter anderem:
 
@@ -357,4 +357,23 @@ sollen:
 
 ```yaml
 hide_battery_sensors_in_rooms: false
+```
+
+
+## v0.95 Technische Gerätesensoren aus Raumansichten ausblenden
+
+Technische Gerätesensoren werden in normalen Raumansichten weiter reduziert.
+
+Standardmäßig ausgeblendet werden:
+
+- Sensoren mit `device_class: voltage`
+- Entity-IDs mit `_voltage`
+- Entity-IDs mit `device_temperature`
+
+Echte Raumtemperatur-Sensoren bleiben sichtbar.
+
+Falls diese Filterung ausnahmsweise deaktiviert werden soll:
+
+```yaml
+hide_technical_sensors_in_rooms: false
 ```
