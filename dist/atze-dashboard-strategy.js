@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.84.0
+ * Version: 0.85.0
  *
- * v0.84 focus:
- * - Add strategy-owned force_kiosk: true for reliable kiosk startup
- * - Keep kiosk_mode compatibility when Home Assistant forwards it
- * - Create semantic HACS versions through the validated release workflow
+ * v0.85 focus:
+ * - force_kiosk: true now hides only the header, not the sidebar
+ * - Use kiosk-mode's official ?hide_header switch
+ * - Automatically migrate older auto-managed ?kiosk URLs to ?hide_header
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.84.0";
+const ATZE_VERSION = "0.85.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4699,14 +4699,19 @@ function applyAtzeKioskQueryFallback(config) {
   // On this dashboard installation the full ?kiosk switch is the
   // confirmed working kiosk-mode entry point. Use that same switch
   // whenever the strategy requests the header to be hidden.
-  if (
-    config.force_kiosk === true ||
-    kioskConfig.kiosk === true ||
-    kioskConfig.hide_header === true
-  ) {
+  if (kioskConfig.kiosk === true) {
     desired.push("kiosk");
-  } else if (kioskConfig.hide_sidebar === true) {
-    desired.push("hide_sidebar");
+  } else {
+    if (
+      config.force_kiosk === true ||
+      kioskConfig.hide_header === true
+    ) {
+      desired.push("hide_header");
+    }
+
+    if (kioskConfig.hide_sidebar === true) {
+      desired.push("hide_sidebar");
+    }
   }
 
   const markerKey = "atze_km_auto";
