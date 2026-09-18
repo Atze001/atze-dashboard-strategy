@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.89.0**
+Version **0.90.0**
 
 Enthalten sind unter anderem:
 
@@ -253,3 +253,26 @@ no_strategy_label: no-strategy
 ```
 
 Standard ist `no-strategy`.
+
+
+## v0.90 Grafische Dashboard-Einstellungen
+
+Die Strategy besitzt jetzt einen grafischen Editor, ähnlich dem Prinzip der
+Simon42 Dashboard Strategy.
+
+Im Dashboard-Editor können die wichtigsten Einstellungen ohne YAML geändert
+werden:
+
+- sichtbare Räume/Bereiche auswählen,
+- Startseite ein-/ausschalten,
+- Sicherheitsansicht ein-/ausschalten,
+- Wartungsansicht ein-/ausschalten,
+- Raumansichten als Unterseiten konfigurieren,
+- Header-Ausblendung über `force_kiosk`,
+- Scrollbalken ein-/ausblenden.
+
+Bereiche mit dem Label `no-strategy` werden im Editor angezeigt, sind aber
+deaktiviert und bleiben unabhängig von der Auswahl ausgeschlossen.
+
+Die Raumauswahl schreibt weiterhin die bestehende Option
+`include_areas`, sodass bestehende YAML-Konfigurationen kompatibel bleiben.
