@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.114.0**
+Version **0.115.0**
 
 Enthalten sind unter anderem:
 
@@ -70,11 +70,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.115.0
+
+- Die Symbole innerhalb der roten Warnkreise sind weiß.
+- Die Änderungshistorie zeigt nur noch die drei neuesten Versionen.
+
 ### v0.114.0
 
 - Grüne Normalzustände der Statussymbole auf Raumkarten werden ausgeblendet.
 - Nur rote Warnzustände bleiben sichtbar und rücken automatisch zusammen.
-- Die Symbole innerhalb der roten Warnkreise sind weiß.
 
 ### v0.113.0
 
@@ -82,12 +86,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   **Entitäten pro Raum**.
 - Deaktivierte, entfernte und nicht verfügbare Entitäten können damit aus den
   Raumkarten ausgeblendet werden.
-
-### v0.112.0
-
-- Vier globale Schnellaktionen: **Lichter aus**, **Rollläden zu**,
-  **Lichter an** und **Rollläden auf**.
-- Im Smartphone-Layout erscheinen die Aktionen als kompaktes 2×2-Raster.
 
 ## Lizenz
 
