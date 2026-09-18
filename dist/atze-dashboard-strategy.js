@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.124.0
+ * Version: 0.125.0
  *
- * v0.124 focus:
- * - Automatic custom page navigation buttons on the home view
+ * v0.125 focus:
+ * - Automatic home button on every custom page
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.124.0";
+const ATZE_VERSION = "0.125.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4657,8 +4657,7 @@ function buildCustomPageViews(config) {
         Array.isArray(viewConfig.cards) ||
         Array.isArray(viewConfig.sections) ||
         viewConfig.strategy;
-
-      return {
+      const generatedView = {
         ...viewConfig,
         title,
         path,
@@ -4668,6 +4667,38 @@ function buildCustomPageViews(config) {
           ? { cards: [{ ...card }] }
           : {}),
       };
+
+      const homeButton = {
+        type: "custom:atze-room-nav-header",
+        icon: "mdi:home",
+        area_name: title,
+        navigation_path: config.home_path || "home",
+      };
+
+      if (Array.isArray(generatedView.sections)) {
+        generatedView.sections = [
+          {
+            type: "grid",
+            cards: [homeButton],
+          },
+          ...generatedView.sections,
+        ];
+      } else {
+        const pageCards = Array.isArray(generatedView.cards)
+          ? generatedView.cards
+          : [];
+
+        generatedView.cards = generatedView.panel === true
+          ? [
+              {
+                type: "vertical-stack",
+                cards: [homeButton, ...pageCards],
+              },
+            ]
+          : [homeButton, ...pageCards];
+      }
+
+      return generatedView;
     })
     .filter(Boolean);
 }
