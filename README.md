@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.124.0**
+Version **0.125.0**
 
 Enthalten sind unter anderem:
 
@@ -73,6 +73,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.125.0
+
+- Jede unter **Eigene Seiten** erzeugte Ansicht erhält automatisch oben einen
+  Homebutton mit dem jeweiligen Seitentitel.
+- Der Button führt zuverlässig zum konfigurierten `home_path` zurück und wird
+  auch bei Karten-, Sections- und Panel-Ansichten automatisch eingefügt.
+- Die Seiten-YAML selbst benötigt dafür keinen zusätzlichen Navigationscode.
+
 ### v0.124.0
 
 - Oberhalb der Favoriten erscheinen automatisch kompakte Buttons für alle
@@ -87,12 +95,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Die YAML einer einzelnen Lovelace-Ansicht kann mit `title`, `path`, `icon`,
   `cards` oder `sections` direkt aus einem anderen Dashboard übernommen werden.
 - Bereits mit der bisherigen JSON-Eingabe angelegte Seiten bleiben kompatibel.
-
-### v0.122.0
-
-- Eingabefelder unter **Eigene Seiten** bleiben während der Bearbeitung aktiv.
-- Laufende Home-Assistant-Statusaktualisierungen bauen den Editor nicht mehr
-  neu auf und schließen dadurch auf Mobilgeräten nicht mehr die Tastatur.
 
 ## Lizenz
 
