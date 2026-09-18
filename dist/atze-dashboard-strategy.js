@@ -1,16 +1,16 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.95.0
+ * Version: 0.96.0
  *
- * v0.95 focus:
- * - Hide technical voltage sensors from normal room views
- * - Hide device_temperature diagnostics while keeping real room temperatures
- * - Keep battery room filtering from v0.94 unchanged
+ * v0.96 focus:
+ * - Hide Keypad Vision entities throughout the strategy
+ * - Keep binary_sensor.keypad_vision_725e_manipulation visible
+ * - Apply exact-entity hiding consistently to generated entity collections
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.95.0";
+const ATZE_VERSION = "0.96.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -96,13 +96,34 @@ const BUILT_IN_HIDDEN_ENTITIES = new Set([
   "sensor.bad_motionsensor_temperature",
 ]);
 
+const KEYPAD_VISION_VISIBLE_ENTITIES = new Set([
+  "binary_sensor.keypad_vision_725e_manipulation",
+]);
+
+function isBuiltInHiddenEntity(entityId) {
+  const id = String(entityId || "").toLowerCase();
+
+  if (KEYPAD_VISION_VISIBLE_ENTITIES.has(id)) {
+    return false;
+  }
+
+  if (
+    id.includes("keypad_vision") ||
+    id.includes("keypadvision")
+  ) {
+    return true;
+  }
+
+  return BUILT_IN_HIDDEN_ENTITIES.has(entityId);
+}
+
 function shouldHideExactEntity(config, entityId) {
   const customHidden = new Set(
     asArray(config.hide_entities).map(String)
   );
 
   return (
-    BUILT_IN_HIDDEN_ENTITIES.has(entityId) ||
+    isBuiltInHiddenEntity(entityId) ||
     RUNTIME_HIDDEN_ENTITY_IDS.has(entityId) ||
     customHidden.has(entityId)
   );
@@ -5139,6 +5160,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (shouldHideExactEntity(config, entityId)) return false;
       if (
         noStrategyAreaIds.has(
           effectiveAreaId(entity, deviceById)
@@ -5179,6 +5201,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (shouldHideExactEntity(config, entityId)) return false;
       if (
         noStrategyAreaIds.has(
           effectiveAreaId(entity, deviceById)
@@ -5214,6 +5237,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (shouldHideExactEntity(config, entityId)) return false;
       if (
         noStrategyAreaIds.has(
           effectiveAreaId(entity, deviceById)
