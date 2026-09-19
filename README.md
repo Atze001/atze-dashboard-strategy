@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.133.0**
+Version **0.134.0**
 
 Enthalten sind unter anderem:
 
@@ -24,6 +24,8 @@ Enthalten sind unter anderem:
 - konfigurierbare Favoriten zwischen Status- und Raumkacheln
 - frei konfigurierbare eigene Dashboard-Seiten
 - automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
+- helle Raumbilder bei eingeschaltetem Licht und dunkle Bilder bei
+  ausgeschaltetem Licht
 
 ## Installation über HACS
 
@@ -73,6 +75,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.134.0
+
+- Die Raumbilder zeigen nun direkt den Lichtstatus des jeweiligen Bereichs:
+  dunkel, wenn alle Lichter aus sind, und hell, sobald mindestens ein Licht
+  eingeschaltet ist.
+- Für die neun mitgelieferten Bereiche wurden passende helle Bildvarianten
+  ergänzt.
+- Das bisherige Glühbirnen-Symbol auf den Raumkacheln entfällt.
+
 ### v0.133.0
 
 - Der Drei-Punkte-Einstellungsbutton wird bei Thermostat-Karten nicht mehr
@@ -90,13 +101,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Ein HVAC-Modi-Auswahlmenü wird als Sub-Button ergänzt.
 - Climate-Karten verwenden standardmäßig das Layout `normal`; ein zusätzlicher
   technischer Einstellungen-Button bleibt mit dem HVAC-Menü kompatibel.
-
-### v0.131.0
-
-- Die drei Steuerungs-Bubbles der Rollladen-Karte verwenden nun das dunkle
-  Apple-Grau `rgba(58,58,60,0.92)` aus den Icon-Flächen der übrigen Karten.
-- Die Steuerungssymbole werden darauf weiß dargestellt; deaktivierte Symbole
-  bleiben weiterhin dezent abgeschwächt.
 
 ## Lizenz
 
