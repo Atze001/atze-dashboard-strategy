@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.140.0**
+Version **0.141.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,13 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.141.0
+
+- Die blauen Bereichs-Bubbles einschließlich ihrer Icons wurden auf allen
+  Bildkarten um fünf Pixel nach unten verschoben.
+- Die Raumnamen wie **Flur**, **Küche** oder **Wohnzimmer** wurden ebenfalls um
+  fünf Pixel nach unten verschoben; die untere Sensorzeile bleibt unverändert.
+
 ### v0.140.0
 
 - Die blauen Bereichs-Icons werden auf allen Bildkarten mit einem festen
@@ -90,13 +97,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   `input_number.lichtschwelle`, ohne zur Raumseite zu navigieren.
 - Die blauen Bereichssymbole sind innerhalb ihrer runden Icon-Flächen nun
   vertikal mittig ausgerichtet.
-
-### v0.138.0
-
-- Besitzt ein Bereich keinen Leistungssensor, aber einen Helligkeitssensor,
-  zeigt die Raumkachel den Lux-Wert oben links in derselben Status-Bubble an.
-- Leistung hat weiterhin Vorrang vor Helligkeit; der Lux-Wert erscheint damit
-  automatisch auf der Balkon-Kachel, ohne die übrige Darstellung zu verändern.
 
 ## Lizenz
 
