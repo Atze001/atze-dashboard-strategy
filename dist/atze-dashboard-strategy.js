@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.131.0
+ * Version: 0.132.0
  *
- * v0.131 focus:
- * - Dark Apple gray cover control bubbles
+ * v0.132 focus:
+ * - Extended Bubble climate cards for thermostats
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.131.0";
+const ATZE_VERSION = "0.132.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1657,7 +1657,30 @@ function defaultBubbleCard(hass, entity, config, area) {
       };
 
     case "climate":
-      return { ...base, card_type: "climate" };
+      return {
+        type: "custom:bubble-card",
+        card_type: "climate",
+        entity: entityId,
+        sub_button: {
+          main: [
+            {
+              name: "HVAC-Modi-Menü",
+              select_attribute: "hvac_modes",
+              state_background: false,
+              show_arrow: false,
+              sub_button_type: "select",
+            },
+          ],
+        },
+        name: "Thermostat",
+        state_content: [
+          "state",
+          "current_temperature",
+        ],
+        hide_temperature: false,
+        state_color: true,
+        card_layout: "normal",
+      };
 
     case "media_player":
       return { ...base, card_type: "media-player" };
@@ -1929,8 +1952,11 @@ function buildEntityCard(
 
     card.card_layout =
       override.card_layout ||
-      config.apple_card_layout ||
-      "large";
+      (
+        domainOf(entityId) === "climate"
+          ? (config.climate_card_layout || "normal")
+          : (config.apple_card_layout || "large")
+      );
 
     card.rows = normalizedRows;
     card.grid_options = {
@@ -1974,6 +2000,17 @@ function buildEntityCard(
 
     if (Array.isArray(card.sub_button)) {
       card.sub_button = [...card.sub_button, settingsButton];
+    } else if (
+      card.sub_button &&
+      typeof card.sub_button === "object"
+    ) {
+      card.sub_button = {
+        ...card.sub_button,
+        main: [
+          ...asArray(card.sub_button.main),
+          settingsButton,
+        ],
+      };
     } else {
       card.sub_button = [settingsButton];
     }
