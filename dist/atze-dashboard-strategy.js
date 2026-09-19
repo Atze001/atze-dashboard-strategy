@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.145.0
+ * Version: 0.146.0
  *
- * v0.145 focus:
- * - Make blue room bubbles slightly more transparent
+ * v0.146 focus:
+ * - Improve room icon contrast on bright images
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.145.0";
+const ATZE_VERSION = "0.146.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7657,7 +7657,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           height: 34px;
           display: block;
           flex: 0 0 34px;
-          color: #56A8FF;
+          color: #0A84FF;
           transform: none;
         }
 
