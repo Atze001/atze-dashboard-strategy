@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.133.0
+ * Version: 0.134.0
  *
- * v0.133 focus:
- * - Thermostat popup on card hold without settings icon
+ * v0.134 focus:
+ * - Room images reflect the light state
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.133.0";
+const ATZE_VERSION = "0.134.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3619,6 +3619,28 @@ const DEFAULT_HOME_ROOM_IMAGES = {
   zentrale: new URL("zentrale.webp", ATZE_ASSET_BASE_URL).href,
 };
 
+const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
+  kuche: "kueche-light.webp",
+  schlafzimmer: "schlafzimmer-light.webp",
+  bad: "bad-light.webp",
+  flur: "flur-light.webp",
+  wohnzimmer: "wohnzimmer-light.webp",
+  buro: "buro-light.webp",
+  balkon: "balkon-light.webp",
+  "3d_drucker": "3d-drucker-light.webp",
+  "3d-drucker": "3d-drucker-light.webp",
+  zentrale: "zentrale-light.webp",
+};
+
+const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
+  Object.entries(DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES).map(
+    ([areaId, fileName]) => [
+      areaId,
+      new URL(fileName, ATZE_ASSET_BASE_URL).href,
+    ]
+  )
+);
+
 function bestEnvironmentEntity(
   hass,
   entities,
@@ -4570,12 +4592,29 @@ function buildHomeOverviewView(
       ] ||
       null;
 
+    const configuredLightImage =
+      override.home_light_image ||
+      config.home_room_light_images?.[area.area_id];
+
+    const lightImageKey =
+      DEFAULT_HOME_ROOM_LIGHT_IMAGES[area.area_id]
+        ? area.area_id
+        : slugify(area.name || "");
+
+    const defaultLightImage =
+      DEFAULT_HOME_ROOM_LIGHT_IMAGES[lightImageKey] ||
+      null;
+
     roomTiles.push({
       area_id: area.area_id,
       name,
       path,
       icon,
       image: configuredImage || defaultImage,
+      light_image: configuredLightImage || defaultLightImage,
+      light_image_file:
+        DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES[lightImageKey] ||
+        null,
       temperature,
       humidity,
       power,
@@ -6089,8 +6128,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
-  _roomImageCandidates(room) {
-    const fileName = `${room.area_id}.jpg`;
+  _roomImageCandidates(room, lightsOn = false) {
+    const useLightImage = Boolean(lightsOn && room.light_image);
+    const cacheKey = `${room.area_id}:${useLightImage ? "light" : "dark"}`;
+    const fileName = useLightImage
+      ? room.light_image_file
+      : `${room.area_id}.jpg`;
     const candidates = [];
 
     const add = (value) => {
@@ -6109,14 +6152,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     // 0) Reuse the path that already loaded successfully for this room.
     add(
-      ATZE_HOME_ROOM_IMAGE_CACHE.get(room.area_id)
+      ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey)
     );
 
-    // 1) Generated/default room image.
-    add(room.image);
+    // 1) Generated/default room image for the current light state.
+    add(useLightImage ? room.light_image : room.image);
 
     // 2) Explicit YAML asset root.
-    if (this._config.asset_base) {
+    if (this._config.asset_base && fileName) {
       try {
         const base = String(this._config.asset_base).endsWith("/")
           ? String(this._config.asset_base)
@@ -6134,7 +6177,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     // 3) Relative to the loaded ES module.
-    add(new URL(fileName, ATZE_ASSET_BASE_URL).href);
+    if (fileName) {
+      add(new URL(fileName, ATZE_ASSET_BASE_URL).href);
+    }
 
     // 4) Discover the actual HA resource URL from browser performance entries.
     try {
@@ -6148,12 +6193,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
       for (const resourceUrl of resources) {
         try {
-          add(
-            new URL(
-              `assets/${fileName}`,
-              new URL("./", resourceUrl)
-            ).href
-          );
+          if (fileName) {
+            add(
+              new URL(
+                `assets/${fileName}`,
+                new URL("./", resourceUrl)
+              ).href
+            );
+          }
         } catch (_error) {
           // Try next resource entry.
         }
@@ -6163,15 +6210,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     // 5) Common installation names.
-    add(`/hacsfiles/atze-dashboard-strategy/assets/${fileName}`);
-    add(`/local/atze-dashboard-strategy/assets/${fileName}`);
-    add(`/local/atze-dashboard-strat/assets/${fileName}`);
+    if (fileName) {
+      add(`/hacsfiles/atze-dashboard-strategy/assets/${fileName}`);
+      add(`/local/atze-dashboard-strategy/assets/${fileName}`);
+      add(`/local/atze-dashboard-strat/assets/${fileName}`);
+    }
 
     return candidates;
   }
 
-  _loadRoomImage(img, room) {
-    const candidates = this._roomImageCandidates(room);
+  _loadRoomImage(img, room, lightsOn = false) {
+    const useLightImage = Boolean(lightsOn && room.light_image);
+    const cacheKey = `${room.area_id}:${useLightImage ? "light" : "dark"}`;
+    const candidates = this._roomImageCandidates(room, lightsOn);
 
     if (!candidates.length) {
       img.remove();
@@ -6197,10 +6248,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     img.addEventListener("error", () => {
       if (
-        ATZE_HOME_ROOM_IMAGE_CACHE.get(room.area_id) ===
+        ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey) ===
         currentCandidate
       ) {
-        ATZE_HOME_ROOM_IMAGE_CACHE.delete(room.area_id);
+        ATZE_HOME_ROOM_IMAGE_CACHE.delete(cacheKey);
       }
 
       loadNext();
@@ -6209,7 +6260,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     img.addEventListener("load", () => {
       if (currentCandidate) {
         ATZE_HOME_ROOM_IMAGE_CACHE.set(
-          room.area_id,
+          cacheKey,
           currentCandidate
         );
       }
@@ -6789,22 +6840,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             String(this._state(entityId)?.state || "").toLowerCase() === "on"
         );
 
-        const roomLightHtml = roomLightEntities.length
-          ? `
-              <button
-                type="button"
-                class="room-light-toggle ${roomLightsOn ? "on" : "off"}"
-                data-area-id="${room.area_id}"
-                title="${roomLightsOn ? "Licht ausschalten" : "Licht einschalten"}"
-                aria-label="${roomLightsOn ? "Licht ausschalten" : "Licht einschalten"}"
-              >
-                <ha-icon
-                  icon="${roomLightsOn ? "mdi:lightbulb" : "mdi:lightbulb-outline"}"
-                ></ha-icon>
-              </button>
-            `
-          : "";
-
         const roomStatusBadges = this._roomStatusBadges(room);
 
         const roomStatusHtml = roomStatusBadges.length
@@ -6834,6 +6869,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="room ${power ? "has-power" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
+            data-lights-on="${roomLightsOn ? "true" : "false"}"
             role="button"
             tabindex="0"
           >
@@ -6850,8 +6886,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             }
 
             <div class="room-shade"></div>
-
-            ${roomLightHtml}
 
             ${
               power
@@ -7348,11 +7382,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           filter: brightness(0.92);
         }
 
-        .room:has(.room-light-toggle:active) {
-          transform: none;
-          filter: none;
-        }
-
         .room-chevron {
           display: none !important;
         }
@@ -7386,8 +7415,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room-top,
         .room-bottom,
         .room-status-badges,
-        .room-power,
-        .room-light-toggle {
+        .room-power {
           z-index: 2;
         }
 
@@ -7428,53 +7456,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           height: 15px;
           color: var(--home-yellow);
         }
-
-        .room-light-toggle {
-          position: absolute;
-          top: 8px;
-          left: 50%;
-          width: 34px;
-          height: 34px;
-          padding: 0;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          border: 1px solid rgba(255,255,255,0.13);
-          background: rgba(32, 32, 35, 0.78);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          color: rgba(255,255,255,0.78);
-          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-          cursor: pointer;
-          transform: translateX(-50%);
-          transition:
-            transform 120ms ease,
-            background 120ms ease,
-            border-color 120ms ease,
-            color 120ms ease;
-        }
-
-        .room-light-toggle:active {
-          transform: translateX(-50%) scale(0.92);
-        }
-
-        .room-light-toggle ha-icon {
-          --mdc-icon-size: 17px;
-          width: 17px;
-          height: 17px;
-        }
-
-        .room-light-toggle.on {
-          border-color: rgba(255,214,10,0.48);
-          background: rgba(116, 91, 7, 0.84);
-          color: var(--home-yellow);
-        }
-
-        .room-light-toggle.off {
-          color: rgba(255,255,255,0.76);
-        }
-
 
         .room-status-badges {
           position: absolute;
@@ -7841,18 +7822,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             height: 14px;
           }
 
-          .room-light-toggle {
-            top: 7px;
-            width: 30px;
-            height: 30px;
-          }
-
-          .room-light-toggle ha-icon {
-            --mdc-icon-size: 15px;
-            width: 15px;
-            height: 15px;
-          }
-
           .room-status-badges {
             top: 8px !important;
             right: 10px !important;
@@ -8096,7 +8065,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
         const img = element.querySelector(".room-bg");
 
         if (img && room) {
-          this._loadRoomImage(img, room);
+          this._loadRoomImage(
+            img,
+            room,
+            element.dataset.lightsOn === "true"
+          );
         }
 
         element.addEventListener(
@@ -8111,16 +8084,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             event.preventDefault();
             this._navigate(element.dataset.path);
           }
-        });
-      });
-
-    this.shadowRoot
-      .querySelectorAll(".room-light-toggle")
-      .forEach((element) => {
-        element.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          this._toggleRoomLights(element.dataset.areaId);
         });
       });
 
