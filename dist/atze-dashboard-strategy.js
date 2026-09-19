@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.132.0
+ * Version: 0.133.0
  *
- * v0.132 focus:
- * - Extended Bubble climate cards for thermostats
+ * v0.133 focus:
+ * - Thermostat popup on card hold without settings icon
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.132.0";
+const ATZE_VERSION = "0.133.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1986,7 +1986,19 @@ function buildEntityCard(
   }
 
   if (options.popupHash && card.type === "custom:bubble-card") {
-    const settingsButton = {
+    if (domainOf(entityId) === "climate") {
+      card.button_action = deepMerge(
+        card.button_action || {},
+        {
+          hold_action: {
+            action: "navigate",
+            navigation_path: options.popupHash,
+          },
+        }
+      );
+
+    } else {
+      const settingsButton = {
       name: "Einstellungen",
       icon: "mdi:dots-horizontal-circle-outline",
       show_name: false,
@@ -1996,23 +2008,24 @@ function buildEntityCard(
         action: "navigate",
         navigation_path: options.popupHash,
       },
-    };
-
-    if (Array.isArray(card.sub_button)) {
-      card.sub_button = [...card.sub_button, settingsButton];
-    } else if (
-      card.sub_button &&
-      typeof card.sub_button === "object"
-    ) {
-      card.sub_button = {
-        ...card.sub_button,
-        main: [
-          ...asArray(card.sub_button.main),
-          settingsButton,
-        ],
       };
-    } else {
-      card.sub_button = [settingsButton];
+
+      if (Array.isArray(card.sub_button)) {
+        card.sub_button = [...card.sub_button, settingsButton];
+      } else if (
+        card.sub_button &&
+        typeof card.sub_button === "object"
+      ) {
+        card.sub_button = {
+          ...card.sub_button,
+          main: [
+            ...asArray(card.sub_button.main),
+            settingsButton,
+          ],
+        };
+      } else {
+        card.sub_button = [settingsButton];
+      }
     }
   }
 
