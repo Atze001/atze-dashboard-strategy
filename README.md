@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.141.0**
+Version **0.142.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.142.0
+
+- Raumname und untere Sensorzeile besitzen nun jeweils eine eigene feste
+  Position relativ zur oberen Kartenkante.
+- Fehlende Temperatur-, Luftfeuchtigkeits-, Anwesenheits-, Leistungs- oder
+  Lux-Anzeigen beeinflussen dadurch keine anderen Elemente mehr.
+- Messwert-Bubbles, Status-Bubbles und blaue Bereichs-Bubbles waren bereits
+  oben verankert; damit sind nun sämtliche Anzeigen unabhängig positioniert.
+
 ### v0.141.0
 
 - Die blauen Bereichs-Bubbles einschließlich ihrer Icons wurden auf allen
@@ -90,13 +99,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Die zusätzlichen horizontalen und vertikalen Verschiebungen der Symbole
   innerhalb der Kreise wurden entfernt; die Zentrierung erfolgt wieder exakt
   über das Flex-Layout.
-
-### v0.139.0
-
-- Ein Tipp auf die Helligkeits-Bubble öffnet direkt die Detailansicht von
-  `input_number.lichtschwelle`, ohne zur Raumseite zu navigieren.
-- Die blauen Bereichssymbole sind innerhalb ihrer runden Icon-Flächen nun
-  vertikal mittig ausgerichtet.
 
 ## Lizenz
 
