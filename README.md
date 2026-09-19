@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.142.0**
+Version **0.143.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.143.0
+
+- Die Anwesenheitsicons werden wieder vollständig am rechten Rand der
+  Sensorzeile angezeigt.
+- Aktive rote Warnicons behalten oben rechts ihre feste Kreisgröße und werden
+  auch bei mehreren Warnungen nicht zusammengedrückt.
+- Die festen Positionen aller Kartenanzeigen bleiben unverändert; entfernt
+  wurde nur eine überzählige Breitenangabe der absolut positionierten Zeile.
+
 ### v0.142.0
 
 - Raumname und untere Sensorzeile besitzen nun jeweils eine eigene feste
@@ -90,15 +99,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   Bildkarten um fünf Pixel nach unten verschoben.
 - Die Raumnamen wie **Flur**, **Küche** oder **Wohnzimmer** wurden ebenfalls um
   fünf Pixel nach unten verschoben; die untere Sensorzeile bleibt unverändert.
-
-### v0.140.0
-
-- Die blauen Bereichs-Icons werden auf allen Bildkarten mit einem festen
-  Abstand zur oberen Kartenkante positioniert und liegen dadurch unabhängig
-  von Leistungs- oder Lux-Bubbles immer auf derselben Höhe.
-- Die zusätzlichen horizontalen und vertikalen Verschiebungen der Symbole
-  innerhalb der Kreise wurden entfernt; die Zentrierung erfolgt wieder exakt
-  über das Flex-Layout.
 
 ## Lizenz
 

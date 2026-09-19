@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.142.0
+ * Version: 0.143.0
  *
- * v0.142 focus:
- * - Position every room overlay independently from the card top edge
+ * v0.143 focus:
+ * - Restore occupancy icons after independent overlay positioning
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.142.0";
+const ATZE_VERSION = "0.143.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7010,7 +7010,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       <style>
         :host {
           display: block;
-          width: 100%;
+          width: auto;
           box-sizing: border-box;
           --home-shell-bg: #111111;
           background: var(--home-shell-bg);
@@ -7521,6 +7521,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room-status-badge {
           width: 34px;
           height: 34px;
+          flex: 0 0 34px;
           padding: 0;
           display: inline-flex;
           align-items: center;
@@ -7613,7 +7614,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 18px;
           align-items: center;
           flex-wrap: nowrap;
-          width: 100%;
+          width: auto;
           color: rgba(255,255,255,0.90);
           font-size: 17px;
           font-weight: 520;
@@ -7908,6 +7909,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           .room-status-badge {
             width: 30px;
             height: 30px;
+            flex-basis: 30px;
           }
 
           .room-status-badge ha-icon {
