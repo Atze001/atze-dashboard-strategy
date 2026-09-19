@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.134.0
+ * Version: 0.135.0
  *
- * v0.134 focus:
- * - Room images reflect the light state
+ * v0.135 focus:
+ * - Compact room climate icons and icon-only occupancy state
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.134.0";
+const ATZE_VERSION = "0.135.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6917,7 +6917,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 ${
                   temp
                     ? `
-                      <span>
+                      <span class="room-temperature">
                         <ha-icon icon="mdi:thermometer"></ha-icon>
                         ${temp}
                       </span>
@@ -6928,7 +6928,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 ${
                   humidity
                     ? `
-                      <span>
+                      <span class="room-humidity">
                         <ha-icon icon="mdi:water-percent"></ha-icon>
                         ${humidity}
                       </span>
@@ -6939,9 +6939,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 ${
                   occupancyText
                     ? `
-                      <span class="room-presence ${occupancyState ? "active" : ""}">
+                      <span
+                        class="room-presence ${occupancyState ? "active" : ""}"
+                        title="Anwesenheit: ${occupancyText}"
+                        aria-label="Anwesenheit: ${occupancyText}"
+                      >
                         <ha-icon icon="mdi:account"></ha-icon>
-                        ${occupancyText}
                       </span>
                     `
                     : ""
@@ -7578,8 +7581,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: rgba(255,255,255,0.82);
         }
 
-        .room-meta span:nth-child(2) ha-icon {
+        .room-meta .room-temperature ha-icon,
+        .room-meta .room-humidity ha-icon {
+          width: 17px;
+          height: 17px;
+          --mdc-icon-size: 17px;
+        }
+
+        .room-meta .room-humidity ha-icon {
           color: #20A0FF;
+        }
+
+        .room-meta .room-presence ha-icon {
+          color: rgba(235,235,245,0.62);
         }
 
         .room-meta .active ha-icon {

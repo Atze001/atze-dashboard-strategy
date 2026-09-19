@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.134.0**
+Version **0.135.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.135.0
+
+- Der Anwesenheitsstatus auf den Raumbildern wird nur noch als Personen-Icon
+  dargestellt; die Texte **Frei** und **Erkannt** entfallen.
+- Das Anwesenheits-Icon ist bei **Frei** grau und bei erkannter Anwesenheit
+  grün.
+- Temperatur- und Luftfeuchtigkeitssymbole auf den Raumkacheln wurden etwas
+  verkleinert.
+
 ### v0.134.0
 
 - Die Raumbilder zeigen nun direkt den Lichtstatus des jeweiligen Bereichs:
@@ -91,16 +100,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Ein langer Druck auf die Thermostat-Kartenfläche öffnet stattdessen den
   automatisch erzeugten technischen Popup.
 - HVAC-Auswahl und normale Thermostatbedienung bleiben unverändert.
-
-### v0.132.0
-
-- Thermostate werden als erweiterte Bubble-Climate-Karten mit dem Namen
-  **Thermostat** erzeugt.
-- Zustand und aktuelle Temperatur erscheinen gemeinsam; die Solltemperatur
-  bleibt sichtbar und die Zustandsfarbe ist aktiviert.
-- Ein HVAC-Modi-Auswahlmenü wird als Sub-Button ergänzt.
-- Climate-Karten verwenden standardmäßig das Layout `normal`; ein zusätzlicher
-  technischer Einstellungen-Button bleibt mit dem HVAC-Menü kompatibel.
 
 ## Lizenz
 
