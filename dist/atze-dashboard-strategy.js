@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.127.0
+ * Version: 0.128.0
  *
- * v0.127 focus:
- * - Compact Bubble cover height and generic shutter name
+ * v0.128 focus:
+ * - Complete Bubble cover configuration for shutters
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.127.0";
+const ATZE_VERSION = "0.128.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1617,6 +1617,21 @@ function defaultBubbleCard(hass, entity, config, area) {
         card_type: "cover",
         entity: entityId,
         name: "Rollladen",
+        icon_open: "mdi:window-shutter-open",
+        icon_close: "mdi:window-shutter",
+        state_content: [
+          "state",
+          "current_position",
+        ],
+        tap_action: {
+          action: "toggle",
+        },
+        button_action: {
+          tap_action: {
+            action: "more-info",
+          },
+        },
+        main_buttons_position: "default",
       };
 
     case "climate":
