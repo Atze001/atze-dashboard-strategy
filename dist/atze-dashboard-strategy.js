@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.128.0
+ * Version: 0.129.0
  *
- * v0.128 focus:
- * - Complete Bubble cover configuration for shutters
+ * v0.129 focus:
+ * - White surface for open Bubble cover cards
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.128.0";
+const ATZE_VERSION = "0.129.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1286,10 +1286,30 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
 
     .bubble-media-player-container,
     .bubble-climate-container,
-    .bubble-cover-card-container,
-    .bubble-cover-container,
     .bubble-select-card-container {
       background-color: rgba(44,44,46,0.92) !important;
+    }
+
+    .bubble-cover-card-container,
+    .bubble-cover-container {
+      background-color:
+        \${${domain === "cover" ? active : "false"}
+          ? 'rgba(255,255,255,0.96)'
+          : 'rgba(44,44,46,0.92)'} !important;
+    }
+
+    .bubble-cover-button {
+      background-color:
+        \${${domain === "cover" ? active : "false"}
+          ? 'rgba(118,118,128,0.14)'
+          : 'rgba(118,118,128,0.18)'} !important;
+    }
+
+    .bubble-cover-button-icon {
+      color:
+        \${${domain === "cover" ? active : "false"}
+          ? 'rgba(28,28,30,0.86)'
+          : 'rgba(255,255,255,0.90)'} !important;
     }
 
     /* Bubble Card has its own ON-state layer. Override it so active
