@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.145.0**
+Version **0.146.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,11 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.146.0
+
+- Die Symbole innerhalb der blauen Bereichs-Bubbles verwenden ein dunkleres,
+  kräftigeres Blau und bleiben dadurch auch auf hellen Raumbildern gut sichtbar.
+
 ### v0.145.0
 
 - Die blauen Bereichs-Bubbles auf den Bildkarten sind etwa zehn Prozent
@@ -87,15 +92,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   durchgestrichen.
 - Bereichsspezifische Motion-Unterbrecher werden automatisch erkannt; alternativ
   kann ein zentraler Helfer verwendet oder die Entität konfiguriert werden.
-
-### v0.143.0
-
-- Die Anwesenheitsicons werden wieder vollständig am rechten Rand der
-  Sensorzeile angezeigt.
-- Aktive rote Warnicons behalten oben rechts ihre feste Kreisgröße und werden
-  auch bei mehreren Warnungen nicht zusammengedrückt.
-- Die festen Positionen aller Kartenanzeigen bleiben unverändert; entfernt
-  wurde nur eine überzählige Breitenangabe der absolut positionierten Zeile.
 
 ## Lizenz
 
