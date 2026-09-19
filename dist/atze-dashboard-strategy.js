@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.138.0
+ * Version: 0.139.0
  *
- * v0.138 focus:
- * - Show room illuminance as the primary badge fallback
+ * v0.139 focus:
+ * - Interactive illuminance badge and vertically centered room icons
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.138.0";
+const ATZE_VERSION = "0.139.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -6849,6 +6849,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         const roomPrimaryMetricIcon = power
           ? "mdi:lightning-bolt"
           : "mdi:white-balance-sunny";
+        const roomPrimaryMetricMoreInfoEntity =
+          !power && illuminance
+            ? "input_number.lichtschwelle"
+            : "";
 
         const occupancyState = room.occupancy
           ? this._isActive(this._state(room.occupancy))
@@ -6921,9 +6925,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
               roomPrimaryMetric
                 ? `
                   <div
-                    class="room-power"
+                    class="room-power ${roomPrimaryMetricMoreInfoEntity ? "clickable" : ""}"
                     title="${roomPrimaryMetricLabel} ${roomPrimaryMetric}"
                     aria-label="${roomPrimaryMetricLabel} ${roomPrimaryMetric}"
+                    ${
+                      roomPrimaryMetricMoreInfoEntity
+                        ? `data-more-info-entity="${roomPrimaryMetricMoreInfoEntity}" role="button" tabindex="0"`
+                        : ""
+                    }
                   >
                     <ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon>
                     <span>${roomPrimaryMetric}</span>
@@ -7415,6 +7424,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           filter: brightness(0.92);
         }
 
+        .room:has(.room-power[data-more-info-entity]:active) {
+          transform: none;
+          filter: none;
+        }
+
         .room-chevron {
           display: none !important;
         }
@@ -7490,6 +7504,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-yellow);
         }
 
+        .room-power.clickable {
+          cursor: pointer;
+        }
+
         .room-status-badges {
           position: absolute;
           top: 8px !important;
@@ -7557,13 +7575,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
           background: rgba(10,132,255,0.28);
           border: 1px solid rgba(10,132,255,0.64);
           backdrop-filter: blur(18px);
+          line-height: 0;
         }
 
         .room-icon ha-icon {
+          --mdc-icon-size: 34px;
           width: 34px;
           height: 34px;
+          display: block;
+          flex: 0 0 34px;
           color: #56A8FF;
-          transform: translateX(3px);
+          transform: translate(3px, 2px);
         }
 
         .room-bottom {
@@ -7893,8 +7915,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .room-icon ha-icon {
+            --mdc-icon-size: 29px;
             width: 29px;
             height: 29px;
+            flex-basis: 29px;
           }
 
           .room-name {
@@ -8141,6 +8165,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.addEventListener("click", () =>
           this._navigate(element.dataset.path)
         );
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".room-power[data-more-info-entity]")
+      .forEach((element) => {
+        const openMoreInfo = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          this._moreInfo(element.dataset.moreInfoEntity);
+        };
+
+        element.addEventListener("click", openMoreInfo);
+        element.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            openMoreInfo(event);
+          }
+        });
       });
 
     this.shadowRoot
