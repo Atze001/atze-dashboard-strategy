@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.137.0
+ * Version: 0.138.0
  *
- * v0.137 focus:
- * - Fine-tune room climate value alignment
+ * v0.138 focus:
+ * - Show room illuminance as the primary badge fallback
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.137.0";
+const ATZE_VERSION = "0.138.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4492,6 +4492,15 @@ function buildHomeOverviewView(
       "power"
     );
 
+    const illuminance = bestEnvironmentEntity(
+      hass,
+      areaEntities,
+      config,
+      area,
+      popupMap,
+      "illuminance"
+    );
+
     const occupancy = bestBinaryEntity(
       hass,
       areaEntities,
@@ -4618,6 +4627,7 @@ function buildHomeOverviewView(
       temperature,
       humidity,
       power,
+      illuminance,
       occupancy,
       window_entity: windowEntity,
       roller_sensor_entity: rollerEntity,
@@ -6820,6 +6830,26 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ? this._formatted(room.power)
             : "";
 
+        const illuminanceState = room.illuminance
+          ? this._state(room.illuminance)
+          : null;
+
+        const illuminance =
+          illuminanceState &&
+          !["unknown", "unavailable"].includes(
+            String(illuminanceState.state || "").toLowerCase()
+          )
+            ? this._formatted(room.illuminance)
+            : "";
+
+        const roomPrimaryMetric = power || illuminance;
+        const roomPrimaryMetricLabel = power
+          ? "Leistung"
+          : "Helligkeit";
+        const roomPrimaryMetricIcon = power
+          ? "mdi:lightning-bolt"
+          : "mdi:white-balance-sunny";
+
         const occupancyState = room.occupancy
           ? this._isActive(this._state(room.occupancy))
           : null;
@@ -6866,7 +6896,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         return `
           <div
-            class="room ${power ? "has-power" : ""}"
+            class="room ${roomPrimaryMetric ? "has-power" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
             data-lights-on="${roomLightsOn ? "true" : "false"}"
@@ -6888,15 +6918,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
             <div class="room-shade"></div>
 
             ${
-              power
+              roomPrimaryMetric
                 ? `
                   <div
                     class="room-power"
-                    title="Leistung ${power}"
-                    aria-label="Leistung ${power}"
+                    title="${roomPrimaryMetricLabel} ${roomPrimaryMetric}"
+                    aria-label="${roomPrimaryMetricLabel} ${roomPrimaryMetric}"
                   >
-                    <ha-icon icon="mdi:lightning-bolt"></ha-icon>
-                    <span>${power}</span>
+                    <ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon>
+                    <span>${roomPrimaryMetric}</span>
                   </div>
                 `
                 : ""
