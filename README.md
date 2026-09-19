@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.132.0**
+Version **0.133.0**
 
 Enthalten sind unter anderem:
 
@@ -73,6 +73,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.133.0
+
+- Der Drei-Punkte-Einstellungsbutton wird bei Thermostat-Karten nicht mehr
+  angezeigt.
+- Ein langer Druck auf die Thermostat-Kartenfläche öffnet stattdessen den
+  automatisch erzeugten technischen Popup.
+- HVAC-Auswahl und normale Thermostatbedienung bleiben unverändert.
+
 ### v0.132.0
 
 - Thermostate werden als erweiterte Bubble-Climate-Karten mit dem Namen
@@ -89,13 +97,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   Apple-Grau `rgba(58,58,60,0.92)` aus den Icon-Flächen der übrigen Karten.
 - Die Steuerungssymbole werden darauf weiß dargestellt; deaktivierte Symbole
   bleiben weiterhin dezent abgeschwächt.
-
-### v0.130.0
-
-- Die grauen Kreise hinter Öffnen, Stoppen und Schließen bleiben bei
-  Rollladen-Karten immer sichtbar.
-- Bei aktuell nicht möglichen Aktionen wird nur noch das jeweilige Symbol
-  abgeschwächt, nicht mehr der gesamte Kreis.
 
 ## Lizenz
 
