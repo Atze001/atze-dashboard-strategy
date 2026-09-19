@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.143.0
+ * Version: 0.144.0
  *
- * v0.143 focus:
- * - Restore occupancy icons after independent overlay positioning
+ * v0.144 focus:
+ * - Show disabled motion detection on room occupancy icons
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.143.0";
+const ATZE_VERSION = "0.144.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3687,6 +3687,44 @@ function bestBinaryEntity(
   )?.entityId || null;
 }
 
+function roomMotionInterrupterEntity(
+  hass,
+  entities,
+  config,
+  area,
+  override
+) {
+  const configured =
+    override.motion_interrupter_entity ||
+    config.home_motion_interrupter_entities?.[area.area_id] ||
+    config.motion_interrupter_entity;
+
+  if (configured && hass.states[configured]) {
+    return configured;
+  }
+
+  const areaCandidate = entities.find((entity) => {
+    if (domainOf(entity.entity_id) !== "input_boolean") return false;
+    if (!hass.states[entity.entity_id]) return false;
+
+    const searchText = normalizedText([
+      entity.entity_id,
+      normalizedFriendlyName(hass, entity),
+    ].join(" "));
+
+    return (
+      searchText.includes("motion_unterbrecher") ||
+      searchText.includes("motion unterbrecher")
+    );
+  });
+
+  if (areaCandidate) return areaCandidate.entity_id;
+
+  return hass.states["input_boolean.motion_unterbrecher"]
+    ? "input_boolean.motion_unterbrecher"
+    : null;
+}
+
 function selectHomeWeatherEntity(hass, config) {
   if (
     config.home_weather_entity &&
@@ -4510,6 +4548,16 @@ function buildHomeOverviewView(
       "occupancy"
     );
 
+    const motionInterrupter = occupancy
+      ? roomMotionInterrupterEntity(
+          hass,
+          areaEntities,
+          config,
+          area,
+          override
+        )
+      : null;
+
     const windowEntity = bestBinaryEntity(
       hass,
       areaEntities,
@@ -4629,6 +4677,7 @@ function buildHomeOverviewView(
       power,
       illuminance,
       occupancy,
+      motion_interrupter: motionInterrupter,
       window_entity: windowEntity,
       roller_sensor_entity: rollerEntity,
       cover_entity: coverEntity,
@@ -6858,6 +6907,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ? this._isActive(this._state(room.occupancy))
           : null;
 
+        const motionInterrupterOff = Boolean(
+          room.motion_interrupter &&
+          String(
+            this._state(room.motion_interrupter)?.state || ""
+          ).toLowerCase() === "off"
+        );
+
         const occupancyText =
           occupancyState == null
             ? ""
@@ -6979,11 +7035,29 @@ class AtzeHomeOverviewCard extends HTMLElement {
                   occupancyText
                     ? `
                       <span
-                        class="room-presence ${occupancyState ? "active" : ""}"
-                        title="Anwesenheit: ${occupancyText}"
-                        aria-label="Anwesenheit: ${occupancyText}"
+                        class="room-presence ${
+                          motionInterrupterOff
+                            ? "interrupted"
+                            : occupancyState
+                              ? "active"
+                              : ""
+                        }"
+                        title="${
+                          motionInterrupterOff
+                            ? "Anwesenheitserkennung deaktiviert"
+                            : `Anwesenheit: ${occupancyText}`
+                        }"
+                        aria-label="${
+                          motionInterrupterOff
+                            ? "Anwesenheitserkennung deaktiviert"
+                            : `Anwesenheit: ${occupancyText}`
+                        }"
                       >
-                        <ha-icon icon="mdi:account"></ha-icon>
+                        <ha-icon icon="${
+                          motionInterrupterOff
+                            ? "mdi:account-off"
+                            : "mdi:account"
+                        }"></ha-icon>
                       </span>
                     `
                     : ""
@@ -7660,6 +7734,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .room-meta .active ha-icon {
           color: var(--home-green);
+        }
+
+        .room-meta .room-presence.interrupted ha-icon {
+          color: var(--home-red);
         }
 
         .quick {

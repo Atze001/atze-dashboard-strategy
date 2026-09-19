@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.143.0**
+Version **0.144.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.144.0
+
+- Das Anwesenheitsicon erhält einen dritten Zustand: Ist der zugehörige
+  `input_boolean.motion_unterbrecher` ausgeschaltet, erscheint es rot und
+  durchgestrichen.
+- Bereichsspezifische Motion-Unterbrecher werden automatisch erkannt; alternativ
+  kann ein zentraler Helfer verwendet oder die Entität konfiguriert werden.
+
 ### v0.143.0
 
 - Die Anwesenheitsicons werden wieder vollständig am rechten Rand der
@@ -92,13 +100,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   Lux-Anzeigen beeinflussen dadurch keine anderen Elemente mehr.
 - Messwert-Bubbles, Status-Bubbles und blaue Bereichs-Bubbles waren bereits
   oben verankert; damit sind nun sämtliche Anzeigen unabhängig positioniert.
-
-### v0.141.0
-
-- Die blauen Bereichs-Bubbles einschließlich ihrer Icons wurden auf allen
-  Bildkarten um fünf Pixel nach unten verschoben.
-- Die Raumnamen wie **Flur**, **Küche** oder **Wohnzimmer** wurden ebenfalls um
-  fünf Pixel nach unten verschoben; die untere Sensorzeile bleibt unverändert.
 
 ## Lizenz
 
