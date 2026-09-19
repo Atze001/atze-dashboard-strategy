@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.136.0**
+Version **0.137.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,11 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.137.0
+
+- Temperatur- und Luftfeuchtigkeitswerte auf den Raumkacheln wurden für eine
+  bessere optische Ausrichtung insgesamt vier Pixel nach unten verschoben.
+
 ### v0.136.0
 
 - Die Temperatur- und Luftfeuchtigkeitswerte wurden um zwei Pixel nach unten
@@ -88,15 +93,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   grün.
 - Temperatur- und Luftfeuchtigkeitssymbole auf den Raumkacheln wurden etwas
   verkleinert.
-
-### v0.134.0
-
-- Die Raumbilder zeigen nun direkt den Lichtstatus des jeweiligen Bereichs:
-  dunkel, wenn alle Lichter aus sind, und hell, sobald mindestens ein Licht
-  eingeschaltet ist.
-- Für die neun mitgelieferten Bereiche wurden passende helle Bildvarianten
-  ergänzt.
-- Das bisherige Glühbirnen-Symbol auf den Raumkacheln entfällt.
 
 ## Lizenz
 

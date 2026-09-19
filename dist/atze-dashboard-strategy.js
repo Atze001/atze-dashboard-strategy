@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.136.0
+ * Version: 0.137.0
  *
- * v0.136 focus:
- * - Align compact climate icons with their values
+ * v0.137 focus:
+ * - Fine-tune room climate value alignment
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.136.0";
+const ATZE_VERSION = "0.137.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7589,7 +7589,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .room-meta .room-meta-value {
-          transform: translateY(2px);
+          transform: translateY(4px);
         }
 
         .room-meta .room-humidity ha-icon {
