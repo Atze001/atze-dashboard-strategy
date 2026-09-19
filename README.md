@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.135.0**
+Version **0.136.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,11 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.136.0
+
+- Die Temperatur- und Luftfeuchtigkeitswerte wurden um zwei Pixel nach unten
+  verschoben und sitzen nun mittig zu den kleineren Symbolen.
+
 ### v0.135.0
 
 - Der Anwesenheitsstatus auf den Raumbildern wird nur noch als Personen-Icon
@@ -92,14 +97,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Für die neun mitgelieferten Bereiche wurden passende helle Bildvarianten
   ergänzt.
 - Das bisherige Glühbirnen-Symbol auf den Raumkacheln entfällt.
-
-### v0.133.0
-
-- Der Drei-Punkte-Einstellungsbutton wird bei Thermostat-Karten nicht mehr
-  angezeigt.
-- Ein langer Druck auf die Thermostat-Kartenfläche öffnet stattdessen den
-  automatisch erzeugten technischen Popup.
-- HVAC-Auswahl und normale Thermostatbedienung bleiben unverändert.
 
 ## Lizenz
 
