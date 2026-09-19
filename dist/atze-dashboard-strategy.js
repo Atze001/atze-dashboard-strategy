@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.139.0
+ * Version: 0.140.0
  *
- * v0.139 focus:
- * - Interactive illuminance badge and vertically centered room icons
+ * v0.140 focus:
+ * - Consistent room icon positioning from the card edge
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.139.0";
+const ATZE_VERSION = "0.140.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7467,11 +7467,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .room-top {
-          position: relative;
-        }
-
-        .room.has-power .room-top {
-          padding-top: 30px;
+          position: absolute;
+          top: 50px;
+          left: 20px;
         }
 
         .room-power {
@@ -7585,7 +7583,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: block;
           flex: 0 0 34px;
           color: #56A8FF;
-          transform: translate(3px, 2px);
+          transform: none;
         }
 
         .room-bottom {
@@ -7874,8 +7872,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
             height: 58px;
           }
 
-          .room.has-power .room-top {
-            padding-top: 27px;
+          .room-top {
+            top: 46px;
+            left: 20px;
           }
 
           .room-power {

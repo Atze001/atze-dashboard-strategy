@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.139.0**
+Version **0.140.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.140.0
+
+- Die blauen Bereichs-Icons werden auf allen Bildkarten mit einem festen
+  Abstand zur oberen Kartenkante positioniert und liegen dadurch unabhängig
+  von Leistungs- oder Lux-Bubbles immer auf derselben Höhe.
+- Die zusätzlichen horizontalen und vertikalen Verschiebungen der Symbole
+  innerhalb der Kreise wurden entfernt; die Zentrierung erfolgt wieder exakt
+  über das Flex-Layout.
+
 ### v0.139.0
 
 - Ein Tipp auf die Helligkeits-Bubble öffnet direkt die Detailansicht von
@@ -88,11 +97,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   zeigt die Raumkachel den Lux-Wert oben links in derselben Status-Bubble an.
 - Leistung hat weiterhin Vorrang vor Helligkeit; der Lux-Wert erscheint damit
   automatisch auf der Balkon-Kachel, ohne die übrige Darstellung zu verändern.
-
-### v0.137.0
-
-- Temperatur- und Luftfeuchtigkeitswerte auf den Raumkacheln wurden für eine
-  bessere optische Ausrichtung insgesamt vier Pixel nach unten verschoben.
 
 ## Lizenz
 
