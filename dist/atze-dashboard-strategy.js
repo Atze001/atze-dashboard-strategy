@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.130.0
+ * Version: 0.131.0
  *
- * v0.130 focus:
- * - Visible gray backgrounds for all cover controls
+ * v0.131 focus:
+ * - Dark Apple gray cover control bubbles
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.130.0";
+const ATZE_VERSION = "0.131.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1299,17 +1299,11 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
     }
 
     .bubble-cover-button {
-      background-color:
-        \${${domain === "cover" ? active : "false"}
-          ? 'rgba(118,118,128,0.14)'
-          : 'rgba(118,118,128,0.18)'} !important;
+      background-color: rgba(58,58,60,0.92) !important;
     }
 
     .bubble-cover-button-icon {
-      color:
-        \${${domain === "cover" ? active : "false"}
-          ? 'rgba(28,28,30,0.86)'
-          : 'rgba(255,255,255,0.90)'} !important;
+      color: rgba(255,255,255,0.92) !important;
     }
 
     .bubble-cover-button.disabled {
