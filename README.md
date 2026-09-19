@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.131.0**
+Version **0.132.0**
 
 Enthalten sind unter anderem:
 
@@ -73,6 +73,16 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.132.0
+
+- Thermostate werden als erweiterte Bubble-Climate-Karten mit dem Namen
+  **Thermostat** erzeugt.
+- Zustand und aktuelle Temperatur erscheinen gemeinsam; die Solltemperatur
+  bleibt sichtbar und die Zustandsfarbe ist aktiviert.
+- Ein HVAC-Modi-Auswahlmenü wird als Sub-Button ergänzt.
+- Climate-Karten verwenden standardmäßig das Layout `normal`; ein zusätzlicher
+  technischer Einstellungen-Button bleibt mit dem HVAC-Menü kompatibel.
+
 ### v0.131.0
 
 - Die drei Steuerungs-Bubbles der Rollladen-Karte verwenden nun das dunkle
@@ -86,14 +96,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   Rollladen-Karten immer sichtbar.
 - Bei aktuell nicht möglichen Aktionen wird nur noch das jeweilige Symbol
   abgeschwächt, nicht mehr der gesamte Kreis.
-
-### v0.129.0
-
-- Geöffnete Rollläden erhalten eine weiße Kartenfläche im Apple-Home-Stil.
-- Name, Zustand und Position bleiben dabei dunkel; die Steuertasten wechseln
-  ebenfalls auf dunkle Symbole mit dezent grauem Hintergrund.
-- Geschlossene Rollläden verwenden weiterhin die dunkle Kartenfläche mit
-  heller Schrift und hellen Bedienelementen.
 
 ## Lizenz
 
