@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.125.0**
+Version **0.126.0**
 
 Enthalten sind unter anderem:
 
@@ -73,6 +73,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.126.0
+
+- Rollläden und andere Cover werden automatisch als native Bubble-Card-Cover
+  mit `card_type: cover` erzeugt.
+- Die Karte verwendet damit die integrierten Öffnen-, Stoppen- und
+  Schließen-Bedienelemente der Bubble Card.
+- Cover erhalten standardmäßig zwei Rasterzeilen; dies kann bei Bedarf über
+  `cover_card_rows` oder pro Entität über `rows` überschrieben werden.
+
 ### v0.125.0
 
 - Jede unter **Eigene Seiten** erzeugte Ansicht erhält automatisch oben einen
@@ -88,13 +97,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Icon und Titel werden aus der jeweiligen Ansichts-YAML übernommen; ein Tipp
   navigiert direkt zum konfigurierten Pfad.
 - Auf kleinen Displays ist die Buttonleiste horizontal scrollbar.
-
-### v0.123.0
-
-- Eigene Seiten werden jetzt im nativen Home-Assistant-YAML-Editor bearbeitet.
-- Die YAML einer einzelnen Lovelace-Ansicht kann mit `title`, `path`, `icon`,
-  `cards` oder `sections` direkt aus einem anderen Dashboard übernommen werden.
-- Bereits mit der bisherigen JSON-Eingabe angelegte Seiten bleiben kompatibel.
 
 ## Lizenz
 

@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.125.0
+ * Version: 0.126.0
  *
- * v0.125 focus:
- * - Automatic home button on every custom page
+ * v0.126 focus:
+ * - Native Bubble Card cover controls for covers
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.125.0";
+const ATZE_VERSION = "0.126.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1613,38 +1613,9 @@ function defaultBubbleCard(hass, entity, config, area) {
   switch (domain) {
     case "cover":
       return {
-        ...base,
-        card_type: "button",
-        button_type: "state",
-
-        // Display only the opening percentage as the secondary line.
-        show_state: false,
-        show_attribute: true,
-        attribute: "current_position",
-
-        // Custom icon handling below owns open / stop / close.
-        tap_action: {
-          action: "none",
-        },
-        double_tap_action: {
-          action: "none",
-        },
-        hold_action: {
-          action: "none",
-        },
-
-        // The remaining card surface always opens Home Assistant More Info.
-        button_action: {
-          tap_action: {
-            action: "more-info",
-          },
-          double_tap_action: {
-            action: "none",
-          },
-          hold_action: {
-            action: "more-info",
-          },
-        },
+        type: "custom:bubble-card",
+        card_type: "cover",
+        entity: entityId,
       };
 
     case "climate":
@@ -1901,10 +1872,16 @@ function buildEntityCard(
     // Use Bubble Card's own Sections sizing model. Its native defaults
     // differ by card type (notably cover defaults to two rows), so Apple
     // Home mode normalizes every entity tile to one row.
+    const isNativeCover =
+      domainOf(entityId) === "cover" &&
+      card.card_type === "cover";
+
     const nativeRows = Number(
-      options.compact
-        ? (override.rows ?? config.apple_compact_rows ?? 1)
-        : (override.rows ?? config.apple_card_rows ?? 1)
+      isNativeCover
+        ? (override.rows ?? config.cover_card_rows ?? 2)
+        : options.compact
+          ? (override.rows ?? config.apple_compact_rows ?? 1)
+          : (override.rows ?? config.apple_card_rows ?? 1)
     );
 
     const normalizedRows =
@@ -1932,13 +1909,6 @@ function buildEntityCard(
         config
       )
     );
-
-    if (domainOf(entityId) === "cover") {
-      appendBubbleStyle(
-        card,
-        appleHomeCoverControlStyle(entityId)
-      );
-    }
 
     if (
       domainOf(entityId) === "switch" &&
