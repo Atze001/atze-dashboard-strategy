@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.128.0**
+Version **0.129.0**
 
 Enthalten sind unter anderem:
 
@@ -73,6 +73,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.129.0
+
+- Geöffnete Rollläden erhalten eine weiße Kartenfläche im Apple-Home-Stil.
+- Name, Zustand und Position bleiben dabei dunkel; die Steuertasten wechseln
+  ebenfalls auf dunkle Symbole mit dezent grauem Hintergrund.
+- Geschlossene Rollläden verwenden weiterhin die dunkle Kartenfläche mit
+  heller Schrift und hellen Bedienelementen.
+
 ### v0.128.0
 
 - Rollladen-Karten verwenden eigene Icons für geöffnet und geschlossen.
@@ -87,15 +95,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   Höhe der übrigen Raumkarten.
 - Automatisch erzeugte Cover-Karten tragen einheitlich den Namen
   **Rollladen**.
-
-### v0.126.0
-
-- Rollläden und andere Cover werden automatisch als native Bubble-Card-Cover
-  mit `card_type: cover` erzeugt.
-- Die Karte verwendet damit die integrierten Öffnen-, Stoppen- und
-  Schließen-Bedienelemente der Bubble Card.
-- Cover erhalten standardmäßig eine Rasterzeile; dies kann bei Bedarf über
-  `cover_card_rows` oder pro Entität über `rows` überschrieben werden.
 
 ## Lizenz
 
