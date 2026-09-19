@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.129.0
+ * Version: 0.130.0
  *
- * v0.129 focus:
- * - White surface for open Bubble cover cards
+ * v0.130 focus:
+ * - Visible gray backgrounds for all cover controls
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.129.0";
+const ATZE_VERSION = "0.130.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1310,6 +1310,14 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
         \${${domain === "cover" ? active : "false"}
           ? 'rgba(28,28,30,0.86)'
           : 'rgba(255,255,255,0.90)'} !important;
+    }
+
+    .bubble-cover-button.disabled {
+      opacity: 1 !important;
+    }
+
+    .bubble-cover-button.disabled .bubble-cover-button-icon {
+      opacity: 0.28 !important;
     }
 
     /* Bubble Card has its own ON-state layer. Override it so active
