@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.146.0**
+Version **0.147.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.147.0
+
+- Profil, Uhrzeit und die sechs Statuskacheln erhalten eine gemeinsame
+  Hausansicht als Hintergrund.
+- Von **07:00 bis 19:59 Uhr** wird automatisch die helle Tagversion verwendet;
+  von **20:00 bis 06:59 Uhr** erscheint die dunkle Nachtversion.
+- Verlauf, Glasoptik und Kontrast sorgen in beiden Varianten für gut lesbare
+  Texte und Statuswerte.
+
 ### v0.146.0
 
 - Die Symbole innerhalb der blauen Bereichs-Bubbles verwenden ein dunkleres,
@@ -84,14 +93,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 - Die blauen Bereichs-Bubbles auf den Bildkarten sind etwa zehn Prozent
   transparenter; Position, Größe, Rahmen und Icons bleiben unverändert.
-
-### v0.144.0
-
-- Das Anwesenheitsicon erhält einen dritten Zustand: Ist der zugehörige
-  `input_boolean.motion_unterbrecher` ausgeschaltet, erscheint es rot und
-  durchgestrichen.
-- Bereichsspezifische Motion-Unterbrecher werden automatisch erkannt; alternativ
-  kann ein zentraler Helfer verwendet oder die Entität konfiguriert werden.
 
 ## Lizenz
 

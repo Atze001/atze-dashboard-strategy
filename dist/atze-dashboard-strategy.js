@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.146.0
+ * Version: 0.147.0
  *
- * v0.146 focus:
- * - Improve room icon contrast on bright images
+ * v0.147 focus:
+ * - Add automatic day and night backgrounds to the home status area
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.146.0";
+const ATZE_VERSION = "0.147.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3641,6 +3641,16 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
   )
 );
 
+const DEFAULT_HOME_HERO_DAY_IMAGE = new URL(
+  "home-hero-day.webp",
+  ATZE_ASSET_BASE_URL
+).href;
+
+const DEFAULT_HOME_HERO_NIGHT_IMAGE = new URL(
+  "home-hero-night.webp",
+  ATZE_ASSET_BASE_URL
+).href;
+
 function bestEnvironmentEntity(
   hass,
   entities,
@@ -4759,6 +4769,12 @@ function buildHomeOverviewView(
     })),
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
+    hero_day_image:
+      config.home_hero_day_image ||
+      DEFAULT_HOME_HERO_DAY_IMAGE,
+    hero_night_image:
+      config.home_hero_night_image ||
+      DEFAULT_HOME_HERO_NIGHT_IMAGE,
     light_entities: uniqueEntityIds(lightEntities),
     cover_entities: uniqueEntityIds(coverEntities),
     lock_entity: lockEntity,
@@ -6702,6 +6718,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (!this.shadowRoot || !this._config || !this._hass) return;
 
     const now = new Date();
+    const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
+    const heroImage = heroIsDay
+      ? this._config.hero_day_image
+      : this._config.hero_night_image;
 
     const time = new Intl.DateTimeFormat("de-DE", {
       hour: "2-digit",
@@ -7127,6 +7147,65 @@ class AtzeHomeOverviewCard extends HTMLElement {
           padding: 34px 24px 48px;
         }
 
+        .home-status-panel {
+          position: relative;
+          isolation: isolate;
+          margin-bottom: 26px;
+          padding: 28px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 34px;
+          box-shadow: 0 14px 38px rgba(0,0,0,0.28);
+        }
+
+        .home-status-panel::before,
+        .home-status-panel::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+
+        .home-status-panel::before {
+          z-index: -2;
+          background-image: var(--home-hero-image);
+          background-position: center center;
+          background-repeat: no-repeat;
+          background-size: cover;
+          transform: scale(1.01);
+        }
+
+        .home-status-panel::after {
+          z-index: -1;
+          background:
+            linear-gradient(
+              90deg,
+              rgba(5,7,10,0.73) 0%,
+              rgba(5,7,10,0.46) 48%,
+              rgba(5,7,10,0.66) 100%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(5,7,10,0.18) 0%,
+              rgba(5,7,10,0.62) 100%
+            );
+        }
+
+        .home-status-panel.day::after {
+          background:
+            linear-gradient(
+              90deg,
+              rgba(5,7,10,0.72) 0%,
+              rgba(5,7,10,0.43) 48%,
+              rgba(5,7,10,0.70) 100%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(5,7,10,0.28) 0%,
+              rgba(5,7,10,0.68) 100%
+            );
+        }
+
         .hero {
           display: flex;
           justify-content: space-between;
@@ -7265,7 +7344,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: grid;
           grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 14px;
-          margin-bottom: 26px;
+          margin-bottom: 0;
         }
 
         .status {
@@ -7278,6 +7357,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           border: 1px solid var(--home-card-border);
           border-radius: 28px;
           background: var(--home-card-bg);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
           color: var(--primary-text-color);
           overflow: hidden;
         }
@@ -7818,6 +7899,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
             padding: 24px 14px 36px;
           }
 
+          .home-status-panel {
+            margin-bottom: 20px;
+            padding: 20px 14px;
+            border-radius: 28px;
+          }
+
           .hero {
             align-items: flex-start;
             margin-bottom: 24px;
@@ -8026,7 +8113,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
       <ha-card>
         <div class="page">
-          <div class="hero">
+          <section
+            class="home-status-panel ${heroIsDay ? "day" : "night"}"
+            style="--home-hero-image: url('${this._escapeHtml(heroImage || "")}')"
+            aria-label="Hausstatus"
+          >
+            <div class="hero">
             ${
               person
                 ? `
@@ -8090,9 +8182,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
               >${time}</div>
               <div class="date">${date}</div>
             </div>
-          </div>
+            </div>
 
-          <div class="status-grid">
+            <div class="status-grid">
             <div class="status weather">
               <ha-icon icon="${weatherIcon}"></ha-icon>
               <div>
@@ -8155,7 +8247,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <div class="status-sub">AtzeHomeBase</div>
               </div>
             </div>
-          </div>
+            </div>
+          </section>
 
           ${customPageLinksHtml}
 
