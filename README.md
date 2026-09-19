@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.144.0**
+Version **0.145.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,11 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.145.0
+
+- Die blauen Bereichs-Bubbles auf den Bildkarten sind etwa zehn Prozent
+  transparenter; Position, Größe, Rahmen und Icons bleiben unverändert.
+
 ### v0.144.0
 
 - Das Anwesenheitsicon erhält einen dritten Zustand: Ist der zugehörige
@@ -91,15 +96,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   auch bei mehreren Warnungen nicht zusammengedrückt.
 - Die festen Positionen aller Kartenanzeigen bleiben unverändert; entfernt
   wurde nur eine überzählige Breitenangabe der absolut positionierten Zeile.
-
-### v0.142.0
-
-- Raumname und untere Sensorzeile besitzen nun jeweils eine eigene feste
-  Position relativ zur oberen Kartenkante.
-- Fehlende Temperatur-, Luftfeuchtigkeits-, Anwesenheits-, Leistungs- oder
-  Lux-Anzeigen beeinflussen dadurch keine anderen Elemente mehr.
-- Messwert-Bubbles, Status-Bubbles und blaue Bereichs-Bubbles waren bereits
-  oben verankert; damit sind nun sämtliche Anzeigen unabhängig positioniert.
 
 ## Lizenz
 
