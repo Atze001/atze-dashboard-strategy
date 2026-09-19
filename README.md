@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.126.0**
+Version **0.127.0**
 
 Enthalten sind unter anderem:
 
@@ -73,13 +73,20 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.127.0
+
+- Bubble-Cover-Karten verwenden nun eine Rasterzeile und entsprechen damit der
+  Höhe der übrigen Raumkarten.
+- Automatisch erzeugte Cover-Karten tragen einheitlich den Namen
+  **Rollladen**.
+
 ### v0.126.0
 
 - Rollläden und andere Cover werden automatisch als native Bubble-Card-Cover
   mit `card_type: cover` erzeugt.
 - Die Karte verwendet damit die integrierten Öffnen-, Stoppen- und
   Schließen-Bedienelemente der Bubble Card.
-- Cover erhalten standardmäßig zwei Rasterzeilen; dies kann bei Bedarf über
+- Cover erhalten standardmäßig eine Rasterzeile; dies kann bei Bedarf über
   `cover_card_rows` oder pro Entität über `rows` überschrieben werden.
 
 ### v0.125.0
@@ -89,14 +96,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 - Der Button führt zuverlässig zum konfigurierten `home_path` zurück und wird
   auch bei Karten-, Sections- und Panel-Ansichten automatisch eingefügt.
 - Die Seiten-YAML selbst benötigt dafür keinen zusätzlichen Navigationscode.
-
-### v0.124.0
-
-- Oberhalb der Favoriten erscheinen automatisch kompakte Buttons für alle
-  unter **Eigene Seiten** angelegten Ansichten.
-- Icon und Titel werden aus der jeweiligen Ansichts-YAML übernommen; ein Tipp
-  navigiert direkt zum konfigurierten Pfad.
-- Auf kleinen Displays ist die Buttonleiste horizontal scrollbar.
 
 ## Lizenz
 

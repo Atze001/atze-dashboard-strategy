@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.126.0
+ * Version: 0.127.0
  *
- * v0.126 focus:
- * - Native Bubble Card cover controls for covers
+ * v0.127 focus:
+ * - Compact Bubble cover height and generic shutter name
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.126.0";
+const ATZE_VERSION = "0.127.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -1616,6 +1616,7 @@ function defaultBubbleCard(hass, entity, config, area) {
         type: "custom:bubble-card",
         card_type: "cover",
         entity: entityId,
+        name: "Rollladen",
       };
 
     case "climate":
@@ -1878,7 +1879,7 @@ function buildEntityCard(
 
     const nativeRows = Number(
       isNativeCover
-        ? (override.rows ?? config.cover_card_rows ?? 2)
+        ? (override.rows ?? config.cover_card_rows ?? 1)
         : options.compact
           ? (override.rows ?? config.apple_compact_rows ?? 1)
           : (override.rows ?? config.apple_card_rows ?? 1)
