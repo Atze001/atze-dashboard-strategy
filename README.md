@@ -8,7 +8,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.138.0**
+Version **0.139.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +75,13 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.139.0
+
+- Ein Tipp auf die Helligkeits-Bubble öffnet direkt die Detailansicht von
+  `input_number.lichtschwelle`, ohne zur Raumseite zu navigieren.
+- Die blauen Bereichssymbole sind innerhalb ihrer runden Icon-Flächen nun
+  vertikal mittig ausgerichtet.
+
 ### v0.138.0
 
 - Besitzt ein Bereich keinen Leistungssensor, aber einen Helligkeitssensor,
@@ -86,11 +93,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 - Temperatur- und Luftfeuchtigkeitswerte auf den Raumkacheln wurden für eine
   bessere optische Ausrichtung insgesamt vier Pixel nach unten verschoben.
-
-### v0.136.0
-
-- Die Temperatur- und Luftfeuchtigkeitswerte wurden um zwei Pixel nach unten
-  verschoben und sitzen nun mittig zu den kleineren Symbolen.
 
 ## Lizenz
 
