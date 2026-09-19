@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.144.0
+ * Version: 0.145.0
  *
- * v0.144 focus:
- * - Show disabled motion detection on room occupancy icons
+ * v0.145 focus:
+ * - Make blue room bubbles slightly more transparent
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.144.0";
+const ATZE_VERSION = "0.145.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7645,7 +7645,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           align-items: center;
           justify-content: center;
           border-radius: 50%;
-          background: rgba(10,132,255,0.28);
+          background: rgba(10,132,255,0.25);
           border: 1px solid rgba(10,132,255,0.64);
           backdrop-filter: blur(18px);
           line-height: 0;
