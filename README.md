@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.174.0**
+Version **0.175.0**
 
 Enthalten sind unter anderem:
 
@@ -145,6 +145,15 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.175.0
+
+- Die automatische Blueprint-Prüfung wurde aus der Strategy-Generierung in
+  die tatsächlich geladene Startseitenkarte verschoben.
+- Sobald die Home-Overview-Card ihren ersten Home-Assistant-State erhält,
+  wird der Lichtsteuerungs-Blueprint genau einmal pro Karteninstanz geprüft
+  und bei Bedarf angelegt.
+- Der manuelle Button **Prüfen / installieren** bleibt als Fallback erhalten.
 
 ### v0.174.0
 

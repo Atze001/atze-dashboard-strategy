@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.174.0";
+const ATZE_VERSION = "0.175.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -237,7 +237,6 @@ action:
 mode: restart
 `;
 
-let ATZE_LIGHT_BLUEPRINT_AUTO_ATTEMPTED = false;
 
 async function ensureAtzeLightBlueprint(hass) {
   if (!hass) {
