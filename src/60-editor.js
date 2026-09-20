@@ -1110,7 +1110,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
       const blueprintMessage = blueprintResult.created
         ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant angelegt."
-        : "Der Lichtsteuerungs-Blueprint ist bereits in Home Assistant vorhanden.";
+        : blueprintResult.updated
+          ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant aktualisiert."
+          : "Der Lichtsteuerungs-Blueprint ist bereits in der aktuellen Version vorhanden.";
 
       this._lightHelperSetupMessage =
         `${helperMessage} ${blueprintMessage}`;
@@ -1152,7 +1154,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._lightHelperSetupState = "success";
       this._lightHelperSetupMessage = result.created
         ? "Blueprint wurde erfolgreich in Home Assistant angelegt und verifiziert."
-        : "Blueprint ist bereits in Home Assistant vorhanden und wurde verifiziert.";
+        : result.updated
+          ? "Blueprint wurde erfolgreich auf die aktuelle Version aktualisiert und verifiziert."
+          : "Blueprint ist bereits in der aktuellen Version vorhanden und wurde verifiziert.";
     } catch (error) {
       this._lightHelperSetupState = "error";
       this._lightHelperSetupMessage =

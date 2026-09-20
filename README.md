@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.175.0**
+Version **0.176.0**
 
 Enthalten sind unter anderem:
 
@@ -102,10 +102,15 @@ Der Zielpfad in Home Assistant ist:
 `/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`
 
 Home Assistant erzeugt die fehlenden Unterordner beim Speichern automatisch.
-Der Blueprint unterstützt eine freie Lampenauswahl sowie getrennte
-Zeitversätze für **Morgen**, **Abend** und **Nacht**. Die Zeitversätze werden
-direkt in der jeweiligen Blueprint-Automation gespeichert; dafür sind keine
-zusätzlichen Helfer nötig.
+Der Blueprint verwendet die von der Strategy fest angelegten Helfer für
+**Aktivierung, Startzeiten, Helligkeit und Farbtemperatur** automatisch. Beim
+Erstellen einer Automation müssen deshalb nur noch die Lampen sowie die drei
+raumbezogenen Zeitversätze für **Morgen**, **Abend** und **Nacht** ausgewählt
+werden. Die Zeitversätze werden direkt in der jeweiligen Blueprint-Automation
+gespeichert; dafür sind keine zusätzlichen Helfer nötig.
+
+Ändert sich die mitgelieferte Blueprint-Version, aktualisiert die Strategy den
+bereits in Home Assistant vorhandenen Blueprint automatisch.
 
 ## Dashboard-YAML
 
@@ -145,6 +150,15 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.176.0
+
+- Der Lichtsteuerungs-Blueprint übernimmt die fest integrierten Helfer für
+  Aktivierung, Morgen/Abend/Nacht, Helligkeit und Farbtemperatur automatisch.
+- Im Blueprint bleiben nur Lampenauswahl sowie Morgen-, Abend- und
+  Nacht-Zeitversatz als Benutzereingaben.
+- Bereits installierte ältere Blueprint-Versionen werden beim Laden
+  automatisch auf die aktuelle Version aktualisiert.
 
 ### v0.175.0
 
