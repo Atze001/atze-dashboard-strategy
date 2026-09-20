@@ -1,6 +1,6 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.159.1
+ * Version source: ATZE_VERSION below
  *
  * v0.159 focus:
  * - Split the source into maintainable build modules
