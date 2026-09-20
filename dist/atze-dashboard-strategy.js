@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.183.0";
+const ATZE_VERSION = "0.184.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -625,7 +625,7 @@ function setupAtzeScrollTopButton(anchor) {
 
 
 const ATZE_HOME_SWIPE_NATIVE_EDGE = 28;
-const ATZE_HOME_SWIPE_MIN_DISTANCE = 90;
+const ATZE_HOME_SWIPE_MIN_DISTANCE = 140;
 const ATZE_HOME_SWIPE_MAX_VERTICAL = 110;
 const ATZE_HOME_SWIPE_STATE_KEY =
   "__atzeDashboardHomeSwipeState";
