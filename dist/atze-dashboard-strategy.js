@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.153.0
+ * Version: 0.154.0
  *
- * v0.153 focus:
- * - Recenter home status icons and simplify battery status text
+ * v0.154 focus:
+ * - Add a configurable Scheduler Bubble Card popup to the home view
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.153.0";
+const ATZE_VERSION = "0.154.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4805,6 +4805,15 @@ function buildHomeOverviewView(
         )
     )?.entity_id || null;
 
+  const showSchedulerPopup = schedulerPopupEnabled(config);
+  const customPageLinks = buildCustomPageViews(config).map(
+    (view) => ({
+      title: view.title,
+      path: view.path,
+      icon: view.icon || "mdi:view-dashboard-outline",
+    })
+  );
+
   const homeCard = {
     type: "custom:atze-home-overview-card",
     title: config.home_title || "Zuhause",
@@ -4851,11 +4860,17 @@ function buildHomeOverviewView(
           (entity) => entity.entity_id === entityId
         )
       ),
-    custom_pages: buildCustomPageViews(config).map((view) => ({
-      title: view.title,
-      path: view.path,
-      icon: view.icon || "mdi:view-dashboard-outline",
-    })),
+    custom_pages: [
+      ...(showSchedulerPopup
+        ? [{
+            title: "Zeitpläne",
+            popup_hash: "#zeitplaene",
+            icon: "mdi:calendar-clock",
+          }]
+        : []),
+      ...customPageLinks,
+    ],
+    scheduler_popup: showSchedulerPopup,
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
     hero_day_image:
@@ -4886,6 +4901,37 @@ function buildHomeOverviewView(
   };
 }
 
+function customPageSource(page) {
+  if (!page || typeof page !== "object") return null;
+
+  return page.view && typeof page.view === "object"
+    ? page.view
+    : page;
+}
+
+function isSchedulerCustomPage(page) {
+  const source = customPageSource(page);
+  if (!source) return false;
+
+  const cards = Array.isArray(source.cards)
+    ? source.cards
+    : source.card && typeof source.card === "object"
+      ? [source.card]
+      : [];
+
+  return cards.some(
+    (card) => card?.type === "custom:scheduler-card"
+  );
+}
+
+function schedulerPopupEnabled(config) {
+  if (config.scheduler_popup != null) {
+    return config.scheduler_popup === true;
+  }
+
+  return asArray(config.custom_pages).some(isSchedulerCustomPage);
+}
+
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -4894,13 +4940,11 @@ function buildCustomPageViews(config) {
   ]);
 
   return asArray(config.custom_pages)
+    .filter((page) => !isSchedulerCustomPage(page))
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
-      const source =
-        page.view && typeof page.view === "object"
-          ? page.view
-          : page;
+      const source = customPageSource(page);
       const title = String(source.title || `Eigene Seite ${index + 1}`).trim();
       const requestedPath = String(source.path || slugify(title)).trim();
 
@@ -6032,15 +6076,29 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
+    this._schedulerPopupCard = null;
+    this._schedulerPopupPromise = null;
   }
 
   setConfig(config) {
     this._config = { ...config };
+
+    if (this._config.scheduler_popup !== true) {
+      this._schedulerPopupCard?.remove();
+      this._schedulerPopupCard = null;
+      this._schedulerPopupPromise = null;
+    }
+
     this._render();
   }
 
   set hass(value) {
     this._hass = value;
+
+    if (this._schedulerPopupCard) {
+      this._schedulerPopupCard.hass = value;
+    }
+
     this._render();
   }
 
@@ -6499,6 +6557,81 @@ class AtzeHomeOverviewCard extends HTMLElement {
     window.dispatchEvent(new Event("location-changed"));
   }
 
+  _openPopup(hash) {
+    const target = String(hash || "").startsWith("#")
+      ? String(hash)
+      : `#${String(hash || "")}`;
+
+    if (target === "#") return;
+
+    if (window.location.hash === target) {
+      window.dispatchEvent(new Event("hashchange"));
+    } else {
+      window.location.hash = target;
+    }
+  }
+
+  async _ensureSchedulerPopup() {
+    if (
+      this._config?.scheduler_popup !== true ||
+      !this.shadowRoot
+    ) {
+      return;
+    }
+
+    const host = this.shadowRoot.querySelector(
+      "#scheduler-popup-host"
+    );
+
+    if (!host) return;
+
+    if (this._schedulerPopupCard) {
+      this._schedulerPopupCard.hass = this._hass;
+      host.replaceChildren(this._schedulerPopupCard);
+      return;
+    }
+
+    if (this._schedulerPopupPromise) return;
+
+    this._schedulerPopupPromise = (async () => {
+      const helpers = await window.loadCardHelpers();
+      const popupCard = await helpers.createCardElement({
+        type: "custom:bubble-card",
+        card_type: "pop-up",
+        hash: "#zeitplaene",
+        name: "Zeitpläne",
+        icon: "mdi:calendar-clock",
+        popup_mode: "adaptive-dialog",
+        width_desktop: "900px",
+        cards: [
+          {
+            type: "custom:scheduler-card",
+          },
+        ],
+      });
+
+      popupCard.hass = this._hass;
+      this._schedulerPopupCard = popupCard;
+
+      const currentHost = this.shadowRoot?.querySelector(
+        "#scheduler-popup-host"
+      );
+
+      if (currentHost) {
+        currentHost.replaceChildren(popupCard);
+      }
+    })()
+      .catch((error) => {
+        console.error(
+          "Atze Dashboard: Zeitpläne-Popup konnte nicht geladen werden.",
+          error
+        );
+      })
+      .finally(() => {
+        this._schedulerPopupPromise = null;
+      });
+  }
+
   _escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -6851,6 +6984,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass) return;
 
+    // Keep the mounted Bubble Card alive while its dialog is open. The
+    // scheduler itself still receives fresh Home Assistant state via `hass`.
+    if (
+      this._schedulerPopupCard?.isConnected &&
+      window.location.hash === "#zeitplaene"
+    ) {
+      return;
+    }
+
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
     const heroImage = heroIsDay
@@ -6957,7 +7099,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .filter((entry) => entry.stateObj);
 
     const customPageLinks = asArray(this._config.custom_pages)
-      .filter((page) => page?.path && page?.title);
+      .filter(
+        (page) =>
+          page?.title && (page?.path || page?.popup_hash)
+      );
 
     const customPageLinksHtml = customPageLinks.length
       ? `
@@ -6967,7 +7112,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <button
                   type="button"
                   class="custom-page-link"
-                  data-path="${this._escapeHtml(page.path)}"
+                  ${page.path
+                    ? `data-path="${this._escapeHtml(page.path)}"`
+                    : ""}
+                  ${page.popup_hash
+                    ? `data-popup-hash="${this._escapeHtml(page.popup_hash)}"`
+                    : ""}
                   title="${this._escapeHtml(page.title)}"
                 >
                   <ha-icon
@@ -8551,7 +8701,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           </div>
         </div>
       </ha-card>
+      <div id="scheduler-popup-host"></div>
     `;
+
+    this._ensureSchedulerPopup();
 
     this.shadowRoot
       .querySelectorAll(".room")
@@ -8590,6 +8743,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .forEach((element) => {
         element.addEventListener("click", () =>
           this._navigate(element.dataset.path)
+        );
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".custom-page-link[data-popup-hash]")
+      .forEach((element) => {
+        element.addEventListener("click", () =>
+          this._openPopup(element.dataset.popupHash)
         );
       });
 
@@ -11371,8 +11532,30 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   _customPages() {
     return asArray(this._config.custom_pages).filter(
-      (page) => page && typeof page === "object"
+      (page) =>
+        page &&
+        typeof page === "object" &&
+        !isSchedulerCustomPage(page)
     );
+  }
+
+  _schedulerPopupEnabled() {
+    return schedulerPopupEnabled(this._config || {});
+  }
+
+  _setSchedulerPopup(value) {
+    const pages = asArray(this._config.custom_pages).filter(
+      (page) => !isSchedulerCustomPage(page)
+    );
+    const next = {
+      ...this._config,
+      scheduler_popup: value === true,
+    };
+
+    if (pages.length > 0) next.custom_pages = pages;
+    else delete next.custom_pages;
+
+    this._fireConfigChanged(next);
   }
 
   _addCustomPage(template = "empty") {
@@ -12216,7 +12399,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               Schlüssel views. Eigene Seiten erscheinen in der Navigation.
             </div>
             <div class="toolbar">
-              <button id="add-scheduler-page" type="button">Zeitpläne hinzufügen</button>
               <button id="add-custom-page" type="button">Leere Seite</button>
             </div>
             <div class="custom-pages-list">
@@ -12396,6 +12578,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="rows">
+              <label class="row">
+                <span class="copy">
+                  <span class="name">Zeitpläne</span>
+                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Bubble-Popup mit Scheduler Card öffnet.</span>
+                </span>
+                <input
+                  class="setting-toggle"
+                  type="checkbox"
+                  data-key="scheduler_popup"
+                  data-default="false"
+                  ${this._schedulerPopupEnabled() ? "checked" : ""}
+                />
+              </label>
               ${this._toggleHtml(
                 "force_kiosk",
                 "Header ausblenden",
@@ -12459,12 +12654,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .querySelector("#reset-order")
       ?.addEventListener("click", () =>
         this._resetAreaOrder()
-      );
-
-    this.shadowRoot
-      .querySelector("#add-scheduler-page")
-      ?.addEventListener("click", () =>
-        this._addCustomPage("scheduler")
       );
 
     this.shadowRoot
@@ -12681,6 +12870,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
       input.addEventListener("change", (event) => {
         const target = event.currentTarget;
+
+        if (target.dataset.key === "scheduler_popup") {
+          this._setSchedulerPopup(target.checked);
+          return;
+        }
+
         this._setBoolean(
           target.dataset.key,
           target.checked,

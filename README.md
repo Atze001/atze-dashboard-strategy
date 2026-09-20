@@ -10,7 +10,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.148.0**
+Version **0.154.0**
 
 Enthalten sind unter anderem:
 
@@ -26,6 +26,7 @@ Enthalten sind unter anderem:
 - konfigurierbare Favoriten zwischen Status- und Raumkacheln
 - frei konfigurierbare eigene Dashboard-Seiten
 - automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
+- optionales Zeitpläne-Bubble-Popup mit Scheduler Card
 - helle Raumbilder bei eingeschaltetem Licht und dunkle Bilder bei
   ausgeschaltetem Licht
 
@@ -78,6 +79,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.154.0
+
+- Unter **Darstellung** lässt sich der Startseitenpunkt **Zeitpläne** ein- oder
+  ausschalten.
+- **Zeitpläne** öffnet nun ein Bubble-Card-Popup, dessen erste Karte eine
+  Scheduler Card ist, statt eine zusätzliche Dashboard-Seite aufzurufen.
+- Bereits vorhandene Zeitpläne-Seiten mit Scheduler Card werden automatisch in
+  das neue Popup übernommen.
+
 ### v0.153.0
 
 - Die sechs Symbole auf der Hauskarte sind wieder optisch vertikal in ihren
@@ -96,17 +106,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
   für einzelne Entitäten, einschließlich der Sicherheitsansicht.
 - Eine versehentlich auf Sicherheitsentitäten angewendete Batteriesortierung
   wurde entfernt.
-
-### v0.151.0
-
-- Die sechs Statuskacheln verwenden nun identische Rasterhöhen, Innenmaße und
-  Icon-Flächen, damit beide Spalten exakt ausgerichtet sind.
-- Die bisherige Kachel **Fenster / Rollläden** wurde durch **Batterie** ersetzt
-  und öffnet direkt die Batterieübersicht.
-- Die Batterieübersicht zeigt alle Batteriesensoren gemeinsam und sortiert sie
-  vom niedrigsten zum höchsten Ladestand.
-- Rollläden werden automatisch in die Sicherheitsansicht und deren Warnungszahl
-  aufgenommen.
 
 ## Lizenz
 
