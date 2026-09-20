@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.182.0**
+Version **0.183.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,14 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.183.0
+
+- Mindestweg für den Swipe zurück zum Haupt-Dashboard wieder auf **90 px**
+  erhöht.
+- Die übrigen Verbesserungen aus v0.182.0 bleiben erhalten: Start überall
+  außerhalb der reservierten 28-px-Randzone, großzügigere Diagonaltoleranz
+  und Schutz für Bedienelemente.
 
 ### v0.182.0
 
