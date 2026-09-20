@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.172.0";
+const ATZE_VERSION = "0.173.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -236,6 +236,46 @@ action:
 
 mode: restart
 `;
+
+async function ensureAtzeLightBlueprint(hass) {
+  if (!hass) {
+    throw new Error("Home Assistant ist noch nicht verfügbar.");
+  }
+
+  const listBlueprints = () =>
+    hass.callWS({
+      type: "blueprint/list",
+      domain: "automation",
+    });
+
+  let blueprints = await listBlueprints();
+  const existing =
+    blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
+
+  if (existing && !existing.error) {
+    return { created: false, verified: true };
+  }
+
+  await hass.callWS({
+    type: "blueprint/save",
+    domain: "automation",
+    path: ATZE_LIGHT_BLUEPRINT_PATH,
+    yaml: ATZE_LIGHT_BLUEPRINT_YAML,
+    allow_override: false,
+  });
+
+  blueprints = await listBlueprints();
+  const saved =
+    blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
+
+  if (!saved || saved.error) {
+    throw new Error(
+      "Der Lichtsteuerungs-Blueprint wurde gespeichert, konnte danach aber nicht verifiziert werden."
+    );
+  }
+
+  return { created: true, verified: true };
+}
 
 const ATZE_LIGHT_HELPERS = [
   {
@@ -6334,6 +6374,17 @@ class AtzeDashboardStrategy extends HTMLElement {
     hideAtzeDashboardScrollbars(
       config.hide_scrollbar !== false
     );
+
+    if (hass?.user?.is_admin) {
+      try {
+        await ensureAtzeLightBlueprint(hass);
+      } catch (error) {
+        console.error(
+          "Atze Dashboard: Lichtsteuerungs-Blueprint konnte nicht automatisch in Home Assistant angelegt werden.",
+          error
+        );
+      }
+    }
 
     const [areas, devices, entities, labels] = await Promise.all([
       hass.callWS({ type: "config/area_registry/list" }),
@@ -12637,31 +12688,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   async _ensureLightControlBlueprint() {
-    if (!this._hass) {
-      throw new Error("Home Assistant ist noch nicht verfügbar.");
-    }
-
-    const blueprints = await this._hass.callWS({
-      type: "blueprint/list",
-      domain: "automation",
-    });
-
-    const existing =
-      blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
-
-    if (existing && !existing.error) {
-      return { created: false };
-    }
-
-    await this._hass.callWS({
-      type: "blueprint/save",
-      domain: "automation",
-      path: ATZE_LIGHT_BLUEPRINT_PATH,
-      yaml: ATZE_LIGHT_BLUEPRINT_YAML,
-      allow_override: false,
-    });
-
-    return { created: true };
+    return ensureAtzeLightBlueprint(this._hass);
   }
 
   async _ensureLightControlHelpers() {

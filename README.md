@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.172.0**
+Version **0.173.0**
 
 Enthalten sind unter anderem:
 
@@ -84,12 +84,20 @@ vorhanden, wird die Kachel automatisch ausgeblendet.
 
 ## Blueprint Lichtsteuerung
 
-Beim Einrichten der Lichtsteuerung prüft die Dashboard-Strategy automatisch,
-ob der benötigte Automation-Blueprint in Home Assistant vorhanden ist. Fehlt
-er, wird er über die Home-Assistant-Blueprint-API angelegt unter:
+Der Blueprint liegt im Repository zusätzlich als gut sichtbare Quelldatei unter:
+
+`blueprints/lichtsteuerung.yaml`
+
+Beim Laden der Dashboard-Strategy prüft ein Home-Assistant-Admin automatisch,
+ob der Automation-Blueprint in Home Assistant vorhanden ist. Fehlt er, wird er
+über die Home-Assistant-Blueprint-API angelegt und anschließend nochmals
+verifiziert.
+
+Der Zielpfad in Home Assistant ist:
 
 `/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`
 
+Home Assistant erzeugt die fehlenden Unterordner beim Speichern automatisch.
 Der Blueprint unterstützt eine freie Lampenauswahl sowie getrennte
 Zeitversätze für **Morgen**, **Abend** und **Nacht**. Die Zeitversätze werden
 direkt in der jeweiligen Blueprint-Automation gespeichert; dafür sind keine
@@ -133,6 +141,17 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.173.0
+
+- Lichtsteuerungs-Blueprint wieder als sichtbare Quelldatei im Repository
+  unter `blueprints/lichtsteuerung.yaml` aufgenommen.
+- Automatische Installation läuft jetzt bereits beim normalen Laden der
+  Strategy durch einen Admin und nicht nur im Dashboard-Editor.
+- Nach `blueprint/save` wird per `blueprint/list` geprüft, ob der Blueprint
+  tatsächlich in Home Assistant angekommen ist.
+- Zielpfad in Home Assistant bleibt
+  `/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`.
 
 ### v0.172.0
 

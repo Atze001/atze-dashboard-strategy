@@ -996,31 +996,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   async _ensureLightControlBlueprint() {
-    if (!this._hass) {
-      throw new Error("Home Assistant ist noch nicht verfügbar.");
-    }
-
-    const blueprints = await this._hass.callWS({
-      type: "blueprint/list",
-      domain: "automation",
-    });
-
-    const existing =
-      blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
-
-    if (existing && !existing.error) {
-      return { created: false };
-    }
-
-    await this._hass.callWS({
-      type: "blueprint/save",
-      domain: "automation",
-      path: ATZE_LIGHT_BLUEPRINT_PATH,
-      yaml: ATZE_LIGHT_BLUEPRINT_YAML,
-      allow_override: false,
-    });
-
-    return { created: true };
+    return ensureAtzeLightBlueprint(this._hass);
   }
 
   async _ensureLightControlHelpers() {
