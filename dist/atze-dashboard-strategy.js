@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.159.2";
+const ATZE_VERSION = "0.160.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -5981,7 +5981,7 @@ function applyAtzeSidebarAccess(config) {
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
-      title: `Atze Dashboard ${ATZE_VERSION}`,
+      title: "Atze Dashboard",
       icon: "mdi:view-dashboard-variant",
     };
   }
@@ -6310,7 +6310,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
     if (views.length === 0) {
       views.push({
-        title: `Atze Dashboard ${ATZE_VERSION}`,
+        title: "Atze Dashboard",
         path: "atze-dashboard",
         icon: "mdi:view-dashboard-alert-outline",
         type: "sections",
@@ -6336,7 +6336,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     }
 
     return {
-      title: config.title || `Atze Dashboard ${ATZE_VERSION}`,
+      title: config.title || "Atze Dashboard",
       ...(config.kiosk_mode != null
         ? { kiosk_mode: config.kiosk_mode }
         : {}),
@@ -12276,6 +12276,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           gap: 16px;
           padding: 4px 0 24px;
         }
+
+        .editor-version {
+          padding: 0 4px 2px;
+          color: var(--secondary-text-color);
+          font-size: 14px;
+          font-weight: 500;
+        }
         .panel {
           background: var(
             --ha-card-background,
@@ -12792,6 +12799,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       </style>
 
       <div class="editor">
+        <div class="editor-version">
+          Atze Dashboard ${ATZE_VERSION}
+        </div>
+
         <details
           class="panel editor-section"
           data-editor-section="rooms"
@@ -13462,7 +13473,7 @@ window.customStrategies = window.customStrategies || [];
 const atzeStrategyRegistration = {
   type: STRATEGY_TYPE,
   strategyType: "dashboard",
-  name: `Atze Dashboard ${ATZE_VERSION}`,
+  name: "Atze Dashboard",
   description:
     "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
 };
