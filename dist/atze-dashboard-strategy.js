@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.184.0";
+const ATZE_VERSION = "0.185.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -708,6 +708,29 @@ function atzeNavigateToDashboardPath(path) {
   window.dispatchEvent(new Event("location-changed"));
 }
 
+function atzeFindSwipeSurface(anchor) {
+  let current = anchor;
+
+  while (current) {
+    if (current instanceof HTMLElement) {
+      const tag = current.tagName;
+
+      if (
+        tag === "HUI-VIEW" ||
+        tag === "HUI-SECTIONS-VIEW" ||
+        tag === "HUI-PANEL-VIEW" ||
+        tag === "HUI-MASONRY-VIEW"
+      ) {
+        return current;
+      }
+    }
+
+    current = atzeComposedParent(current);
+  }
+
+  return atzeFindScrollContainer(anchor) || anchor;
+}
+
 function setupAtzeHomeSwipe(anchor, homePathProvider) {
   if (!anchor) return () => {};
 
@@ -722,14 +745,48 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       activeRegistration: null,
       startedAt: 0,
       suppressClickUntil: 0,
+      horizontalLocked: false,
+      swipeSurface: null,
+      surfaceSnapshot: null,
+      animationTimer: null,
     };
 
-    const reset = () => {
+    const clearAnimationTimer = () => {
+      if (state.animationTimer) {
+        window.clearTimeout(state.animationTimer);
+        state.animationTimer = null;
+      }
+    };
+
+    const restoreSurface = (surface, snapshot) => {
+      if (!surface || !snapshot) return;
+
+      surface.style.transition = snapshot.transition;
+      surface.style.transform = snapshot.transform;
+      surface.style.willChange = snapshot.willChange;
+      surface.style.boxShadow = snapshot.boxShadow;
+    };
+
+    const resetGesture = ({ restore = true } = {}) => {
+      if (
+        restore &&
+        state.swipeSurface &&
+        state.surfaceSnapshot
+      ) {
+        restoreSurface(
+          state.swipeSurface,
+          state.surfaceSnapshot
+        );
+      }
+
       state.touchIdentifier = null;
       state.startX = 0;
       state.startY = 0;
       state.activeRegistration = null;
       state.startedAt = 0;
+      state.horizontalLocked = false;
+      state.swipeSurface = null;
+      state.surfaceSnapshot = null;
     };
 
     const activeRegistration = () => {
@@ -753,6 +810,117 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       }
 
       return null;
+    };
+
+    const prepareSurface = (registration) => {
+      if (state.swipeSurface) {
+        return state.swipeSurface;
+      }
+
+      const surface =
+        atzeFindSwipeSurface(registration.anchor);
+
+      if (!(surface instanceof HTMLElement)) {
+        return null;
+      }
+
+      state.swipeSurface = surface;
+      state.surfaceSnapshot = {
+        transition: surface.style.transition,
+        transform: surface.style.transform,
+        willChange: surface.style.willChange,
+        boxShadow: surface.style.boxShadow,
+      };
+
+      surface.style.transition = "none";
+      surface.style.willChange = "transform";
+      surface.style.boxShadow =
+        "-18px 0 34px rgba(0,0,0,.16)";
+
+      return surface;
+    };
+
+    const animateBack = (surface, snapshot) => {
+      if (!surface || !snapshot) {
+        resetGesture();
+        return;
+      }
+
+      clearAnimationTimer();
+
+      surface.style.transition =
+        "transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease";
+      surface.style.transform =
+        "translate3d(0,0,0)";
+      surface.style.boxShadow =
+        "0 0 0 rgba(0,0,0,0)";
+
+      state.animationTimer = window.setTimeout(() => {
+        restoreSurface(surface, snapshot);
+        state.animationTimer = null;
+      }, 210);
+
+      resetGesture({ restore: false });
+    };
+
+    const animateOutAndNavigate = (
+      surface,
+      snapshot,
+      registration
+    ) => {
+      clearAnimationTimer();
+
+      state.suppressClickUntil =
+        performance.now() + 500;
+
+      const homePath =
+        typeof registration.homePathProvider ===
+        "function"
+          ? registration.homePathProvider()
+          : registration.homePathProvider;
+
+      if (!surface || !snapshot) {
+        resetGesture({ restore: false });
+        atzeNavigateToDashboardPath(
+          homePath || "home"
+        );
+        return;
+      }
+
+      surface.style.transition =
+        "transform 190ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease";
+      surface.style.transform =
+        "translate3d(calc(100vw + 24px),0,0)";
+      surface.style.boxShadow =
+        "-24px 0 42px rgba(0,0,0,.20)";
+
+      let finished = false;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+
+        clearAnimationTimer();
+
+        atzeNavigateToDashboardPath(
+          homePath || "home"
+        );
+
+        window.setTimeout(() => {
+          restoreSurface(surface, snapshot);
+        }, 80);
+      };
+
+      surface.addEventListener(
+        "transitionend",
+        finish,
+        { once: true }
+      );
+
+      state.animationTimer =
+        window.setTimeout(finish, 240);
+
+      resetGesture({ restore: false });
     };
 
     state.onTouchStart = (event) => {
@@ -785,6 +953,71 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       state.startY = startY;
       state.activeRegistration = registration;
       state.startedAt = performance.now();
+      state.horizontalLocked = false;
+    };
+
+    state.onTouchMove = (event) => {
+      if (state.touchIdentifier === null) {
+        return;
+      }
+
+      const touch =
+        [...event.touches].find(
+          (item) =>
+            item.identifier ===
+            state.touchIdentifier
+        );
+
+      if (!touch) return;
+
+      const dx =
+        Number(touch.clientX) - state.startX;
+      const dy =
+        Number(touch.clientY) - state.startY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      if (!state.horizontalLocked) {
+        if (
+          absDy > 20 &&
+          absDy > absDx * 1.15
+        ) {
+          resetGesture();
+          return;
+        }
+
+        if (
+          dx > 14 &&
+          dx >= absDy * 1.05
+        ) {
+          state.horizontalLocked = true;
+        } else {
+          return;
+        }
+      }
+
+      const registration =
+        state.activeRegistration;
+      if (!registration) {
+        resetGesture();
+        return;
+      }
+
+      const surface =
+        prepareSurface(registration);
+
+      if (!surface) return;
+
+      event.preventDefault();
+
+      const distance = Math.max(0, dx);
+      const viewportWidth =
+        Math.max(window.innerWidth || 0, 320);
+      const cappedDistance =
+        Math.min(distance, viewportWidth * 0.92);
+
+      surface.style.transform =
+        `translate3d(${cappedDistance}px,0,0)`;
     };
 
     state.onTouchEnd = (event) => {
@@ -803,42 +1036,52 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         return;
       }
 
-      const dx = Number(touch.clientX) - state.startX;
-      const dy = Number(touch.clientY) - state.startY;
+      const dx =
+        Number(touch.clientX) - state.startX;
+      const dy =
+        Number(touch.clientY) - state.startY;
       const elapsed =
         performance.now() - state.startedAt;
       const registration =
         state.activeRegistration;
+      const surface = state.swipeSurface;
+      const snapshot = state.surfaceSnapshot;
+      const wasHorizontal =
+        state.horizontalLocked;
 
       const isRightSwipe =
+        wasHorizontal &&
         dx >= ATZE_HOME_SWIPE_MIN_DISTANCE &&
         Math.abs(dy) <=
           ATZE_HOME_SWIPE_MAX_VERTICAL &&
         dx >= Math.abs(dy) * 1.1 &&
         elapsed <= 1800;
 
-      reset();
+      if (wasHorizontal) {
+        state.suppressClickUntil =
+          performance.now() + 350;
+      }
 
-      if (!isRightSwipe || !registration) {
+      if (
+        isRightSwipe &&
+        registration
+      ) {
+        animateOutAndNavigate(
+          surface,
+          snapshot,
+          registration
+        );
         return;
       }
 
-      state.suppressClickUntil =
-        performance.now() + 450;
-
-      const homePath =
-        typeof registration.homePathProvider ===
-        "function"
-          ? registration.homePathProvider()
-          : registration.homePathProvider;
-
-      atzeNavigateToDashboardPath(
-        homePath || "home"
-      );
+      animateBack(surface, snapshot);
     };
 
     state.onTouchCancel = () => {
-      reset();
+      animateBack(
+        state.swipeSurface,
+        state.surfaceSnapshot
+      );
     };
 
     state.onClick = (event) => {
@@ -855,6 +1098,11 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       "touchstart",
       state.onTouchStart,
       { passive: true, capture: true }
+    );
+    window.addEventListener(
+      "touchmove",
+      state.onTouchMove,
+      { passive: false, capture: true }
     );
     window.addEventListener(
       "touchend",
@@ -889,9 +1137,26 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       return;
     }
 
+    if (
+      state.swipeSurface &&
+      state.surfaceSnapshot
+    ) {
+      restoreSurface(
+        state.swipeSurface,
+        state.surfaceSnapshot
+      );
+    }
+
+    clearAnimationTimer();
+
     window.removeEventListener(
       "touchstart",
       state.onTouchStart,
+      true
+    );
+    window.removeEventListener(
+      "touchmove",
+      state.onTouchMove,
       true
     );
     window.removeEventListener(
@@ -913,7 +1178,6 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     delete window[ATZE_HOME_SWIPE_STATE_KEY];
   };
 }
-
 
 const DOMAIN_META = {
   light:         { title: "Licht",      icon: "mdi:lightbulb-group", order: 10 },

@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.184.0**
+Version **0.185.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,19 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.185.0
+
+- Swipe-zur-Hauptseite mit direktem **Slide-out-Feedback** ergänzt.
+- Während des Wischens folgt die komplette aktuelle Unterseite dem Finger
+  nach rechts.
+- Ab **140 px** wird die Geste bestätigt; die Seite gleitet vollständig nach
+  rechts heraus und anschließend wird das Haupt-Dashboard geöffnet.
+- Wird vorher losgelassen, federt die Seite weich an ihre Ausgangsposition
+  zurück.
+- Die ersten **28 px am linken Rand** bleiben weiterhin vollständig für die
+  native Home-Assistant-Seitenleisten-Geste reserviert.
+- Slider, Buttons und Eingabefelder bleiben von der Swipe-Geste ausgenommen.
 
 ### v0.184.0
 
