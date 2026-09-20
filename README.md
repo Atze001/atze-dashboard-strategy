@@ -1,5 +1,7 @@
 # Atze Dashboard Strategy
 
+<sub>KI-Generiert: ChatGPT</sub>
+
 ![Atze Dashboard Strategy](dist/assets/wohnzimmer.jpg)
 
 Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
@@ -8,7 +10,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.147.0**
+Version **0.148.0**
 
 Enthalten sind unter anderem:
 
@@ -75,6 +77,15 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.148.0
+
+- Seitennavigation und Favoriten werden in einer gemeinsamen abgerundeten
+  Serverraum-Karte dargestellt.
+- Der dunkle Technikraum-Hintergrund sowie gläserne Buttons und Favoritenkarten
+  bilden eine optische Brücke zwischen Hausstatus und Raumbildern.
+- Unter dem Projekttitel weist die README nun mit **KI-Generiert: ChatGPT** auf
+  die Entstehung des Dashboards hin.
+
 ### v0.147.0
 
 - Profil, Uhrzeit und die sechs Statuskacheln erhalten eine gemeinsame
@@ -88,11 +99,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 - Die Symbole innerhalb der blauen Bereichs-Bubbles verwenden ein dunkleres,
   kräftigeres Blau und bleiben dadurch auch auf hellen Raumbildern gut sichtbar.
-
-### v0.145.0
-
-- Die blauen Bereichs-Bubbles auf den Bildkarten sind etwa zehn Prozent
-  transparenter; Position, Größe, Rahmen und Icons bleiben unverändert.
 
 ## Lizenz
 
