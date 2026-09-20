@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.161.0**
+Version **0.162.0**
 
 Enthalten sind unter anderem:
 
@@ -90,6 +90,13 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.162.0
+
+- Kinderzimmer-Bilder ohne eingeblendete Beschriftung ersetzt.
+- Hausflur-Bilder durch die neue Treppenhaus-Ansicht ersetzt.
+- Bild-Fallback für Räume unterstützt jetzt auch `.webp` und abweichende
+  Area-IDs zuverlässig über den Raumnamen.
 
 ### v0.161.0
 

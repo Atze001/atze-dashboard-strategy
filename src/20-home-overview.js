@@ -316,7 +316,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const cacheKey = `${room.area_id}:${useLightImage ? "light" : "dark"}`;
     const fileName = useLightImage
       ? room.light_image_file
-      : `${room.area_id}.jpg`;
+      : (
+          room.image_file ||
+          `${room.area_id}.jpg`
+        );
     const candidates = [];
 
     const add = (value) => {
