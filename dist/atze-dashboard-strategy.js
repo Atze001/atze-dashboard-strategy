@@ -1,6 +1,6 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.158.2
+ * Version: 0.158.3
  *
  * v0.158 focus:
  * - Align the home-status text closer to its icon
@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.158.2";
+const ATZE_VERSION = "0.158.3";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
