@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.148.0
+ * Version: 0.149.0
  *
- * v0.148 focus:
- * - Group custom-page links and favorites on a server-room card
+ * v0.149 focus:
+ * - Improve control-center background brightness and sharpness
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.148.0";
+const ATZE_VERSION = "0.149.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7475,14 +7475,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           background:
             linear-gradient(
               90deg,
-              rgba(5,7,10,0.56) 0%,
-              rgba(5,7,10,0.38) 50%,
-              rgba(5,7,10,0.55) 100%
+              rgba(5,7,10,0.32) 0%,
+              rgba(5,7,10,0.14) 50%,
+              rgba(5,7,10,0.30) 100%
             ),
             linear-gradient(
               180deg,
-              rgba(5,7,10,0.20) 0%,
-              rgba(5,7,10,0.58) 100%
+              rgba(5,7,10,0.06) 0%,
+              rgba(5,7,10,0.30) 100%
             );
         }
 
