@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.163.0";
+const ATZE_VERSION = "0.164.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -5043,6 +5043,14 @@ function buildHomeOverviewView(
             "Schön, dass du da bist!"
           ),
     person_entity: selectHomePersonEntity(hass, config),
+    people_entities: asArray(config.home_people_entities)
+      .map(String)
+      .filter(
+        (entityId) =>
+          entityId.startsWith("person.") &&
+          hass.states[entityId]
+      )
+      .slice(0, 3),
     weather_entity: selectHomeWeatherEntity(hass, config),
     power_entity: selectGlobalPowerEntity(
       hass,

@@ -738,6 +738,82 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       : value === true;
   }
 
+  _personOptionsHtml(selectedEntityId = "") {
+    const people = Object.keys(
+      this._hass?.states || {}
+    )
+      .filter((entityId) =>
+        entityId.startsWith("person.")
+      )
+      .map((entityId) => ({
+        entityId,
+        name:
+          this._hass.states[entityId]?.attributes
+            ?.friendly_name ||
+          entityId,
+      }))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, "de")
+      );
+
+    return [
+      `<option value="">Nicht belegt</option>`,
+      ...people.map(({ entityId, name }) => `
+        <option
+          value="${this._escape(entityId)}"
+          ${entityId === selectedEntityId ? "selected" : ""}
+        >
+          ${this._escape(name)}
+        </option>
+      `),
+    ].join("");
+  }
+
+  _personSelectHtml(index) {
+    const selected =
+      asArray(this._config.home_people_entities)[index] ||
+      "";
+
+    return `
+      <label class="row person-setting-row">
+        <span class="copy">
+          <span class="name">Person ${index + 1}</span>
+          <span class="desc">
+            Profilbild und Anwesenheit auf der Startseite.
+          </span>
+        </span>
+        <select
+          class="person-entity-select"
+          data-person-index="${index}"
+          aria-label="Person ${index + 1} auswählen"
+        >
+          ${this._personOptionsHtml(selected)}
+        </select>
+      </label>
+    `;
+  }
+
+  _setHomePerson(index, entityId) {
+    const people = Array(3).fill("");
+    asArray(this._config.home_people_entities)
+      .slice(0, 3)
+      .forEach((value, itemIndex) => {
+        people[itemIndex] = String(value || "");
+      });
+
+    people[index] = String(entityId || "");
+
+    const next = { ...this._config };
+
+    if (people.some(Boolean)) {
+      next.home_people_entities = people;
+    } else {
+      delete next.home_people_entities;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
   _toggleHtml(key, label, description, defaultValue) {
     const checked =
       this._effectiveBoolean(key, defaultValue);
@@ -1528,6 +1604,24 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           opacity: .48;
           cursor: default;
         }
+        .person-entity-select {
+          width: min(260px, 46%);
+          min-width: 150px;
+          min-height: 38px;
+          box-sizing: border-box;
+          padding: 7px 34px 7px 10px;
+          border: 1px solid var(
+            --divider-color,
+            rgba(127,127,127,.28)
+          );
+          border-radius: 10px;
+          background: var(
+            --card-background-color,
+            var(--ha-card-background)
+          );
+          color: var(--primary-text-color);
+          font: inherit;
+        }
         .area {
           min-width: 0;
           display: flex;
@@ -1973,6 +2067,38 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         <details
           class="panel editor-section"
+          data-editor-section="people"
+          ${this._openEditorSections.has("people") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:account-group-outline"></ha-icon>
+              <span class="editor-section-summary-title">
+                Personen / Anwesenheit
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Bis zu drei Personen werden unter dem großen Profil auf
+              der Startseite angezeigt. Zuhause erscheint das normale
+              Profilbild, bei Abwesenheit wird es rot dargestellt.
+            </div>
+            <div class="rows">
+              ${this._personSelectHtml(0)}
+              ${this._personSelectHtml(1)}
+              ${this._personSelectHtml(2)}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
           data-editor-section="views"
           ${this._openEditorSections.has("views") ? "open" : ""}
         >
@@ -2341,6 +2467,21 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           );
         }
       );
+    }
+
+    for (
+      const select of
+        this.shadowRoot.querySelectorAll(
+          ".person-entity-select"
+        )
+    ) {
+      select.addEventListener("change", (event) => {
+        const target = event.currentTarget;
+        this._setHomePerson(
+          Number(target.dataset.personIndex),
+          target.value
+        );
+      });
     }
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
