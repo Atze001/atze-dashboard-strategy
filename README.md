@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.186.0**
+Version **0.187.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,16 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.187.0
+
+- Swipe-zurück-Erkennung von einzelnen Karteninstanzen entkoppelt.
+- Die Gestensteuerung bleibt nun dashboardweit persistent aktiv und prüft
+  bei jeder Geste die aktuelle Dashboard-URL.
+- Dadurch funktioniert Swipe nach rechts auch nach wiederholtem Verlassen und
+  erneutem Öffnen derselben Unterseite.
+- Randzone von 28 px, Mindestweg von 140 px und Slide-out-Effekt bleiben
+  unverändert.
 
 ### v0.186.0
 

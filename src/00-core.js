@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.186.0";
+const ATZE_VERSION = "0.187.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -731,428 +731,85 @@ function atzeFindSwipeSurface(anchor) {
   return atzeFindScrollContainer(anchor) || anchor;
 }
 
+function atzeSwipeSurfaceFromEvent(event) {
+  for (const node of event?.composedPath?.() || []) {
+    if (!(node instanceof HTMLElement)) {
+      continue;
+    }
+
+    if (
+      node.tagName === "HUI-VIEW" ||
+      node.tagName === "HUI-SECTIONS-VIEW" ||
+      node.tagName === "HUI-PANEL-VIEW" ||
+      node.tagName === "HUI-MASONRY-VIEW"
+    ) {
+      return node;
+    }
+  }
+
+  return null;
+}
+
 function setupAtzeHomeSwipe(anchor, homePathProvider) {
   if (!anchor) return () => {};
 
   let state = window[ATZE_HOME_SWIPE_STATE_KEY];
 
-  if (!state) {
-    state = {
-      registrations: new Map(),
-      touchIdentifier: null,
-      startX: 0,
-      startY: 0,
-      activeRegistration: null,
-      startedAt: 0,
-      suppressClickUntil: 0,
-      horizontalLocked: false,
-      swipeSurface: null,
-      surfaceSnapshot: null,
-      animationTimer: null,
-    };
-
-    const clearAnimationTimer = () => {
-      if (state.animationTimer) {
-        window.clearTimeout(state.animationTimer);
-        state.animationTimer = null;
-      }
-    };
-
-    const restoreSurface = (surface, snapshot) => {
-      if (!surface || !snapshot) return;
-
-      surface.style.transition = snapshot.transition;
-      surface.style.transform = snapshot.transform;
-      surface.style.willChange = snapshot.willChange;
-      surface.style.boxShadow = snapshot.boxShadow;
-    };
-
-    const resetGesture = ({ restore = true } = {}) => {
-      if (
-        restore &&
-        state.swipeSurface &&
-        state.surfaceSnapshot
-      ) {
-        restoreSurface(
-          state.swipeSurface,
-          state.surfaceSnapshot
-        );
-      }
-
-      state.touchIdentifier = null;
-      state.startX = 0;
-      state.startY = 0;
-      state.activeRegistration = null;
-      state.startedAt = 0;
-      state.horizontalLocked = false;
-      state.swipeSurface = null;
-      state.surfaceSnapshot = null;
-    };
-
-    const activeRegistration = (event) => {
-      const path =
-        event?.composedPath?.() || [];
-      const registrations =
-        [...state.registrations.values()];
-
-      for (
-        let i = registrations.length - 1;
-        i >= 0;
-        i -= 1
-      ) {
-        const registration = registrations[i];
-        const element = registration.anchor;
-
-        if (!element?.isConnected) {
-          state.registrations.delete(element);
-          continue;
-        }
-
-        if (path.includes(element)) {
-          return registration;
-        }
-
-        const surface =
-          atzeFindSwipeSurface(element);
-
-        if (
-          surface &&
-          path.includes(surface)
-        ) {
-          return registration;
-        }
-      }
-
-      return null;
-    };
-
-    const prepareSurface = (registration) => {
-      if (state.swipeSurface) {
-        return state.swipeSurface;
-      }
-
-      const surface =
-        atzeFindSwipeSurface(registration.anchor);
-
-      if (!(surface instanceof HTMLElement)) {
-        return null;
-      }
-
-      state.swipeSurface = surface;
-      state.surfaceSnapshot = {
-        transition: surface.style.transition,
-        transform: surface.style.transform,
-        willChange: surface.style.willChange,
-        boxShadow: surface.style.boxShadow,
-      };
-
-      surface.style.transition = "none";
-      surface.style.willChange = "transform";
-      surface.style.boxShadow =
-        "-18px 0 34px rgba(0,0,0,.16)";
-
-      return surface;
-    };
-
-    const animateBack = (surface, snapshot) => {
-      if (!surface || !snapshot) {
-        resetGesture();
-        return;
-      }
-
-      clearAnimationTimer();
-
-      surface.style.transition =
-        "transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease";
-      surface.style.transform =
-        "translate3d(0,0,0)";
-      surface.style.boxShadow =
-        "0 0 0 rgba(0,0,0,0)";
-
-      state.animationTimer = window.setTimeout(() => {
-        restoreSurface(surface, snapshot);
-        state.animationTimer = null;
-      }, 210);
-
-      resetGesture({ restore: false });
-    };
-
-    const animateOutAndNavigate = (
-      surface,
-      snapshot,
-      registration
-    ) => {
-      clearAnimationTimer();
-
-      state.suppressClickUntil =
-        performance.now() + 500;
-
-      const homePath =
-        typeof registration.homePathProvider ===
-        "function"
-          ? registration.homePathProvider()
-          : registration.homePathProvider;
-
-      if (!surface || !snapshot) {
-        resetGesture({ restore: false });
-        atzeNavigateToDashboardPath(
-          homePath || "home"
-        );
-        return;
-      }
-
-      surface.style.transition =
-        "transform 190ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease";
-      surface.style.transform =
-        "translate3d(calc(100vw + 24px),0,0)";
-      surface.style.boxShadow =
-        "-24px 0 42px rgba(0,0,0,.20)";
-
-      let finished = false;
-
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-
-        clearAnimationTimer();
-
-        atzeNavigateToDashboardPath(
-          homePath || "home"
-        );
-
-        window.setTimeout(() => {
-          restoreSurface(surface, snapshot);
-        }, 80);
-      };
-
-      surface.addEventListener(
-        "transitionend",
-        finish,
-        { once: true }
-      );
-
-      state.animationTimer =
-        window.setTimeout(finish, 240);
-
-      resetGesture({ restore: false });
-    };
-
-    state.onTouchStart = (event) => {
-      if (
-        state.touchIdentifier !== null ||
-        event.touches.length !== 1
-      ) {
-        return;
-      }
-
-      const touch = event.touches[0];
-      const startX = Number(touch.clientX);
-      const startY = Number(touch.clientY);
-
-      // The outermost left edge stays completely untouched so Home
-      // Assistant's native sidebar gesture can still start there.
-      if (startX <= ATZE_HOME_SWIPE_NATIVE_EDGE) {
-        return;
-      }
-
-      if (atzeGestureHitsInteractiveControl(event)) {
-        return;
-      }
-
-      const registration =
-        activeRegistration(event);
-      if (!registration) return;
-
-      state.touchIdentifier = touch.identifier;
-      state.startX = startX;
-      state.startY = startY;
-      state.activeRegistration = registration;
-      state.startedAt = performance.now();
-      state.horizontalLocked = false;
-    };
-
-    state.onTouchMove = (event) => {
-      if (state.touchIdentifier === null) {
-        return;
-      }
-
-      const touch =
-        [...event.touches].find(
-          (item) =>
-            item.identifier ===
-            state.touchIdentifier
-        );
-
-      if (!touch) return;
-
-      const dx =
-        Number(touch.clientX) - state.startX;
-      const dy =
-        Number(touch.clientY) - state.startY;
-      const absDx = Math.abs(dx);
-      const absDy = Math.abs(dy);
-
-      if (!state.horizontalLocked) {
-        if (
-          absDy > 20 &&
-          absDy > absDx * 1.15
-        ) {
-          resetGesture();
-          return;
-        }
-
-        if (
-          dx > 14 &&
-          dx >= absDy * 1.05
-        ) {
-          state.horizontalLocked = true;
-        } else {
-          return;
-        }
-      }
-
-      const registration =
-        state.activeRegistration;
-      if (!registration) {
-        resetGesture();
-        return;
-      }
-
-      const surface =
-        prepareSurface(registration);
-
-      if (!surface) return;
-
-      event.preventDefault();
-
-      const distance = Math.max(0, dx);
-      const viewportWidth =
-        Math.max(window.innerWidth || 0, 320);
-      const cappedDistance =
-        Math.min(distance, viewportWidth * 0.92);
-
-      surface.style.transform =
-        `translate3d(${cappedDistance}px,0,0)`;
-    };
-
-    state.onTouchEnd = (event) => {
-      if (state.touchIdentifier === null) {
-        return;
-      }
-
-      const touch =
-        [...event.changedTouches].find(
-          (item) =>
-            item.identifier ===
-            state.touchIdentifier
-        );
-
-      if (!touch) {
-        return;
-      }
-
-      const dx =
-        Number(touch.clientX) - state.startX;
-      const dy =
-        Number(touch.clientY) - state.startY;
-      const elapsed =
-        performance.now() - state.startedAt;
-      const registration =
-        state.activeRegistration;
-      const surface = state.swipeSurface;
-      const snapshot = state.surfaceSnapshot;
-      const wasHorizontal =
-        state.horizontalLocked;
-
-      const isRightSwipe =
-        wasHorizontal &&
-        dx >= ATZE_HOME_SWIPE_MIN_DISTANCE &&
-        Math.abs(dy) <=
-          ATZE_HOME_SWIPE_MAX_VERTICAL &&
-        dx >= Math.abs(dy) * 1.1 &&
-        elapsed <= 1800;
-
-      if (wasHorizontal) {
-        state.suppressClickUntil =
-          performance.now() + 350;
-      }
-
-      if (
-        isRightSwipe &&
-        registration
-      ) {
-        animateOutAndNavigate(
-          surface,
-          snapshot,
-          registration
-        );
-        return;
-      }
-
-      animateBack(surface, snapshot);
-    };
-
-    state.onTouchCancel = () => {
-      animateBack(
-        state.swipeSurface,
-        state.surfaceSnapshot
-      );
-    };
-
-    state.onClick = (event) => {
-      if (
-        performance.now() <
-        state.suppressClickUntil
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-
-    window.addEventListener(
-      "touchstart",
-      state.onTouchStart,
-      { passive: true, capture: true }
-    );
-    window.addEventListener(
-      "touchmove",
-      state.onTouchMove,
-      { passive: false, capture: true }
-    );
-    window.addEventListener(
-      "touchend",
-      state.onTouchEnd,
-      { passive: true, capture: true }
-    );
-    window.addEventListener(
-      "touchcancel",
-      state.onTouchCancel,
-      { passive: true, capture: true }
-    );
-    window.addEventListener(
-      "click",
-      state.onClick,
-      { capture: true }
+  const resolvedHomePath =
+    typeof homePathProvider === "function"
+      ? homePathProvider()
+      : homePathProvider;
+
+  const homeTarget =
+    atzeDashboardNavigationTarget(
+      resolvedHomePath || "home"
     );
 
-    window[ATZE_HOME_SWIPE_STATE_KEY] = state;
+  const lastSlash = homeTarget.lastIndexOf("/");
+  const dashboardBase =
+    lastSlash > 0
+      ? homeTarget.slice(0, lastSlash)
+      : "/";
+
+  if (state) {
+    state.homeTarget = homeTarget;
+    state.dashboardBase = dashboardBase;
+    return () => {};
   }
 
-  const registration = {
-    anchor,
-    homePathProvider,
+  state = {
+    homeTarget,
+    dashboardBase,
+    touchIdentifier: null,
+    startX: 0,
+    startY: 0,
+    startedAt: 0,
+    suppressClickUntil: 0,
+    horizontalLocked: false,
+    swipeSurface: null,
+    surfaceSnapshot: null,
+    animationTimer: null,
   };
 
-  state.registrations.set(anchor, registration);
-
-  return () => {
-    state.registrations.delete(anchor);
-
-    if (state.registrations.size > 0) {
-      return;
+  const clearAnimationTimer = () => {
+    if (state.animationTimer) {
+      window.clearTimeout(state.animationTimer);
+      state.animationTimer = null;
     }
+  };
 
+  const restoreSurface = (surface, snapshot) => {
+    if (!surface || !snapshot) return;
+
+    surface.style.transition = snapshot.transition;
+    surface.style.transform = snapshot.transform;
+    surface.style.willChange = snapshot.willChange;
+    surface.style.boxShadow = snapshot.boxShadow;
+  };
+
+  const resetGesture = ({ restore = true } = {}) => {
     if (
+      restore &&
       state.swipeSurface &&
       state.surfaceSnapshot
     ) {
@@ -1162,36 +819,331 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       );
     }
 
+    state.touchIdentifier = null;
+    state.startX = 0;
+    state.startY = 0;
+    state.startedAt = 0;
+    state.horizontalLocked = false;
+    state.swipeSurface = null;
+    state.surfaceSnapshot = null;
+  };
+
+  const isCurrentDashboardSubview = () => {
+    const pathname =
+      String(window.location.pathname || "");
+
+    const insideDashboard =
+      state.dashboardBase === "/"
+        ? pathname.startsWith("/")
+        : (
+            pathname === state.dashboardBase ||
+            pathname.startsWith(
+              `${state.dashboardBase}/`
+            )
+          );
+
+    if (!insideDashboard) {
+      return false;
+    }
+
+    return pathname !== state.homeTarget;
+  };
+
+  const prepareSurface = (event) => {
+    if (state.swipeSurface) {
+      return state.swipeSurface;
+    }
+
+    const surface =
+      atzeSwipeSurfaceFromEvent(event);
+
+    if (!(surface instanceof HTMLElement)) {
+      return null;
+    }
+
+    state.swipeSurface = surface;
+    state.surfaceSnapshot = {
+      transition: surface.style.transition,
+      transform: surface.style.transform,
+      willChange: surface.style.willChange,
+      boxShadow: surface.style.boxShadow,
+    };
+
+    surface.style.transition = "none";
+    surface.style.willChange = "transform";
+    surface.style.boxShadow =
+      "-18px 0 34px rgba(0,0,0,.16)";
+
+    return surface;
+  };
+
+  const animateBack = (surface, snapshot) => {
+    if (!surface || !snapshot) {
+      resetGesture();
+      return;
+    }
+
     clearAnimationTimer();
 
-    window.removeEventListener(
-      "touchstart",
-      state.onTouchStart,
-      true
-    );
-    window.removeEventListener(
-      "touchmove",
-      state.onTouchMove,
-      true
-    );
-    window.removeEventListener(
-      "touchend",
-      state.onTouchEnd,
-      true
-    );
-    window.removeEventListener(
-      "touchcancel",
-      state.onTouchCancel,
-      true
-    );
-    window.removeEventListener(
-      "click",
-      state.onClick,
-      true
+    surface.style.transition =
+      "transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease";
+    surface.style.transform =
+      "translate3d(0,0,0)";
+    surface.style.boxShadow =
+      "0 0 0 rgba(0,0,0,0)";
+
+    state.animationTimer = window.setTimeout(() => {
+      restoreSurface(surface, snapshot);
+      state.animationTimer = null;
+    }, 210);
+
+    resetGesture({ restore: false });
+  };
+
+  const animateOutAndNavigate = (
+    surface,
+    snapshot
+  ) => {
+    clearAnimationTimer();
+
+    state.suppressClickUntil =
+      performance.now() + 500;
+
+    if (!surface || !snapshot) {
+      resetGesture({ restore: false });
+      atzeNavigateToDashboardPath(
+        state.homeTarget
+      );
+      return;
+    }
+
+    surface.style.transition =
+      "transform 190ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease";
+    surface.style.transform =
+      "translate3d(calc(100vw + 24px),0,0)";
+    surface.style.boxShadow =
+      "-24px 0 42px rgba(0,0,0,.20)";
+
+    let finished = false;
+
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+
+      clearAnimationTimer();
+
+      atzeNavigateToDashboardPath(
+        state.homeTarget
+      );
+
+      window.setTimeout(() => {
+        restoreSurface(surface, snapshot);
+      }, 80);
+    };
+
+    surface.addEventListener(
+      "transitionend",
+      finish,
+      { once: true }
     );
 
-    delete window[ATZE_HOME_SWIPE_STATE_KEY];
+    state.animationTimer =
+      window.setTimeout(finish, 240);
+
+    resetGesture({ restore: false });
   };
+
+  state.onTouchStart = (event) => {
+    if (
+      state.touchIdentifier !== null ||
+      event.touches.length !== 1 ||
+      !isCurrentDashboardSubview()
+    ) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const startX = Number(touch.clientX);
+    const startY = Number(touch.clientY);
+
+    // Keep Home Assistant's own sidebar gesture untouched.
+    if (startX <= ATZE_HOME_SWIPE_NATIVE_EDGE) {
+      return;
+    }
+
+    if (atzeGestureHitsInteractiveControl(event)) {
+      return;
+    }
+
+    if (!atzeSwipeSurfaceFromEvent(event)) {
+      return;
+    }
+
+    state.touchIdentifier = touch.identifier;
+    state.startX = startX;
+    state.startY = startY;
+    state.startedAt = performance.now();
+    state.horizontalLocked = false;
+  };
+
+  state.onTouchMove = (event) => {
+    if (state.touchIdentifier === null) {
+      return;
+    }
+
+    const touch =
+      [...event.touches].find(
+        (item) =>
+          item.identifier ===
+          state.touchIdentifier
+      );
+
+    if (!touch) return;
+
+    const dx =
+      Number(touch.clientX) - state.startX;
+    const dy =
+      Number(touch.clientY) - state.startY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (!state.horizontalLocked) {
+      if (
+        absDy > 20 &&
+        absDy > absDx * 1.15
+      ) {
+        resetGesture();
+        return;
+      }
+
+      if (
+        dx > 14 &&
+        dx >= absDy * 1.05
+      ) {
+        state.horizontalLocked = true;
+      } else {
+        return;
+      }
+    }
+
+    const surface =
+      prepareSurface(event);
+
+    if (!surface) {
+      resetGesture();
+      return;
+    }
+
+    event.preventDefault();
+
+    const distance = Math.max(0, dx);
+    const viewportWidth =
+      Math.max(window.innerWidth || 0, 320);
+    const cappedDistance =
+      Math.min(distance, viewportWidth * 0.92);
+
+    surface.style.transform =
+      `translate3d(${cappedDistance}px,0,0)`;
+  };
+
+  state.onTouchEnd = (event) => {
+    if (state.touchIdentifier === null) {
+      return;
+    }
+
+    const touch =
+      [...event.changedTouches].find(
+        (item) =>
+          item.identifier ===
+          state.touchIdentifier
+      );
+
+    if (!touch) return;
+
+    const dx =
+      Number(touch.clientX) - state.startX;
+    const dy =
+      Number(touch.clientY) - state.startY;
+    const elapsed =
+      performance.now() - state.startedAt;
+    const surface = state.swipeSurface;
+    const snapshot = state.surfaceSnapshot;
+    const wasHorizontal =
+      state.horizontalLocked;
+
+    const isRightSwipe =
+      wasHorizontal &&
+      dx >= ATZE_HOME_SWIPE_MIN_DISTANCE &&
+      Math.abs(dy) <=
+        ATZE_HOME_SWIPE_MAX_VERTICAL &&
+      dx >= Math.abs(dy) * 1.1 &&
+      elapsed <= 1800;
+
+    if (wasHorizontal) {
+      state.suppressClickUntil =
+        performance.now() + 350;
+    }
+
+    if (isRightSwipe) {
+      animateOutAndNavigate(
+        surface,
+        snapshot
+      );
+      return;
+    }
+
+    animateBack(surface, snapshot);
+  };
+
+  state.onTouchCancel = () => {
+    animateBack(
+      state.swipeSurface,
+      state.surfaceSnapshot
+    );
+  };
+
+  state.onClick = (event) => {
+    if (
+      performance.now() <
+      state.suppressClickUntil
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  window.addEventListener(
+    "touchstart",
+    state.onTouchStart,
+    { passive: true, capture: true }
+  );
+  window.addEventListener(
+    "touchmove",
+    state.onTouchMove,
+    { passive: false, capture: true }
+  );
+  window.addEventListener(
+    "touchend",
+    state.onTouchEnd,
+    { passive: true, capture: true }
+  );
+  window.addEventListener(
+    "touchcancel",
+    state.onTouchCancel,
+    { passive: true, capture: true }
+  );
+  window.addEventListener(
+    "click",
+    state.onClick,
+    { capture: true }
+  );
+
+  window[ATZE_HOME_SWIPE_STATE_KEY] = state;
+
+  // Deliberately keep the global gesture listeners alive. Home Assistant
+  // caches/reuses views, so disconnecting one card must not disable the
+  // gesture for later visits to that same subview.
+  return () => {};
 }
 
 const DOMAIN_META = {
