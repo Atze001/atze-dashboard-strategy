@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.185.0";
+const ATZE_VERSION = "0.186.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -789,7 +789,9 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       state.surfaceSnapshot = null;
     };
 
-    const activeRegistration = () => {
+    const activeRegistration = (event) => {
+      const path =
+        event?.composedPath?.() || [];
       const registrations =
         [...state.registrations.values()];
 
@@ -801,9 +803,21 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         const registration = registrations[i];
         const element = registration.anchor;
 
+        if (!element?.isConnected) {
+          state.registrations.delete(element);
+          continue;
+        }
+
+        if (path.includes(element)) {
+          return registration;
+        }
+
+        const surface =
+          atzeFindSwipeSurface(element);
+
         if (
-          element?.isConnected &&
-          element.getClientRects().length > 0
+          surface &&
+          path.includes(surface)
         ) {
           return registration;
         }
@@ -945,7 +959,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         return;
       }
 
-      const registration = activeRegistration();
+      const registration =
+        activeRegistration(event);
       if (!registration) return;
 
       state.touchIdentifier = touch.identifier;
