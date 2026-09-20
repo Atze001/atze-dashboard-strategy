@@ -78,6 +78,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.153.0
+
+- Die sechs Symbole auf der Hauskarte sind wieder optisch vertikal in ihren
+  Statuskacheln zentriert.
+- In der Batterieansicht bleibt die Statusschrift unabhängig vom Ladestand weiß.
+- Der Batteriestatus zeigt nun zuerst den Prozentwert und danach den Bereich,
+  beispielsweise **48 % · Balkon**.
+
 ### v0.152.0
 
 - Das Hausbild der sechs Statuskacheln wird mit einer schwächeren Abdunklung
@@ -99,14 +107,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
   vom niedrigsten zum höchsten Ladestand.
 - Rollläden werden automatisch in die Sicherheitsansicht und deren Warnungszahl
   aufgenommen.
-
-### v0.150.0
-
-- Die scharfe Serverraum-Grafik verwendet einen neuen Dateinamen, damit
-  Home Assistant und der Browser nicht länger die alte, unscharfe Version aus
-  dem Cache laden.
-- Alarmo und AtzeHomeBase zeigen den Status **deaktiviert** rot an; alle anderen
-  Zustände werden grün dargestellt.
 
 ## Lizenz
 

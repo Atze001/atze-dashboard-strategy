@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.152.0
+ * Version: 0.153.0
  *
- * v0.152 focus:
- * - Brighten the home hero and refine battery/no-dboard handling
+ * v0.153 focus:
+ * - Recenter home status icons and simplify battery status text
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.152.0";
+const ATZE_VERSION = "0.153.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -7534,7 +7534,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           width: 38px;
           height: 38px;
           flex: 0 0 38px;
-          transform: none;
+          transform: translateY(6px);
         }
 
         .status.weather ha-icon {
@@ -9680,11 +9680,11 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
                     ${entry.name || entityId}
                   </span>
                   <span class="battery-state">
-                    ${
+                    ${this._formatted(entityId)}${
                       entry.area_name
-                        ? `${entry.area_name} · `
+                        ? ` · ${entry.area_name}`
                         : ""
-                    }${this._formatted(entityId)}
+                    }
                   </span>
                 </span>
               </button>
@@ -9915,21 +9915,9 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
         }
 
         .battery-state {
-          color: rgba(235,235,245,0.68);
+          color: var(--primary-text-color);
           font-size: 14px;
           white-space: nowrap;
-        }
-
-        .battery-card.good .battery-state {
-          color: #30D158;
-        }
-
-        .battery-card.warning .battery-state {
-          color: #FF9F0A;
-        }
-
-        .battery-card.critical .battery-state {
-          color: #FF453A;
         }
 
         .empty {
