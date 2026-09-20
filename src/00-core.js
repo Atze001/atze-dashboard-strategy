@@ -1,6 +1,6 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.159.0
+ * Version: 0.159.1
  *
  * v0.159 focus:
  * - Split the source into maintainable build modules
@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.159.0";
+const ATZE_VERSION = "0.159.1";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
