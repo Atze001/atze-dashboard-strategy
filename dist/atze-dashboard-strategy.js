@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.165.0";
+const ATZE_VERSION = "0.166.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -11696,6 +11696,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
       if (
         activeElement?.classList?.contains("entity-visibility") ||
+        activeElement?.classList?.contains("person-entity-select") ||
+        activeElement?.classList?.contains("power-sensor-select") ||
         activeElement?.classList?.contains("entity-filter-input") ||
         activeElement?.classList?.contains("favorite-filter-input") ||
         activeElement?.matches?.("[data-page-key]")
@@ -13887,13 +13889,38 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       );
     }
 
-    this.shadowRoot
-      .querySelector(".power-sensor-select")
-      ?.addEventListener("change", (event) => {
-        this._setHomePowerEntity(
-          event.currentTarget.value
-        );
-      });
+    const powerSensorSelect =
+      this.shadowRoot.querySelector(
+        ".power-sensor-select"
+      );
+
+    if (powerSensorSelect) {
+      const beginInteraction = () =>
+        this._beginEntityVisibilityInteraction();
+
+      powerSensorSelect.addEventListener(
+        "pointerdown",
+        beginInteraction
+      );
+      powerSensorSelect.addEventListener(
+        "focus",
+        beginInteraction
+      );
+      powerSensorSelect.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+      powerSensorSelect.addEventListener(
+        "change",
+        (event) => {
+          this._entityVisibilityActive = false;
+          this._pendingHassRender = false;
+          this._setHomePowerEntity(
+            event.currentTarget.value
+          );
+        }
+      );
+    }
 
     for (
       const select of
@@ -13901,8 +13928,25 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           ".person-entity-select"
         )
     ) {
+      const beginInteraction = () =>
+        this._beginEntityVisibilityInteraction();
+
+      select.addEventListener(
+        "pointerdown",
+        beginInteraction
+      );
+      select.addEventListener(
+        "focus",
+        beginInteraction
+      );
+      select.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
       select.addEventListener("change", (event) => {
         const target = event.currentTarget;
+        this._entityVisibilityActive = false;
+        this._pendingHassRender = false;
         this._setHomePerson(
           Number(target.dataset.personIndex),
           target.value
