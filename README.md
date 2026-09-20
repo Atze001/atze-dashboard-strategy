@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.171.0**
+Version **0.172.0**
 
 Enthalten sind unter anderem:
 
@@ -84,14 +84,16 @@ vorhanden, wird die Kachel automatisch ausgeblendet.
 
 ## Blueprint Lichtsteuerung
 
-Der mitgelieferte Home-Assistant-Automation-Blueprint liegt unter:
+Beim Einrichten der Lichtsteuerung prüft die Dashboard-Strategy automatisch,
+ob der benötigte Automation-Blueprint in Home Assistant vorhanden ist. Fehlt
+er, wird er über die Home-Assistant-Blueprint-API angelegt unter:
 
-`blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`
+`/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`
 
-Er unterstützt eine freie Lampenauswahl sowie getrennte Zeitversätze für
-**Morgen**, **Abend** und **Nacht**. Die Zeitversätze werden direkt in der
-jeweiligen Blueprint-Automation gespeichert; dafür sind keine zusätzlichen
-Helfer nötig.
+Der Blueprint unterstützt eine freie Lampenauswahl sowie getrennte
+Zeitversätze für **Morgen**, **Abend** und **Nacht**. Die Zeitversätze werden
+direkt in der jeweiligen Blueprint-Automation gespeichert; dafür sind keine
+zusätzlichen Helfer nötig.
 
 ## Dashboard-YAML
 
@@ -131,6 +133,15 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.172.0
+
+- Die Lichtsteuerung legt den benötigten Automation-Blueprint jetzt wie die
+  Helfer automatisch in Home Assistant an.
+- Zielpfad:
+  `/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`.
+- Die versehentliche Ablage des Blueprints als normale Datei im
+  Strategy-Repository wird wieder entfernt.
 
 ### v0.171.0
 

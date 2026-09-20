@@ -995,6 +995,34 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     throw lastError;
   }
 
+  async _ensureLightControlBlueprint() {
+    if (!this._hass) {
+      throw new Error("Home Assistant ist noch nicht verfügbar.");
+    }
+
+    const blueprints = await this._hass.callWS({
+      type: "blueprint/list",
+      domain: "automation",
+    });
+
+    const existing =
+      blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
+
+    if (existing && !existing.error) {
+      return { created: false };
+    }
+
+    await this._hass.callWS({
+      type: "blueprint/save",
+      domain: "automation",
+      path: ATZE_LIGHT_BLUEPRINT_PATH,
+      yaml: ATZE_LIGHT_BLUEPRINT_YAML,
+      allow_override: false,
+    });
+
+    return { created: true };
+  }
+
   async _ensureLightControlHelpers() {
     if (!this._hass) {
       throw new Error("Home Assistant ist noch nicht verfügbar.");
@@ -1087,16 +1115,29 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
     this._lightHelperSetupState = "loading";
     this._lightHelperSetupMessage =
-      "Helfer und Kategorie werden geprüft …";
+      "Helfer, Kategorie und Blueprint werden geprüft …";
     this._render();
 
     try {
-      const result = await this._ensureLightControlHelpers();
+      const [helperResult, blueprintResult] =
+        await Promise.all([
+          this._ensureLightControlHelpers(),
+          this._ensureLightControlBlueprint(),
+        ]);
+
       this._lightHelpersEnsured = true;
       this._lightHelperSetupState = "success";
-      this._lightHelperSetupMessage = result.created
-        ? `${result.created} fehlende Helfer wurden angelegt; alle ${result.total} sind der Kategorie zugeordnet.`
-        : `Alle ${result.total} Helfer sind vorhanden und der Kategorie zugeordnet.`;
+
+      const helperMessage = helperResult.created
+        ? `${helperResult.created} fehlende Helfer wurden angelegt; alle ${helperResult.total} sind der Kategorie zugeordnet.`
+        : `Alle ${helperResult.total} Helfer sind vorhanden und der Kategorie zugeordnet.`;
+
+      const blueprintMessage = blueprintResult.created
+        ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant angelegt."
+        : "Der Lichtsteuerungs-Blueprint ist bereits in Home Assistant vorhanden.";
+
+      this._lightHelperSetupMessage =
+        `${helperMessage} ${blueprintMessage}`;
 
       if (enablePopup) {
         this._fireConfigChanged({
@@ -1111,9 +1152,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._lightHelperSetupState = "error";
       this._lightHelperSetupMessage =
         error?.message ||
-        "Die Lichtsteuerungs-Helfer konnten nicht angelegt werden.";
+        "Die Lichtsteuerung konnte nicht vollständig eingerichtet werden.";
       console.error(
-        "Atze Dashboard: Lichtsteuerungs-Helfer konnten nicht eingerichtet werden.",
+        "Atze Dashboard: Lichtsteuerung konnte nicht vollständig eingerichtet werden.",
         error
       );
       this._render();
