@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.158.0**
+Version **0.159.0**
 
 Enthalten sind unter anderem:
 
@@ -62,6 +62,14 @@ type: custom:atze-dashboard
 
 Eine vollständige Beispielkonfiguration befindet sich in `example.yaml`.
 
+## Entwicklung
+
+Die bearbeitbaren Quelldateien liegen in `src/`; die Datei in `dist/` ist das
+von HACS geladene Ergebnis. Nach Änderungen in `src/` erzeugt die GitHub Action
+automatisch eine aktualisierte `dist/atze-dashboard-strategy.js` im selben
+Branch. Lokal lässt sich derselbe Schritt bei Bedarf mit `npm run build`
+ausführen.
+
 ## Raum-Bilder
 
 Die mitgelieferten Bilder liegen unter `dist/assets/` und werden automatisch
@@ -81,6 +89,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.159.0
+
+- Der Quellcode ist jetzt nach Verantwortlichkeiten in `src/` aufgeteilt.
+- `npm run build` erzeugt daraus weiterhin die von HACS verwendete Datei
+  `dist/atze-dashboard-strategy.js`.
+- Eine GitHub Action baut diese Datei nach Änderungen in `src/` automatisch
+  neu und schreibt sie in den jeweiligen Branch zurück.
+
 ### v0.158.0
 
 - Die Texte der sechs Statuskacheln auf dem Hausbild stehen jetzt exakt **5 px**
@@ -95,15 +111,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
   **Atze Dashboard Strategy - Licht** zugeordnet.
 - Bereits aktivierte Lichtsteuerungen werden beim nächsten Öffnen der
   Dashboard-Einstellungen automatisch nachgerüstet.
-
-### v0.156.0
-
-- Unter **Darstellung** lässt sich nun auch **Lichtsteuerung** als
-  Startseitenpunkt ein- oder ausschalten.
-- Eine vorhandene eigene Seite mit Titel oder Pfad **Lichtsteuerung** wird
-  automatisch in ein separates Bubble-Card-Popup übernommen.
-- Die Kartenkonfiguration und vorhandene Helfer-Verknüpfungen der eigenen Seite
-  bleiben dabei unverändert erhalten.
 
 ## Lizenz
 
