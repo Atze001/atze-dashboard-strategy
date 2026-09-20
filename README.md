@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.169.0**
+Version **0.170.0**
 
 Enthalten sind unter anderem:
 
@@ -120,6 +120,13 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.170.0
+
+- HACS-Update-Erkennung erneut korrigiert: Funktionsparameter und Aufruf
+  verwenden jetzt die jeweils richtige Entity-Liste.
+- Der verbleibende `ReferenceError: Can't find variable: entities` aus
+  v0.169.0 ist damit behoben.
 
 ### v0.169.0
 
