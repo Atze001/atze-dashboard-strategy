@@ -10,7 +10,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.154.0**
+Version **0.155.0**
 
 Enthalten sind unter anderem:
 
@@ -79,6 +79,12 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.155.0
+
+- Das Zeitpläne-Popup wird getrennt von der Startseitenkarte eingebunden.
+  Bubble Card kann dadurch nicht mehr versehentlich das gesamte Dashboard
+  ausblenden.
+
 ### v0.154.0
 
 - Unter **Darstellung** lässt sich der Startseitenpunkt **Zeitpläne** ein- oder
@@ -95,17 +101,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 - In der Batterieansicht bleibt die Statusschrift unabhängig vom Ladestand weiß.
 - Der Batteriestatus zeigt nun zuerst den Prozentwert und danach den Bereich,
   beispielsweise **48 % · Balkon**.
-
-### v0.152.0
-
-- Das Hausbild der sechs Statuskacheln wird mit einer schwächeren Abdunklung
-  sichtbar heller dargestellt.
-- Die Batterieansicht verwendet die Grenzen **41–100 % grün**,
-  **21–40 % orange** und **0–20 % rot** und trennt sie in drei Abschnitte.
-- Die Ausschlusslabels **no-strategy** und **no-dboard** gelten nun auch direkt
-  für einzelne Entitäten, einschließlich der Sicherheitsansicht.
-- Eine versehentlich auf Sicherheitsentitäten angewendete Batteriesortierung
-  wurde entfernt.
 
 ## Lizenz
 

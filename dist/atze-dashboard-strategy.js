@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.154.0
+ * Version: 0.155.0
  *
- * v0.154 focus:
- * - Add a configurable Scheduler Bubble Card popup to the home view
+ * v0.155 focus:
+ * - Keep the Scheduler popup separate from the home card container
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.154.0";
+const ATZE_VERSION = "0.155.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4897,7 +4897,30 @@ function buildHomeOverviewView(
     icon: config.home_icon || "mdi:home",
     subview: false,
     panel: true,
-    cards: [homeCard],
+    cards: showSchedulerPopup
+      ? [
+          {
+            type: "vertical-stack",
+            cards: [
+              {
+                type: "custom:bubble-card",
+                card_type: "pop-up",
+                hash: "#zeitplaene",
+                name: "Zeitpläne",
+                icon: "mdi:calendar-clock",
+                popup_mode: "adaptive-dialog",
+                width_desktop: "900px",
+                cards: [
+                  {
+                    type: "custom:scheduler-card",
+                  },
+                ],
+              },
+              homeCard,
+            ],
+          },
+        ]
+      : [homeCard],
   };
 }
 
@@ -6076,29 +6099,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
-    this._schedulerPopupCard = null;
-    this._schedulerPopupPromise = null;
   }
 
   setConfig(config) {
     this._config = { ...config };
-
-    if (this._config.scheduler_popup !== true) {
-      this._schedulerPopupCard?.remove();
-      this._schedulerPopupCard = null;
-      this._schedulerPopupPromise = null;
-    }
-
     this._render();
   }
 
   set hass(value) {
     this._hass = value;
-
-    if (this._schedulerPopupCard) {
-      this._schedulerPopupCard.hass = value;
-    }
-
     this._render();
   }
 
@@ -6571,67 +6580,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
   }
 
-  async _ensureSchedulerPopup() {
-    if (
-      this._config?.scheduler_popup !== true ||
-      !this.shadowRoot
-    ) {
-      return;
-    }
-
-    const host = this.shadowRoot.querySelector(
-      "#scheduler-popup-host"
-    );
-
-    if (!host) return;
-
-    if (this._schedulerPopupCard) {
-      this._schedulerPopupCard.hass = this._hass;
-      host.replaceChildren(this._schedulerPopupCard);
-      return;
-    }
-
-    if (this._schedulerPopupPromise) return;
-
-    this._schedulerPopupPromise = (async () => {
-      const helpers = await window.loadCardHelpers();
-      const popupCard = await helpers.createCardElement({
-        type: "custom:bubble-card",
-        card_type: "pop-up",
-        hash: "#zeitplaene",
-        name: "Zeitpläne",
-        icon: "mdi:calendar-clock",
-        popup_mode: "adaptive-dialog",
-        width_desktop: "900px",
-        cards: [
-          {
-            type: "custom:scheduler-card",
-          },
-        ],
-      });
-
-      popupCard.hass = this._hass;
-      this._schedulerPopupCard = popupCard;
-
-      const currentHost = this.shadowRoot?.querySelector(
-        "#scheduler-popup-host"
-      );
-
-      if (currentHost) {
-        currentHost.replaceChildren(popupCard);
-      }
-    })()
-      .catch((error) => {
-        console.error(
-          "Atze Dashboard: Zeitpläne-Popup konnte nicht geladen werden.",
-          error
-        );
-      })
-      .finally(() => {
-        this._schedulerPopupPromise = null;
-      });
-  }
-
   _escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -6983,15 +6931,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass) return;
-
-    // Keep the mounted Bubble Card alive while its dialog is open. The
-    // scheduler itself still receives fresh Home Assistant state via `hass`.
-    if (
-      this._schedulerPopupCard?.isConnected &&
-      window.location.hash === "#zeitplaene"
-    ) {
-      return;
-    }
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -8701,10 +8640,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           </div>
         </div>
       </ha-card>
-      <div id="scheduler-popup-host"></div>
     `;
-
-    this._ensureSchedulerPopup();
 
     this.shadowRoot
       .querySelectorAll(".room")
