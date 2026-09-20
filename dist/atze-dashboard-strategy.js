@@ -1,15 +1,156 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.156.0
+ * Version: 0.157.0
  *
- * v0.156 focus:
- * - Move the custom light-control page into a configurable Bubble popup
+ * v0.157 focus:
+ * - Provision and categorize the light-control helpers automatically
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.156.0";
+const ATZE_VERSION = "0.157.0";
 const STRATEGY_TYPE = "atze-dashboard";
+
+const ATZE_LIGHT_HELPER_CATEGORY =
+  "Atze Dashboard Strategy - Licht";
+
+const ATZE_LIGHT_HELPERS = [
+  {
+    domain: "input_boolean",
+    id: "lichtsteuerung",
+    values: {
+      name: "Lichtsteuerung",
+      icon: "mdi:lightbulb-auto",
+      initial: false,
+    },
+  },
+  {
+    domain: "input_boolean",
+    id: "motion_unterbrecher",
+    values: {
+      name: "Motion Unterbrecher",
+      icon: "mdi:motion-sensor-off",
+      initial: false,
+    },
+  },
+  {
+    domain: "input_datetime",
+    id: "morgen",
+    values: {
+      name: "Morgen",
+      icon: "mdi:clock-start",
+      initial: "05:30:00",
+      has_date: false,
+      has_time: true,
+    },
+  },
+  {
+    domain: "input_number",
+    id: "helligkeit_morgen",
+    values: {
+      name: "Helligkeit Morgen",
+      icon: "mdi:white-balance-sunny",
+      initial: 80,
+      min: 0,
+      max: 100,
+      step: 5,
+      mode: "slider",
+      unit_of_measurement: "%",
+    },
+  },
+  {
+    domain: "input_number",
+    id: "farbe_morgen",
+    values: {
+      name: "Farbe Morgen",
+      icon: "mdi:white-balance-sunny",
+      initial: 4500,
+      min: 2000,
+      max: 6500,
+      step: 100,
+      mode: "slider",
+      unit_of_measurement: "K",
+    },
+  },
+  {
+    domain: "input_datetime",
+    id: "abend",
+    values: {
+      name: "Abend",
+      icon: "mdi:weather-night",
+      initial: "21:00:00",
+      has_date: false,
+      has_time: true,
+    },
+  },
+  {
+    domain: "input_number",
+    id: "helligkeit_abend",
+    values: {
+      name: "Helligkeit Abend",
+      icon: "mdi:weather-night",
+      initial: 50,
+      min: 0,
+      max: 100,
+      step: 5,
+      mode: "slider",
+      unit_of_measurement: "%",
+    },
+  },
+  {
+    domain: "input_number",
+    id: "farbe_abend",
+    values: {
+      name: "Farbe Abend",
+      icon: "mdi:weather-night",
+      initial: 3300,
+      min: 2000,
+      max: 6500,
+      step: 100,
+      mode: "slider",
+      unit_of_measurement: "K",
+    },
+  },
+  {
+    domain: "input_datetime",
+    id: "nacht",
+    values: {
+      name: "Nacht",
+      icon: "mdi:weather-night",
+      initial: "23:00:00",
+      has_date: false,
+      has_time: true,
+    },
+  },
+  {
+    domain: "input_number",
+    id: "helligkeit_nacht",
+    values: {
+      name: "Helligkeit Nacht",
+      icon: "mdi:weather-night",
+      initial: 5,
+      min: 0,
+      max: 100,
+      step: 5,
+      mode: "slider",
+      unit_of_measurement: "%",
+    },
+  },
+  {
+    domain: "input_number",
+    id: "farbe_nacht",
+    values: {
+      name: "Farbe Nacht",
+      icon: "mdi:weather-night",
+      initial: 2700,
+      min: 2000,
+      max: 6500,
+      step: 100,
+      mode: "slider",
+      unit_of_measurement: "K",
+    },
+  },
+];
 
 const DOMAIN_META = {
   light:         { title: "Licht",      icon: "mdi:lightbulb-group", order: 10 },
@@ -5037,9 +5178,23 @@ function lightControlPopupConfig(config) {
   if (cards.length === 0) {
     cards = [
       {
-        type: "markdown",
-        content:
-          "## Lichtsteuerung\nLege unter **Eigene Seiten** eine Seite mit dem Titel oder Pfad `Lichtsteuerung` an. Deren Karten erscheinen anschließend automatisch hier.",
+        type: "entities",
+        entities: [
+          { entity: "input_boolean.lichtsteuerung" },
+          { entity: "input_boolean.motion_unterbrecher" },
+          { type: "section", label: "☀️ Morgen-Einstellungen" },
+          { entity: "input_datetime.morgen", name: "Startzeit Morgen" },
+          { entity: "input_number.helligkeit_morgen", name: "Helligkeit Morgen" },
+          { entity: "input_number.farbe_morgen", name: "Farbe Morgen" },
+          { type: "section", label: "🌙 Abend-Einstellungen" },
+          { entity: "input_datetime.abend", name: "Startzeit Abend" },
+          { entity: "input_number.helligkeit_abend", name: "Helligkeit Abend" },
+          { entity: "input_number.farbe_abend", name: "Farbe Abend" },
+          { type: "section", label: "💤 Nacht-Einstellungen" },
+          { entity: "input_datetime.nacht", name: "Startzeit Nacht" },
+          { entity: "input_number.helligkeit_nacht", name: "Helligkeit Nacht" },
+          { entity: "input_number.farbe_nacht", name: "Farbe Nacht" },
+        ],
       },
     ];
   }
@@ -7709,7 +7864,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           padding: 6px 18px;
           display: flex;
           align-items: center;
-          gap: 13px;
+          gap: 7px;
           border: 1px solid var(--home-card-border);
           border-radius: 28px;
           background: var(--home-card-bg);
@@ -10887,6 +11042,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set();
+    this._lightHelpersEnsured = false;
+    this._lightHelperSetupState = "";
+    this._lightHelperSetupMessage = "";
   }
 
   set hass(value) {
@@ -10899,6 +11057,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     } else {
       this._render();
     }
+
+    this._maybeEnsureLightControlHelpers();
   }
 
   get hass() {
@@ -10908,6 +11068,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   setConfig(config) {
     this._config = { ...(config || {}) };
     this._render();
+    this._maybeEnsureLightControlHelpers();
   }
 
   connectedCallback() {
@@ -10920,6 +11081,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingHassRender = false;
     this._loadRegistries();
     this._render();
+    this._maybeEnsureLightControlHelpers();
   }
 
   async _loadRegistries() {
@@ -11598,11 +11760,191 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     return lightControlPopupEnabled(this._config || {});
   }
 
-  _setLightControlPopup(value) {
-    this._fireConfigChanged({
-      ...this._config,
-      light_control_popup: value === true,
+  _maybeEnsureLightControlHelpers() {
+    if (
+      !this._hass ||
+      !this._lightControlPopupEnabled() ||
+      this._lightHelpersEnsured ||
+      this._lightHelperSetupState !== ""
+    ) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (
+        this._hass &&
+        this._lightControlPopupEnabled() &&
+        !this._lightHelpersEnsured &&
+        this._lightHelperSetupState === ""
+      ) {
+        this._setupLightControlHelpers(false);
+      }
     });
+  }
+
+  async _assignLightHelperCategory(entityId, categoryId) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        await this._hass.callWS({
+          type: "config/entity_registry/update",
+          entity_id: entityId,
+          categories: { helpers: categoryId },
+        });
+        return;
+      } catch (error) {
+        lastError = error;
+
+        if (attempt < 3) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 200 * (attempt + 1))
+          );
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  async _ensureLightControlHelpers() {
+    if (!this._hass) {
+      throw new Error("Home Assistant ist noch nicht verfügbar.");
+    }
+
+    const domains = [
+      ...new Set(
+        ATZE_LIGHT_HELPERS.map((helper) => helper.domain)
+      ),
+    ];
+    const helperLists = await Promise.all(
+      domains.map((domain) =>
+        this._hass.callWS({ type: `${domain}/list` })
+      )
+    );
+    const knownEntityIds = new Set([
+      ...Object.keys(this._hass.states || {}),
+      ...this._entities.map((entity) => entity.entity_id),
+    ]);
+
+    domains.forEach((domain, index) => {
+      for (const helper of helperLists[index] || []) {
+        if (helper?.id) {
+          knownEntityIds.add(`${domain}.${helper.id}`);
+        }
+      }
+    });
+
+    const entityIds = [];
+    let created = 0;
+
+    for (const helper of ATZE_LIGHT_HELPERS) {
+      const expectedEntityId = `${helper.domain}.${helper.id}`;
+
+      if (!knownEntityIds.has(expectedEntityId)) {
+        const result = await this._hass.callWS({
+          type: `${helper.domain}/create`,
+          ...helper.values,
+        });
+        const createdId = result?.id;
+
+        if (createdId !== helper.id) {
+          throw new Error(
+            `${expectedEntityId} konnte nicht mit der vorgesehenen Entity-ID angelegt werden.`
+          );
+        }
+
+        knownEntityIds.add(expectedEntityId);
+        created += 1;
+      }
+
+      entityIds.push(expectedEntityId);
+    }
+
+    const categories = await this._hass.callWS({
+      type: "config/category_registry/list",
+      scope: "helpers",
+    });
+    let category = (categories || []).find(
+      (entry) =>
+        String(entry?.name || "").trim().toLowerCase() ===
+        ATZE_LIGHT_HELPER_CATEGORY.toLowerCase()
+    );
+
+    if (!category) {
+      category = await this._hass.callWS({
+        type: "config/category_registry/create",
+        scope: "helpers",
+        name: ATZE_LIGHT_HELPER_CATEGORY,
+        icon: "mdi:lightbulb-group-outline",
+      });
+    }
+
+    if (!category?.category_id) {
+      throw new Error("Die Helfer-Kategorie konnte nicht angelegt werden.");
+    }
+
+    for (const entityId of entityIds) {
+      await this._assignLightHelperCategory(
+        entityId,
+        category.category_id
+      );
+    }
+
+    return { created, total: entityIds.length };
+  }
+
+  async _setupLightControlHelpers(enablePopup) {
+    if (this._lightHelperSetupState === "loading") return;
+
+    this._lightHelperSetupState = "loading";
+    this._lightHelperSetupMessage =
+      "Helfer und Kategorie werden geprüft …";
+    this._render();
+
+    try {
+      const result = await this._ensureLightControlHelpers();
+      this._lightHelpersEnsured = true;
+      this._lightHelperSetupState = "success";
+      this._lightHelperSetupMessage = result.created
+        ? `${result.created} fehlende Helfer wurden angelegt; alle ${result.total} sind der Kategorie zugeordnet.`
+        : `Alle ${result.total} Helfer sind vorhanden und der Kategorie zugeordnet.`;
+
+      if (enablePopup) {
+        this._fireConfigChanged({
+          ...this._config,
+          light_control_popup: true,
+        });
+      } else {
+        this._render();
+      }
+    } catch (error) {
+      this._lightHelpersEnsured = false;
+      this._lightHelperSetupState = "error";
+      this._lightHelperSetupMessage =
+        error?.message ||
+        "Die Lichtsteuerungs-Helfer konnten nicht angelegt werden.";
+      console.error(
+        "Atze Dashboard: Lichtsteuerungs-Helfer konnten nicht eingerichtet werden.",
+        error
+      );
+      this._render();
+    }
+  }
+
+  _setLightControlPopup(value) {
+    if (value !== true) {
+      this._lightHelpersEnsured = false;
+      this._lightHelperSetupState = "";
+      this._lightHelperSetupMessage = "";
+      this._fireConfigChanged({
+        ...this._config,
+        light_control_popup: false,
+      });
+      return;
+    }
+
+    this._setupLightControlHelpers(true);
   }
 
   _addCustomPage(template = "empty") {
@@ -12641,7 +12983,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               <label class="row">
                 <span class="copy">
                   <span class="name">Lichtsteuerung</span>
-                  <span class="desc">Öffnet die Karten der eigenen Seite Lichtsteuerung in einem Bubble-Popup.</span>
+                  <span class="desc">
+                    Öffnet die Lichtsteuerung in einem Bubble-Popup und legt fehlende Helfer automatisch an.
+                    ${this._lightHelperSetupMessage
+                      ? `<br><b>${this._escape(this._lightHelperSetupMessage)}</b>`
+                      : ""}
+                  </span>
                 </span>
                 <input
                   class="setting-toggle"
@@ -12649,6 +12996,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   data-key="light_control_popup"
                   data-default="false"
                   ${this._lightControlPopupEnabled() ? "checked" : ""}
+                  ${this._lightHelperSetupState === "loading" ? "disabled" : ""}
                 />
               </label>
               ${this._toggleHtml(

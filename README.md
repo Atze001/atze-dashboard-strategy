@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.156.0**
+Version **0.157.0**
 
 Enthalten sind unter anderem:
 
@@ -81,6 +81,16 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.157.0
+
+- Beim Aktivieren der **Lichtsteuerung** werden elf benötigte Helfer automatisch
+  geprüft und fehlende Helfer mit den vorgesehenen Startwerten angelegt.
+- Vorhandene Helfer und ihre aktuellen Werte werden nicht verändert.
+- Alle Lichtsteuerungs-Helfer werden automatisch der Helfer-Kategorie
+  **Atze Dashboard Strategy - Licht** zugeordnet.
+- Bereits aktivierte Lichtsteuerungen werden beim nächsten Öffnen der
+  Dashboard-Einstellungen automatisch nachgerüstet.
+
 ### v0.156.0
 
 - Unter **Darstellung** lässt sich nun auch **Lichtsteuerung** als
@@ -95,15 +105,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 - Das Zeitpläne-Popup wird getrennt von der Startseitenkarte eingebunden.
   Bubble Card kann dadurch nicht mehr versehentlich das gesamte Dashboard
   ausblenden.
-
-### v0.154.0
-
-- Unter **Darstellung** lässt sich der Startseitenpunkt **Zeitpläne** ein- oder
-  ausschalten.
-- **Zeitpläne** öffnet nun ein Bubble-Card-Popup, dessen erste Karte eine
-  Scheduler Card ist, statt eine zusätzliche Dashboard-Seite aufzurufen.
-- Bereits vorhandene Zeitpläne-Seiten mit Scheduler Card werden automatisch in
-  das neue Popup übernommen.
 
 ## Lizenz
 
