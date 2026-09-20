@@ -25,7 +25,9 @@ class AtzeDashboardStrategy extends HTMLElement {
       config.hide_scrollbar !== false
     );
 
-    if (hass?.user?.is_admin) {
+    if (!ATZE_LIGHT_BLUEPRINT_AUTO_ATTEMPTED) {
+      ATZE_LIGHT_BLUEPRINT_AUTO_ATTEMPTED = true;
+
       try {
         await ensureAtzeLightBlueprint(hass);
       } catch (error) {
