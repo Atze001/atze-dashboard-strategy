@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.149.0
+ * Version: 0.150.0
  *
- * v0.149 focus:
- * - Improve control-center background brightness and sharpness
+ * v0.150 focus:
+ * - Bust the control-center image cache and correct alarm status colors
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.149.0";
+const ATZE_VERSION = "0.150.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3652,7 +3652,7 @@ const DEFAULT_HOME_HERO_NIGHT_IMAGE = new URL(
 ).href;
 
 const DEFAULT_HOME_CONTROL_CENTER_IMAGE = new URL(
-  "home-control-center.webp",
+  "home-control-center-clear.webp",
   ATZE_ASSET_BASE_URL
 ).href;
 
@@ -6155,16 +6155,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return map[state] || stateObj.state || "—";
   }
 
-  _alarmActive(stateObj) {
+  _isDisabledStatus(stateObj, entityId = null) {
     if (!stateObj) return false;
 
-    const state = String(stateObj.state || "").toLowerCase();
+    const values = [
+      stateObj.state,
+      entityId ? this._formatted(entityId) : "",
+    ].map((value) =>
+      String(value || "")
+        .trim()
+        .toLowerCase()
+    );
 
-    return ![
-      "disarmed",
-      "unknown",
-      "unavailable",
-    ].includes(state);
+    return values.some((value) =>
+      [
+        "disarmed",
+        "disabled",
+        "deaktiviert",
+      ].includes(value)
+    );
   }
 
   _weatherText(state) {
@@ -6761,7 +6770,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
-    const alarmActive = this._alarmActive(alarmState);
+    const alarmDisabled = this._isDisabledStatus(
+      alarmState,
+      this._config.alarm_entity
+    );
 
     const homeBaseStatus =
       this._homeBaseStatus();
@@ -6779,6 +6791,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const homeBaseIcon =
       homeBaseState?.attributes?.icon ||
       "mdi:shield-home";
+
+    const homeBaseDisabled = this._isDisabledStatus(
+      homeBaseState,
+      homeBaseEntityId
+    );
 
     const warningActive = (
       this._config.warning_entities || []
@@ -7412,7 +7429,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .status.security.warning ha-icon,
         .status.windows.warning ha-icon,
-        .status.alarmo.warning ha-icon {
+        .status.alarmo.warning ha-icon,
+        .status.homebase.warning ha-icon {
           color: var(--home-red);
         }
 
@@ -8320,14 +8338,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
 
             <div
-              class="status alarmo ${alarmActive ? "warning" : ""}"
+              class="status alarmo ${alarmDisabled ? "warning" : ""}"
               id="alarm-status"
             >
               <ha-icon
                 icon="${
-                  alarmActive
-                    ? "mdi:shield-lock"
-                    : "mdi:shield-off-outline"
+                  alarmDisabled
+                    ? "mdi:shield-off-outline"
+                    : "mdi:shield-lock"
                 }"
               ></ha-icon>
               <div>
@@ -8337,7 +8355,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
 
             <div
-              class="status homebase"
+              class="status homebase ${homeBaseDisabled ? "warning" : ""}"
               id="homebase-status"
             >
               <ha-icon icon="${homeBaseIcon}"></ha-icon>
