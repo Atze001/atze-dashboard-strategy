@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.159.0**
+Version **0.159.1**
 
 Enthalten sind unter anderem:
 
@@ -65,10 +65,12 @@ Eine vollständige Beispielkonfiguration befindet sich in `example.yaml`.
 ## Entwicklung
 
 Die bearbeitbaren Quelldateien liegen in `src/`; die Datei in `dist/` ist das
-von HACS geladene Ergebnis. Nach Änderungen in `src/` erzeugt die GitHub Action
-automatisch eine aktualisierte `dist/atze-dashboard-strategy.js` im selben
-Branch. Lokal lässt sich derselbe Schritt bei Bedarf mit `npm run build`
-ausführen.
+von HACS geladene Ergebnis. Die Versionsnummer wird ausschließlich über
+`ATZE_VERSION` in `src/00-core.js` gepflegt. Nach Änderungen in `src/`
+erzeugt die GitHub Action automatisch `dist/atze-dashboard-strategy.js` und
+synchronisiert dieselbe Versionsnummer nach `package.json` sowie in den
+Abschnitt **Aktueller Stand** dieser README. Lokal lässt sich derselbe Schritt
+bei Bedarf mit `npm run build` ausführen.
 
 ## Raum-Bilder
 
