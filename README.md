@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.162.0**
+Version **0.163.0**
 
 Enthalten sind unter anderem:
 
@@ -90,6 +90,15 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.163.0
+
+- Standard-Raumbilder werden jetzt auch bei erweiterten Area-IDs und
+  Raumnamen zuverlässig erkannt, z. B. `hausflur-eg` oder
+  `hausflur-1-og`.
+- **Treppenhaus** und **Treppenflur** werden als Alias für **Hausflur**
+  behandelt.
+- Bestehende exakte Area-IDs bleiben unverändert bevorzugt.
 
 ### v0.162.0
 

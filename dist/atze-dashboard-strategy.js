@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.162.0";
+const ATZE_VERSION = "0.163.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -3797,6 +3797,61 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
   )
 );
 
+const DEFAULT_HOME_ROOM_IMAGE_ALIASES = {
+  treppenhaus: "hausflur",
+  treppenflur: "hausflur",
+};
+
+function defaultHomeRoomImageKey(area, imageMap) {
+  const rawAreaId = String(area?.area_id || "").trim().toLowerCase();
+  const areaId = slugify(area?.area_id || "");
+  const areaName = slugify(area?.name || "");
+  const candidates = [
+    rawAreaId,
+    areaId,
+    areaName,
+  ].filter(Boolean);
+
+  // Prefer exact ids/names so existing special keys keep working.
+  for (const candidate of candidates) {
+    if (imageMap[candidate]) return candidate;
+
+    const alias = DEFAULT_HOME_ROOM_IMAGE_ALIASES[candidate];
+    if (alias && imageMap[alias]) return alias;
+  }
+
+  // Also match descriptive ids/names such as hausflur-eg,
+  // hausflur-1-og, mein-hausflur or treppenhaus-eg.
+  const knownKeys = Object.keys(imageMap)
+    .sort((a, b) => b.length - a.length);
+
+  const containsWholeSlug = (candidate, value) =>
+    candidate === value ||
+    candidate.startsWith(`${value}-`) ||
+    candidate.endsWith(`-${value}`) ||
+    candidate.includes(`-${value}-`);
+
+  for (const candidate of candidates.map(slugify)) {
+    const aliasMatch = Object.entries(
+      DEFAULT_HOME_ROOM_IMAGE_ALIASES
+    ).find(([alias]) =>
+      containsWholeSlug(candidate, alias)
+    );
+
+    if (aliasMatch && imageMap[aliasMatch[1]]) {
+      return aliasMatch[1];
+    }
+
+    const key = knownKeys.find((knownKey) =>
+      containsWholeSlug(candidate, slugify(knownKey))
+    );
+
+    if (key) return key;
+  }
+
+  return null;
+}
+
 const DEFAULT_HOME_HERO_DAY_IMAGE = new URL(
   "home-hero-day.webp",
   ATZE_ASSET_BASE_URL
@@ -4895,10 +4950,10 @@ function buildHomeOverviewView(
       override.home_image ||
       config.home_room_images?.[area.area_id];
 
-    const imageKey =
-      DEFAULT_HOME_ROOM_IMAGES[area.area_id]
-        ? area.area_id
-        : slugify(area.name || "");
+    const imageKey = defaultHomeRoomImageKey(
+      area,
+      DEFAULT_HOME_ROOM_IMAGES
+    );
 
     const defaultImage =
       DEFAULT_HOME_ROOM_IMAGES[imageKey] ||
@@ -4908,10 +4963,10 @@ function buildHomeOverviewView(
       override.home_light_image ||
       config.home_room_light_images?.[area.area_id];
 
-    const lightImageKey =
-      DEFAULT_HOME_ROOM_LIGHT_IMAGES[area.area_id]
-        ? area.area_id
-        : slugify(area.name || "");
+    const lightImageKey = defaultHomeRoomImageKey(
+      area,
+      DEFAULT_HOME_ROOM_LIGHT_IMAGES
+    );
 
     const defaultLightImage =
       DEFAULT_HOME_ROOM_LIGHT_IMAGES[lightImageKey] ||
