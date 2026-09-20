@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.160.0**
+Version **0.161.0**
 
 Enthalten sind unter anderem:
 
@@ -75,8 +75,8 @@ bei Bedarf mit `npm run build` ausführen.
 ## Raum-Bilder
 
 Die mitgelieferten Bilder liegen unter `dist/assets/` und werden automatisch
-den Bereichen Küche, Schlafzimmer, Bad, Flur, Wohnzimmer, Büro, Balkon,
-3D-Drucker und Zentrale zugeordnet.
+den Bereichen Küche, Schlafzimmer, Bad, Flur, Hausflur, Wohnzimmer, Büro,
+Arbeitszimmer, Kinderzimmer, Balkon, 3D-Drucker und Zentrale zugeordnet.
 
 ## Sicherheit
 
@@ -90,6 +90,12 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.161.0
+
+- Neue helle und dunkle Standardbilder für **Kinderzimmer** und **Hausflur**.
+- **Arbeitszimmer** verwendet automatisch dieselben hellen und dunklen
+  Standardbilder wie **Büro**.
 
 ### v0.159.2
 

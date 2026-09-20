@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.160.0";
+const ATZE_VERSION = "0.161.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -3754,6 +3754,9 @@ const DEFAULT_HOME_ROOM_IMAGES = {
   flur: new URL("flur.jpg", ATZE_ASSET_BASE_URL).href,
   wohnzimmer: new URL("wohnzimmer.jpg", ATZE_ASSET_BASE_URL).href,
   buro: new URL("buro.jpg", ATZE_ASSET_BASE_URL).href,
+  arbeitszimmer: new URL("buro.jpg", ATZE_ASSET_BASE_URL).href,
+  kinderzimmer: new URL("kinderzimmer.webp", ATZE_ASSET_BASE_URL).href,
+  hausflur: new URL("hausflur.webp", ATZE_ASSET_BASE_URL).href,
   balkon: new URL("balkon.jpg", ATZE_ASSET_BASE_URL).href,
   "3d_drucker": new URL("3d-drucker.webp", ATZE_ASSET_BASE_URL).href,
   "3d-drucker": new URL("3d-drucker.webp", ATZE_ASSET_BASE_URL).href,
@@ -3767,6 +3770,9 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   flur: "flur-light.webp",
   wohnzimmer: "wohnzimmer-light.webp",
   buro: "buro-light.webp",
+  arbeitszimmer: "buro-light.webp",
+  kinderzimmer: "kinderzimmer-light.webp",
+  hausflur: "hausflur-light.webp",
   balkon: "balkon-light.webp",
   "3d_drucker": "3d-drucker-light.webp",
   "3d-drucker": "3d-drucker-light.webp",
