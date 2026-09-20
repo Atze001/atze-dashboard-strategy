@@ -2330,7 +2330,7 @@ if (!window.customStrategies.some((entry) => entry.type === STRATEGY_TYPE)) {
   window.customStrategies.push({
     type: STRATEGY_TYPE,
     strategyType: "dashboard",
-    name: "Atze Dashboard",
+    name: `Atze Dashboard ${ATZE_VERSION}`,
     description:
       "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
   });
