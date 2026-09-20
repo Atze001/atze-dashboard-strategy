@@ -77,6 +77,17 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.151.0
+
+- Die sechs Statuskacheln verwenden nun identische Rasterhöhen, Innenmaße und
+  Icon-Flächen, damit beide Spalten exakt ausgerichtet sind.
+- Die bisherige Kachel **Fenster / Rollläden** wurde durch **Batterie** ersetzt
+  und öffnet direkt die Batterieübersicht.
+- Die Batterieübersicht zeigt alle Batteriesensoren gemeinsam und sortiert sie
+  vom niedrigsten zum höchsten Ladestand.
+- Rollläden werden automatisch in die Sicherheitsansicht und deren Warnungszahl
+  aufgenommen.
+
 ### v0.150.0
 
 - Die scharfe Serverraum-Grafik verwendet einen neuen Dateinamen, damit
@@ -91,15 +102,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   deutlich heller, schärfer und detailreicher.
 - Die dunkle Abdeckung wurde reduziert; Aufbau, Buttons und Favoriten bleiben
   unverändert und weiterhin gut lesbar.
-
-### v0.148.0
-
-- Seitennavigation und Favoriten werden in einer gemeinsamen abgerundeten
-  Serverraum-Karte dargestellt.
-- Der dunkle Technikraum-Hintergrund sowie gläserne Buttons und Favoritenkarten
-  bilden eine optische Brücke zwischen Hausstatus und Raumbildern.
-- Unter dem Projekttitel weist die README nun mit **KI-Generiert: ChatGPT** auf
-  die Entstehung des Dashboards hin.
 
 ## Lizenz
 

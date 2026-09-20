@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.150.0
+ * Version: 0.151.0
  *
- * v0.150 focus:
- * - Bust the control-center image cache and correct alarm status colors
+ * v0.151 focus:
+ * - Align home status tiles and add a sorted battery dashboard shortcut
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.150.0";
+const ATZE_VERSION = "0.151.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4384,6 +4384,31 @@ function batterySeverity(hass, entityId) {
   return "critical";
 }
 
+function batterySortValue(hass, entityId) {
+  const stateObj = hass?.states?.[entityId];
+
+  if (!stateObj) return Number.POSITIVE_INFINITY;
+
+  const state = String(stateObj.state || "").toLowerCase();
+
+  if (
+    !state ||
+    state === "unknown" ||
+    state === "unavailable"
+  ) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  if (domainOf(entityId) === "binary_sensor") {
+    return state === "on" ? -1 : 101;
+  }
+
+  const value = Number.parseFloat(stateObj.state);
+  return Number.isFinite(value)
+    ? value
+    : Number.POSITIVE_INFINITY;
+}
+
 function buildMaintenanceView(
   hass,
   batteryEntities,
@@ -4443,22 +4468,26 @@ function buildMaintenanceView(
     });
   }
 
-  const maintenanceGroups = [...groups.values()]
-    .map((group) => ({
-      ...group,
-      entities: [...group.entities].sort((a, b) =>
-        String(a.name || "").localeCompare(
-          String(b.name || ""),
-          "de",
-          {
-            numeric: true,
-            sensitivity: "base",
-          }
-        )
-      ),
-    }))
+  const sortedBatteries = [...groups.values()]
+    .flatMap((group) =>
+      group.entities.map((entry) => ({
+        ...entry,
+        area_name: group.name,
+      }))
+    )
     .sort((a, b) => {
-      if (a.order !== b.order) return a.order - b.order;
+      const aValue = batterySortValue(
+        hass,
+        a.entity_id
+      );
+      const bValue = batterySortValue(
+        hass,
+        b.entity_id
+      );
+
+      if (aValue !== bValue) {
+        return aValue < bValue ? -1 : 1;
+      }
 
       return String(a.name || "").localeCompare(
         String(b.name || ""),
@@ -4470,8 +4499,20 @@ function buildMaintenanceView(
       );
     });
 
+  const maintenanceGroups = sortedBatteries.length
+    ? [
+        {
+          area_id: null,
+          name: "Nach Ladestand",
+          icon: "mdi:battery-arrow-down-outline",
+          order: 0,
+          entities: sortedBatteries,
+        },
+      ]
+    : [];
+
   return {
-    title: config.maintenance_title || "Wartung",
+    title: config.maintenance_title || "Batterie",
     path: config.maintenance_path || "wartung",
     icon:
       config.maintenance_icon ||
@@ -4481,7 +4522,7 @@ function buildMaintenanceView(
     cards: [
       {
         type: "custom:atze-maintenance-overview-card",
-        title: config.maintenance_title || "Wartung",
+        title: config.maintenance_title || "Batterie",
         home_path: config.home_path || "home",
         groups: maintenanceGroups,
         entity_ids: batteryEntities.map(
@@ -4501,7 +4542,8 @@ function buildHomeOverviewView(
   config,
   popupMap,
   areaById,
-  securityEntityIds = []
+  securityEntityIds = [],
+  batteryEntityIds = []
 ) {
   const roomTiles = [];
   const roomPowerEntities = [];
@@ -4760,6 +4802,8 @@ function buildHomeOverviewView(
     smoke_entities: uniqueEntityIds(smokeEntities),
     security_entities: uniqueEntityIds(securityEntityIds),
     security_path: config.security_path || "sicherheit",
+    battery_entities: uniqueEntityIds(batteryEntityIds),
+    maintenance_path: config.maintenance_path || "wartung",
     favorite_entities: asArray(config.favorite_entities)
       .map(String)
       .filter((entityId) =>
@@ -5673,10 +5717,13 @@ class AtzeDashboardStrategy extends HTMLElement {
         return false;
       }
 
-      return entityHasDirectSecurityLabel(
-        entity,
-        securityLabelIds,
-        config
+      return (
+        domainOf(entityId) === "cover" ||
+        entityHasDirectSecurityLabel(
+          entity,
+          securityLabelIds,
+          config
+        )
       );
     });
 
@@ -5859,7 +5906,10 @@ class AtzeDashboardStrategy extends HTMLElement {
               config,
               popupMap,
               areaById,
-              securityEntityIds
+              securityEntityIds,
+              batteryEntities.map(
+                (entity) => entity.entity_id
+              )
             ),
             ...(securityView ? [securityView] : []),
             ...(maintenanceView
@@ -6797,12 +6847,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       homeBaseEntityId
     );
 
-    const warningActive = (
-      this._config.warning_entities || []
-    ).some((entityId) =>
-      this._isActive(this._state(entityId))
-    );
-
     const securityEntityIds =
       this._config.security_entities || [];
 
@@ -6826,6 +6870,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
         : securityEntityIds.length
           ? "Alles ok"
           : "Keine Daten";
+
+    const batteryCount = (
+      this._config.battery_entities || []
+    ).length;
+
+    const batterySubText =
+      batteryCount === 1
+        ? "1 Sensor"
+        : `${batteryCount} Sensoren`;
 
     const favoriteStates = asArray(
       this._config.favorite_entities
@@ -7386,12 +7439,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .status-grid {
           display: grid;
           grid-template-columns: repeat(6, minmax(0, 1fr));
+          grid-auto-rows: 72px;
           gap: 14px;
           margin-bottom: 0;
         }
 
         .status {
-          height: 72px;
+          box-sizing: border-box;
+          width: 100%;
+          min-width: 0;
+          height: 100%;
           min-height: 72px;
           padding: 6px 18px;
           display: flex;
@@ -7409,8 +7466,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .status ha-icon {
           width: 38px;
           height: 38px;
-          flex: 0 0 34px;
-          transform: translateY(6px);
+          flex: 0 0 38px;
+          transform: none;
         }
 
         .status.weather ha-icon {
@@ -7422,6 +7479,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .status.security ha-icon,
+        .status.battery ha-icon,
         .status.alarmo ha-icon,
         .status.homebase ha-icon {
           color: var(--home-green);
@@ -7447,6 +7505,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         #security-status,
+        #battery-status,
         #alarm-status,
         #homebase-status {
           cursor: pointer;
@@ -8079,11 +8138,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .status-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-rows: 56px;
             gap: 10px;
           }
 
           .status {
-            height: 56px;
+            height: 100%;
             min-height: 56px;
             border-radius: 21px;
             padding: 4px 14px;
@@ -8329,11 +8389,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-            <div class="status windows ${warningActive ? "warning" : ""}">
-              <ha-icon icon="${warningActive ? "mdi:window-open-variant" : "mdi:window-closed-variant"}"></ha-icon>
+            <div
+              class="status battery"
+              id="battery-status"
+            >
+              <ha-icon icon="mdi:battery-heart-variant"></ha-icon>
               <div>
-                <div class="status-main">${warningActive ? "Unsicher" : "Alle zu"}</div>
-                <div class="status-sub">Fenster / Rollläden</div>
+                <div class="status-main">Batterie</div>
+                <div class="status-sub">${batterySubText}</div>
               </div>
             </div>
 
@@ -8532,6 +8595,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ?.addEventListener(
         "click",
         () => this._navigate(this._config.security_path)
+      );
+
+    this.shadowRoot
+      .querySelector("#battery-status")
+      ?.addEventListener(
+        "click",
+        () => this._navigate(this._config.maintenance_path)
       );
 
     this.shadowRoot
@@ -8815,7 +8885,30 @@ class AtzeSecurityOverviewCard extends HTMLElement {
       this._config.groups || []
     )
       .map((group) => {
-        const cards = (group.entities || [])
+        const cards = [...(group.entities || [])]
+          .sort((a, b) => {
+            const aValue = batterySortValue(
+              this._hass,
+              a.entity_id
+            );
+            const bValue = batterySortValue(
+              this._hass,
+              b.entity_id
+            );
+
+            if (aValue !== bValue) {
+              return aValue < bValue ? -1 : 1;
+            }
+
+            return String(a.name || "").localeCompare(
+              String(b.name || ""),
+              "de",
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+          })
           .map((entry) => {
             const entityId = entry.entity_id;
             const severity =
@@ -9479,7 +9572,11 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
                     ${entry.name || entityId}
                   </span>
                   <span class="battery-state">
-                    ${this._formatted(entityId)}
+                    ${
+                      entry.area_name
+                        ? `${entry.area_name} · `
+                        : ""
+                    }${this._formatted(entityId)}
                   </span>
                 </span>
               </button>
