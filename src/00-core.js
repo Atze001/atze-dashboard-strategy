@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.181.0";
+const ATZE_VERSION = "0.182.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -625,9 +625,8 @@ function setupAtzeScrollTopButton(anchor) {
 
 
 const ATZE_HOME_SWIPE_NATIVE_EDGE = 28;
-const ATZE_HOME_SWIPE_MAX_START_X = 200;
-const ATZE_HOME_SWIPE_MIN_DISTANCE = 90;
-const ATZE_HOME_SWIPE_MAX_VERTICAL = 70;
+const ATZE_HOME_SWIPE_MIN_DISTANCE = 60;
+const ATZE_HOME_SWIPE_MAX_VERTICAL = 110;
 const ATZE_HOME_SWIPE_STATE_KEY =
   "__atzeDashboardHomeSwipeState";
 
@@ -717,7 +716,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   if (!state) {
     state = {
       registrations: new Map(),
-      pointerId: null,
+      touchIdentifier: null,
       startX: 0,
       startY: 0,
       activeRegistration: null,
@@ -726,7 +725,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     };
 
     const reset = () => {
-      state.pointerId = null;
+      state.touchIdentifier = null;
       state.startX = 0;
       state.startY = 0;
       state.activeRegistration = null;
@@ -737,7 +736,11 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       const registrations =
         [...state.registrations.values()];
 
-      for (let i = registrations.length - 1; i >= 0; i -= 1) {
+      for (
+        let i = registrations.length - 1;
+        i >= 0;
+        i -= 1
+      ) {
         const registration = registrations[i];
         const element = registration.anchor;
 
@@ -752,27 +755,21 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       return null;
     };
 
-    state.onPointerDown = (event) => {
+    state.onTouchStart = (event) => {
       if (
-        event.pointerType !== "touch" &&
-        event.pointerType !== "pen"
+        state.touchIdentifier !== null ||
+        event.touches.length !== 1
       ) {
         return;
       }
 
-      if (state.pointerId !== null) {
-        return;
-      }
+      const touch = event.touches[0];
+      const startX = Number(touch.clientX);
+      const startY = Number(touch.clientY);
 
-      const startX = Number(event.clientX);
-      const startY = Number(event.clientY);
-
-      // The very left edge stays completely untouched so Home Assistant's
-      // own sidebar gesture can still start there.
-      if (
-        startX <= ATZE_HOME_SWIPE_NATIVE_EDGE ||
-        startX > ATZE_HOME_SWIPE_MAX_START_X
-      ) {
+      // The outermost left edge stays completely untouched so Home
+      // Assistant's native sidebar gesture can still start there.
+      if (startX <= ATZE_HOME_SWIPE_NATIVE_EDGE) {
         return;
       }
 
@@ -783,32 +780,42 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       const registration = activeRegistration();
       if (!registration) return;
 
-      state.pointerId = event.pointerId;
+      state.touchIdentifier = touch.identifier;
       state.startX = startX;
       state.startY = startY;
       state.activeRegistration = registration;
       state.startedAt = performance.now();
     };
 
-    state.onPointerUp = (event) => {
-      if (
-        state.pointerId === null ||
-        event.pointerId !== state.pointerId
-      ) {
+    state.onTouchEnd = (event) => {
+      if (state.touchIdentifier === null) {
         return;
       }
 
-      const dx = Number(event.clientX) - state.startX;
-      const dy = Number(event.clientY) - state.startY;
-      const elapsed = performance.now() - state.startedAt;
+      const touch =
+        [...event.changedTouches].find(
+          (item) =>
+            item.identifier ===
+            state.touchIdentifier
+        );
+
+      if (!touch) {
+        return;
+      }
+
+      const dx = Number(touch.clientX) - state.startX;
+      const dy = Number(touch.clientY) - state.startY;
+      const elapsed =
+        performance.now() - state.startedAt;
       const registration =
         state.activeRegistration;
 
       const isRightSwipe =
         dx >= ATZE_HOME_SWIPE_MIN_DISTANCE &&
-        Math.abs(dy) <= ATZE_HOME_SWIPE_MAX_VERTICAL &&
-        dx >= Math.abs(dy) * 1.35 &&
-        elapsed <= 1200;
+        Math.abs(dy) <=
+          ATZE_HOME_SWIPE_MAX_VERTICAL &&
+        dx >= Math.abs(dy) * 1.1 &&
+        elapsed <= 1800;
 
       reset();
 
@@ -820,20 +827,18 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         performance.now() + 450;
 
       const homePath =
-        typeof registration.homePathProvider === "function"
+        typeof registration.homePathProvider ===
+        "function"
           ? registration.homePathProvider()
           : registration.homePathProvider;
 
-      atzeNavigateToDashboardPath(homePath || "home");
+      atzeNavigateToDashboardPath(
+        homePath || "home"
+      );
     };
 
-    state.onPointerCancel = (event) => {
-      if (
-        state.pointerId !== null &&
-        event.pointerId === state.pointerId
-      ) {
-        reset();
-      }
+    state.onTouchCancel = () => {
+      reset();
     };
 
     state.onClick = (event) => {
@@ -847,18 +852,18 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     };
 
     window.addEventListener(
-      "pointerdown",
-      state.onPointerDown,
+      "touchstart",
+      state.onTouchStart,
       { passive: true, capture: true }
     );
     window.addEventListener(
-      "pointerup",
-      state.onPointerUp,
+      "touchend",
+      state.onTouchEnd,
       { passive: true, capture: true }
     );
     window.addEventListener(
-      "pointercancel",
-      state.onPointerCancel,
+      "touchcancel",
+      state.onTouchCancel,
       { passive: true, capture: true }
     );
     window.addEventListener(
@@ -885,18 +890,18 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     }
 
     window.removeEventListener(
-      "pointerdown",
-      state.onPointerDown,
+      "touchstart",
+      state.onTouchStart,
       true
     );
     window.removeEventListener(
-      "pointerup",
-      state.onPointerUp,
+      "touchend",
+      state.onTouchEnd,
       true
     );
     window.removeEventListener(
-      "pointercancel",
-      state.onPointerCancel,
+      "touchcancel",
+      state.onTouchCancel,
       true
     );
     window.removeEventListener(
@@ -908,6 +913,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     delete window[ATZE_HOME_SWIPE_STATE_KEY];
   };
 }
+
 
 const DOMAIN_META = {
   light:         { title: "Licht",      icon: "mdi:lightbulb-group", order: 10 },

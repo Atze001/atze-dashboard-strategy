@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.181.0**
+Version **0.182.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,18 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.182.0
+
+- Swipe-zur-Startseite deutlich empfindlicher und zuverlässiger gemacht.
+- Touch-Erkennung auf `touchstart` / `touchend` umgestellt, was besonders
+  in iOS und der Home-Assistant-App zuverlässiger reagiert.
+- Die ersten **28 px am linken Rand** bleiben weiterhin vollständig für die
+  Home-Assistant-Seitenleisten-Geste reserviert.
+- Der Dashboard-Swipe kann nun überall rechts neben dieser Randzone beginnen.
+- Mindestweg von 90 auf **60 px** reduziert und etwas mehr diagonale Bewegung
+  zugelassen.
+- Slider, Buttons und Eingabefelder bleiben weiterhin ausgeschlossen.
 
 ### v0.181.0
 
