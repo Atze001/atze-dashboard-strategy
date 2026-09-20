@@ -1,6 +1,6 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.158.1
+ * Version: 0.158.2
  *
  * v0.158 focus:
  * - Align the home-status text closer to its icon
@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.158.1";
+const ATZE_VERSION = "0.158.2";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -7913,7 +7913,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .status-main {
           min-width: 0;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 650;
           line-height: 1.05;
           white-space: nowrap;
