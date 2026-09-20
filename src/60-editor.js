@@ -1247,6 +1247,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           gap: 16px;
           padding: 4px 0 24px;
         }
+
+        .editor-version {
+          padding: 0 4px 2px;
+          color: var(--secondary-text-color);
+          font-size: 14px;
+          font-weight: 500;
+        }
         .panel {
           background: var(
             --ha-card-background,
@@ -1763,6 +1770,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       </style>
 
       <div class="editor">
+        <div class="editor-version">
+          Atze Dashboard ${ATZE_VERSION}
+        </div>
+
         <details
           class="panel editor-section"
           data-editor-section="rooms"
@@ -2433,7 +2444,7 @@ window.customStrategies = window.customStrategies || [];
 const atzeStrategyRegistration = {
   type: STRATEGY_TYPE,
   strategyType: "dashboard",
-  name: `Atze Dashboard ${ATZE_VERSION}`,
+  name: "Atze Dashboard",
   description:
     "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
 };
