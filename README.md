@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.173.0**
+Version **0.174.0**
 
 Enthalten sind unter anderem:
 
@@ -93,6 +93,10 @@ ob der Automation-Blueprint in Home Assistant vorhanden ist. Fehlt er, wird er
 über die Home-Assistant-Blueprint-API angelegt und anschließend nochmals
 verifiziert.
 
+Zusätzlich gibt es im Dashboard-Menü bei der Lichtsteuerung den Button
+**Prüfen / installieren**. Damit lässt sich die Blueprint-Anlage direkt
+auslösen; Erfolg oder der genaue Home-Assistant-Fehler werden im Menü angezeigt.
+
 Der Zielpfad in Home Assistant ist:
 
 `/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`
@@ -141,6 +145,16 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.174.0
+
+- Automatische Blueprint-Prüfung wird nicht mehr durch eine Frontend-Admin-
+  Abfrage übersprungen; Home Assistant prüft die Berechtigung selbst.
+- Die automatische Prüfung wird einmal pro Seitenladung ausgeführt.
+- Unter **Darstellung → Lichtsteuerungs-Blueprint** gibt es jetzt
+  **Prüfen / installieren**.
+- Der manuelle Test zeigt Erfolg oder den konkreten Home-Assistant-Fehler
+  direkt im Dashboard-Menü an.
 
 ### v0.173.0
 

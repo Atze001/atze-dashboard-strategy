@@ -1137,6 +1137,36 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
   }
 
+  async _installLightControlBlueprintManually() {
+    if (this._lightHelperSetupState === "loading") return;
+
+    this._lightHelperSetupState = "loading";
+    this._lightHelperSetupMessage =
+      "Blueprint wird in Home Assistant geprüft …";
+    this._render();
+
+    try {
+      const result =
+        await this._ensureLightControlBlueprint();
+
+      this._lightHelperSetupState = "success";
+      this._lightHelperSetupMessage = result.created
+        ? "Blueprint wurde erfolgreich in Home Assistant angelegt und verifiziert."
+        : "Blueprint ist bereits in Home Assistant vorhanden und wurde verifiziert.";
+    } catch (error) {
+      this._lightHelperSetupState = "error";
+      this._lightHelperSetupMessage =
+        `Blueprint-Fehler: ${error?.message || String(error)}`;
+
+      console.error(
+        "Atze Dashboard: manueller Blueprint-Test fehlgeschlagen.",
+        error
+      );
+    }
+
+    this._render();
+  }
+
   _setLightControlPopup(value) {
     if (value !== true) {
       this._lightHelpersEnsured = false;
@@ -2322,6 +2352,24 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._lightHelperSetupState === "loading" ? "disabled" : ""}
                 />
               </label>
+              <div class="row">
+                <span class="copy">
+                  <span class="name">Lichtsteuerungs-Blueprint</span>
+                  <span class="desc">
+                    Prüft den Blueprint direkt in Home Assistant und legt ihn
+                    bei Bedarf unter
+                    <code>/config/blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml</code>
+                    an.
+                  </span>
+                </span>
+                <button
+                  id="install-light-blueprint"
+                  type="button"
+                  ${this._lightHelperSetupState === "loading" ? "disabled" : ""}
+                >
+                  Prüfen / installieren
+                </button>
+              </div>
               ${this._toggleHtml(
                 "force_kiosk",
                 "Header ausblenden",
@@ -2368,6 +2416,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
       );
     }
+
+    this.shadowRoot
+      .querySelector("#install-light-blueprint")
+      ?.addEventListener("click", () =>
+        this._installLightControlBlueprintManually()
+      );
 
     this.shadowRoot
       .querySelector("#select-all")
