@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.177.0**
+Version **0.178.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,16 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.178.0
+
+- Dashboardweiter **Nach-oben-Pfeil** ergänzt.
+- Der runde Button erscheint unten rechts, sobald ungefähr 250 px nach unten
+  gescrollt wurde.
+- Ein Klick scrollt die aktuelle Dashboard-Seite weich zum Anfang zurück.
+- Oben angekommen wird der Button automatisch wieder ausgeblendet.
+- Funktioniert auf Startseite, Raumseiten, Sicherheit, Wartung und eigenen
+  Unterseiten.
 
 ### v0.177.0
 
