@@ -10,7 +10,7 @@ YAML-Overrides angepasst.
 
 ## Aktueller Stand
 
-Version **0.155.0**
+Version **0.156.0**
 
 Enthalten sind unter anderem:
 
@@ -27,6 +27,7 @@ Enthalten sind unter anderem:
 - frei konfigurierbare eigene Dashboard-Seiten
 - automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
 - optionales Zeitpläne-Bubble-Popup mit Scheduler Card
+- optionales Lichtsteuerungs-Bubble-Popup aus einer eigenen Seite
 - helle Raumbilder bei eingeschaltetem Licht und dunkle Bilder bei
   ausgeschaltetem Licht
 
@@ -79,6 +80,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.156.0
+
+- Unter **Darstellung** lässt sich nun auch **Lichtsteuerung** als
+  Startseitenpunkt ein- oder ausschalten.
+- Eine vorhandene eigene Seite mit Titel oder Pfad **Lichtsteuerung** wird
+  automatisch in ein separates Bubble-Card-Popup übernommen.
+- Die Kartenkonfiguration und vorhandene Helfer-Verknüpfungen der eigenen Seite
+  bleiben dabei unverändert erhalten.
+
 ### v0.155.0
 
 - Das Zeitpläne-Popup wird getrennt von der Startseitenkarte eingebunden.
@@ -93,14 +103,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
   Scheduler Card ist, statt eine zusätzliche Dashboard-Seite aufzurufen.
 - Bereits vorhandene Zeitpläne-Seiten mit Scheduler Card werden automatisch in
   das neue Popup übernommen.
-
-### v0.153.0
-
-- Die sechs Symbole auf der Hauskarte sind wieder optisch vertikal in ihren
-  Statuskacheln zentriert.
-- In der Batterieansicht bleibt die Statusschrift unabhängig vom Ladestand weiß.
-- Der Batteriestatus zeigt nun zuerst den Prozentwert und danach den Bereich,
-  beispielsweise **48 % · Balkon**.
 
 ## Lizenz
 

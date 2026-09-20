@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.155.0
+ * Version: 0.156.0
  *
- * v0.155 focus:
- * - Keep the Scheduler popup separate from the home card container
+ * v0.156 focus:
+ * - Move the custom light-control page into a configurable Bubble popup
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.155.0";
+const ATZE_VERSION = "0.156.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -4806,6 +4806,8 @@ function buildHomeOverviewView(
     )?.entity_id || null;
 
   const showSchedulerPopup = schedulerPopupEnabled(config);
+  const showLightControlPopup = lightControlPopupEnabled(config);
+  const lightControlPopup = lightControlPopupConfig(config);
   const customPageLinks = buildCustomPageViews(config).map(
     (view) => ({
       title: view.title,
@@ -4868,9 +4870,17 @@ function buildHomeOverviewView(
             icon: "mdi:calendar-clock",
           }]
         : []),
+      ...(showLightControlPopup
+        ? [{
+            title: lightControlPopup.title,
+            popup_hash: "#lichtsteuerung",
+            icon: lightControlPopup.icon,
+          }]
+        : []),
       ...customPageLinks,
     ],
     scheduler_popup: showSchedulerPopup,
+    light_control_popup: showLightControlPopup,
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
     hero_day_image:
@@ -4897,25 +4907,39 @@ function buildHomeOverviewView(
     icon: config.home_icon || "mdi:home",
     subview: false,
     panel: true,
-    cards: showSchedulerPopup
+    cards: showSchedulerPopup || showLightControlPopup
       ? [
           {
             type: "vertical-stack",
             cards: [
-              {
-                type: "custom:bubble-card",
-                card_type: "pop-up",
-                hash: "#zeitplaene",
-                name: "Zeitpläne",
-                icon: "mdi:calendar-clock",
-                popup_mode: "adaptive-dialog",
-                width_desktop: "900px",
-                cards: [
-                  {
-                    type: "custom:scheduler-card",
-                  },
-                ],
-              },
+              ...(showSchedulerPopup
+                ? [{
+                    type: "custom:bubble-card",
+                    card_type: "pop-up",
+                    hash: "#zeitplaene",
+                    name: "Zeitpläne",
+                    icon: "mdi:calendar-clock",
+                    popup_mode: "adaptive-dialog",
+                    width_desktop: "900px",
+                    cards: [
+                      {
+                        type: "custom:scheduler-card",
+                      },
+                    ],
+                  }]
+                : []),
+              ...(showLightControlPopup
+                ? [{
+                    type: "custom:bubble-card",
+                    card_type: "pop-up",
+                    hash: "#lichtsteuerung",
+                    name: lightControlPopup.title,
+                    icon: lightControlPopup.icon,
+                    popup_mode: "adaptive-dialog",
+                    width_desktop: "900px",
+                    cards: lightControlPopup.cards,
+                  }]
+                : []),
               homeCard,
             ],
           },
@@ -4955,6 +4979,78 @@ function schedulerPopupEnabled(config) {
   return asArray(config.custom_pages).some(isSchedulerCustomPage);
 }
 
+function isLightControlCustomPage(page) {
+  const source = customPageSource(page);
+  if (!source) return false;
+
+  const identifiers = [source.title, source.path]
+    .filter(Boolean)
+    .map(slugify);
+
+  return identifiers.some((value) =>
+    [
+      "lichtsteuerung",
+      "licht-steuerung",
+      "light-control",
+      "light-control-panel",
+    ].includes(value)
+  );
+}
+
+function lightControlPopupEnabled(config) {
+  if (config.light_control_popup != null) {
+    return config.light_control_popup === true;
+  }
+
+  return asArray(config.custom_pages).some(
+    isLightControlCustomPage
+  );
+}
+
+function lightControlPopupConfig(config) {
+  const page = asArray(config.custom_pages).find(
+    isLightControlCustomPage
+  );
+  const source = customPageSource(page);
+  let cards = [];
+
+  if (Array.isArray(source?.cards)) {
+    cards = source.cards;
+  } else if (source?.card && typeof source.card === "object") {
+    cards = [{ ...source.card }];
+  } else if (Array.isArray(source?.sections)) {
+    cards = source.sections
+      .filter(
+        (section) =>
+          section &&
+          typeof section === "object" &&
+          Array.isArray(section.cards)
+      )
+      .map((section) => ({
+        type: "grid",
+        columns: Number(section.columns || 1),
+        square: false,
+        cards: section.cards,
+      }));
+  }
+
+  if (cards.length === 0) {
+    cards = [
+      {
+        type: "markdown",
+        content:
+          "## Lichtsteuerung\nLege unter **Eigene Seiten** eine Seite mit dem Titel oder Pfad `Lichtsteuerung` an. Deren Karten erscheinen anschließend automatisch hier.",
+      },
+    ];
+  }
+
+  return {
+    title: String(source?.title || "Lichtsteuerung"),
+    icon: source?.icon || "mdi:lightbulb-group-outline",
+    cards,
+  };
+}
+
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -4963,7 +5059,11 @@ function buildCustomPageViews(config) {
   ]);
 
   return asArray(config.custom_pages)
-    .filter((page) => !isSchedulerCustomPage(page))
+    .filter(
+      (page) =>
+        !isSchedulerCustomPage(page) &&
+        !isLightControlCustomPage(page)
+    )
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
@@ -11494,6 +11594,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _lightControlPopupEnabled() {
+    return lightControlPopupEnabled(this._config || {});
+  }
+
+  _setLightControlPopup(value) {
+    this._fireConfigChanged({
+      ...this._config,
+      light_control_popup: value === true,
+    });
+  }
+
   _addCustomPage(template = "empty") {
     const pages = [...this._customPages()];
     const scheduler = template === "scheduler";
@@ -12527,6 +12638,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
+              <label class="row">
+                <span class="copy">
+                  <span class="name">Lichtsteuerung</span>
+                  <span class="desc">Öffnet die Karten der eigenen Seite Lichtsteuerung in einem Bubble-Popup.</span>
+                </span>
+                <input
+                  class="setting-toggle"
+                  type="checkbox"
+                  data-key="light_control_popup"
+                  data-default="false"
+                  ${this._lightControlPopupEnabled() ? "checked" : ""}
+                />
+              </label>
               ${this._toggleHtml(
                 "force_kiosk",
                 "Header ausblenden",
@@ -12809,6 +12933,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         if (target.dataset.key === "scheduler_popup") {
           this._setSchedulerPopup(target.checked);
+          return;
+        }
+
+        if (target.dataset.key === "light_control_popup") {
+          this._setLightControlPopup(target.checked);
           return;
         }
 
