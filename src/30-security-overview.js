@@ -6,6 +6,7 @@ class AtzeSecurityOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._scrollTopCleanup = null;
+    this._homeSwipeCleanup = null;
   }
 
   setConfig(config) {
@@ -34,12 +35,23 @@ class AtzeSecurityOverviewCard extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._homeSwipeCleanup) {
+      this._homeSwipeCleanup =
+        setupAtzeHomeSwipe(
+          this,
+          () => this._config?.home_path || "home"
+        );
+    }
+
     this._render();
   }
 
   disconnectedCallback() {
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._homeSwipeCleanup?.();
+    this._homeSwipeCleanup = null;
   }
 
   getCardSize() {

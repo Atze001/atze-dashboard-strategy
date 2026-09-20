@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.179.0**
+Version **0.180.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,20 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.180.0
+
+- Swipe-nach-rechts-Geste auf Unterseiten ergänzt: ein deutlicher Wisch
+  navigiert zurück zum Haupt-Dashboard.
+- Die ersten **28 px am linken Bildschirmrand** bleiben von der Strategy
+  vollständig unberührt, damit Home Assistants eigene Seitenleisten-Geste
+  weiterhin funktioniert.
+- Die Dashboard-Geste startet nur im linken Bereich neben dieser Randzone und
+  verlangt mindestens 90 px horizontale Bewegung.
+- Vertikale Bewegungen sowie Gesten auf Slidern, Eingabefeldern, Buttons und
+  anderen Bedienelementen werden ignoriert.
+- Aktiv auf Raumseiten, Sicherheit, Wartung und eigenen Unterseiten; auf der
+  Hauptseite selbst ist die Geste nicht aktiv.
 
 ### v0.179.0
 

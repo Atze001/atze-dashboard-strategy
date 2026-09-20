@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.179.0";
+const ATZE_VERSION = "0.180.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -620,6 +620,292 @@ function setupAtzeScrollTopButton(anchor) {
     unbindScrollTarget();
     state.button?.remove();
     delete window[ATZE_SCROLL_TOP_STATE_KEY];
+  };
+}
+
+
+const ATZE_HOME_SWIPE_NATIVE_EDGE = 28;
+const ATZE_HOME_SWIPE_MAX_START_X = 200;
+const ATZE_HOME_SWIPE_MIN_DISTANCE = 90;
+const ATZE_HOME_SWIPE_MAX_VERTICAL = 70;
+const ATZE_HOME_SWIPE_STATE_KEY =
+  "__atzeDashboardHomeSwipeState";
+
+function atzeGestureHitsInteractiveControl(event) {
+  const interactiveTags = new Set([
+    "A",
+    "BUTTON",
+    "INPUT",
+    "SELECT",
+    "TEXTAREA",
+    "HA-SLIDER",
+    "HA-CONTROL-SLIDER",
+    "HA-CONTROL-CIRCULAR-SLIDER",
+    "MWC-SLIDER",
+    "HA-TEXTFIELD",
+    "HA-SELECT",
+    "HA-COMBO-BOX",
+  ]);
+
+  return (event.composedPath?.() || []).some((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (interactiveTags.has(node.tagName)) {
+      return true;
+    }
+
+    if (
+      node.isContentEditable ||
+      node.getAttribute("role") === "slider"
+    ) {
+      return true;
+    }
+
+    return false;
+  });
+}
+
+function atzeDashboardNavigationTarget(path) {
+  const requested = String(path || "home").trim();
+
+  if (requested.startsWith("/")) {
+    return requested;
+  }
+
+  const cleanTarget =
+    requested.replace(/^\\/+|\\/+$/g, "") || "home";
+
+  const parts =
+    window.location.pathname
+      .split("/")
+      .filter(Boolean);
+
+  if (parts.length) {
+    parts[parts.length - 1] = cleanTarget;
+  } else {
+    parts.push(cleanTarget);
+  }
+
+  return `/${parts.join("/")}`;
+}
+
+function atzeNavigateToDashboardPath(path) {
+  const target =
+    atzeDashboardNavigationTarget(path);
+
+  const nextUrl =
+    `${target}${window.location.search || ""}`;
+
+  if (
+    `${window.location.pathname}${window.location.search}` ===
+    nextUrl
+  ) {
+    return;
+  }
+
+  window.history.pushState(null, "", nextUrl);
+  window.dispatchEvent(new Event("location-changed"));
+}
+
+function setupAtzeHomeSwipe(anchor, homePathProvider) {
+  if (!anchor) return () => {};
+
+  let state = window[ATZE_HOME_SWIPE_STATE_KEY];
+
+  if (!state) {
+    state = {
+      registrations: new Map(),
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      activeRegistration: null,
+      startedAt: 0,
+      suppressClickUntil: 0,
+    };
+
+    const reset = () => {
+      state.pointerId = null;
+      state.startX = 0;
+      state.startY = 0;
+      state.activeRegistration = null;
+      state.startedAt = 0;
+    };
+
+    const activeRegistration = () => {
+      const registrations =
+        [...state.registrations.values()];
+
+      for (let i = registrations.length - 1; i >= 0; i -= 1) {
+        const registration = registrations[i];
+        const element = registration.anchor;
+
+        if (
+          element?.isConnected &&
+          element.getClientRects().length > 0
+        ) {
+          return registration;
+        }
+      }
+
+      return null;
+    };
+
+    state.onPointerDown = (event) => {
+      if (
+        event.pointerType !== "touch" &&
+        event.pointerType !== "pen"
+      ) {
+        return;
+      }
+
+      if (state.pointerId !== null) {
+        return;
+      }
+
+      const startX = Number(event.clientX);
+      const startY = Number(event.clientY);
+
+      // The very left edge stays completely untouched so Home Assistant's
+      // own sidebar gesture can still start there.
+      if (
+        startX <= ATZE_HOME_SWIPE_NATIVE_EDGE ||
+        startX > ATZE_HOME_SWIPE_MAX_START_X
+      ) {
+        return;
+      }
+
+      if (atzeGestureHitsInteractiveControl(event)) {
+        return;
+      }
+
+      const registration = activeRegistration();
+      if (!registration) return;
+
+      state.pointerId = event.pointerId;
+      state.startX = startX;
+      state.startY = startY;
+      state.activeRegistration = registration;
+      state.startedAt = performance.now();
+    };
+
+    state.onPointerUp = (event) => {
+      if (
+        state.pointerId === null ||
+        event.pointerId !== state.pointerId
+      ) {
+        return;
+      }
+
+      const dx = Number(event.clientX) - state.startX;
+      const dy = Number(event.clientY) - state.startY;
+      const elapsed = performance.now() - state.startedAt;
+      const registration =
+        state.activeRegistration;
+
+      const isRightSwipe =
+        dx >= ATZE_HOME_SWIPE_MIN_DISTANCE &&
+        Math.abs(dy) <= ATZE_HOME_SWIPE_MAX_VERTICAL &&
+        dx >= Math.abs(dy) * 1.35 &&
+        elapsed <= 1200;
+
+      reset();
+
+      if (!isRightSwipe || !registration) {
+        return;
+      }
+
+      state.suppressClickUntil =
+        performance.now() + 450;
+
+      const homePath =
+        typeof registration.homePathProvider === "function"
+          ? registration.homePathProvider()
+          : registration.homePathProvider;
+
+      atzeNavigateToDashboardPath(homePath || "home");
+    };
+
+    state.onPointerCancel = (event) => {
+      if (
+        state.pointerId !== null &&
+        event.pointerId === state.pointerId
+      ) {
+        reset();
+      }
+    };
+
+    state.onClick = (event) => {
+      if (
+        performance.now() <
+        state.suppressClickUntil
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    window.addEventListener(
+      "pointerdown",
+      state.onPointerDown,
+      { passive: true, capture: true }
+    );
+    window.addEventListener(
+      "pointerup",
+      state.onPointerUp,
+      { passive: true, capture: true }
+    );
+    window.addEventListener(
+      "pointercancel",
+      state.onPointerCancel,
+      { passive: true, capture: true }
+    );
+    window.addEventListener(
+      "click",
+      state.onClick,
+      { capture: true }
+    );
+
+    window[ATZE_HOME_SWIPE_STATE_KEY] = state;
+  }
+
+  const registration = {
+    anchor,
+    homePathProvider,
+  };
+
+  state.registrations.set(anchor, registration);
+
+  return () => {
+    state.registrations.delete(anchor);
+
+    if (state.registrations.size > 0) {
+      return;
+    }
+
+    window.removeEventListener(
+      "pointerdown",
+      state.onPointerDown,
+      true
+    );
+    window.removeEventListener(
+      "pointerup",
+      state.onPointerUp,
+      true
+    );
+    window.removeEventListener(
+      "pointercancel",
+      state.onPointerCancel,
+      true
+    );
+    window.removeEventListener(
+      "click",
+      state.onClick,
+      true
+    );
+
+    delete window[ATZE_HOME_SWIPE_STATE_KEY];
   };
 }
 
@@ -9990,6 +10276,7 @@ class AtzeSecurityOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._scrollTopCleanup = null;
+    this._homeSwipeCleanup = null;
   }
 
   setConfig(config) {
@@ -10018,12 +10305,23 @@ class AtzeSecurityOverviewCard extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._homeSwipeCleanup) {
+      this._homeSwipeCleanup =
+        setupAtzeHomeSwipe(
+          this,
+          () => this._config?.home_path || "home"
+        );
+    }
+
     this._render();
   }
 
   disconnectedCallback() {
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._homeSwipeCleanup?.();
+    this._homeSwipeCleanup = null;
   }
 
   getCardSize() {
@@ -10696,6 +10994,7 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._scrollTopCleanup = null;
+    this._homeSwipeCleanup = null;
   }
 
   setConfig(config) {
@@ -10724,12 +11023,23 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._homeSwipeCleanup) {
+      this._homeSwipeCleanup =
+        setupAtzeHomeSwipe(
+          this,
+          () => this._config?.home_path || "home"
+        );
+    }
+
     this._render();
   }
 
   disconnectedCallback() {
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._homeSwipeCleanup?.();
+    this._homeSwipeCleanup = null;
   }
 
   getCardSize() {
@@ -11340,6 +11650,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = null;
     this._scrollTopCleanup = null;
+    this._homeSwipeCleanup = null;
   }
 
   setConfig(config) {
@@ -11358,12 +11669,25 @@ class AtzeRoomNavHeader extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._homeSwipeCleanup) {
+      this._homeSwipeCleanup =
+        setupAtzeHomeSwipe(
+          this,
+          () =>
+            this._config?.navigation_path ||
+            "home"
+        );
+    }
+
     this._render();
   }
 
   disconnectedCallback() {
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._homeSwipeCleanup?.();
+    this._homeSwipeCleanup = null;
   }
 
   getCardSize() {
