@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.159.1";
+const ATZE_VERSION = "0.159.2";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -5981,7 +5981,7 @@ function applyAtzeSidebarAccess(config) {
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
-      title: "Atze Dashboard",
+      title: `Atze Dashboard ${ATZE_VERSION}`,
       icon: "mdi:view-dashboard-variant",
     };
   }
@@ -6310,7 +6310,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
     if (views.length === 0) {
       views.push({
-        title: "Atze Dashboard",
+        title: `Atze Dashboard ${ATZE_VERSION}`,
         path: "atze-dashboard",
         icon: "mdi:view-dashboard-alert-outline",
         type: "sections",
@@ -6336,7 +6336,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     }
 
     return {
-      title: config.title || "Atze Dashboard",
+      title: config.title || `Atze Dashboard ${ATZE_VERSION}`,
       ...(config.kiosk_mode != null
         ? { kiosk_mode: config.kiosk_mode }
         : {}),
@@ -11042,6 +11042,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._draggedAreaId = null;
     this._entityVisibilityActive = false;
     this._pendingHassRender = false;
+    this._entityFilter = "";
     this._favoriteFilter = "";
     this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
@@ -11079,6 +11080,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     // Reset only on opening the editor, not on config or state updates.
     this._openEditorSections.clear();
     this._openEntityAreaIds.clear();
+    this._entityFilter = "";
     this._favoriteFilter = "";
     this._pendingCustomPageValues.clear();
     this._entityVisibilityActive = false;
@@ -11415,6 +11417,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
       if (
         activeElement?.classList?.contains("entity-visibility") ||
+        activeElement?.classList?.contains("entity-filter-input") ||
         activeElement?.classList?.contains("favorite-filter-input") ||
         activeElement?.matches?.("[data-page-key]")
       ) {
@@ -11543,6 +11546,59 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }).join("");
   }
 
+  _applyEntityFilter() {
+    if (!this.shadowRoot) return;
+
+    const query = String(this._entityFilter || "")
+      .trim()
+      .toLocaleLowerCase("de");
+    let visibleRows = 0;
+
+    for (
+      const details of
+        this.shadowRoot.querySelectorAll(
+          ".entity-area[data-entity-area]"
+        )
+    ) {
+      const rows = [
+        ...details.querySelectorAll(
+          ".entity-config-row"
+        ),
+      ];
+
+      let matchesInArea = 0;
+
+      for (const row of rows) {
+        const searchText = String(row.textContent || "")
+          .toLocaleLowerCase("de");
+        const matches =
+          !query || searchText.includes(query);
+
+        row.hidden = !matches;
+
+        if (matches) {
+          matchesInArea += 1;
+          visibleRows += 1;
+        }
+      }
+
+      details.hidden =
+        Boolean(query) && matchesInArea === 0;
+
+      if (query && matchesInArea > 0) {
+        details.open = true;
+      }
+    }
+
+    const empty = this.shadowRoot.querySelector(
+      ".entity-filter-empty"
+    );
+
+    if (empty) {
+      empty.hidden = !query || visibleRows > 0;
+    }
+  }
+
   _applyFavoriteFilter() {
     if (!this.shadowRoot) return;
 
@@ -11645,7 +11701,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             : "Auto";
 
       return `
-        <div class="entity-row">
+        <div class="entity-row entity-config-row">
           <span class="entity-copy">
             <span class="entity-name">
               ${this._escape(name)}
@@ -12319,6 +12375,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           line-height: 1.4;
         }
 
+        .entity-filter-wrap,
         .favorite-filter-wrap {
           margin: 0 16px 14px;
           min-height: 46px;
@@ -12337,11 +12394,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           );
         }
 
+        .entity-filter-wrap:focus-within,
         .favorite-filter-wrap:focus-within {
           border-color: var(--primary-color, #03a9f4);
           box-shadow: 0 0 0 1px var(--primary-color, #03a9f4);
         }
 
+        .entity-filter-wrap ha-icon,
         .favorite-filter-wrap ha-icon {
           width: 22px;
           height: 22px;
@@ -12349,6 +12408,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           color: var(--secondary-text-color);
         }
 
+        .entity-filter-input,
         .favorite-filter-input {
           min-width: 0;
           width: 100%;
@@ -12362,11 +12422,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           font-size: 15px;
         }
 
+        .entity-filter-input::placeholder,
         .favorite-filter-input::placeholder {
           color: var(--secondary-text-color);
           opacity: 1;
         }
 
+        .entity-filter-empty,
         .favorite-filter-empty {
           padding: 4px 18px 16px;
           color: var(--secondary-text-color);
@@ -12374,6 +12436,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
 
         /* Author display rules must not override the hidden attribute. */
+        .entity-config-row[hidden],
+        .entity-area[data-entity-area][hidden],
+        .entity-filter-empty[hidden],
         .favorite-config-row[hidden],
         .entity-area[data-favorite-area][hidden],
         .favorite-filter-empty[hidden] {
@@ -12840,6 +12905,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "Deaktivierte, entfernte oder nicht verfügbare Entitäten werden nicht als Raumkarten angezeigt.",
                 false
               )}
+            </div>
+
+            <div class="entity-filter-wrap">
+              <ha-icon icon="mdi:magnify"></ha-icon>
+              <input
+                class="entity-filter-input"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="Entität suchen …"
+                aria-label="Entitäten pro Raum durchsuchen"
+                value="${this._escape(this._entityFilter)}"
+              />
+            </div>
+
+            <div class="entity-filter-empty" hidden>
+              Keine passende Entität gefunden.
             </div>
 
             <div class="entity-area-list">
@@ -13314,6 +13396,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       });
     }
 
+    const entityFilter = this.shadowRoot.querySelector(
+      ".entity-filter-input"
+    );
+
+    if (entityFilter) {
+      entityFilter.addEventListener(
+        "focus",
+        () => this._beginEntityVisibilityInteraction()
+      );
+
+      entityFilter.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+
+      entityFilter.addEventListener("input", (event) => {
+        this._entityFilter = event.currentTarget.value;
+        this._applyEntityFilter();
+      });
+    }
+
     const favoriteFilter = this.shadowRoot.querySelector(
       ".favorite-filter-input"
     );
@@ -13335,6 +13438,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       });
     }
 
+    this._applyEntityFilter();
     this._applyFavoriteFilter();
   }
 }
@@ -13355,14 +13459,29 @@ if (!customElements.get(strategyElement)) {
 
 window.customStrategies = window.customStrategies || [];
 
-if (!window.customStrategies.some((entry) => entry.type === STRATEGY_TYPE)) {
-  window.customStrategies.push({
-    type: STRATEGY_TYPE,
-    strategyType: "dashboard",
-    name: `Atze Dashboard ${ATZE_VERSION}`,
-    description:
-      "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
-  });
+const atzeStrategyRegistration = {
+  type: STRATEGY_TYPE,
+  strategyType: "dashboard",
+  name: `Atze Dashboard ${ATZE_VERSION}`,
+  description:
+    "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
+};
+
+const existingAtzeStrategy = window.customStrategies.find(
+  (entry) =>
+    entry.type === STRATEGY_TYPE &&
+    entry.strategyType === "dashboard"
+);
+
+if (existingAtzeStrategy) {
+  Object.assign(
+    existingAtzeStrategy,
+    atzeStrategyRegistration
+  );
+} else {
+  window.customStrategies.push(
+    atzeStrategyRegistration
+  );
 }
 
 console.info(
