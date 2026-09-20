@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.161.0";
+const ATZE_VERSION = "0.162.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -3747,21 +3747,30 @@ window.__atzeHomeRoomImageCache =
 const ATZE_HOME_ROOM_IMAGE_CACHE =
   window.__atzeHomeRoomImageCache;
 
-const DEFAULT_HOME_ROOM_IMAGES = {
-  kuche: new URL("kueche.jpg", ATZE_ASSET_BASE_URL).href,
-  schlafzimmer: new URL("schlafzimmer.jpg", ATZE_ASSET_BASE_URL).href,
-  bad: new URL("bad.jpg", ATZE_ASSET_BASE_URL).href,
-  flur: new URL("flur.jpg", ATZE_ASSET_BASE_URL).href,
-  wohnzimmer: new URL("wohnzimmer.jpg", ATZE_ASSET_BASE_URL).href,
-  buro: new URL("buro.jpg", ATZE_ASSET_BASE_URL).href,
-  arbeitszimmer: new URL("buro.jpg", ATZE_ASSET_BASE_URL).href,
-  kinderzimmer: new URL("kinderzimmer.webp", ATZE_ASSET_BASE_URL).href,
-  hausflur: new URL("hausflur.webp", ATZE_ASSET_BASE_URL).href,
-  balkon: new URL("balkon.jpg", ATZE_ASSET_BASE_URL).href,
-  "3d_drucker": new URL("3d-drucker.webp", ATZE_ASSET_BASE_URL).href,
-  "3d-drucker": new URL("3d-drucker.webp", ATZE_ASSET_BASE_URL).href,
-  zentrale: new URL("zentrale.webp", ATZE_ASSET_BASE_URL).href,
+const DEFAULT_HOME_ROOM_IMAGE_FILES = {
+  kuche: "kueche.jpg",
+  schlafzimmer: "schlafzimmer.jpg",
+  bad: "bad.jpg",
+  flur: "flur.jpg",
+  wohnzimmer: "wohnzimmer.jpg",
+  buro: "buro.jpg",
+  arbeitszimmer: "buro.jpg",
+  kinderzimmer: "kinderzimmer.webp",
+  hausflur: "hausflur.webp",
+  balkon: "balkon.jpg",
+  "3d_drucker": "3d-drucker.webp",
+  "3d-drucker": "3d-drucker.webp",
+  zentrale: "zentrale.webp",
 };
+
+const DEFAULT_HOME_ROOM_IMAGES = Object.fromEntries(
+  Object.entries(DEFAULT_HOME_ROOM_IMAGE_FILES).map(
+    ([areaId, fileName]) => [
+      areaId,
+      new URL(fileName, ATZE_ASSET_BASE_URL).href,
+    ]
+  )
+);
 
 const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   kuche: "kueche-light.webp",
@@ -4886,11 +4895,13 @@ function buildHomeOverviewView(
       override.home_image ||
       config.home_room_images?.[area.area_id];
 
+    const imageKey =
+      DEFAULT_HOME_ROOM_IMAGES[area.area_id]
+        ? area.area_id
+        : slugify(area.name || "");
+
     const defaultImage =
-      DEFAULT_HOME_ROOM_IMAGES[area.area_id] ||
-      DEFAULT_HOME_ROOM_IMAGES[
-        slugify(area.name || "")
-      ] ||
+      DEFAULT_HOME_ROOM_IMAGES[imageKey] ||
       null;
 
     const configuredLightImage =
@@ -4912,6 +4923,9 @@ function buildHomeOverviewView(
       path,
       icon,
       image: configuredImage || defaultImage,
+      image_file:
+        DEFAULT_HOME_ROOM_IMAGE_FILES[imageKey] ||
+        null,
       light_image: configuredLightImage || defaultLightImage,
       light_image_file:
         DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES[lightImageKey] ||
