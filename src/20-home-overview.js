@@ -867,6 +867,66 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const personHome =
       String(person?.state || "").toLowerCase() === "home";
 
+    const miniPeople = asArray(
+      this._config.people_entities
+    )
+      .slice(0, 3)
+      .map((entityId) => {
+        const stateObj = this._state(entityId);
+        if (!stateObj) return null;
+
+        return {
+          entityId,
+          stateObj,
+          name:
+            stateObj.attributes?.friendly_name ||
+            entityId.split(".").pop() ||
+            "Person",
+          picture: this._personPicture(stateObj),
+          home:
+            String(stateObj.state || "")
+              .toLowerCase() === "home",
+        };
+      })
+      .filter(Boolean);
+
+    const miniPeopleHtml = miniPeople.length
+      ? `
+          <div
+            class="mini-people"
+            aria-label="Anwesenheit"
+          >
+            ${miniPeople.map((entry) => `
+              <div
+                class="mini-person ${entry.home ? "home" : "away"}"
+                data-entity-id="${this._escapeHtml(entry.entityId)}"
+                role="button"
+                tabindex="0"
+                title="${this._escapeHtml(entry.name)}"
+              >
+                ${entry.picture
+                  ? `
+                    <img
+                      class="mini-person-avatar"
+                      src="${this._escapeHtml(entry.picture)}"
+                      alt="${this._escapeHtml(entry.name)}"
+                    />
+                  `
+                  : `
+                    <div class="mini-person-fallback">
+                      <ha-icon icon="mdi:account"></ha-icon>
+                    </div>
+                  `
+                }
+                <div class="mini-person-name">
+                  ${this._escapeHtml(entry.name)}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `
+      : "";
+
     const weather = this._state(this._config.weather_entity);
     const weatherTemperature =
       weather?.attributes?.temperature != null
@@ -881,6 +941,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const alarmDisabled = this._isDisabledStatus(
       alarmState,
       this._config.alarm_entity
+    );
+    const alarmAvailable = Boolean(
+      alarmState &&
+      !["", "unknown", "unavailable"].includes(
+        String(alarmState.state || "").toLowerCase()
+      )
     );
 
     const homeBaseStatus =
@@ -903,6 +969,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const homeBaseDisabled = this._isDisabledStatus(
       homeBaseState,
       homeBaseEntityId
+    );
+    const homeBaseAvailable = Boolean(
+      homeBaseState &&
+      !["", "unknown", "unavailable"].includes(
+        String(homeBaseState.state || "").toLowerCase()
+      )
     );
 
     const securityEntityIds =
@@ -1459,6 +1531,91 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .person-state.away ha-icon {
           color: var(--home-muted);
+        }
+
+        .person-stack {
+          min-width: 0;
+        }
+
+        .mini-people {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin-top: 14px;
+          padding-left: 2px;
+        }
+
+        .mini-person {
+          width: 50px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .mini-person-avatar,
+        .mini-person-fallback {
+          width: 40px;
+          height: 40px;
+          box-sizing: border-box;
+          border-radius: 50%;
+          border: 2px solid rgba(255,255,255,0.22);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.24);
+          background: rgba(255,255,255,0.10);
+        }
+
+        .mini-person-avatar {
+          display: block;
+          object-fit: cover;
+        }
+
+        .mini-person-fallback {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .mini-person-fallback ha-icon {
+          width: 23px;
+          height: 23px;
+          color: rgba(235,235,245,0.82);
+        }
+
+        .mini-person.away .mini-person-avatar {
+          border-color: rgba(255,69,58,0.95);
+          filter:
+            grayscale(1)
+            sepia(1)
+            saturate(7)
+            hue-rotate(315deg)
+            brightness(0.82);
+        }
+
+        .mini-person.away .mini-person-fallback {
+          border-color: rgba(255,69,58,0.95);
+          background: rgba(255,69,58,0.28);
+        }
+
+        .mini-person.away .mini-person-fallback ha-icon {
+          color: rgb(255,105,97);
+        }
+
+        .mini-person-name {
+          width: 64px;
+          margin-left: -7px;
+          margin-right: -7px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          text-align: center;
+          color: var(--home-muted);
+          font-size: 12px;
+          line-height: 1.15;
+          font-weight: 550;
         }
 
         .title {
@@ -2366,6 +2523,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             aria-label="Hausstatus"
           >
             <div class="hero">
+            <div class="person-stack">
             ${
               person
                 ? `
@@ -2413,6 +2571,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                   </div>
                 `
             }
+            ${miniPeopleHtml}
+            </div>
 
             <div class="clock">
               <div
@@ -2470,33 +2630,37 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-            <div
-              class="status alarmo ${alarmDisabled ? "warning" : ""}"
-              id="alarm-status"
-            >
-              <ha-icon
-                icon="${
-                  alarmDisabled
-                    ? "mdi:shield-off-outline"
-                    : "mdi:shield-lock"
-                }"
-              ></ha-icon>
-              <div>
-                <div class="status-main">${alarmText}</div>
-                <div class="status-sub">Alarmo</div>
+            ${alarmAvailable ? `
+              <div
+                class="status alarmo ${alarmDisabled ? "warning" : ""}"
+                id="alarm-status"
+              >
+                <ha-icon
+                  icon="${
+                    alarmDisabled
+                      ? "mdi:shield-off-outline"
+                      : "mdi:shield-lock"
+                  }"
+                ></ha-icon>
+                <div>
+                  <div class="status-main">${alarmText}</div>
+                  <div class="status-sub">Alarmo</div>
+                </div>
               </div>
-            </div>
+            ` : ""}
 
-            <div
-              class="status homebase ${homeBaseDisabled ? "warning" : ""}"
-              id="homebase-status"
-            >
-              <ha-icon icon="${homeBaseIcon}"></ha-icon>
-              <div>
-                <div class="status-main">${homeBaseText}</div>
-                <div class="status-sub">AtzeHomeBase</div>
+            ${homeBaseAvailable ? `
+              <div
+                class="status homebase ${homeBaseDisabled ? "warning" : ""}"
+                id="homebase-status"
+              >
+                <ha-icon icon="${homeBaseIcon}"></ha-icon>
+                <div>
+                  <div class="status-main">${homeBaseText}</div>
+                  <div class="status-sub">AtzeHomeBase</div>
+                </div>
               </div>
-            </div>
+            ` : ""}
             </div>
           </section>
 
@@ -2645,6 +2809,22 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.preventDefault();
           this._moreInfo(this._config.person_entity);
         }
+      });
+
+    this.shadowRoot
+      .querySelectorAll(".mini-person[data-entity-id]")
+      .forEach((element) => {
+        const openPerson = (event) => {
+          event?.preventDefault?.();
+          this._moreInfo(element.dataset.entityId);
+        };
+
+        element.addEventListener("click", openPerson);
+        element.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            openPerson(event);
+          }
+        });
       });
 
     const kioskClock =

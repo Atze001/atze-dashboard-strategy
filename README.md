@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.163.0**
+Version **0.164.0**
 
 Enthalten sind unter anderem:
 
@@ -90,6 +90,16 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.164.0
+
+- Auf der Startseite können drei zusätzliche `person.`-Entitäten angezeigt
+  werden. Das Profilbild erscheint bei Anwesenheit normal und bei Abwesenheit
+  rot; der Friendly Name steht klein unter dem Bild.
+- Die drei Personen lassen sich im Dashboard-Menü unter
+  **Personen / Anwesenheit** auswählen.
+- **Alarmo** und **AtzeHomeBase** werden auf der Hauptseite ausgeblendet,
+  solange ihre Status-Entität `unknown`, `unavailable` oder leer ist.
 
 ### v0.163.0
 
