@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.168.0";
+const ATZE_VERSION = "0.169.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -4060,7 +4060,7 @@ function uniqueEntityIds(values) {
 }
 
 
-function selectHacsUpdateEntities(hass, entities) {
+function selectHacsUpdateEntities(hass, usableEntities) {
   return entities
     .filter((entity) => {
       const entityId = entity?.entity_id;

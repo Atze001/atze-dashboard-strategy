@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.168.0**
+Version **0.169.0**
 
 Enthalten sind unter anderem:
 
@@ -120,6 +120,12 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.169.0
+
+- Fehler beim Laden der Dashboard-Strategy aus v0.168.0 behoben.
+- Die HACS-Update-Erkennung verwendet jetzt die im Home-View tatsächlich
+  verfügbare Entity-Liste statt einer dort nicht definierten Variable.
 
 ### v0.168.0
 
