@@ -3,7 +3,7 @@
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
-      title: "Atze Dashboard",
+      title: `Atze Dashboard ${ATZE_VERSION}`,
       icon: "mdi:view-dashboard-variant",
     };
   }
@@ -332,7 +332,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
     if (views.length === 0) {
       views.push({
-        title: "Atze Dashboard",
+        title: `Atze Dashboard ${ATZE_VERSION}`,
         path: "atze-dashboard",
         icon: "mdi:view-dashboard-alert-outline",
         type: "sections",
@@ -358,7 +358,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     }
 
     return {
-      title: config.title || "Atze Dashboard",
+      title: config.title || `Atze Dashboard ${ATZE_VERSION}`,
       ...(config.kiosk_mode != null
         ? { kiosk_mode: config.kiosk_mode }
         : {}),
