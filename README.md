@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.170.0**
+Version **0.171.0**
 
 Enthalten sind unter anderem:
 
@@ -82,6 +82,17 @@ optionale Zeitpläne-Popup verwendet werden soll. **Alarmo** ist ebenfalls nur
 notwendig, wenn die Alarmo-Anzeige genutzt wird; ist keine passende Entität
 vorhanden, wird die Kachel automatisch ausgeblendet.
 
+## Blueprint Lichtsteuerung
+
+Der mitgelieferte Home-Assistant-Automation-Blueprint liegt unter:
+
+`blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`
+
+Er unterstützt eine freie Lampenauswahl sowie getrennte Zeitversätze für
+**Morgen**, **Abend** und **Nacht**. Die Zeitversätze werden direkt in der
+jeweiligen Blueprint-Automation gespeichert; dafür sind keine zusätzlichen
+Helfer nötig.
+
 ## Dashboard-YAML
 
 Die Strategy wird direkt verwendet – **kein äußeres `strategy:`**:
@@ -120,6 +131,14 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.171.0
+
+- Lichtsteuerungs-Blueprint ins Repository aufgenommen.
+- Ablage unter
+  `blueprints/automation/atze dashboard strategy/lichtsteuerung.yaml`.
+- Blueprint enthält Lampenauswahl und getrennte Zeitversätze für Morgen,
+  Abend und Nacht.
 
 ### v0.170.0
 
