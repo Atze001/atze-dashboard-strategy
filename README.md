@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.178.0**
+Version **0.179.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,12 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.179.0
+
+- Nach-oben-Pfeil horizontal mittig am unteren Rand positioniert.
+- Der blaue Hintergrundkreis ist jetzt zu 50 % transparent; das Pfeil-Icon
+  bleibt vollständig sichtbar.
 
 ### v0.178.0
 

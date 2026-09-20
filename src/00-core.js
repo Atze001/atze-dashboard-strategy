@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.178.0";
+const ATZE_VERSION = "0.179.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -439,7 +439,7 @@ function setupAtzeScrollTopButton(anchor) {
 
     button.style.cssText = [
       "position:fixed",
-      "right:20px",
+      "left:50%",
       "bottom:calc(20px + env(safe-area-inset-bottom, 0px))",
       "width:48px",
       "height:48px",
@@ -449,14 +449,14 @@ function setupAtzeScrollTopButton(anchor) {
       "display:flex",
       "align-items:center",
       "justify-content:center",
-      "background:var(--primary-color, #03a9f4)",
+      "background:color-mix(in srgb, var(--primary-color, #03a9f4) 50%, transparent)",
       "color:var(--text-primary-color, #fff)",
       "box-shadow:0 6px 20px rgba(0,0,0,.28)",
       "cursor:pointer",
       "z-index:5",
       "opacity:0",
       "pointer-events:none",
-      "transform:translateY(12px) scale(.94)",
+      "transform:translate(-50%, 12px) scale(.94)",
       "transition:opacity 160ms ease, transform 160ms ease",
       "-webkit-tap-highlight-color:transparent"
     ].join(";");
@@ -560,8 +560,8 @@ function setupAtzeScrollTopButton(anchor) {
     button.style.pointerEvents =
       visible ? "auto" : "none";
     button.style.transform = visible
-      ? "translateY(0) scale(1)"
-      : "translateY(12px) scale(.94)";
+      ? "translate(-50%, 0) scale(1)"
+      : "translate(-50%, 12px) scale(.94)";
   };
 
   const bindScrollTarget = () => {
