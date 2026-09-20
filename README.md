@@ -77,6 +77,13 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.149.0
+
+- Der Serverraum-Hintergrund der Navigations- und Favoritenkarte ist jetzt
+  deutlich heller, schärfer und detailreicher.
+- Die dunkle Abdeckung wurde reduziert; Aufbau, Buttons und Favoriten bleiben
+  unverändert und weiterhin gut lesbar.
+
 ### v0.148.0
 
 - Seitennavigation und Favoriten werden in einer gemeinsamen abgerundeten
@@ -94,11 +101,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   von **20:00 bis 06:59 Uhr** erscheint die dunkle Nachtversion.
 - Verlauf, Glasoptik und Kontrast sorgen in beiden Varianten für gut lesbare
   Texte und Statuswerte.
-
-### v0.146.0
-
-- Die Symbole innerhalb der blauen Bereichs-Bubbles verwenden ein dunkleres,
-  kräftigeres Blau und bleiben dadurch auch auf hellen Raumbildern gut sichtbar.
 
 ## Lizenz
 
