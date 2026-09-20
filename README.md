@@ -77,6 +77,14 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
 
 ## Letzte Änderungen
 
+### v0.150.0
+
+- Die scharfe Serverraum-Grafik verwendet einen neuen Dateinamen, damit
+  Home Assistant und der Browser nicht länger die alte, unscharfe Version aus
+  dem Cache laden.
+- Alarmo und AtzeHomeBase zeigen den Status **deaktiviert** rot an; alle anderen
+  Zustände werden grün dargestellt.
+
 ### v0.149.0
 
 - Der Serverraum-Hintergrund der Navigations- und Favoritenkarte ist jetzt
@@ -92,15 +100,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   bilden eine optische Brücke zwischen Hausstatus und Raumbildern.
 - Unter dem Projekttitel weist die README nun mit **KI-Generiert: ChatGPT** auf
   die Entstehung des Dashboards hin.
-
-### v0.147.0
-
-- Profil, Uhrzeit und die sechs Statuskacheln erhalten eine gemeinsame
-  Hausansicht als Hintergrund.
-- Von **07:00 bis 19:59 Uhr** wird automatisch die helle Tagversion verwendet;
-  von **20:00 bis 06:59 Uhr** erscheint die dunkle Nachtversion.
-- Verlauf, Glasoptik und Kontrast sorgen in beiden Varianten für gut lesbare
-  Texte und Statuswerte.
 
 ## Lizenz
 
