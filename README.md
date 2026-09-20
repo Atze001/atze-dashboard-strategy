@@ -72,10 +72,22 @@ Die Ansicht `sicherheit` übernimmt alle Entities mit dem Home-Assistant-Label
 
 ## Wartung
 
-Die Ansicht `wartung` erkennt Batteriesensoren automatisch, gruppiert sie nach
-Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
+Die Ansicht `wartung` erkennt Batteriesensoren automatisch und gruppiert sie
+nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
+Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.152.0
+
+- Das Hausbild der sechs Statuskacheln wird mit einer schwächeren Abdunklung
+  sichtbar heller dargestellt.
+- Die Batterieansicht verwendet die Grenzen **41–100 % grün**,
+  **21–40 % orange** und **0–20 % rot** und trennt sie in drei Abschnitte.
+- Die Ausschlusslabels **no-strategy** und **no-dboard** gelten nun auch direkt
+  für einzelne Entitäten, einschließlich der Sicherheitsansicht.
+- Eine versehentlich auf Sicherheitsentitäten angewendete Batteriesortierung
+  wurde entfernt.
 
 ### v0.151.0
 
@@ -95,13 +107,6 @@ Bereichen und zeigt den Ladezustand im Apple-Home-Stil an.
   dem Cache laden.
 - Alarmo und AtzeHomeBase zeigen den Status **deaktiviert** rot an; alle anderen
   Zustände werden grün dargestellt.
-
-### v0.149.0
-
-- Der Serverraum-Hintergrund der Navigations- und Favoritenkarte ist jetzt
-  deutlich heller, schärfer und detailreicher.
-- Die dunkle Abdeckung wurde reduziert; Aufbau, Buttons und Favoriten bleiben
-  unverändert und weiterhin gut lesbar.
 
 ## Lizenz
 

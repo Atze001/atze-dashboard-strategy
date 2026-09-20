@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.151.0
+ * Version: 0.152.0
  *
- * v0.151 focus:
- * - Align home status tiles and add a sorted battery dashboard shortcut
+ * v0.152 focus:
+ * - Brighten the home hero and refine battery/no-dboard handling
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.151.0";
+const ATZE_VERSION = "0.152.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3989,11 +3989,15 @@ function selectHomeBaseStatusEntity(
 
 
 function matchingNoStrategyLabelIds(labels, config) {
-  const needle = normalizedText(
-    config.no_strategy_label || "no-strategy"
+  const needles = new Set(
+    [
+      config.no_strategy_label,
+      "no-strategy",
+      "no-dboard",
+    ]
+      .map((value) => normalizedText(value || ""))
+      .filter(Boolean)
   );
-
-  if (!needle) return new Set();
 
   return new Set(
     (labels || [])
@@ -4008,7 +4012,7 @@ function matchingNoStrategyLabelIds(labels, config) {
 
         const id = normalizedText(labelId);
 
-        return name === needle || id === needle;
+        return needles.has(name) || needles.has(id);
       })
       .map((label) =>
         String(label?.label_id || label?.id || "")
@@ -4022,8 +4026,14 @@ function areaHasNoStrategyLabel(
   noStrategyLabelIds,
   config
 ) {
-  const needle = normalizedText(
-    config.no_strategy_label || "no-strategy"
+  const needles = new Set(
+    [
+      config.no_strategy_label,
+      "no-strategy",
+      "no-dboard",
+    ]
+      .map((value) => normalizedText(value || ""))
+      .filter(Boolean)
   );
 
   const assignedLabels = [
@@ -4036,7 +4046,37 @@ function areaHasNoStrategyLabel(
 
     return (
       noStrategyLabelIds.has(raw) ||
-      normalizedText(raw) === needle
+      needles.has(normalizedText(raw))
+    );
+  });
+}
+
+function entityHasNoStrategyLabel(
+  entity,
+  noStrategyLabelIds,
+  config
+) {
+  const needles = new Set(
+    [
+      config.no_strategy_label,
+      "no-strategy",
+      "no-dboard",
+    ]
+      .map((value) => normalizedText(value || ""))
+      .filter(Boolean)
+  );
+
+  const assignedLabels = [
+    ...asArray(entity?.labels),
+    ...asArray(entity?.label_ids),
+  ];
+
+  return assignedLabels.some((labelId) => {
+    const raw = String(labelId || "");
+
+    return (
+      noStrategyLabelIds.has(raw) ||
+      needles.has(normalizedText(raw))
     );
   });
 }
@@ -4379,8 +4419,8 @@ function batterySeverity(hass, entityId) {
   const value = Number.parseFloat(stateObj.state);
   if (!Number.isFinite(value)) return "neutral";
 
-  if (value >= 80) return "good";
-  if (value >= 30) return "warning";
+  if (value >= 41) return "good";
+  if (value >= 21) return "warning";
   return "critical";
 }
 
@@ -5692,6 +5732,15 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (
+        entityHasNoStrategyLabel(
+          entity,
+          noStrategyLabelIds,
+          config
+        )
+      ) {
+        return false;
+      }
       if (shouldHideExactEntity(config, entityId)) return false;
       if (
         noStrategyAreaIds.has(
@@ -5736,6 +5785,15 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (
+        entityHasNoStrategyLabel(
+          entity,
+          noStrategyLabelIds,
+          config
+        )
+      ) {
+        return false;
+      }
       if (shouldHideExactEntity(config, entityId)) return false;
       if (
         noStrategyAreaIds.has(
@@ -5772,6 +5830,15 @@ class AtzeDashboardStrategy extends HTMLElement {
 
       if (!hass.states[entityId]) return false;
       if (entity.disabled_by) return false;
+      if (
+        entityHasNoStrategyLabel(
+          entity,
+          noStrategyLabelIds,
+          config
+        )
+      ) {
+        return false;
+      }
       if (shouldHideExactEntity(config, entityId)) return false;
       if (
         noStrategyAreaIds.has(
@@ -7276,14 +7343,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           background:
             linear-gradient(
               90deg,
-              rgba(5,7,10,0.73) 0%,
-              rgba(5,7,10,0.46) 48%,
-              rgba(5,7,10,0.66) 100%
+              rgba(5,7,10,0.64) 0%,
+              rgba(5,7,10,0.36) 48%,
+              rgba(5,7,10,0.57) 100%
             ),
             linear-gradient(
               180deg,
-              rgba(5,7,10,0.18) 0%,
-              rgba(5,7,10,0.62) 100%
+              rgba(5,7,10,0.12) 0%,
+              rgba(5,7,10,0.52) 100%
             );
         }
 
@@ -7291,14 +7358,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           background:
             linear-gradient(
               90deg,
-              rgba(5,7,10,0.72) 0%,
-              rgba(5,7,10,0.43) 48%,
-              rgba(5,7,10,0.70) 100%
+              rgba(5,7,10,0.56) 0%,
+              rgba(5,7,10,0.28) 48%,
+              rgba(5,7,10,0.54) 100%
             ),
             linear-gradient(
               180deg,
-              rgba(5,7,10,0.28) 0%,
-              rgba(5,7,10,0.68) 100%
+              rgba(5,7,10,0.16) 0%,
+              rgba(5,7,10,0.50) 100%
             );
         }
 
@@ -8885,30 +8952,7 @@ class AtzeSecurityOverviewCard extends HTMLElement {
       this._config.groups || []
     )
       .map((group) => {
-        const cards = [...(group.entities || [])]
-          .sort((a, b) => {
-            const aValue = batterySortValue(
-              this._hass,
-              a.entity_id
-            );
-            const bValue = batterySortValue(
-              this._hass,
-              b.entity_id
-            );
-
-            if (aValue !== bValue) {
-              return aValue < bValue ? -1 : 1;
-            }
-
-            return String(a.name || "").localeCompare(
-              String(b.name || ""),
-              "de",
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-          })
+        const cards = (group.entities || [])
           .map((entry) => {
             const entityId = entry.entity_id;
             const severity =
@@ -9546,11 +9590,75 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
       return;
     }
 
-    const groupsHtml = (
-      this._config.groups || []
-    )
+    const entryMap = new Map();
+
+    for (const group of this._config.groups || []) {
+      for (const entry of group.entities || []) {
+        entryMap.set(entry.entity_id, entry);
+      }
+    }
+
+    const allEntries = [...entryMap.values()];
+
+    const batteryGroups = [
+      {
+        name: "Kritisch · 0–20 %",
+        icon: "mdi:battery-alert",
+        severity: "critical",
+        entities: allEntries.filter((entry) =>
+          [
+            "critical",
+            "unavailable",
+            "neutral",
+          ].includes(this._severity(entry.entity_id))
+        ),
+      },
+      {
+        name: "Niedrig · 21–40 %",
+        icon: "mdi:battery-low",
+        severity: "warning",
+        entities: allEntries.filter(
+          (entry) =>
+            this._severity(entry.entity_id) === "warning"
+        ),
+      },
+      {
+        name: "Gut · 41–100 %",
+        icon: "mdi:battery-check",
+        severity: "good",
+        entities: allEntries.filter(
+          (entry) =>
+            this._severity(entry.entity_id) === "good"
+        ),
+      },
+    ].filter((group) => group.entities.length);
+
+    const groupsHtml = batteryGroups
       .map((group) => {
-        const cards = (group.entities || [])
+        const cards = [...group.entities]
+          .sort((a, b) => {
+            const aValue = batterySortValue(
+              this._hass,
+              a.entity_id
+            );
+            const bValue = batterySortValue(
+              this._hass,
+              b.entity_id
+            );
+
+            if (aValue !== bValue) {
+              return aValue < bValue ? -1 : 1;
+            }
+
+            return String(a.name || "").localeCompare(
+              String(b.name || ""),
+              "de",
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+          })
           .map((entry) => {
             const entityId = entry.entity_id;
             const severity =
@@ -9585,7 +9693,7 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           .join("");
 
         return `
-          <section class="area-section">
+          <section class="area-section ${group.severity}">
             <div class="area-heading">
               <ha-icon
                 icon="${group.icon || "mdi:home-outline"}"
@@ -9704,6 +9812,18 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           color: rgba(235,235,245,0.78);
         }
 
+        .area-section.good .area-heading ha-icon {
+          color: #30D158;
+        }
+
+        .area-section.warning .area-heading ha-icon {
+          color: #FF9F0A;
+        }
+
+        .area-section.critical .area-heading ha-icon {
+          color: #FF453A;
+        }
+
         .battery-grid {
           display: grid;
           grid-template-columns:
@@ -9798,6 +9918,18 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           color: rgba(235,235,245,0.68);
           font-size: 14px;
           white-space: nowrap;
+        }
+
+        .battery-card.good .battery-state {
+          color: #30D158;
+        }
+
+        .battery-card.warning .battery-state {
+          color: #FF9F0A;
+        }
+
+        .battery-card.critical .battery-state {
+          color: #FF453A;
         }
 
         .empty {
@@ -11497,7 +11629,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 ${this._escape(area.name || area.area_id)}
               </span>
               ${blockedArea
-                ? '<span class="desc">Label no-strategy</span>'
+                ? '<span class="desc">Label no-strategy / no-dboard</span>'
                 : ""}
             </span>
           </span>
@@ -12052,7 +12184,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               Wähle aus, welche Bereiche angezeigt werden.
               Ziehe Räume am Griff nach oben oder unten, um ihre
               Reihenfolge zu ändern. Bereiche mit
-              <b>no-strategy</b> bleiben immer ausgeblendet.
+              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
+              immer ausgeblendet.
             </div>
 
             <div class="toolbar">
