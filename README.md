@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.165.0**
+Version **0.166.0**
 
 Enthalten sind unter anderem:
 
@@ -90,6 +90,13 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.166.0
+
+- Auswahlfelder für **Personen** und **Stromsensor** bleiben jetzt geöffnet,
+  auch wenn Home Assistant während der Auswahl neue Zustände liefert.
+- Dafür verwenden beide Dropdowns denselben Interaktionsschutz wie die
+  bereits korrigierte Auswahl **Auto / sichtbar / unsichtbar**.
 
 ### v0.165.0
 
