@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.175.0";
+const ATZE_VERSION = "0.176.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -17,9 +17,11 @@ const ATZE_LIGHT_HELPER_CATEGORY =
 const ATZE_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/lichtsteuerung.yaml";
 
+const ATZE_LIGHT_BLUEPRINT_VERSION = "0.176.0";
+
 const ATZE_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
   name: "Atze Dashboard Strategy-Lichtsteuerung"
-  description: "Steuert ausgewählte Lampen individuell nach Morgen-, Abend- und Nacht-Helfern mit getrennten Zeitversätzen."
+  description: "Version 0.176.0. Steuert ausgewählte Lampen mit den fest integrierten Atze-Dashboard-Helfern für Morgen, Abend und Nacht sowie getrennten Zeitversätzen."
   domain: automation
   input:
     lampen:
@@ -30,22 +32,9 @@ const ATZE_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
           domain: light
           multiple: true
 
-    lichtsteuerung_aktiv:
-      name: "Aktivierungs-Schalter (Unterbrecher)"
-      description: "Der input_boolean, der die Steuerung erlaubt."
-      selector:
-        entity:
-          domain: input_boolean
-
-    morgen_zeit:
-      name: "Morgen Startzeit"
-      selector:
-        entity:
-          domain: input_datetime
-
     morgen_versatz:
       name: "Zeitversatz Morgen"
-      description: "Verschiebt die Morgen-Startzeit. Negative Werte = früher, positive Werte = später."
+      description: "Verschiebt die globale Morgen-Startzeit. Negative Werte = früher, positive Werte = später."
       default: 0
       selector:
         number:
@@ -54,16 +43,10 @@ const ATZE_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
           step: 5
           unit_of_measurement: "min"
           mode: slider
-
-    abend_zeit:
-      name: "Abend Startzeit"
-      selector:
-        entity:
-          domain: input_datetime
 
     abend_versatz:
       name: "Zeitversatz Abend"
-      description: "Verschiebt die Abend-Startzeit. Negative Werte = früher, positive Werte = später."
+      description: "Verschiebt die globale Abend-Startzeit. Negative Werte = früher, positive Werte = später."
       default: 0
       selector:
         number:
@@ -72,16 +55,10 @@ const ATZE_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
           step: 5
           unit_of_measurement: "min"
           mode: slider
-
-    nacht_zeit:
-      name: "Nacht Startzeit"
-      selector:
-        entity:
-          domain: input_datetime
 
     nacht_versatz:
       name: "Zeitversatz Nacht"
-      description: "Verschiebt die Nacht-Startzeit. Negative Werte = früher, positive Werte = später."
+      description: "Verschiebt die globale Nacht-Startzeit. Negative Werte = früher, positive Werte = später."
       default: 0
       selector:
         number:
@@ -90,45 +67,6 @@ const ATZE_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
           step: 5
           unit_of_measurement: "min"
           mode: slider
-
-    # --- MORGEN SLIDER ---
-    helligkeit_morgen:
-      name: "Helligkeit Morgen Slider"
-      selector:
-        entity:
-          domain: input_number
-
-    farbe_morgen:
-      name: "Lichtfarbe Morgen Slider"
-      selector:
-        entity:
-          domain: input_number
-
-    # --- ABEND SLIDER ---
-    helligkeit_abend:
-      name: "Helligkeit Abend Slider"
-      selector:
-        entity:
-          domain: input_number
-
-    farbe_abend:
-      name: "Lichtfarbe Abend Slider"
-      selector:
-        entity:
-          domain: input_number
-
-    # --- NACHT SLIDER ---
-    helligkeit_nacht:
-      name: "Helligkeit Nacht Slider"
-      selector:
-        entity:
-          domain: input_number
-
-    farbe_nacht:
-      name: "Lichtfarbe Nacht Slider"
-      selector:
-        entity:
-          domain: input_number
 
 trigger:
   - platform: state
@@ -138,37 +76,26 @@ trigger:
 
 condition:
   - condition: state
-    entity_id: !input lichtsteuerung_aktiv
+    entity_id: input_boolean.lichtsteuerung
     state: "on"
 
 variables:
-  input_morgen_zeit: !input morgen_zeit
-  input_abend_zeit: !input abend_zeit
-  input_nacht_zeit: !input nacht_zeit
-
   morgen_versatz_minuten: !input morgen_versatz
   abend_versatz_minuten: !input abend_versatz
   nacht_versatz_minuten: !input nacht_versatz
 
-  input_helligkeit_morgen: !input helligkeit_morgen
-  input_farbe_morgen: !input farbe_morgen
-  input_helligkeit_abend: !input helligkeit_abend
-  input_farbe_abend: !input farbe_abend
-  input_helligkeit_nacht: !input helligkeit_nacht
-  input_farbe_nacht: !input farbe_nacht
-
   morgen_start_sekunden: >-
-    {% set t = states(input_morgen_zeit).split(':') %}
+    {% set t = states('input_datetime.morgen').split(':') %}
     {% set basis = (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) %}
     {{ (basis + (morgen_versatz_minuten | int * 60)) % 86400 }}
 
   abend_start_sekunden: >-
-    {% set t = states(input_abend_zeit).split(':') %}
+    {% set t = states('input_datetime.abend').split(':') %}
     {% set basis = (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) %}
     {{ (basis + (abend_versatz_minuten | int * 60)) % 86400 }}
 
   nacht_start_sekunden: >-
-    {% set t = states(input_nacht_zeit).split(':') %}
+    {% set t = states('input_datetime.nacht').split(':') %}
     {% set basis = (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) %}
     {{ (basis + (nacht_versatz_minuten | int * 60)) % 86400 }}
 
@@ -191,8 +118,8 @@ action:
             target:
               entity_id: "{{ trigger.entity_id }}"
             data:
-              brightness_pct: "{{ states(input_helligkeit_morgen) | int }}"
-              color_temp_kelvin: "{{ states(input_farbe_morgen) | int }}"
+              brightness_pct: "{{ states('input_number.helligkeit_morgen') | int }}"
+              color_temp_kelvin: "{{ states('input_number.farbe_morgen') | int }}"
 
       # --- ABENDS ---
       - conditions:
@@ -211,8 +138,8 @@ action:
             target:
               entity_id: "{{ trigger.entity_id }}"
             data:
-              brightness_pct: "{{ states(input_helligkeit_abend) | int }}"
-              color_temp_kelvin: "{{ states(input_farbe_abend) | int }}"
+              brightness_pct: "{{ states('input_number.helligkeit_abend') | int }}"
+              color_temp_kelvin: "{{ states('input_number.farbe_abend') | int }}"
 
       # --- NACHTS ---
       - conditions:
@@ -231,12 +158,11 @@ action:
             target:
               entity_id: "{{ trigger.entity_id }}"
             data:
-              brightness_pct: "{{ states(input_helligkeit_nacht) | int }}"
-              color_temp_kelvin: "{{ states(input_farbe_nacht) | int }}"
+              brightness_pct: "{{ states('input_number.helligkeit_nacht') | int }}"
+              color_temp_kelvin: "{{ states('input_number.farbe_nacht') | int }}"
 
 mode: restart
 `;
-
 
 async function ensureAtzeLightBlueprint(hass) {
   if (!hass) {
@@ -252,30 +178,56 @@ async function ensureAtzeLightBlueprint(hass) {
   let blueprints = await listBlueprints();
   const existing =
     blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
+  const versionMarker =
+    `Version ${ATZE_LIGHT_BLUEPRINT_VERSION}.`;
+  const existingDescription = String(
+    existing?.metadata?.description || ""
+  );
 
-  if (existing && !existing.error) {
-    return { created: false, verified: true };
+  if (
+    existing &&
+    !existing.error &&
+    existingDescription.includes(versionMarker)
+  ) {
+    return {
+      created: false,
+      updated: false,
+      verified: true,
+    };
   }
+
+  const hadExistingEntry = Boolean(existing);
 
   await hass.callWS({
     type: "blueprint/save",
     domain: "automation",
     path: ATZE_LIGHT_BLUEPRINT_PATH,
     yaml: ATZE_LIGHT_BLUEPRINT_YAML,
-    allow_override: false,
+    allow_override: hadExistingEntry,
   });
 
   blueprints = await listBlueprints();
   const saved =
     blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
+  const savedDescription = String(
+    saved?.metadata?.description || ""
+  );
 
-  if (!saved || saved.error) {
+  if (
+    !saved ||
+    saved.error ||
+    !savedDescription.includes(versionMarker)
+  ) {
     throw new Error(
-      "Der Lichtsteuerungs-Blueprint wurde gespeichert, konnte danach aber nicht verifiziert werden."
+      "Der Lichtsteuerungs-Blueprint wurde gespeichert, konnte danach aber nicht in der aktuellen Version verifiziert werden."
     );
   }
 
-  return { created: true, verified: true };
+  return {
+    created: !hadExistingEntry,
+    updated: hadExistingEntry,
+    verified: true,
+  };
 }
 
 const ATZE_LIGHT_HELPERS = [
