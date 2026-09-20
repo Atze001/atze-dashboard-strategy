@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.164.0";
+const ATZE_VERSION = "0.165.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -7367,6 +7367,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const weatherText = this._weatherText(weather?.state);
     const weatherIcon = this._weatherIcon(weather?.state);
 
+    const powerState = this._state(this._config.power_entity);
+    const powerAvailable = Boolean(
+      powerState &&
+      !["", "unknown", "unavailable"].includes(
+        String(powerState.state || "").toLowerCase()
+      ) &&
+      Number.isFinite(
+        Number.parseFloat(powerState.state)
+      )
+    );
+
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
     const alarmDisabled = this._isDisabledStatus(
@@ -9031,13 +9042,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-            <div class="status power">
-              <ha-icon icon="mdi:flash"></ha-icon>
-              <div>
-                <div class="status-main">${this._formatPower()}</div>
-                <div class="status-sub">Gesamt</div>
+            ${powerAvailable ? `
+              <div class="status power">
+                <ha-icon icon="mdi:flash"></ha-icon>
+                <div>
+                  <div class="status-main">${this._formatPower()}</div>
+                  <div class="status-sub">Gesamt</div>
+                </div>
               </div>
-            </div>
+            ` : ""}
 
             <div
               class="status security ${securityActive ? "warning" : ""}"
@@ -12033,6 +12046,85 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       : value === true;
   }
 
+  _powerSensorOptionsHtml(selectedEntityId = "") {
+    const sensors = Object.keys(
+      this._hass?.states || {}
+    )
+      .filter((entityId) => {
+        if (!entityId.startsWith("sensor.")) return false;
+
+        const stateObj = this._hass.states[entityId];
+        const deviceClass = String(
+          stateObj?.attributes?.device_class || ""
+        ).toLowerCase();
+        const unit = String(
+          stateObj?.attributes?.unit_of_measurement || ""
+        ).toLowerCase();
+
+        return (
+          deviceClass === "power" ||
+          ["w", "kw", "mw"].includes(unit)
+        );
+      })
+      .map((entityId) => ({
+        entityId,
+        name:
+          this._hass.states[entityId]?.attributes
+            ?.friendly_name ||
+          entityId,
+      }))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, "de")
+      );
+
+    return [
+      `<option value="">Automatisch</option>`,
+      ...sensors.map(({ entityId, name }) => `
+        <option
+          value="${this._escape(entityId)}"
+          ${entityId === selectedEntityId ? "selected" : ""}
+        >
+          ${this._escape(name)}
+        </option>
+      `),
+    ].join("");
+  }
+
+  _powerSensorSelectHtml() {
+    const selected =
+      String(this._config.home_power_entity || "");
+
+    return `
+      <label class="row power-sensor-setting-row">
+        <span class="copy">
+          <span class="name">Stromsensor</span>
+          <span class="desc">
+            Leistungssensor für die Strom-Kachel auf der Startseite.
+          </span>
+        </span>
+        <select
+          class="power-sensor-select"
+          aria-label="Stromsensor auswählen"
+        >
+          ${this._powerSensorOptionsHtml(selected)}
+        </select>
+      </label>
+    `;
+  }
+
+  _setHomePowerEntity(entityId) {
+    const next = { ...this._config };
+    const value = String(entityId || "");
+
+    if (value) {
+      next.home_power_entity = value;
+    } else {
+      delete next.home_power_entity;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
   _personOptionsHtml(selectedEntityId = "") {
     const people = Object.keys(
       this._hass?.states || {}
@@ -12899,7 +12991,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           opacity: .48;
           cursor: default;
         }
-        .person-entity-select {
+        .person-entity-select,
+        .power-sensor-select {
           width: min(260px, 46%);
           min-width: 150px;
           min-height: 38px;
@@ -13394,6 +13487,36 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         <details
           class="panel editor-section"
+          data-editor-section="home-status"
+          ${this._openEditorSections.has("home-status") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon>
+              <span class="editor-section-summary-title">
+                Startseite / Status
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Lege fest, welcher Leistungssensor für die Strom-Kachel
+              verwendet wird. Ist der Sensor nicht verfügbar, wird die
+              Kachel automatisch ausgeblendet.
+            </div>
+            <div class="rows">
+              ${this._powerSensorSelectHtml()}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
           data-editor-section="views"
           ${this._openEditorSections.has("views") ? "open" : ""}
         >
@@ -13763,6 +13886,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
       );
     }
+
+    this.shadowRoot
+      .querySelector(".power-sensor-select")
+      ?.addEventListener("change", (event) => {
+        this._setHomePowerEntity(
+          event.currentTarget.value
+        );
+      });
 
     for (
       const select of

@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.164.0**
+Version **0.165.0**
 
 Enthalten sind unter anderem:
 
@@ -90,6 +90,15 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.165.0
+
+- Die Strom-Kachel wird ausgeblendet, wenn der verwendete Leistungssensor
+  fehlt, `unknown`, `unavailable` oder kein numerischer Wert vorhanden ist.
+- Im Dashboard-Menü unter **Startseite / Status** kann der gewünschte
+  Stromsensor ausgewählt werden.
+- Ohne manuelle Auswahl bleibt die automatische Erkennung eines geeigneten
+  Leistungssensors aktiv.
 
 ### v0.164.0
 

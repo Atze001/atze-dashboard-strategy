@@ -936,6 +936,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const weatherText = this._weatherText(weather?.state);
     const weatherIcon = this._weatherIcon(weather?.state);
 
+    const powerState = this._state(this._config.power_entity);
+    const powerAvailable = Boolean(
+      powerState &&
+      !["", "unknown", "unavailable"].includes(
+        String(powerState.state || "").toLowerCase()
+      ) &&
+      Number.isFinite(
+        Number.parseFloat(powerState.state)
+      )
+    );
+
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
     const alarmDisabled = this._isDisabledStatus(
@@ -2600,13 +2611,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-            <div class="status power">
-              <ha-icon icon="mdi:flash"></ha-icon>
-              <div>
-                <div class="status-main">${this._formatPower()}</div>
-                <div class="status-sub">Gesamt</div>
+            ${powerAvailable ? `
+              <div class="status power">
+                <ha-icon icon="mdi:flash"></ha-icon>
+                <div>
+                  <div class="status-main">${this._formatPower()}</div>
+                  <div class="status-sub">Gesamt</div>
+                </div>
               </div>
-            </div>
+            ` : ""}
 
             <div
               class="status security ${securityActive ? "warning" : ""}"
