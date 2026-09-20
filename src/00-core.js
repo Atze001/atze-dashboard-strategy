@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.169.0";
+const ATZE_VERSION = "0.170.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -4060,7 +4060,7 @@ function uniqueEntityIds(values) {
 }
 
 
-function selectHacsUpdateEntities(hass, usableEntities) {
+function selectHacsUpdateEntities(hass, entities) {
   return entities
     .filter((entity) => {
       const entityId = entity?.entity_id;
@@ -5076,7 +5076,7 @@ function buildHomeOverviewView(
       )
       .slice(0, 3),
     hacs_update_entities:
-      selectHacsUpdateEntities(hass, entities),
+      selectHacsUpdateEntities(hass, usableEntities),
     weather_entity: selectHomeWeatherEntity(hass, config),
     power_entity: selectGlobalPowerEntity(
       hass,
