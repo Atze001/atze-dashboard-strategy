@@ -4,6 +4,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = null;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -17,7 +18,17 @@ class AtzeRoomNavHeader extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   getCardSize() {

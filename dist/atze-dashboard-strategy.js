@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.177.0";
+const ATZE_VERSION = "0.178.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -367,6 +367,261 @@ const ATZE_LIGHT_HELPERS = [
     },
   },
 ];
+
+
+const ATZE_SCROLL_TOP_THRESHOLD = 250;
+const ATZE_SCROLL_TOP_STATE_KEY =
+  "__atzeDashboardScrollTopState";
+
+function atzeComposedParent(node) {
+  if (!node) return null;
+
+  const parent = node.parentNode;
+  if (parent instanceof ShadowRoot) {
+    return parent.host;
+  }
+  if (parent) return parent;
+
+  const root = node.getRootNode?.();
+  return root instanceof ShadowRoot
+    ? root.host
+    : null;
+}
+
+function atzeFindScrollContainer(anchor) {
+  let current = anchor;
+
+  while (current) {
+    current = atzeComposedParent(current);
+
+    if (!(current instanceof HTMLElement)) {
+      continue;
+    }
+
+    const style = window.getComputedStyle(current);
+    const overflowY = String(style.overflowY || "");
+    const canScroll =
+      current.scrollHeight > current.clientHeight + 8;
+
+    if (
+      canScroll &&
+      /(auto|scroll|overlay)/.test(overflowY)
+    ) {
+      return current;
+    }
+  }
+
+  return (
+    document.scrollingElement ||
+    document.documentElement
+  );
+}
+
+function setupAtzeScrollTopButton(anchor) {
+  if (!anchor) return () => {};
+
+  let state = window[ATZE_SCROLL_TOP_STATE_KEY];
+
+  if (!state) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = "atze-dashboard-scroll-top";
+    button.setAttribute(
+      "aria-label",
+      "Zum Seitenanfang"
+    );
+    button.setAttribute(
+      "title",
+      "Zum Seitenanfang"
+    );
+    button.innerHTML =
+      '<ha-icon icon="mdi:arrow-up"></ha-icon>';
+
+    button.style.cssText = [
+      "position:fixed",
+      "right:20px",
+      "bottom:calc(20px + env(safe-area-inset-bottom, 0px))",
+      "width:48px",
+      "height:48px",
+      "padding:0",
+      "border:0",
+      "border-radius:50%",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "background:var(--primary-color, #03a9f4)",
+      "color:var(--text-primary-color, #fff)",
+      "box-shadow:0 6px 20px rgba(0,0,0,.28)",
+      "cursor:pointer",
+      "z-index:5",
+      "opacity:0",
+      "pointer-events:none",
+      "transform:translateY(12px) scale(.94)",
+      "transition:opacity 160ms ease, transform 160ms ease",
+      "-webkit-tap-highlight-color:transparent"
+    ].join(";");
+
+    const icon = button.querySelector("ha-icon");
+    if (icon) {
+      icon.style.setProperty("--mdc-icon-size", "26px");
+      icon.style.width = "26px";
+      icon.style.height = "26px";
+    }
+
+    document.body.appendChild(button);
+
+    state = {
+      button,
+      anchors: new Set(),
+      anchor: null,
+      scrollTarget: null,
+      scrollEventTarget: null,
+      onScroll: null,
+      retryTimers: [],
+    };
+
+    window[ATZE_SCROLL_TOP_STATE_KEY] = state;
+
+    button.addEventListener("click", () => {
+      const target = state.scrollTarget;
+
+      if (
+        !target ||
+        target === document.scrollingElement ||
+        target === document.documentElement ||
+        target === document.body
+      ) {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+        return;
+      }
+
+      if (typeof target.scrollTo === "function") {
+        target.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      } else {
+        target.scrollTop = 0;
+      }
+    });
+  }
+
+  state.anchors.add(anchor);
+  state.anchor = anchor;
+
+  const clearRetryTimers = () => {
+    for (const timer of state.retryTimers) {
+      window.clearTimeout(timer);
+    }
+    state.retryTimers = [];
+  };
+
+  const unbindScrollTarget = () => {
+    if (
+      state.scrollEventTarget &&
+      state.onScroll
+    ) {
+      state.scrollEventTarget.removeEventListener(
+        "scroll",
+        state.onScroll
+      );
+    }
+
+    state.scrollTarget = null;
+    state.scrollEventTarget = null;
+    state.onScroll = null;
+  };
+
+  const updateVisibility = () => {
+    const target = state.scrollTarget;
+    const button = state.button;
+
+    if (!target || !button) return;
+
+    const scrollTop =
+      target === document.scrollingElement ||
+      target === document.documentElement ||
+      target === document.body
+        ? (
+            window.scrollY ||
+            document.scrollingElement?.scrollTop ||
+            0
+          )
+        : target.scrollTop;
+
+    const visible =
+      Number(scrollTop) >=
+      ATZE_SCROLL_TOP_THRESHOLD;
+
+    button.style.opacity = visible ? "1" : "0";
+    button.style.pointerEvents =
+      visible ? "auto" : "none";
+    button.style.transform = visible
+      ? "translateY(0) scale(1)"
+      : "translateY(12px) scale(.94)";
+  };
+
+  const bindScrollTarget = () => {
+    if (!anchor.isConnected) return;
+
+    const target =
+      atzeFindScrollContainer(anchor);
+
+    const eventTarget =
+      target === document.scrollingElement ||
+      target === document.documentElement ||
+      target === document.body
+        ? window
+        : target;
+
+    if (
+      state.scrollTarget !== target ||
+      state.scrollEventTarget !== eventTarget
+    ) {
+      unbindScrollTarget();
+
+      state.scrollTarget = target;
+      state.scrollEventTarget = eventTarget;
+      state.onScroll = updateVisibility;
+
+      eventTarget.addEventListener(
+        "scroll",
+        state.onScroll,
+        { passive: true }
+      );
+    }
+
+    updateVisibility();
+  };
+
+  clearRetryTimers();
+
+  requestAnimationFrame(bindScrollTarget);
+  state.retryTimers.push(
+    window.setTimeout(bindScrollTarget, 250),
+    window.setTimeout(bindScrollTarget, 1000)
+  );
+
+  return () => {
+    state.anchors.delete(anchor);
+
+    if (state.anchors.size > 0) {
+      if (state.anchor === anchor) {
+        state.anchor =
+          [...state.anchors].at(-1) || null;
+      }
+      return;
+    }
+
+    clearRetryTimers();
+    unbindScrollTarget();
+    state.button?.remove();
+    delete window[ATZE_SCROLL_TOP_STATE_KEY];
+  };
+}
 
 const DOMAIN_META = {
   light:         { title: "Licht",      icon: "mdi:lightbulb-group", order: 10 },
@@ -6680,6 +6935,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._hass = null;
     this._clockTimer = null;
     this._blueprintEnsureStarted = false;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -6713,6 +6969,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   connectedCallback() {
     this._startClock();
+
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
   }
 
@@ -6721,6 +6983,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
     }
+
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   _startClock() {
@@ -9724,6 +9989,7 @@ class AtzeSecurityOverviewCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = null;
     this._hass = null;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -9747,7 +10013,17 @@ class AtzeSecurityOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   getCardSize() {
@@ -10419,6 +10695,7 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = null;
     this._hass = null;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -10442,7 +10719,17 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   getCardSize() {
@@ -11052,6 +11339,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = null;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -11065,7 +11353,17 @@ class AtzeRoomNavHeader extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   getCardSize() {

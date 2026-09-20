@@ -7,6 +7,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._hass = null;
     this._clockTimer = null;
     this._blueprintEnsureStarted = false;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -40,6 +41,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   connectedCallback() {
     this._startClock();
+
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
   }
 
@@ -48,6 +55,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
     }
+
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   _startClock() {

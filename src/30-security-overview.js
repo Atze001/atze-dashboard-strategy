@@ -5,6 +5,7 @@ class AtzeSecurityOverviewCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = null;
     this._hass = null;
+    this._scrollTopCleanup = null;
   }
 
   setConfig(config) {
@@ -28,7 +29,17 @@ class AtzeSecurityOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this._scrollTopCleanup) {
+      this._scrollTopCleanup =
+        setupAtzeScrollTopButton(this);
+    }
+
     this._render();
+  }
+
+  disconnectedCallback() {
+    this._scrollTopCleanup?.();
+    this._scrollTopCleanup = null;
   }
 
   getCardSize() {
