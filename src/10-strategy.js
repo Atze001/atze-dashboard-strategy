@@ -25,6 +25,17 @@ class AtzeDashboardStrategy extends HTMLElement {
       config.hide_scrollbar !== false
     );
 
+    if (hass?.user?.is_admin) {
+      try {
+        await ensureAtzeLightBlueprint(hass);
+      } catch (error) {
+        console.error(
+          "Atze Dashboard: Lichtsteuerungs-Blueprint konnte nicht automatisch in Home Assistant angelegt werden.",
+          error
+        );
+      }
+    }
+
     const [areas, devices, entities, labels] = await Promise.all([
       hass.callWS({ type: "config/area_registry/list" }),
       hass.callWS({ type: "config/device_registry/list" }),
