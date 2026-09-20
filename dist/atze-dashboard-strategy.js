@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.147.0
+ * Version: 0.148.0
  *
- * v0.147 focus:
- * - Add automatic day and night backgrounds to the home status area
+ * v0.148 focus:
+ * - Group custom-page links and favorites on a server-room card
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.147.0";
+const ATZE_VERSION = "0.148.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const DOMAIN_META = {
@@ -3651,6 +3651,11 @@ const DEFAULT_HOME_HERO_NIGHT_IMAGE = new URL(
   ATZE_ASSET_BASE_URL
 ).href;
 
+const DEFAULT_HOME_CONTROL_CENTER_IMAGE = new URL(
+  "home-control-center.webp",
+  ATZE_ASSET_BASE_URL
+).href;
+
 function bestEnvironmentEntity(
   hass,
   entities,
@@ -4775,6 +4780,9 @@ function buildHomeOverviewView(
     hero_night_image:
       config.home_hero_night_image ||
       DEFAULT_HOME_HERO_NIGHT_IMAGE,
+    control_center_image:
+      config.home_control_center_image ||
+      DEFAULT_HOME_CONTROL_CENTER_IMAGE,
     light_entities: uniqueEntityIds(lightEntities),
     cover_entities: uniqueEntityIds(coverEntities),
     lock_entity: lockEntity,
@@ -6877,6 +6885,24 @@ class AtzeHomeOverviewCard extends HTMLElement {
         `
       : "";
 
+    const controlCenterHtml =
+      customPageLinksHtml || favoriteHtml
+        ? `
+            <section
+              class="control-center ${
+                customPageLinksHtml ? "has-links" : ""
+              } ${favoriteHtml ? "has-favorites" : ""}"
+              style="--control-center-image: url('${this._escapeHtml(
+                this._config.control_center_image || ""
+              )}')"
+              aria-label="Schnellzugriff und Favoriten"
+            >
+              ${customPageLinksHtml}
+              ${favoriteHtml}
+            </section>
+          `
+        : "";
+
     const roomHtml = (this._config.room_tiles || [])
       .map((room) => {
         const temp = room.temperature
@@ -7416,6 +7442,73 @@ class AtzeHomeOverviewCard extends HTMLElement {
           white-space: nowrap;
         }
 
+        .control-center {
+          position: relative;
+          isolation: isolate;
+          margin-bottom: 28px;
+          padding: 22px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 34px;
+          box-shadow: 0 14px 38px rgba(0,0,0,0.25);
+        }
+
+        .control-center::before,
+        .control-center::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+
+        .control-center::before {
+          z-index: -2;
+          background-image: var(--control-center-image);
+          background-position: center center;
+          background-repeat: no-repeat;
+          background-size: cover;
+          transform: scale(1.01);
+        }
+
+        .control-center::after {
+          z-index: -1;
+          background:
+            linear-gradient(
+              90deg,
+              rgba(5,7,10,0.56) 0%,
+              rgba(5,7,10,0.38) 50%,
+              rgba(5,7,10,0.55) 100%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(5,7,10,0.20) 0%,
+              rgba(5,7,10,0.58) 100%
+            );
+        }
+
+        .control-center .custom-page-links {
+          position: relative;
+          z-index: 1;
+          margin-bottom: 22px;
+        }
+
+        .control-center:not(.has-favorites) .custom-page-links {
+          margin-bottom: 0;
+        }
+
+        .control-center .favorites {
+          position: relative;
+          z-index: 1;
+          margin: 0;
+        }
+
+        .control-center .custom-page-link,
+        .control-center .favorite-card {
+          background: rgba(27,29,33,0.88);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+        }
+
         .custom-page-links {
           margin: 0 0 20px;
           display: flex;
@@ -7905,6 +7998,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
             border-radius: 28px;
           }
 
+          .control-center {
+            margin-bottom: 24px;
+            padding: 18px 14px;
+            border-radius: 28px;
+          }
+
           .hero {
             align-items: flex-start;
             margin-bottom: 24px;
@@ -8250,9 +8349,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
           </section>
 
-          ${customPageLinksHtml}
-
-          ${favoriteHtml}
+          ${controlCenterHtml}
 
           <div class="rooms">
             ${roomHtml}
