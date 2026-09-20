@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.167.0";
+const ATZE_VERSION = "0.168.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -4060,6 +4060,30 @@ function uniqueEntityIds(values) {
 }
 
 
+function selectHacsUpdateEntities(hass, entities) {
+  return entities
+    .filter((entity) => {
+      const entityId = entity?.entity_id;
+      if (!entityId || domainOf(entityId) !== "update") {
+        return false;
+      }
+
+      if (!hass.states[entityId]) return false;
+      if (entity.disabled_by) return false;
+
+      const platform = String(
+        entity.platform || ""
+      ).toLowerCase();
+
+      return (
+        platform === "hacs" ||
+        entityId === "update.hacs_update"
+      );
+    })
+    .map((entity) => entity.entity_id);
+}
+
+
 function selectHomePersonEntity(hass, config) {
   if (
     config.home_person_entity &&
@@ -5051,6 +5075,8 @@ function buildHomeOverviewView(
           hass.states[entityId]
       )
       .slice(0, 3),
+    hacs_update_entities:
+      selectHacsUpdateEntities(hass, entities),
     weather_entity: selectHomeWeatherEntity(hass, config),
     power_entity: selectGlobalPowerEntity(
       hass,
