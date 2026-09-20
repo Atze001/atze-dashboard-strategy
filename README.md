@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.157.0**
+Version **0.158.0**
 
 Enthalten sind unter anderem:
 
@@ -81,6 +81,11 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.158.0
+
+- Die Texte der sechs Statuskacheln auf dem Hausbild stehen jetzt exakt **5 px**
+  näher an ihren Icons.
+
 ### v0.157.0
 
 - Beim Aktivieren der **Lichtsteuerung** werden elf benötigte Helfer automatisch
@@ -99,12 +104,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
   automatisch in ein separates Bubble-Card-Popup übernommen.
 - Die Kartenkonfiguration und vorhandene Helfer-Verknüpfungen der eigenen Seite
   bleiben dabei unverändert erhalten.
-
-### v0.155.0
-
-- Das Zeitpläne-Popup wird getrennt von der Startseitenkarte eingebunden.
-  Bubble Card kann dadurch nicht mehr versehentlich das gesamte Dashboard
-  ausblenden.
 
 ## Lizenz
 
