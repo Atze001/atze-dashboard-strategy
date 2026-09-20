@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.180.0";
+const ATZE_VERSION = "0.181.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -675,7 +675,7 @@ function atzeDashboardNavigationTarget(path) {
   }
 
   const cleanTarget =
-    requested.replace(/^\\/+|\\/+$/g, "") || "home";
+    requested.replace(/^\/+|\/+$/g, "") || "home";
 
   const parts =
     window.location.pathname
