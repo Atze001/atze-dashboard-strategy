@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.183.0**
+Version **0.184.0**
 
 Enthalten sind unter anderem:
 
@@ -146,6 +146,11 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.184.0
+
+- Mindestweg für den Swipe nach rechts von 90 auf **140 px** erhöht.
+- Alle übrigen Gesten-Anpassungen bleiben unverändert.
 
 ### v0.183.0
 
