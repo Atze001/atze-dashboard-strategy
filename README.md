@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.167.0**
+Version **0.168.0**
 
 Enthalten sind unter anderem:
 
@@ -31,6 +31,7 @@ Enthalten sind unter anderem:
 - optionales Lichtsteuerungs-Bubble-Popup aus einer eigenen Seite
 - helle Raumbilder bei eingeschaltetem Licht und dunkle Bilder bei
   ausgeschaltetem Licht
+- automatischer HACS-Update-Hinweis auf der Startseite
 
 ## Installation über HACS
 
@@ -119,6 +120,14 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.168.0
+
+- Oberhalb des ersten Bereichs erscheint bei verfügbaren HACS-Updates
+  automatisch mittig eine rote Badge **Update vorhanden**.
+- Die Badge wird ausschließlich aus HACS-`update.`-Entitäten ermittelt und
+  bleibt ohne verfügbares HACS-Update vollständig ausgeblendet.
+- Ein Klick auf die Badge öffnet direkt die HACS-Übersicht.
 
 ### v0.167.0
 

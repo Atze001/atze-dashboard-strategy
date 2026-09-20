@@ -476,6 +476,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     window.dispatchEvent(new Event("location-changed"));
   }
 
+  _navigateHacs() {
+    const target = "/hacs/dashboard";
+
+    window.history.pushState(null, "", target);
+    window.dispatchEvent(
+      new Event("location-changed")
+    );
+  }
+
   _openPopup(hash) {
     const target = String(hash || "").startsWith("#")
       ? String(hash)
@@ -859,6 +868,20 @@ class AtzeHomeOverviewCard extends HTMLElement {
       month: "long",
       year: "numeric",
     }).format(now);
+
+    const hacsUpdateEntities = asArray(
+      this._config.hacs_update_entities
+    );
+
+    const hacsUpdatesAvailable =
+      hacsUpdateEntities.filter((entityId) =>
+        String(
+          this._state(entityId)?.state || ""
+        ).toLowerCase() === "on"
+      );
+
+    const hacsUpdateAvailable =
+      hacsUpdatesAvailable.length > 0;
 
     const person = this._state(this._config.person_entity);
     const personPicture = this._personPicture(person);
@@ -1390,6 +1413,46 @@ class AtzeHomeOverviewCard extends HTMLElement {
           width: min(1180px, 100%);
           margin: 0 auto;
           padding: 34px 24px 48px;
+        }
+
+        .hacs-update-wrap {
+          display: flex;
+          justify-content: center;
+          margin: 0 0 12px;
+        }
+
+        .hacs-update-badge {
+          appearance: none;
+          border: 1px solid rgba(255,69,58,0.78);
+          border-radius: 999px;
+          background: rgba(255,69,58,0.16);
+          color: rgb(255,95,87);
+          min-height: 34px;
+          padding: 6px 16px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          font: inherit;
+          font-size: 13px;
+          line-height: 1;
+          font-weight: 700;
+          letter-spacing: 0.1px;
+          cursor: pointer;
+          box-shadow:
+            0 4px 14px rgba(0,0,0,0.18),
+            inset 0 1px 0 rgba(255,255,255,0.08);
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .hacs-update-badge:hover {
+          background: rgba(255,69,58,0.24);
+        }
+
+        .hacs-update-badge ha-icon {
+          --mdc-icon-size: 17px;
+          width: 17px;
+          height: 17px;
         }
 
         .home-status-panel {
@@ -2528,6 +2591,20 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
       <ha-card>
         <div class="page">
+          ${hacsUpdateAvailable ? `
+            <div class="hacs-update-wrap">
+              <button
+                class="hacs-update-badge"
+                id="hacs-update-badge"
+                type="button"
+                title="${hacsUpdatesAvailable.length} HACS-Update${hacsUpdatesAvailable.length === 1 ? "" : "s"} verfügbar"
+              >
+                <ha-icon icon="mdi:package-up"></ha-icon>
+                <span>Update vorhanden</span>
+              </button>
+            </div>
+          ` : ""}
+
           <section
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             style="--home-hero-image: url('${this._escapeHtml(heroImage || "")}')"
@@ -2839,6 +2916,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
         });
       });
+
+    this.shadowRoot
+      .querySelector("#hacs-update-badge")
+      ?.addEventListener(
+        "click",
+        () => this._navigateHacs()
+      );
 
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
