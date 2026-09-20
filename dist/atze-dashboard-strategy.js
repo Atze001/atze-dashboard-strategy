@@ -1,14 +1,14 @@
 /**
  * Atze Dashboard Strategy
- * Version: 0.157.0
+ * Version: 0.158.0
  *
- * v0.157 focus:
- * - Provision and categorize the light-control helpers automatically
+ * v0.158 focus:
+ * - Align the home-status text closer to its icon
  *
  * License: MIT
  */
 
-const ATZE_VERSION = "0.157.0";
+const ATZE_VERSION = "0.158.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -7864,7 +7864,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           padding: 6px 18px;
           display: flex;
           align-items: center;
-          gap: 2px;
+          gap: 7px;
           border: 1px solid var(--home-card-border);
           border-radius: 28px;
           background: var(--home-card-bg);
@@ -7872,6 +7872,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           -webkit-backdrop-filter: blur(18px);
           color: var(--primary-text-color);
           overflow: hidden;
+        }
+
+        .status > div {
+          margin-left: -5px;
         }
 
         .status ha-icon {
