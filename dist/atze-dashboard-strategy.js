@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.174.0";
+const ATZE_VERSION = "0.175.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -237,7 +237,6 @@ action:
 mode: restart
 `;
 
-let ATZE_LIGHT_BLUEPRINT_AUTO_ATTEMPTED = false;
 
 async function ensureAtzeLightBlueprint(hass) {
   if (!hass) {
@@ -6377,19 +6376,6 @@ class AtzeDashboardStrategy extends HTMLElement {
       config.hide_scrollbar !== false
     );
 
-    if (!ATZE_LIGHT_BLUEPRINT_AUTO_ATTEMPTED) {
-      ATZE_LIGHT_BLUEPRINT_AUTO_ATTEMPTED = true;
-
-      try {
-        await ensureAtzeLightBlueprint(hass);
-      } catch (error) {
-        console.error(
-          "Atze Dashboard: Lichtsteuerungs-Blueprint konnte nicht automatisch in Home Assistant angelegt werden.",
-          error
-        );
-      }
-    }
-
     const [areas, devices, entities, labels] = await Promise.all([
       hass.callWS({ type: "config/area_registry/list" }),
       hass.callWS({ type: "config/device_registry/list" }),
@@ -6741,6 +6727,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
+    this._blueprintEnsureStarted = false;
   }
 
   setConfig(config) {
@@ -6750,6 +6737,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   set hass(value) {
     this._hass = value;
+
+    if (
+      value &&
+      !this._blueprintEnsureStarted
+    ) {
+      this._blueprintEnsureStarted = true;
+
+      ensureAtzeLightBlueprint(value).catch((error) => {
+        console.error(
+          "Atze Dashboard: Lichtsteuerungs-Blueprint konnte beim Laden der Startseite nicht automatisch angelegt werden.",
+          error
+        );
+      });
+    }
+
     this._render();
   }
 

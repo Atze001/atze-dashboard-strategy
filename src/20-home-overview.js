@@ -6,6 +6,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
+    this._blueprintEnsureStarted = false;
   }
 
   setConfig(config) {
@@ -15,6 +16,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   set hass(value) {
     this._hass = value;
+
+    if (
+      value &&
+      !this._blueprintEnsureStarted
+    ) {
+      this._blueprintEnsureStarted = true;
+
+      ensureAtzeLightBlueprint(value).catch((error) => {
+        console.error(
+          "Atze Dashboard: Lichtsteuerungs-Blueprint konnte beim Laden der Startseite nicht automatisch angelegt werden.",
+          error
+        );
+      });
+    }
+
     this._render();
   }
 
