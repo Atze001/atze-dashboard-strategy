@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.212.0";
+const ATZE_VERSION = "0.213.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6721,6 +6721,15 @@ function buildAreaView(
           area_name: areaName,
           navigation_path: roomHomePath,
           hide_home_icon: isBadRoom,
+          ...(isBadRoom
+            ? {
+                light_entities: roomLightEntities,
+                dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
+                light_image:
+                  DEFAULT_HOME_ROOM_LIGHT_IMAGES[roomLightImageKey] ||
+                  DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
+              }
+            : {}),
           ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
         };
 
@@ -6745,7 +6754,7 @@ function buildAreaView(
     ),
     header: {
       layout: areaOverride.header_layout || config.header_layout || "center",
-      badges_position: "bottom",
+      badges_position: isBadRoom ? "top" : "bottom",
       ...(roomHeaderCard ? { card: roomHeaderCard } : {}),
     },
     badges: badgeSelection.badges,
@@ -11857,6 +11866,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = null;
+    this._hass = null;
     this._scrollTopCleanup = null;
     this._homeSwipeCleanup = null;
   }
@@ -11869,6 +11879,15 @@ class AtzeRoomNavHeader extends HTMLElement {
       ...config,
     };
     this._render();
+  }
+
+  set hass(value) {
+    this._hass = value;
+    this._render();
+  }
+
+  get hass() {
+    return this._hass;
   }
 
   connectedCallback() {
@@ -11947,6 +11966,19 @@ class AtzeRoomNavHeader extends HTMLElement {
     const areaName =
       String(this._config.area_name || "").trim() || "Bereich";
 
+    const lightEntities = Array.isArray(this._config.light_entities)
+      ? this._config.light_entities
+      : [];
+    const lightsOn = lightEntities.some(
+      (entityId) => this._hass?.states?.[entityId]?.state === "on"
+    );
+    const reactiveImage =
+      lightsOn
+        ? this._config.light_image
+        : this._config.dark_image;
+    const backgroundImage =
+      reactiveImage || this._config.background_image || "";
+
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -11965,7 +11997,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
 
         ha-card.has-background {
-          min-height: 150px;
+          min-height: 160px;
           padding: 0;
           border-radius: var(--ha-card-border-radius, 12px);
           overflow: hidden;
@@ -11976,7 +12008,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
 
         ha-card.has-background .nav-row {
-          min-height: 150px;
+          min-height: 160px;
           padding: 18px;
           box-sizing: border-box;
           align-items: flex-end;
@@ -12074,7 +12106,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
       </style>
 
-      <ha-card class="${this._config.background_image ? "has-background" : ""}" style="${this._config.background_image ? `--atze-room-header-image: url('${this._config.background_image}')` : ""}">
+      <ha-card class="${backgroundImage ? "has-background" : ""}" style="${backgroundImage ? `--atze-room-header-image: url('${backgroundImage}')` : ""}">
         <div
           class="nav-row"
           role="button"
