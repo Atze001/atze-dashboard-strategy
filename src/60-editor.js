@@ -1838,8 +1838,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               )}
               ${this._toggleHtml(
                 "clock_kiosk_toggle",
-                "Kiosk über Uhrzeit umschalten",
-                "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
+                "Kiosk-Modus",
+                "Blendet den Home-Assistant-Header ein oder aus. Die Uhr öffnet weiterhin die Dashboard Settings.",
                 true
               )}
               ${this._toggleHtml(

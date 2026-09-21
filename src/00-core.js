@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.193.0";
+const ATZE_VERSION = "0.194.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6202,8 +6202,6 @@ function buildHomeOverviewView(
     lock_entity: lockEntity,
     night_entity: config.home_night_entity || null,
     force_kiosk: config.force_kiosk === true,
-    clock_kiosk_toggle:
-      config.clock_kiosk_toggle !== false,
   };
 
   return {
