@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.215.0";
+const ATZE_VERSION = "0.216.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6695,7 +6695,8 @@ function buildAreaView(
     defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_IMAGES);
   const roomLightImageKey =
     defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_LIGHT_IMAGES);
-  const isBadRoom = roomImageKey === "bad";
+  const hasRoomHeaderImage =
+    Boolean(roomImageKey && DEFAULT_HOME_ROOM_IMAGES[roomImageKey]);
   const roomLightEntities = entities
     .filter((entity) => domainOf(entity.entity_id) === "light")
     .map((entity) => entity.entity_id);
@@ -6703,7 +6704,7 @@ function buildAreaView(
     (entityId) => hass.states?.[entityId]?.state === "on"
   );
   const roomHeaderImage =
-    isBadRoom
+    hasRoomHeaderImage
       ? (
           roomLightsOn
             ? DEFAULT_HOME_ROOM_LIGHT_IMAGES[roomLightImageKey] ||
@@ -6720,8 +6721,8 @@ function buildAreaView(
           icon: "mdi:home",
           area_name: areaName,
           navigation_path: roomHomePath,
-          hide_home_icon: isBadRoom,
-          ...(isBadRoom
+          hide_home_icon: hasRoomHeaderImage,
+          ...(hasRoomHeaderImage
             ? {
                 light_entities: roomLightEntities,
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
@@ -6731,7 +6732,7 @@ function buildAreaView(
               }
             : {}),
           ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
-          ...(isBadRoom ? { overlay_badges: badgeSelection.badges } : {}),
+          ...(hasRoomHeaderImage ? { overlay_badges: badgeSelection.badges } : {}),
         };
 
   return {
@@ -6758,7 +6759,7 @@ function buildAreaView(
       badges_position: "bottom",
       ...(roomHeaderCard ? { card: roomHeaderCard } : {}),
     },
-    badges: isBadRoom ? [] : badgeSelection.badges,
+    badges: hasRoomHeaderImage ? [] : badgeSelection.badges,
     sections,
   };
 }
