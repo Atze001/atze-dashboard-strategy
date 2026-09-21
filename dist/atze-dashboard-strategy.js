@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.194.0";
+const ATZE_VERSION = "0.195.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -7013,13 +7013,35 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const clockKioskAccess =
+  const kioskEnabled =
     config.clock_kiosk_toggle !== false;
+
+  // kiosk-mode supports ?disable_km as the explicit per-session override.
+  // Keep the URL in sync with the Dashboard Settings checkbox so disabling
+  // Kiosk-Modus actually restores the Home Assistant header.
+  const hasDisableKm = params.has("disable_km");
+
+  if (!kioskEnabled && !hasDisableKm) {
+    params.set("disable_km", "");
+    window.location.replace(
+      `${window.location.pathname}?${params.toString()}${window.location.hash || ""}`
+    );
+    return;
+  }
+
+  if (kioskEnabled && hasDisableKm) {
+    params.delete("disable_km");
+    const query = params.toString();
+    window.location.replace(
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`
+    );
+    return;
+  }
 
   const enabled =
     config.force_kiosk === true &&
-    !clockKioskAccess &&
-    !params.has("disable_km");
+    kioskEnabled &&
+    !hasDisableKm;
 
   const apply = () => {
     try {
@@ -7477,47 +7499,113 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _openDashboardSettings() {
-    const root = document.querySelector("home-assistant");
-    const lovelace = root?.shadowRoot?.querySelector("home-assistant-main")
-      ?.shadowRoot?.querySelector("ha-panel-lovelace");
-
-    const tryEdit = (target) => {
+    const fireEvent = (target, type, detail = {}) => {
       if (!target) return false;
 
-      for (const method of [
-        "_setEditMode",
-        "_enterEditMode",
-        "editMode",
-      ]) {
-        if (typeof target[method] === "function") {
-          try {
-            target[method](true);
-            return true;
-          } catch (_error) {
-            // Try the next supported Home Assistant edit entry point.
-          }
-        }
-      }
-
-      return false;
+      target.dispatchEvent(
+        new CustomEvent(type, {
+          bubbles: true,
+          composed: true,
+          detail,
+        })
+      );
+      return true;
     };
 
-    const candidates = [
-      lovelace,
-      lovelace?.shadowRoot?.querySelector("hui-root"),
-      document.querySelector("hui-root"),
-    ];
+    const root = document.querySelector("home-assistant");
+    const main = root?.shadowRoot?.querySelector("home-assistant-main");
+    const panel =
+      main?.shadowRoot?.querySelector("ha-panel-lovelace") ||
+      document.querySelector("ha-panel-lovelace");
+    const huiRoot =
+      panel?.shadowRoot?.querySelector("hui-root") ||
+      document.querySelector("hui-root");
 
-    for (const candidate of candidates) {
-      if (tryEdit(candidate)) return;
+    // Home Assistant's dashboard strategy editor is exposed through the
+    // dashboard edit/config flow. Trigger that flow instead of calling
+    // private edit-mode methods directly.
+    for (const target of [huiRoot, panel, main, root, window]) {
+      if (!target?.dispatchEvent) continue;
+
+      const event = new CustomEvent("hass-toggle-menu", {
+        bubbles: true,
+        composed: true,
+      });
+
+      // Keep searching; this event only helps when the sidebar/header is hidden.
+      target.dispatchEvent(event);
     }
 
-    const menuButton =
-      lovelace?.shadowRoot?.querySelector(
-        'ha-icon-button[slot="toolbar-icon"], ha-button-menu ha-icon-button'
-      );
+    const editButtonSelectors = [
+      'ha-icon-button[data-tooltip*="dashboard" i]',
+      'ha-icon-button[title*="dashboard" i]',
+      'ha-icon-button[aria-label*="dashboard" i]',
+      'ha-icon-button[title*="bearbeiten" i]',
+      'ha-icon-button[aria-label*="bearbeiten" i]',
+    ];
 
-    menuButton?.click();
+    const roots = [
+      huiRoot?.shadowRoot,
+      panel?.shadowRoot,
+      main?.shadowRoot,
+      root?.shadowRoot,
+      document,
+    ].filter(Boolean);
+
+    for (const searchRoot of roots) {
+      for (const selector of editButtonSelectors) {
+        const button = searchRoot.querySelector?.(selector);
+        if (button) {
+          button.click();
+          return;
+        }
+      }
+    }
+
+    // Fallback for current HA: open the dashboard overflow menu and choose
+    // the dashboard settings/config item.
+    const menu =
+      huiRoot?.shadowRoot?.querySelector("ha-button-menu") ||
+      panel?.shadowRoot?.querySelector("ha-button-menu");
+
+    if (menu) {
+      menu.open = true;
+      menu.click?.();
+
+      queueMicrotask(() => {
+        const menuItems = [
+          ...document.querySelectorAll(
+            "mwc-list-item, ha-md-menu-item, ha-list-item"
+          ),
+        ];
+
+        const settingsItem = menuItems.find((item) => {
+          const label = String(
+            item.innerText ||
+            item.textContent ||
+            item.getAttribute?.("aria-label") ||
+            ""
+          ).toLowerCase();
+
+          return (
+            label.includes("dashboard") &&
+            (
+              label.includes("einstellung") ||
+              label.includes("setting") ||
+              label.includes("konfigur") ||
+              label.includes("config")
+            )
+          );
+        });
+
+        settingsItem?.click();
+      });
+      return;
+    }
+
+    // Last fallback: ask Lovelace to enter edit mode via the event used by
+    // frontend components. This keeps the click useful across HA versions.
+    fireEvent(huiRoot || panel || root, "ll-edit-mode", { editMode: true });
   }
 
   _state(entityId) {
@@ -14282,7 +14370,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._toggleHtml(
                 "clock_kiosk_toggle",
                 "Kiosk-Modus",
-                "Blendet den Home-Assistant-Header ein oder aus. Die Uhr öffnet weiterhin die Dashboard Settings.",
+                "Aktiviert oder deaktiviert Kiosk-Mode. Aus setzt ?disable_km und stellt den Home-Assistant-Header wieder her.",
                 true
               )}
               ${this._toggleHtml(
