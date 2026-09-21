@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.210.0";
+const ATZE_VERSION = "0.211.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6691,6 +6691,13 @@ function buildAreaView(
     config.home_path ||
     "home";
 
+  const roomImageKey =
+    defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_IMAGES);
+  const roomHeaderImage =
+    roomImageKey === "bad"
+      ? DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+      : undefined;
+
   const roomHeaderCard =
     config.room_home_button === false
       ? undefined
@@ -6699,6 +6706,7 @@ function buildAreaView(
           icon: "mdi:home",
           area_name: areaName,
           navigation_path: roomHomePath,
+          ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
         };
 
   return {

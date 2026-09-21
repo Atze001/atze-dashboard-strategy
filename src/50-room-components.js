@@ -111,6 +111,23 @@ class AtzeRoomNavHeader extends HTMLElement {
           overflow: visible;
         }
 
+        ha-card.has-background {
+          min-height: 150px;
+          padding: 0;
+          border-radius: var(--ha-card-border-radius, 12px);
+          overflow: hidden;
+          background:
+            linear-gradient(90deg, rgba(0,0,0,0.58), rgba(0,0,0,0.10)),
+            var(--atze-room-header-image) center / cover no-repeat;
+        }
+
+        ha-card.has-background .nav-row {
+          min-height: 150px;
+          padding: 18px;
+          box-sizing: border-box;
+          color: white;
+        }
+
         .nav-row {
           width: 100%;
           max-width: 100%;
@@ -198,7 +215,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
       </style>
 
-      <ha-card>
+      <ha-card class="${this._config.background_image ? "has-background" : ""}" style="${this._config.background_image ? `--atze-room-header-image: url('${this._config.background_image}')` : ""}">
         <div
           class="nav-row"
           role="button"
