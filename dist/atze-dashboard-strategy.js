@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.214.0";
+const ATZE_VERSION = "0.215.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -12148,16 +12148,9 @@ class AtzeRoomNavHeader extends HTMLElement {
     const overlayBadges = this.shadowRoot.querySelector("#overlay-badges");
     if (overlayBadges) {
       for (const badgeConfig of this._config.overlay_badges || []) {
-        const tagName = String(badgeConfig?.type || "").startsWith("custom:")
-          ? String(badgeConfig.type).slice(7)
-          : "hui-state-label-badge";
-        const badge = document.createElement(tagName);
-        if (typeof badge.setConfig === "function") {
-          badge.setConfig(badgeConfig);
-        }
-        if ("hass" in badge) {
-          badge.hass = this._hass;
-        }
+        const badge = document.createElement("hui-badge");
+        badge.hass = this._hass;
+        badge.config = badgeConfig;
         overlayBadges.appendChild(badge);
       }
     }
