@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.188.0";
+const ATZE_VERSION = "0.189.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -164,6 +164,199 @@ action:
 mode: restart
 `;
 
+const ATZE_LIGHT_BLUEPRINT_V2_PATH =
+  "atze dashboard strategy/lichtsteuerung-v2.yaml";
+
+const ATZE_LIGHT_BLUEPRINT_V2_VERSION = "0.189.0";
+
+const ATZE_LIGHT_BLUEPRINT_V2_YAML = String.raw`blueprint:
+  name: "Atze Dashboard Strategy-Lichtsteuerung V2"
+  description: "Version 0.189.0. Steuert ausgewählte Lampen mit direkt in der Automation eingetragenen Zeiten, Helligkeiten und Farbtemperaturen; ohne Home-Assistant-Helfer und ohne Zeitversätze."
+  domain: automation
+  input:
+    lampen:
+      name: "Lampenauswahl"
+      description: "Wähle die Lampen aus, auf die diese Lichtsteuerung angewendet werden soll."
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+    morgen_zeit:
+      name: "Morgen Startzeit"
+      default: "05:30:00"
+      selector:
+        time:
+
+    helligkeit_morgen:
+      name: "Helligkeit Morgen"
+      default: 80
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
+
+    farbe_morgen:
+      name: "Farbtemperatur Morgen"
+      default: 4500
+      selector:
+        number:
+          min: 2000
+          max: 6500
+          step: 100
+          unit_of_measurement: "K"
+          mode: slider
+
+    abend_zeit:
+      name: "Abend Startzeit"
+      default: "21:00:00"
+      selector:
+        time:
+
+    helligkeit_abend:
+      name: "Helligkeit Abend"
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
+
+    farbe_abend:
+      name: "Farbtemperatur Abend"
+      default: 3300
+      selector:
+        number:
+          min: 2000
+          max: 6500
+          step: 100
+          unit_of_measurement: "K"
+          mode: slider
+
+    nacht_zeit:
+      name: "Nacht Startzeit"
+      default: "23:00:00"
+      selector:
+        time:
+
+    helligkeit_nacht:
+      name: "Helligkeit Nacht"
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
+
+    farbe_nacht:
+      name: "Farbtemperatur Nacht"
+      default: 2700
+      selector:
+        number:
+          min: 2000
+          max: 6500
+          step: 100
+          unit_of_measurement: "K"
+          mode: slider
+
+trigger:
+  - platform: state
+    entity_id: !input lampen
+    from: "off"
+    to: "on"
+
+variables:
+  morgen_zeit_wert: !input morgen_zeit
+  helligkeit_morgen_wert: !input helligkeit_morgen
+  farbe_morgen_wert: !input farbe_morgen
+  abend_zeit_wert: !input abend_zeit
+  helligkeit_abend_wert: !input helligkeit_abend
+  farbe_abend_wert: !input farbe_abend
+  nacht_zeit_wert: !input nacht_zeit
+  helligkeit_nacht_wert: !input helligkeit_nacht
+  farbe_nacht_wert: !input farbe_nacht
+
+  morgen_start_sekunden: >-
+    {% set t = morgen_zeit_wert.split(':') %}
+    {{ (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) }}
+
+  abend_start_sekunden: >-
+    {% set t = abend_zeit_wert.split(':') %}
+    {{ (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) }}
+
+  nacht_start_sekunden: >-
+    {% set t = nacht_zeit_wert.split(':') %}
+    {{ (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {% set jetzt = now().hour * 3600 + now().minute * 60 + now().second %}
+              {% set start = morgen_start_sekunden | int %}
+              {% set ende = abend_start_sekunden | int %}
+              {{
+                (start <= ende and start <= jetzt < ende)
+                or
+                (start > ende and (jetzt >= start or jetzt < ende))
+              }}
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: "{{ trigger.entity_id }}"
+            data:
+              brightness_pct: "{{ helligkeit_morgen_wert | int }}"
+              color_temp_kelvin: "{{ farbe_morgen_wert | int }}"
+
+      - conditions:
+          - condition: template
+            value_template: >-
+              {% set jetzt = now().hour * 3600 + now().minute * 60 + now().second %}
+              {% set start = abend_start_sekunden | int %}
+              {% set ende = nacht_start_sekunden | int %}
+              {{
+                (start <= ende and start <= jetzt < ende)
+                or
+                (start > ende and (jetzt >= start or jetzt < ende))
+              }}
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: "{{ trigger.entity_id }}"
+            data:
+              brightness_pct: "{{ helligkeit_abend_wert | int }}"
+              color_temp_kelvin: "{{ farbe_abend_wert | int }}"
+
+      - conditions:
+          - condition: template
+            value_template: >-
+              {% set jetzt = now().hour * 3600 + now().minute * 60 + now().second %}
+              {% set start = nacht_start_sekunden | int %}
+              {% set ende = morgen_start_sekunden | int %}
+              {{
+                (start <= ende and start <= jetzt < ende)
+                or
+                (start > ende and (jetzt >= start or jetzt < ende))
+              }}
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: "{{ trigger.entity_id }}"
+            data:
+              brightness_pct: "{{ helligkeit_nacht_wert | int }}"
+              color_temp_kelvin: "{{ farbe_nacht_wert | int }}"
+
+mode: restart
+`;
+
 async function ensureAtzeLightBlueprint(hass) {
   if (!hass) {
     throw new Error("Home Assistant ist noch nicht verfügbar.");
@@ -175,58 +368,78 @@ async function ensureAtzeLightBlueprint(hass) {
       domain: "automation",
     });
 
-  let blueprints = await listBlueprints();
-  const existing =
-    blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
-  const versionMarker =
-    `Version ${ATZE_LIGHT_BLUEPRINT_VERSION}.`;
-  const existingDescription = String(
-    existing?.metadata?.description || ""
-  );
+  const ensureBlueprint = async (path, yaml, version) => {
+    let blueprints = await listBlueprints();
+    const existing = blueprints?.[path];
+    const versionMarker = "Version " + version + ".";
+    const existingDescription = String(
+      existing?.metadata?.description || ""
+    );
 
-  if (
-    existing &&
-    !existing.error &&
-    existingDescription.includes(versionMarker)
-  ) {
+    if (
+      existing &&
+      !existing.error &&
+      existingDescription.includes(versionMarker)
+    ) {
+      return {
+        created: false,
+        updated: false,
+        verified: true,
+      };
+    }
+
+    const hadExistingEntry = Boolean(existing);
+
+    await hass.callWS({
+      type: "blueprint/save",
+      domain: "automation",
+      path,
+      yaml,
+      allow_override: hadExistingEntry,
+    });
+
+    blueprints = await listBlueprints();
+    const saved = blueprints?.[path];
+    const savedDescription = String(
+      saved?.metadata?.description || ""
+    );
+
+    if (
+      !saved ||
+      saved.error ||
+      !savedDescription.includes(versionMarker)
+    ) {
+      throw new Error(
+        "Der Blueprint " + path +
+        " wurde gespeichert, konnte danach aber nicht in der aktuellen Version verifiziert werden."
+      );
+    }
+
     return {
-      created: false,
-      updated: false,
+      created: !hadExistingEntry,
+      updated: hadExistingEntry,
       verified: true,
     };
-  }
+  };
 
-  const hadExistingEntry = Boolean(existing);
-
-  await hass.callWS({
-    type: "blueprint/save",
-    domain: "automation",
-    path: ATZE_LIGHT_BLUEPRINT_PATH,
-    yaml: ATZE_LIGHT_BLUEPRINT_YAML,
-    allow_override: hadExistingEntry,
-  });
-
-  blueprints = await listBlueprints();
-  const saved =
-    blueprints?.[ATZE_LIGHT_BLUEPRINT_PATH];
-  const savedDescription = String(
-    saved?.metadata?.description || ""
+  const v1 = await ensureBlueprint(
+    ATZE_LIGHT_BLUEPRINT_PATH,
+    ATZE_LIGHT_BLUEPRINT_YAML,
+    ATZE_LIGHT_BLUEPRINT_VERSION
   );
 
-  if (
-    !saved ||
-    saved.error ||
-    !savedDescription.includes(versionMarker)
-  ) {
-    throw new Error(
-      "Der Lichtsteuerungs-Blueprint wurde gespeichert, konnte danach aber nicht in der aktuellen Version verifiziert werden."
-    );
-  }
+  const v2 = await ensureBlueprint(
+    ATZE_LIGHT_BLUEPRINT_V2_PATH,
+    ATZE_LIGHT_BLUEPRINT_V2_YAML,
+    ATZE_LIGHT_BLUEPRINT_V2_VERSION
+  );
 
   return {
-    created: !hadExistingEntry,
-    updated: hadExistingEntry,
-    verified: true,
+    created: v1.created || v2.created,
+    updated: v1.updated || v2.updated,
+    verified: v1.verified && v2.verified,
+    v1,
+    v2,
   };
 }
 
