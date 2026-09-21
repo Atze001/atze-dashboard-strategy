@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.220.0";
+const ATZE_VERSION = "0.221.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -3807,6 +3807,7 @@ function selectEnvironmentBadges(
     );
 
     if (windowState) {
+      windowState.badge.atze_badge_group = "window";
       badges.push(windowState.badge);
       entityIds.add(windowState.entityId);
     }
@@ -3826,6 +3827,7 @@ function selectEnvironmentBadges(
     );
 
     if (rollerShutterState) {
+      rollerShutterState.badge.atze_badge_group = "roller_shutter";
       badges.push(rollerShutterState.badge);
       entityIds.add(rollerShutterState.entityId);
     }
