@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.208.0";
+const ATZE_VERSION = "0.209.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6839,10 +6839,6 @@ function applyAtzeKioskQueryFallback(config) {
     return parts.length !== before;
   };
 
-  // disable_km is the explicit escape state used by the clock toggle.
-  // Do not let the automatic fallback rewrite the URL on the same load,
-  // otherwise one tap can cause an intermediate reload before the visible
-  // kiosk state changes.
   if (hasKey("disable_km")) return;
 
   const desired = [];
@@ -7522,10 +7518,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (active) {
       parts.push("disable_km");
     } else {
-      // Enter the same stable kiosk state that the automatic fallback uses.
-      // The marker prevents a second corrective reload on the next render.
       parts.push("hide_header");
-      parts.push("atze_km_auto=1");
+
+      if (this._config?.force_kiosk === true) {
+        parts.push("atze_km_auto=1");
+      }
     }
 
     const query = parts.length
@@ -10355,50 +10352,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
 
-    if (kioskClock) {
-      let pressStartedAt = 0;
-      let pressMoved = false;
-
-      kioskClock.addEventListener("pointerdown", () => {
-        pressStartedAt = performance.now();
-        pressMoved = false;
-      });
-
-      kioskClock.addEventListener("pointermove", () => {
-        pressMoved = true;
-      });
-
-      kioskClock.addEventListener("pointercancel", () => {
-        pressStartedAt = 0;
-        pressMoved = true;
-      });
-
-      kioskClock.addEventListener("pointerup", (event) => {
-        if (!pressStartedAt) return;
-
-        const duration = performance.now() - pressStartedAt;
-        pressStartedAt = 0;
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (!pressMoved && duration >= 900) {
-          this._navigateHacs();
-          return;
-        }
-
-        if (!pressMoved) {
-          this._toggleKioskMode();
-        }
-      });
-
-      // Pointerup owns tap/hold handling. Suppress the synthetic click so
-      // touch devices cannot execute a second action afterwards.
-      kioskClock.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-      });
-    }
+    kioskClock?.addEventListener(
+      "click",
+      () => this._toggleKioskMode()
+    );
 
     kioskClock?.addEventListener(
       "keydown",
