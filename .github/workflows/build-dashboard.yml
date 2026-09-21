@@ -58,7 +58,4 @@ jobs:
             exit 0
           fi
           TARGET="$(git rev-parse HEAD)"
-          gh release create "$TAG" \\
-            --target "$TARGET" \\
-            --title "Atze Dashboard Strategy $TAG" \\
-            --generate-notes
+          gh release create "$TAG" --target "$TARGET" --title "Atze Dashboard Strategy $TAG" --generate-notes
