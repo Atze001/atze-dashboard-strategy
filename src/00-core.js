@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.212.0";
+const ATZE_VERSION = "0.213.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6721,6 +6721,15 @@ function buildAreaView(
           area_name: areaName,
           navigation_path: roomHomePath,
           hide_home_icon: isBadRoom,
+          ...(isBadRoom
+            ? {
+                light_entities: roomLightEntities,
+                dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
+                light_image:
+                  DEFAULT_HOME_ROOM_LIGHT_IMAGES[roomLightImageKey] ||
+                  DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
+              }
+            : {}),
           ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
         };
 
@@ -6745,7 +6754,7 @@ function buildAreaView(
     ),
     header: {
       layout: areaOverride.header_layout || config.header_layout || "center",
-      badges_position: "bottom",
+      badges_position: isBadRoom ? "top" : "bottom",
       ...(roomHeaderCard ? { card: roomHeaderCard } : {}),
     },
     badges: badgeSelection.badges,
