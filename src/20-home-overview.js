@@ -2949,39 +2949,47 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this.shadowRoot.querySelector("#kiosk-clock");
 
     if (kioskClock) {
-      let holdTimer = null;
-      let longPressTriggered = false;
-
-      const cancelHold = () => {
-        if (holdTimer) {
-          clearTimeout(holdTimer);
-          holdTimer = null;
-        }
-      };
+      let pressStartedAt = 0;
+      let pressMoved = false;
 
       kioskClock.addEventListener("pointerdown", () => {
-        longPressTriggered = false;
-        cancelHold();
-        holdTimer = setTimeout(() => {
-          holdTimer = null;
-          longPressTriggered = true;
-          this._navigateHacs();
-        }, 700);
+        pressStartedAt = performance.now();
+        pressMoved = false;
       });
 
-      kioskClock.addEventListener("pointerup", cancelHold);
-      kioskClock.addEventListener("pointercancel", cancelHold);
-      kioskClock.addEventListener("pointerleave", cancelHold);
+      kioskClock.addEventListener("pointermove", () => {
+        pressMoved = true;
+      });
 
-      kioskClock.addEventListener("click", (event) => {
-        if (longPressTriggered) {
-          event.preventDefault();
-          event.stopPropagation();
-          longPressTriggered = false;
+      kioskClock.addEventListener("pointercancel", () => {
+        pressStartedAt = 0;
+        pressMoved = true;
+      });
+
+      kioskClock.addEventListener("pointerup", (event) => {
+        if (!pressStartedAt) return;
+
+        const duration = performance.now() - pressStartedAt;
+        pressStartedAt = 0;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!pressMoved && duration >= 900) {
+          this._navigateHacs();
           return;
         }
 
-        this._toggleKioskMode();
+        if (!pressMoved) {
+          this._toggleKioskMode();
+        }
+      });
+
+      // Pointerup owns tap/hold handling. Suppress the synthetic click so
+      // touch devices cannot execute a second action afterwards.
+      kioskClock.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
       });
     }
 
