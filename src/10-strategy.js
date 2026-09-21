@@ -19,6 +19,7 @@ class AtzeDashboardStrategy extends HTMLElement {
   }
 
   static async generate(config, hass) {
+    applyAtzeKioskQueryFallback(config);
     applyAtzeSidebarAccess(config);
 
     hideAtzeDashboardScrollbars(
