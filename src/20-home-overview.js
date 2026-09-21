@@ -8,6 +8,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._clockTimer = null;
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
+    this._weatherPopupOpen = false;
+    this._weatherForecast = [];
+    this._weatherForecastLoading = false;
   }
 
   setConfig(config) {
@@ -331,6 +334,49 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     return map[state] || "mdi:weather-partly-cloudy";
   }
+
+  async _openWeatherPopup() {
+    if (!this._config?.weather_entity) return;
+    this._weatherPopupOpen = true;
+    this._render();
+    if (this._weatherForecastLoading) return;
+    this._weatherForecastLoading = true;
+    try {
+      const response = await this._hass.callWS({
+        type: "weather/get_forecasts",
+        forecast_type: "daily",
+        entity_ids: [this._config.weather_entity],
+      });
+      this._weatherForecast = response?.[this._config.weather_entity]?.forecast || [];
+    } catch (_error) {
+      this._weatherForecast = [];
+    } finally {
+      this._weatherForecastLoading = false;
+      if (this._weatherPopupOpen) this._render();
+    }
+  }
+
+  _closeWeatherPopup() {
+    this._weatherPopupOpen = false;
+    this._render();
+  }
+
+  _weatherPopupHtml(weather) {
+    if (!this._weatherPopupOpen || !weather) return "";
+    const attrs = weather.attributes || {};
+    const metric = (icon, label, value, unit = "") =>
+      value == null || value === "" ? "" :
+      `<div class="weather-metric"><ha-icon icon="${icon}"></ha-icon><div><span>${label}</span><strong>${value}${unit}</strong></div></div>`;
+    const forecast = this._weatherForecast.slice(0, 5).map((day) => {
+      const date = day.datetime ? new Intl.DateTimeFormat("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }).format(new Date(day.datetime)) : "";
+      const high = day.temperature != null ? `${Math.round(Number(day.temperature))}°` : "—";
+      const low = day.templow != null ? `${Math.round(Number(day.templow))}°` : "";
+      const precipitation = day.precipitation_probability != null ? `${Math.round(Number(day.precipitation_probability))}%` : "";
+      return `<div class="weather-forecast-day"><span>${date}</span><ha-icon icon="${this._weatherIcon(day.condition)}"></ha-icon><strong>${high}${low ? ` / ${low}` : ""}</strong>${precipitation ? `<small><ha-icon icon="mdi:water-percent"></ha-icon>${precipitation}</small>` : ""}</div>`;
+    }).join("");
+    return `<div class="weather-popup-backdrop" id="weather-popup-backdrop"><section class="weather-popup" role="dialog" aria-modal="true" aria-label="Wetterinformationen"><button class="weather-popup-close" id="weather-popup-close" type="button" aria-label="Schließen"><ha-icon icon="mdi:close"></ha-icon></button><div class="weather-popup-current"><ha-icon class="weather-popup-icon" icon="${this._weatherIcon(weather.state)}"></ha-icon><div><div class="weather-popup-temp">${attrs.temperature != null ? Math.round(Number(attrs.temperature)) + " °C" : "—"}</div><div class="weather-popup-condition">${this._weatherText(weather.state)}</div></div></div><div class="weather-metrics">${metric("mdi:water-percent", "Luftfeuchtigkeit", attrs.humidity, " %")}${metric("mdi:weather-windy", "Wind", attrs.wind_speed, attrs.wind_speed_unit ? " " + attrs.wind_speed_unit : "")}${metric("mdi:gauge", "Luftdruck", attrs.pressure, attrs.pressure_unit ? " " + attrs.pressure_unit : "")}${metric("mdi:weather-rainy", "Niederschlag", attrs.precipitation, attrs.precipitation_unit ? " " + attrs.precipitation_unit : "")}</div><div class="weather-forecast"><h3>Vorhersage</h3>${this._weatherForecastLoading ? '<div class="weather-loading">Wird geladen …</div>' : (forecast ? `<div class="weather-forecast-grid">${forecast}</div>` : '<div class="weather-loading">Keine Tagesvorhersage verfügbar.</div>')}</div></section></div>`;
+  }
+
 
 
   _roomImageCandidates(room, lightsOn = false) {
@@ -1827,12 +1873,34 @@ class AtzeHomeOverviewCard extends HTMLElement {
           white-space: nowrap;
         }
 
+        #weather-status,
         #security-status,
         #battery-status,
         #alarm-status,
         #homebase-status {
           cursor: pointer;
         }
+
+        .weather-popup-backdrop { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+        .weather-popup { position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:rgba(20,22,27,.98); box-shadow:0 24px 70px rgba(0,0,0,.48); }
+        .weather-popup-close { position:absolute; top:16px; right:16px; width:38px; height:38px; border:0; border-radius:50%; display:grid; place-items:center; cursor:pointer; color:var(--primary-text-color); background:rgba(118,118,128,.24); }
+        .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
+        .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
+        .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
+        .weather-popup-condition { margin-top:6px; color:var(--home-muted); font-size:16px; }
+        .weather-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:22px; }
+        .weather-metric { display:flex; align-items:center; gap:10px; padding:12px; border-radius:16px; background:rgba(118,118,128,.14); }
+        .weather-metric ha-icon, .weather-forecast-day > ha-icon { color:var(--home-yellow); }
+        .weather-metric div { min-width:0; display:flex; flex-direction:column; }
+        .weather-metric span { color:var(--home-muted); font-size:12px; }
+        .weather-metric strong { font-size:15px; }
+        .weather-forecast h3 { margin:22px 0 10px; font-size:16px; }
+        .weather-forecast-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+        .weather-forecast-day { min-width:0; padding:10px 6px; border-radius:14px; background:rgba(118,118,128,.12); text-align:center; display:grid; justify-items:center; gap:6px; }
+        .weather-forecast-day > span, .weather-forecast-day small, .weather-loading { color:var(--home-muted); font-size:11px; }
+        .weather-forecast-day small { display:flex; align-items:center; gap:2px; }
+        .weather-forecast-day small ha-icon { --mdc-icon-size:13px; }
+        @media (max-width:600px) { .weather-popup{padding:20px;border-radius:24px}.weather-metrics{grid-template-columns:1fr}.weather-forecast-grid{grid-template-columns:repeat(5,minmax(70px,1fr));overflow-x:auto} }
 
         .status-sub {
           margin-top: 1px;
@@ -2703,7 +2771,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
 
             <div class="status-grid">
-            <div class="status weather">
+            <div class="status weather" id="weather-status" role="button" tabindex="0">
               <ha-icon icon="${weatherIcon}"></ha-icon>
               <div>
                 <div class="status-main">${weatherTemperature}</div>
@@ -2830,6 +2898,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             }
           </div>
         </div>
+        ${this._weatherPopupHtml(weather)}
       </ha-card>
     `;
 
@@ -2967,6 +3036,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
       }
     );
+
+    const weatherStatus = this.shadowRoot.querySelector("#weather-status");
+    weatherStatus?.addEventListener("click", () => this._openWeatherPopup());
+    weatherStatus?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        this._openWeatherPopup();
+      }
+    });
+    this.shadowRoot.querySelector("#weather-popup-close")?.addEventListener("click", () => this._closeWeatherPopup());
+    this.shadowRoot.querySelector("#weather-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "weather-popup-backdrop") this._closeWeatherPopup();
+    });
 
     this.shadowRoot
       .querySelector("#security-status")
