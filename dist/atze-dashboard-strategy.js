@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.205.0";
+const ATZE_VERSION = "0.206.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -10352,10 +10352,42 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
 
-    kioskClock?.addEventListener(
-      "click",
-      () => this._toggleKioskMode()
-    );
+    if (kioskClock) {
+      let holdTimer = null;
+      let longPressTriggered = false;
+
+      const cancelHold = () => {
+        if (holdTimer) {
+          clearTimeout(holdTimer);
+          holdTimer = null;
+        }
+      };
+
+      kioskClock.addEventListener("pointerdown", () => {
+        longPressTriggered = false;
+        cancelHold();
+        holdTimer = setTimeout(() => {
+          holdTimer = null;
+          longPressTriggered = true;
+          this._navigateHacs();
+        }, 700);
+      });
+
+      kioskClock.addEventListener("pointerup", cancelHold);
+      kioskClock.addEventListener("pointercancel", cancelHold);
+      kioskClock.addEventListener("pointerleave", cancelHold);
+
+      kioskClock.addEventListener("click", (event) => {
+        if (longPressTriggered) {
+          event.preventDefault();
+          event.stopPropagation();
+          longPressTriggered = false;
+          return;
+        }
+
+        this._toggleKioskMode();
+      });
+    }
 
     kioskClock?.addEventListener(
       "keydown",
