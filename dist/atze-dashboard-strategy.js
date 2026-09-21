@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.211.0";
+const ATZE_VERSION = "0.212.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6693,9 +6693,23 @@ function buildAreaView(
 
   const roomImageKey =
     defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_IMAGES);
+  const roomLightImageKey =
+    defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_LIGHT_IMAGES);
+  const isBadRoom = roomImageKey === "bad";
+  const roomLightEntities = entities
+    .filter((entity) => domainOf(entity.entity_id) === "light")
+    .map((entity) => entity.entity_id);
+  const roomLightsOn = roomLightEntities.some(
+    (entityId) => hass.states?.[entityId]?.state === "on"
+  );
   const roomHeaderImage =
-    roomImageKey === "bad"
-      ? DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+    isBadRoom
+      ? (
+          roomLightsOn
+            ? DEFAULT_HOME_ROOM_LIGHT_IMAGES[roomLightImageKey] ||
+              DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+            : DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+        )
       : undefined;
 
   const roomHeaderCard =
@@ -6706,6 +6720,7 @@ function buildAreaView(
           icon: "mdi:home",
           area_name: areaName,
           navigation_path: roomHomePath,
+          hide_home_icon: isBadRoom,
           ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
         };
 
@@ -11954,8 +11969,9 @@ class AtzeRoomNavHeader extends HTMLElement {
           padding: 0;
           border-radius: var(--ha-card-border-radius, 12px);
           overflow: hidden;
+          border: 1px solid var(--divider-color, rgba(160,160,160,0.45));
           background:
-            linear-gradient(90deg, rgba(0,0,0,0.58), rgba(0,0,0,0.10)),
+            linear-gradient(180deg, rgba(0,0,0,0.02) 45%, rgba(0,0,0,0.62) 100%),
             var(--atze-room-header-image) center / cover no-repeat;
         }
 
@@ -11963,7 +11979,12 @@ class AtzeRoomNavHeader extends HTMLElement {
           min-height: 150px;
           padding: 18px;
           box-sizing: border-box;
+          align-items: flex-end;
           color: white;
+        }
+
+        ha-card.has-background .area-name {
+          text-shadow: 0 1px 4px rgba(0,0,0,0.75);
         }
 
         .nav-row {
@@ -12061,9 +12082,11 @@ class AtzeRoomNavHeader extends HTMLElement {
           title="Zurück zu Zuhause"
           aria-label="Zurück zu Zuhause – ${areaName}"
         >
+          ${this._config.hide_home_icon ? "" : `
           <span class="home-icon">
             <ha-icon icon="${this._config.icon || "mdi:home"}"></ha-icon>
           </span>
+          `}
           <span class="area-name">${areaName}</span>
         </div>
       </ha-card>
