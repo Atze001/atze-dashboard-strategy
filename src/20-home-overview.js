@@ -70,10 +70,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _toggleKioskMode() {
-    if (this._config?.clock_kiosk_toggle === false) {
-      return;
-    }
-
     const rawQuery = String(
       window.location.search || ""
     );
