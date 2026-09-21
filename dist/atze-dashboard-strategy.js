@@ -362,7 +362,7 @@ const ATZE_DS_LIGHT_BLUEPRINT_PATH =
 
 const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.190.0";
 
-const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw\`blueprint:
+const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
@@ -704,7 +704,7 @@ actions:
               - action: homeassistant.turn_off
                 target:
                   entity_id: !input target_switch
-\`;
+`;
 
 async function ensureAtzeLightBlueprint(hass) {
   if (!hass) {
