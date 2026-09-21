@@ -2011,7 +2011,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .favorite-icon ha-icon {
           width: 23px;
           height: 23px;
-          transform: translate(-2px, -2px);
+          transform: translate(-2px, -1px);
         }
 
         .favorite-card.active .favorite-icon {
