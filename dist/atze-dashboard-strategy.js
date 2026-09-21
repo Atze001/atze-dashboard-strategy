@@ -13326,9 +13326,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _setHomePerson(index, entityId) {
-    const people = Array(5).fill("");
+    const people = Array(4).fill("");
     asArray(this._config.home_people_entities)
-      .slice(0, 5)
+      .slice(0, 4)
       .forEach((value, itemIndex) => {
         people[itemIndex] = String(value || "");
       });
@@ -14328,7 +14328,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._personSelectHtml(1)}
               ${this._personSelectHtml(2)}
               ${this._personSelectHtml(3)}
-              ${this._personSelectHtml(4)}
             </div>
           </div>
         </details>
