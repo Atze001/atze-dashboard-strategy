@@ -70,19 +70,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _openDashboardSettings() {
-    const fireEvent = (target, type, detail = {}) => {
-      if (!target) return false;
-
-      target.dispatchEvent(
-        new CustomEvent(type, {
-          bubbles: true,
-          composed: true,
-          detail,
-        })
-      );
-      return true;
-    };
-
+    // Do not toggle Home Assistant's sidebar here. In kiosk mode that leaves
+    // the user with a sidebar/menu button instead of the strategy settings.
+    // Ask Lovelace directly for edit mode; the strategy editor is then opened
+    // by Home Assistant for this dashboard.
     const root = document.querySelector("home-assistant");
     const main = root?.shadowRoot?.querySelector("home-assistant-main");
     const panel =
@@ -92,91 +83,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
       panel?.shadowRoot?.querySelector("hui-root") ||
       document.querySelector("hui-root");
 
-    // Home Assistant's dashboard strategy editor is exposed through the
-    // dashboard edit/config flow. Trigger that flow instead of calling
-    // private edit-mode methods directly.
-    for (const target of [huiRoot, panel, main, root, window]) {
-      if (!target?.dispatchEvent) continue;
+    const target = huiRoot || panel;
+    if (!target) return;
 
-      const event = new CustomEvent("hass-toggle-menu", {
+    target.dispatchEvent(
+      new CustomEvent("ll-edit-mode", {
         bubbles: true,
         composed: true,
-      });
-
-      // Keep searching; this event only helps when the sidebar/header is hidden.
-      target.dispatchEvent(event);
-    }
-
-    const editButtonSelectors = [
-      'ha-icon-button[data-tooltip*="dashboard" i]',
-      'ha-icon-button[title*="dashboard" i]',
-      'ha-icon-button[aria-label*="dashboard" i]',
-      'ha-icon-button[title*="bearbeiten" i]',
-      'ha-icon-button[aria-label*="bearbeiten" i]',
-    ];
-
-    const roots = [
-      huiRoot?.shadowRoot,
-      panel?.shadowRoot,
-      main?.shadowRoot,
-      root?.shadowRoot,
-      document,
-    ].filter(Boolean);
-
-    for (const searchRoot of roots) {
-      for (const selector of editButtonSelectors) {
-        const button = searchRoot.querySelector?.(selector);
-        if (button) {
-          button.click();
-          return;
-        }
-      }
-    }
-
-    // Fallback for current HA: open the dashboard overflow menu and choose
-    // the dashboard settings/config item.
-    const menu =
-      huiRoot?.shadowRoot?.querySelector("ha-button-menu") ||
-      panel?.shadowRoot?.querySelector("ha-button-menu");
-
-    if (menu) {
-      menu.open = true;
-      menu.click?.();
-
-      queueMicrotask(() => {
-        const menuItems = [
-          ...document.querySelectorAll(
-            "mwc-list-item, ha-md-menu-item, ha-list-item"
-          ),
-        ];
-
-        const settingsItem = menuItems.find((item) => {
-          const label = String(
-            item.innerText ||
-            item.textContent ||
-            item.getAttribute?.("aria-label") ||
-            ""
-          ).toLowerCase();
-
-          return (
-            label.includes("dashboard") &&
-            (
-              label.includes("einstellung") ||
-              label.includes("setting") ||
-              label.includes("konfigur") ||
-              label.includes("config")
-            )
-          );
-        });
-
-        settingsItem?.click();
-      });
-      return;
-    }
-
-    // Last fallback: ask Lovelace to enter edit mode via the event used by
-    // frontend components. This keeps the click useful across HA versions.
-    fireEvent(huiRoot || panel || root, "ll-edit-mode", { editMode: true });
+        detail: { editMode: true },
+      })
+    );
   }
 
   _state(entityId) {
