@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.218.0";
+const ATZE_VERSION = "0.219.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -9448,7 +9448,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .favorite-icon ha-icon {
           width: 23px;
           height: 23px;
-          transform: translate(-2px, -2px);
+          transform: translate(-2px, -1px);
         }
 
         .favorite-card.active .favorite-icon {
