@@ -116,8 +116,9 @@ class AtzeRoomNavHeader extends HTMLElement {
           padding: 0;
           border-radius: var(--ha-card-border-radius, 12px);
           overflow: hidden;
+          border: 1px solid var(--divider-color, rgba(160,160,160,0.45));
           background:
-            linear-gradient(90deg, rgba(0,0,0,0.58), rgba(0,0,0,0.10)),
+            linear-gradient(180deg, rgba(0,0,0,0.02) 45%, rgba(0,0,0,0.62) 100%),
             var(--atze-room-header-image) center / cover no-repeat;
         }
 
@@ -125,7 +126,12 @@ class AtzeRoomNavHeader extends HTMLElement {
           min-height: 150px;
           padding: 18px;
           box-sizing: border-box;
+          align-items: flex-end;
           color: white;
+        }
+
+        ha-card.has-background .area-name {
+          text-shadow: 0 1px 4px rgba(0,0,0,0.75);
         }
 
         .nav-row {
@@ -223,9 +229,11 @@ class AtzeRoomNavHeader extends HTMLElement {
           title="Zurück zu Zuhause"
           aria-label="Zurück zu Zuhause – ${areaName}"
         >
+          ${this._config.hide_home_icon ? "" : `
           <span class="home-icon">
             <ha-icon icon="${this._config.icon || "mdi:home"}"></ha-icon>
           </span>
+          `}
           <span class="area-name">${areaName}</span>
         </div>
       </ha-card>

@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.211.0";
+const ATZE_VERSION = "0.212.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6693,9 +6693,23 @@ function buildAreaView(
 
   const roomImageKey =
     defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_IMAGES);
+  const roomLightImageKey =
+    defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_LIGHT_IMAGES);
+  const isBadRoom = roomImageKey === "bad";
+  const roomLightEntities = entities
+    .filter((entity) => domainOf(entity.entity_id) === "light")
+    .map((entity) => entity.entity_id);
+  const roomLightsOn = roomLightEntities.some(
+    (entityId) => hass.states?.[entityId]?.state === "on"
+  );
   const roomHeaderImage =
-    roomImageKey === "bad"
-      ? DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+    isBadRoom
+      ? (
+          roomLightsOn
+            ? DEFAULT_HOME_ROOM_LIGHT_IMAGES[roomLightImageKey] ||
+              DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+            : DEFAULT_HOME_ROOM_IMAGES[roomImageKey]
+        )
       : undefined;
 
   const roomHeaderCard =
@@ -6706,6 +6720,7 @@ function buildAreaView(
           icon: "mdi:home",
           area_name: areaName,
           navigation_path: roomHomePath,
+          hide_home_icon: isBadRoom,
           ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
         };
 
