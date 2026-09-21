@@ -1831,12 +1831,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 />
               </label>
               ${this._toggleHtml(
-                "force_kiosk",
-                "Header ausblenden",
-                "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
-                false
-              )}
-              ${this._toggleHtml(
                 "clock_kiosk_toggle",
                 "Kiosk über Uhrzeit umschalten",
                 "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
