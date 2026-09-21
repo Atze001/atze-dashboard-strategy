@@ -1430,6 +1430,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           font-size: 14px;
           font-weight: 500;
         }
+        .editor-settings-divider {
+          height: 1px;
+          margin: 2px 12px;
+          background: var(--divider-color, rgba(127,127,127,.24));
+        }
+
         .panel {
           background: var(
             --ha-card-background,
@@ -1971,265 +1977,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         <details
           class="panel editor-section"
-          data-editor-section="rooms"
-          ${this._openEditorSections.has("rooms") ? "open" : ""}
-        >
-          <summary>
-            <span class="editor-section-summary-main">
-              <ha-icon icon="mdi:floor-plan"></ha-icon>
-              <span class="editor-section-summary-title">Räume</span>
-            </span>
-            <ha-icon
-              class="editor-section-chevron"
-              icon="mdi:chevron-right"
-            ></ha-icon>
-          </summary>
-
-          <div class="editor-section-body">
-            <div class="editor-section-help">
-              Wähle aus, welche Bereiche angezeigt werden.
-              Ziehe Räume am Griff nach oben oder unten, um ihre
-              Reihenfolge zu ändern. Bereiche mit
-              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
-              immer ausgeblendet.
-            </div>
-
-            <div class="toolbar">
-              <button id="select-all" type="button">Alle</button>
-              <button id="select-none" type="button">Keine</button>
-              <button id="reset-order" type="button">
-                Reihenfolge zurücksetzen
-              </button>
-            </div>
-
-            <div class="rows">
-              ${this._loading
-                ? '<div class="loading">Bereiche werden geladen …</div>'
-                : (
-                    areaRows ||
-                    '<div class="loading">Keine Bereiche gefunden.</div>'
-                  )}
-            </div>
-          </div>
-        </details>
-
-        <details
-          class="panel editor-section"
-          data-editor-section="custom-pages"
-          ${this._openEditorSections.has("custom-pages") ? "open" : ""}
-        >
-          <summary>
-            <span class="editor-section-summary-main">
-              <ha-icon icon="mdi:card-multiple-outline"></ha-icon>
-              <span class="editor-section-summary-title">Eigene Seiten</span>
-            </span>
-            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
-          </summary>
-
-          <div class="editor-section-body">
-            <div class="editor-section-help">
-              Lege zusätzliche Dashboard-Seiten an oder kopiere die YAML einer
-              vorhandenen Ansicht hinein. Verwende den Inhalt einer einzelnen
-              Ansicht mit title, path und cards oder sections – ohne den äußeren
-              Schlüssel views. Eigene Seiten erscheinen in der Navigation.
-            </div>
-            <div class="toolbar">
-              <button id="add-custom-page" type="button">Leere Seite</button>
-            </div>
-            <div class="custom-pages-list">
-              ${customPagesHtml || '<div class="loading">Noch keine eigene Seite angelegt.</div>'}
-            </div>
-          </div>
-        </details>
-
-        <details
-          class="panel editor-section"
-          data-editor-section="entities"
-          ${this._openEditorSections.has("entities") ? "open" : ""}
-        >
-          <summary>
-            <span class="editor-section-summary-main">
-              <ha-icon icon="mdi:format-list-checks"></ha-icon>
-              <span class="editor-section-summary-title">
-                Entitäten pro Raum
-              </span>
-            </span>
-            <ha-icon
-              class="editor-section-chevron"
-              icon="mdi:chevron-right"
-            ></ha-icon>
-          </summary>
-
-          <div class="editor-section-body">
-            <div class="editor-section-help">
-              Auto zeigt nur typische Bedienelemente und sinnvolle
-              Sicherheits-Sensoren. Sensorwerte, Diagnose-Entities,
-              Regler und Konfiguration bleiben standardmäßig in
-              Badges, Popups oder Wartung. Mit Anzeigen oder
-              Ausblenden kannst du jede Entity gezielt überschreiben.
-            </div>
-
-            <div class="rows">
-              ${this._toggleHtml(
-                "strict_room_entity_auto",
-                "Strenge automatische Auswahl",
-                "Empfohlen: technische Sensoren werden nicht als eigene Raumkarten angezeigt.",
-                true
-              )}
-              ${this._toggleHtml(
-                "hide_unavailable",
-                "Nicht verfügbare Entitäten ausblenden",
-                "Deaktivierte, entfernte oder nicht verfügbare Entitäten werden nicht als Raumkarten angezeigt.",
-                false
-              )}
-            </div>
-
-            <div class="entity-filter-wrap">
-              <ha-icon icon="mdi:magnify"></ha-icon>
-              <input
-                class="entity-filter-input"
-                type="search"
-                inputmode="search"
-                autocomplete="off"
-                placeholder="Entität suchen …"
-                aria-label="Entitäten pro Raum durchsuchen"
-                value="${this._escape(this._entityFilter)}"
-              />
-            </div>
-
-            <div class="entity-filter-empty" hidden>
-              Keine passende Entität gefunden.
-            </div>
-
-            <div class="entity-area-list">
-              ${this._loading
-                ? '<div class="loading">Entities werden geladen …</div>'
-                : (
-                    entityAreaPanels ||
-                    '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
-                  )}
-            </div>
-          </div>
-        </details>
-
-        <details
-          class="panel editor-section"
-          data-editor-section="favorites"
-          ${this._openEditorSections.has("favorites") ? "open" : ""}
-        >
-          <summary>
-            <span class="editor-section-summary-main">
-              <ha-icon icon="mdi:star-outline"></ha-icon>
-              <span class="editor-section-summary-title">
-                Favoriten
-              </span>
-            </span>
-            <ha-icon
-              class="editor-section-chevron"
-              icon="mdi:chevron-right"
-            ></ha-icon>
-          </summary>
-
-          <div class="editor-section-body">
-            <div class="editor-section-help">
-              Wähle die Entitäten aus, die auf der Startseite zwischen
-              den sechs Statuskacheln und den Raum-Bildern erscheinen sollen.
-              Bedienelemente lassen sich dort direkt schalten; Sensoren und
-              weitere Entitäten öffnen ihre Detailansicht.
-            </div>
-
-            <div class="favorite-filter-wrap">
-              <ha-icon icon="mdi:magnify"></ha-icon>
-              <input
-                class="favorite-filter-input"
-                type="search"
-                inputmode="search"
-                autocomplete="off"
-                placeholder="Entität suchen …"
-                aria-label="Favoriten-Entitäten durchsuchen"
-                value="${this._escape(this._favoriteFilter)}"
-              />
-            </div>
-
-            <div class="favorite-filter-empty" hidden>
-              Keine passende Entität gefunden.
-            </div>
-
-            <div class="entity-area-list">
-              ${this._loading
-                ? '<div class="loading">Entities werden geladen …</div>'
-                : (
-                    favoriteAreaPanels ||
-                    '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
-                  )}
-            </div>
-          </div>
-        </details>
-
-        <details
-          class="panel editor-section"
-          data-editor-section="people"
-          ${this._openEditorSections.has("people") ? "open" : ""}
-        >
-          <summary>
-            <span class="editor-section-summary-main">
-              <ha-icon icon="mdi:account-group-outline"></ha-icon>
-              <span class="editor-section-summary-title">
-                Personen / Anwesenheit
-              </span>
-            </span>
-            <ha-icon
-              class="editor-section-chevron"
-              icon="mdi:chevron-right"
-            ></ha-icon>
-          </summary>
-
-          <div class="editor-section-body">
-            <div class="editor-section-help">
-              Bis zu drei Personen werden unter dem großen Profil auf
-              der Startseite angezeigt. Zuhause erscheint das normale
-              Profilbild, bei Abwesenheit wird es rot dargestellt.
-            </div>
-            <div class="rows">
-              ${this._personSelectHtml(0)}
-              ${this._personSelectHtml(1)}
-              ${this._personSelectHtml(2)}
-            </div>
-          </div>
-        </details>
-
-        <details
-          class="panel editor-section"
-          data-editor-section="home-status"
-          ${this._openEditorSections.has("home-status") ? "open" : ""}
-        >
-          <summary>
-            <span class="editor-section-summary-main">
-              <ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon>
-              <span class="editor-section-summary-title">
-                Startseite / Status
-              </span>
-            </span>
-            <ha-icon
-              class="editor-section-chevron"
-              icon="mdi:chevron-right"
-            ></ha-icon>
-          </summary>
-
-          <div class="editor-section-body">
-            <div class="editor-section-help">
-              Lege fest, welcher Leistungssensor für die Strom-Kachel
-              verwendet wird. Ist der Sensor nicht verfügbar, wird die
-              Kachel automatisch ausgeblendet.
-            </div>
-            <div class="rows">
-              ${this._powerSensorSelectHtml()}
-            </div>
-          </div>
-        </details>
-
-        <details
-          class="panel editor-section"
           data-editor-section="views"
           ${this._openEditorSections.has("views") ? "open" : ""}
         >
@@ -2342,6 +2089,267 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "Scrollen bleibt möglich.",
                 true
               )}
+            </div>
+          </div>
+        </details>
+
+        <div class="editor-settings-divider" aria-hidden="true"></div>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="people"
+          ${this._openEditorSections.has("people") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:account-group-outline"></ha-icon>
+              <span class="editor-section-summary-title">
+                Personen / Anwesenheit
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Bis zu drei Personen werden unter dem großen Profil auf
+              der Startseite angezeigt. Zuhause erscheint das normale
+              Profilbild, bei Abwesenheit wird es rot dargestellt.
+            </div>
+            <div class="rows">
+              ${this._personSelectHtml(0)}
+              ${this._personSelectHtml(1)}
+              ${this._personSelectHtml(2)}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="home-status"
+          ${this._openEditorSections.has("home-status") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:home-lightning-bolt-outline"></ha-icon>
+              <span class="editor-section-summary-title">
+                Startseite / Status
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Lege fest, welcher Leistungssensor für die Strom-Kachel
+              verwendet wird. Ist der Sensor nicht verfügbar, wird die
+              Kachel automatisch ausgeblendet.
+            </div>
+            <div class="rows">
+              ${this._powerSensorSelectHtml()}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="favorites"
+          ${this._openEditorSections.has("favorites") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:star-outline"></ha-icon>
+              <span class="editor-section-summary-title">
+                Favoriten
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Wähle die Entitäten aus, die auf der Startseite zwischen
+              den sechs Statuskacheln und den Raum-Bildern erscheinen sollen.
+              Bedienelemente lassen sich dort direkt schalten; Sensoren und
+              weitere Entitäten öffnen ihre Detailansicht.
+            </div>
+
+            <div class="favorite-filter-wrap">
+              <ha-icon icon="mdi:magnify"></ha-icon>
+              <input
+                class="favorite-filter-input"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="Entität suchen …"
+                aria-label="Favoriten-Entitäten durchsuchen"
+                value="${this._escape(this._favoriteFilter)}"
+              />
+            </div>
+
+            <div class="favorite-filter-empty" hidden>
+              Keine passende Entität gefunden.
+            </div>
+
+            <div class="entity-area-list">
+              ${this._loading
+                ? '<div class="loading">Entities werden geladen …</div>'
+                : (
+                    favoriteAreaPanels ||
+                    '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
+                  )}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="custom-pages"
+          ${this._openEditorSections.has("custom-pages") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:card-multiple-outline"></ha-icon>
+              <span class="editor-section-summary-title">Eigene Seiten</span>
+            </span>
+            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Lege zusätzliche Dashboard-Seiten an oder kopiere die YAML einer
+              vorhandenen Ansicht hinein. Verwende den Inhalt einer einzelnen
+              Ansicht mit title, path und cards oder sections – ohne den äußeren
+              Schlüssel views. Eigene Seiten erscheinen in der Navigation.
+            </div>
+            <div class="toolbar">
+              <button id="add-custom-page" type="button">Leere Seite</button>
+            </div>
+            <div class="custom-pages-list">
+              ${customPagesHtml || '<div class="loading">Noch keine eigene Seite angelegt.</div>'}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="rooms"
+          ${this._openEditorSections.has("rooms") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:floor-plan"></ha-icon>
+              <span class="editor-section-summary-title">Räume</span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Wähle aus, welche Bereiche angezeigt werden.
+              Ziehe Räume am Griff nach oben oder unten, um ihre
+              Reihenfolge zu ändern. Bereiche mit
+              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
+              immer ausgeblendet.
+            </div>
+
+            <div class="toolbar">
+              <button id="select-all" type="button">Alle</button>
+              <button id="select-none" type="button">Keine</button>
+              <button id="reset-order" type="button">
+                Reihenfolge zurücksetzen
+              </button>
+            </div>
+
+            <div class="rows">
+              ${this._loading
+                ? '<div class="loading">Bereiche werden geladen …</div>'
+                : (
+                    areaRows ||
+                    '<div class="loading">Keine Bereiche gefunden.</div>'
+                  )}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="entities"
+          ${this._openEditorSections.has("entities") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:format-list-checks"></ha-icon>
+              <span class="editor-section-summary-title">
+                Entitäten pro Raum
+              </span>
+            </span>
+            <ha-icon
+              class="editor-section-chevron"
+              icon="mdi:chevron-right"
+            ></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Auto zeigt nur typische Bedienelemente und sinnvolle
+              Sicherheits-Sensoren. Sensorwerte, Diagnose-Entities,
+              Regler und Konfiguration bleiben standardmäßig in
+              Badges, Popups oder Wartung. Mit Anzeigen oder
+              Ausblenden kannst du jede Entity gezielt überschreiben.
+            </div>
+
+            <div class="rows">
+              ${this._toggleHtml(
+                "strict_room_entity_auto",
+                "Strenge automatische Auswahl",
+                "Empfohlen: technische Sensoren werden nicht als eigene Raumkarten angezeigt.",
+                true
+              )}
+              ${this._toggleHtml(
+                "hide_unavailable",
+                "Nicht verfügbare Entitäten ausblenden",
+                "Deaktivierte, entfernte oder nicht verfügbare Entitäten werden nicht als Raumkarten angezeigt.",
+                false
+              )}
+            </div>
+
+            <div class="entity-filter-wrap">
+              <ha-icon icon="mdi:magnify"></ha-icon>
+              <input
+                class="entity-filter-input"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="Entität suchen …"
+                aria-label="Entitäten pro Raum durchsuchen"
+                value="${this._escape(this._entityFilter)}"
+              />
+            </div>
+
+            <div class="entity-filter-empty" hidden>
+              Keine passende Entität gefunden.
+            </div>
+
+            <div class="entity-area-list">
+              ${this._loading
+                ? '<div class="loading">Entities werden geladen …</div>'
+                : (
+                    entityAreaPanels ||
+                    '<div class="loading">Keine ausgewählten Räume gefunden.</div>'
+                  )}
             </div>
           </div>
         </details>
