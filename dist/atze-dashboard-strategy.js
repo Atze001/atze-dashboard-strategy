@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.200.0";
+const ATZE_VERSION = "0.201.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -7056,6 +7056,7 @@ class AtzeDashboardStrategy extends HTMLElement {
   }
 
   static async generate(config, hass) {
+    applyAtzeKioskQueryFallback(config);
     applyAtzeSidebarAccess(config);
 
     hideAtzeDashboardScrollbars(
