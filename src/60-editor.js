@@ -1837,6 +1837,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 false
               )}
               ${this._toggleHtml(
+                "clock_kiosk_toggle",
+                "Kiosk-Modus",
+                "Blendet den Home-Assistant-Header ein oder aus. Die Uhr öffnet weiterhin die Dashboard Settings.",
+                true
+              )}
+              ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
                 "Scrollen bleibt möglich.",
