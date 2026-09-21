@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.219.0";
+const ATZE_VERSION = "0.220.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -12944,6 +12944,29 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       });
   }
 
+  _captureOpenEntityAreas() {
+    if (!this.shadowRoot) return;
+
+    for (
+      const details of
+        this.shadowRoot.querySelectorAll(
+          ".entity-area[data-entity-area], .entity-area[data-favorite-area]"
+        )
+    ) {
+      const areaId =
+        details.dataset.entityArea ||
+        details.dataset.favoriteArea;
+
+      if (!areaId) continue;
+
+      if (details.open) {
+        this._openEntityAreaIds.add(areaId);
+      } else {
+        this._openEntityAreaIds.delete(areaId);
+      }
+    }
+  }
+
   _beginEntityVisibilityInteraction() {
     this._entityVisibilityActive = true;
   }
@@ -12966,6 +12989,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._entityVisibilityActive = false;
 
       if (this._pendingHassRender) {
+        // Preserve the current details state before the deferred HA-state
+        // refresh rebuilds the editor DOM. This is especially important when
+        // the favorites search loses focus because an area is opened.
+        this._captureOpenEntityAreas();
         this._pendingHassRender = false;
         this._render();
       }
