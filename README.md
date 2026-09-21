@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.195.0**
+Version **0.196.0**
 
 Enthalten sind unter anderem:
 

@@ -1839,7 +1839,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._toggleHtml(
                 "clock_kiosk_toggle",
                 "Kiosk-Modus",
-                "Aktiviert oder deaktiviert Kiosk-Mode. Aus setzt ?disable_km und stellt den Home-Assistant-Header wieder her.",
+                "Aktiviert oder deaktiviert Kiosk-Mode. Beim Deaktivieren wird der Home-Assistant-Header wieder freigegeben.",
                 true
               )}
               ${this._toggleHtml(
