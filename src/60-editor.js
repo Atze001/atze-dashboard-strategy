@@ -1837,12 +1837,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 false
               )}
               ${this._toggleHtml(
-                "clock_kiosk_toggle",
-                "Kiosk-Modus",
-                "Aktiviert oder deaktiviert Kiosk-Mode. Beim Deaktivieren wird der Home-Assistant-Header wieder freigegeben.",
-                true
-              )}
-              ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
                 "Scrollen bleibt möglich.",
