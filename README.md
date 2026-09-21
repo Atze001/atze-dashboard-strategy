@@ -59,16 +59,60 @@ Für die vollständige Funktion der Strategy werden bzw. empfehlen sich folgende
 Home-Assistant-Erweiterungen. Am einfachsten werden sie über **HACS**
 installiert.
 
-| Erweiterung | Status | Verwendung | Installation / Repository |
-| --- | --- | --- | --- |
-| **HACS** | empfohlen | Installation und Updates der Strategy sowie der meisten Zusatzkarten | [HACS](https://www.hacs.xyz/) |
-| **Bubble Card** | **erforderlich** | Raumkarten, Climate-Karten und Bubble-Popups der Strategy | [GitHub – Clooos/Bubble-Card](https://github.com/Clooos/Bubble-Card) · in HACS nach **Bubble Card** suchen |
-| **Bubble Card Tools** | empfohlen | Backend für den Bubble-Card Module Store und die Modulverwaltung | [GitHub – Clooos/Bubble-Card-Tools](https://github.com/Clooos/Bubble-Card-Tools) · in HACS nach **Bubble Card Tools** suchen |
-| **card-mod** | empfohlen / optional | zusätzliche CSS-Anpassungen und Styling von Home-Assistant-Karten | [GitHub – thomasloven/lovelace-card-mod](https://github.com/thomasloven/lovelace-card-mod) · in HACS nach **card-mod** suchen |
-| **Kiosk Mode** | optional | Ausblenden von Header und Sidebar bei Wand-/Kiosk-Displays | [GitHub – 00-10-01-11/ha-kiosk-mode](https://github.com/00-10-01-11/ha-kiosk-mode) · in HACS nach **Kiosk Mode** suchen |
-| **Scheduler Card** | optional | wird für das optionale Zeitpläne-Bubble-Popup benötigt | [GitHub – nielsfaber/scheduler-card](https://github.com/nielsfaber/scheduler-card) · in HACS nach **Scheduler Card** suchen |
-| **Scheduler Component** | optional | Backend/Integration für die Scheduler Card | [GitHub – nielsfaber/scheduler-component](https://github.com/nielsfaber/scheduler-component) · in HACS nach **Scheduler Component** suchen |
-| **Alarmo** | optional | liefert den Alarmstatus für die Alarmo-Kachel auf der Startseite | [GitHub – nielsfaber/alarmo](https://github.com/nielsfaber/alarmo) · in HACS nach **Alarmo** suchen |
+### HACS — empfohlen
+
+Installation und Updates der Strategy sowie der meisten Zusatzkarten.
+
+[HACS](https://www.hacs.xyz/)
+
+### Bubble Card — erforderlich
+
+Wird für Raumkarten, Climate-Karten und Bubble-Popups der Strategy benötigt.
+
+[GitHub – Clooos/Bubble-Card](https://github.com/Clooos/Bubble-Card)  
+In HACS nach **Bubble Card** suchen.
+
+### Bubble Card Tools — empfohlen
+
+Backend für den Bubble-Card Module Store und die Modulverwaltung.
+
+[GitHub – Clooos/Bubble-Card-Tools](https://github.com/Clooos/Bubble-Card-Tools)  
+In HACS nach **Bubble Card Tools** suchen.
+
+### card-mod — empfohlen / optional
+
+Für zusätzliche CSS-Anpassungen und das Styling von Home-Assistant-Karten.
+
+[GitHub – thomasloven/lovelace-card-mod](https://github.com/thomasloven/lovelace-card-mod)  
+In HACS nach **card-mod** suchen.
+
+### Kiosk Mode — optional
+
+Zum Ausblenden von Header und Sidebar bei Wand- und Kiosk-Displays.
+
+[GitHub – 00-10-01-11/ha-kiosk-mode](https://github.com/00-10-01-11/ha-kiosk-mode)  
+In HACS nach **Kiosk Mode** suchen.
+
+### Scheduler Card — optional
+
+Wird für das optionale Zeitpläne-Bubble-Popup benötigt.
+
+[GitHub – nielsfaber/scheduler-card](https://github.com/nielsfaber/scheduler-card)  
+In HACS nach **Scheduler Card** suchen.
+
+### Scheduler Component — optional
+
+Backend/Integration für die Scheduler Card.
+
+[GitHub – nielsfaber/scheduler-component](https://github.com/nielsfaber/scheduler-component)  
+In HACS nach **Scheduler Component** suchen.
+
+### Alarmo — optional
+
+Liefert den Alarmstatus für die Alarmo-Kachel auf der Startseite.
+
+[GitHub – nielsfaber/alarmo](https://github.com/nielsfaber/alarmo)  
+In HACS nach **Alarmo** suchen.
 
 ### Was davon ist wirklich nötig?
 
