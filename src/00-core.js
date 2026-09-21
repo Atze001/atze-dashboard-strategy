@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.204.0";
+const ATZE_VERSION = "0.205.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -7015,13 +7015,7 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const clockKioskAccess =
-    config.clock_kiosk_toggle !== false;
-
-  const enabled =
-    config.force_kiosk === true &&
-    !clockKioskAccess &&
-    !params.has("disable_km");
+  const enabled = false;
 
   const apply = () => {
     try {
