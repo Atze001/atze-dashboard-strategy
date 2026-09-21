@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.203.0";
+const ATZE_VERSION = "0.204.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -14297,12 +14297,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              ${this._toggleHtml(
-                "force_kiosk",
-                "Header ausblenden",
-                "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
-                false
-              )}
               ${this._toggleHtml(
                 "clock_kiosk_toggle",
                 "Kiosk über Uhrzeit umschalten",
