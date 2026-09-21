@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.201.0";
+const ATZE_VERSION = "0.202.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6803,112 +6803,34 @@ function hideAtzeDashboardScrollbars(enabled = true) {
 function applyAtzeKioskQueryFallback(config) {
   if (config.kiosk_query_fallback === false) return;
 
-  const kioskConfig =
-    config?.kiosk_mode &&
-    typeof config.kiosk_mode === "object"
-      ? config.kiosk_mode
-      : {};
+  const params = new URLSearchParams(window.location.search || "");
+  if (params.has("disable_km")) return;
 
-  const rawQuery = String(
-    window.location.search || ""
-  );
+  // This dashboard installation has already confirmed ?kiosk and
+  // ?disable_km as the reliable Kiosk-Mode switches. Drive that exact
+  // mechanism from the Header anzeigen setting instead of hide_header.
+  const shouldKiosk = config.force_kiosk === true;
+  const hasKiosk = params.has("kiosk");
 
-  let parts = rawQuery.startsWith("?")
-    ? rawQuery.slice(1).split("&").filter(Boolean)
-    : rawQuery
-      ? rawQuery.split("&").filter(Boolean)
-      : [];
+  if (shouldKiosk === hasKiosk) return;
 
-  const keyOf = (part) =>
-    decodeURIComponent(
-      String(part).split("=")[0] || ""
-    );
-
-  const hasKey = (key) =>
-    parts.some((part) => keyOf(part) === key);
-
-  const removeKey = (key) => {
-    const before = parts.length;
-
-    parts = parts.filter(
-      (part) => keyOf(part) !== key
-    );
-
-    return parts.length !== before;
-  };
-
-  if (hasKey("disable_km")) return;
-
-  const desired = [];
-
-  // On this dashboard installation the full ?kiosk switch is the
-  // confirmed working kiosk-mode entry point. Use that same switch
-  // whenever the strategy requests the header to be hidden.
-  if (kioskConfig.kiosk === true) {
-    desired.push("kiosk");
+  if (shouldKiosk) {
+    params.set("kiosk", "");
   } else {
-    if (
-      config.force_kiosk === true ||
-      kioskConfig.hide_header === true
-    ) {
-      desired.push("hide_header");
-    }
-
-    if (kioskConfig.hide_sidebar === true) {
-      desired.push("hide_sidebar");
-    }
+    params.delete("kiosk");
   }
 
-  const markerKey = "atze_km_auto";
-  const autoManaged = hasKey(markerKey);
+  // Remove query flags from the previous fallback implementation so they
+  // cannot keep Kiosk-Mode in a stale state.
+  params.delete("hide_header");
+  params.delete("atze_km_auto");
 
-  const managedKeys = [
-    "kiosk",
-    "hide_header",
-    "hide_sidebar",
-  ];
-
-  let changed = false;
-
-  if (desired.length) {
-    if (autoManaged) {
-      for (const key of managedKeys) {
-        if (
-          !desired.includes(key) &&
-          removeKey(key)
-        ) {
-          changed = true;
-        }
-      }
-    }
-
-    for (const key of desired) {
-      if (!hasKey(key)) {
-        parts.push(key);
-        changed = true;
-      }
-    }
-
-    if (!autoManaged) {
-      parts.push(`${markerKey}=1`);
-      changed = true;
-    }
-  } else if (autoManaged) {
-    for (const key of managedKeys) {
-      if (removeKey(key)) changed = true;
-    }
-
-    if (removeKey(markerKey)) changed = true;
-  }
-
-  if (!changed) return;
-
-  const query = parts.length
-    ? `?${parts.join("&")}`
-    : "";
-
+  const query = params.toString()
+    .replace(/(?:^|&)kiosk=(?=&|$)/g, (match) =>
+      match.startsWith("&") ? "&kiosk" : "kiosk"
+    );
   const target =
-    `${window.location.pathname}${query}${window.location.hash || ""}`;
+    `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
 
   window.location.replace(target);
 }
