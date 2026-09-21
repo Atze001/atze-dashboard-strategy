@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.194.0";
+const ATZE_VERSION = "0.195.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -7013,13 +7013,35 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const clockKioskAccess =
+  const kioskEnabled =
     config.clock_kiosk_toggle !== false;
+
+  // kiosk-mode supports ?disable_km as the explicit per-session override.
+  // Keep the URL in sync with the Dashboard Settings checkbox so disabling
+  // Kiosk-Modus actually restores the Home Assistant header.
+  const hasDisableKm = params.has("disable_km");
+
+  if (!kioskEnabled && !hasDisableKm) {
+    params.set("disable_km", "");
+    window.location.replace(
+      `${window.location.pathname}?${params.toString()}${window.location.hash || ""}`
+    );
+    return;
+  }
+
+  if (kioskEnabled && hasDisableKm) {
+    params.delete("disable_km");
+    const query = params.toString();
+    window.location.replace(
+      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`
+    );
+    return;
+  }
 
   const enabled =
     config.force_kiosk === true &&
-    !clockKioskAccess &&
-    !params.has("disable_km");
+    kioskEnabled &&
+    !hasDisableKm;
 
   const apply = () => {
     try {
