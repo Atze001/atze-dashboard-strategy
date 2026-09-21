@@ -69,9 +69,70 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
-  _openDashboardSettings() {
-    // Disabled until the Home Assistant strategy-settings dialog can be
-    // invoked without touching kiosk/sidebar state.
+  _toggleKioskMode() {
+    if (this._config?.clock_kiosk_toggle === false) {
+      return;
+    }
+
+    const rawQuery = String(
+      window.location.search || ""
+    );
+
+    let parts = rawQuery.startsWith("?")
+      ? rawQuery.slice(1).split("&").filter(Boolean)
+      : rawQuery
+        ? rawQuery.split("&").filter(Boolean)
+        : [];
+
+    const keyOf = (part) =>
+      decodeURIComponent(
+        String(part).split("=")[0] || ""
+      );
+
+    const hasKey = (key) =>
+      parts.some((part) => keyOf(part) === key);
+
+    const removeKey = (key) => {
+      parts = parts.filter(
+        (part) => keyOf(part) !== key
+      );
+    };
+
+    const active =
+      !hasKey("disable_km") &&
+      (
+        hasKey("hide_header") ||
+        hasKey("kiosk") ||
+        this._config?.force_kiosk === true
+      );
+
+    for (const key of [
+      "kiosk",
+      "hide_header",
+      "hide_sidebar",
+      "disable_km",
+      "atze_km_auto",
+    ]) {
+      removeKey(key);
+    }
+
+    if (active) {
+      parts.push("disable_km");
+    } else {
+      parts.push("hide_header");
+
+      if (this._config?.force_kiosk === true) {
+        parts.push("atze_km_auto=1");
+      }
+    }
+
+    const query = parts.length
+      ? `?${parts.join("&")}`
+      : "";
+
+    window.location.replace(
+      `${window.location.pathname}${query}${window.location.hash || ""}`
+    );
   }
 
   _state(entityId) {
@@ -2630,13 +2691,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
             <div class="clock">
               <div
                 class="time ${
-                  true
+                  this._config.clock_kiosk_toggle !== false
                     ? "kiosk-toggle"
                     : ""
                 }"
                 ${
-                  true
-                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Dashboard Settings öffnen"'
+                  this._config.clock_kiosk_toggle !== false
+                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Kiosk-Modus umschalten"'
                     : ""
                 }
               >${time}</div>
@@ -2894,7 +2955,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     kioskClock?.addEventListener(
       "click",
-      () => this._openDashboardSettings()
+      () => this._toggleKioskMode()
     );
 
     kioskClock?.addEventListener(
@@ -2905,7 +2966,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.key === " "
         ) {
           event.preventDefault();
-          this._openDashboardSettings();
+          this._toggleKioskMode();
         }
       }
     );

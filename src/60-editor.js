@@ -1830,14 +1830,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              <label class="row">
-                <span class="copy">
-                  <span class="name">Header anzeigen</span>
-                  <span class="desc">Zeigt den Home-Assistant-Header an. Deaktiviert blendet ihn über Kiosk-Mode aus.</span>
-                </span>
-                <input class="setting-toggle" type="checkbox" data-key="force_kiosk" data-default="true"
-                  ${this._config?.force_kiosk === true ? "" : "checked"} />
-              </label>
+              ${this._toggleHtml(
+                "force_kiosk",
+                "Header ausblenden",
+                "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
+                false
+              )}
+              ${this._toggleHtml(
+                "clock_kiosk_toggle",
+                "Kiosk über Uhrzeit umschalten",
+                "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
+                true
+              )}
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
@@ -2439,12 +2443,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           return;
         }
 
-        if (target.dataset.key === "force_kiosk") {
-          // The UI is phrased positively (Header anzeigen), while the stored
-          // strategy option remains force_kiosk for backward compatibility.
-          this._setBoolean("force_kiosk", !target.checked, false);
-          return;
-        }
 
         this._setBoolean(
           target.dataset.key,

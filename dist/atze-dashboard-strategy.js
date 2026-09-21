@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.202.0";
+const ATZE_VERSION = "0.203.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6202,6 +6202,8 @@ function buildHomeOverviewView(
     lock_entity: lockEntity,
     night_entity: config.home_night_entity || null,
     force_kiosk: config.force_kiosk === true,
+    clock_kiosk_toggle:
+      config.clock_kiosk_toggle !== false,
   };
 
   return {
@@ -6803,34 +6805,112 @@ function hideAtzeDashboardScrollbars(enabled = true) {
 function applyAtzeKioskQueryFallback(config) {
   if (config.kiosk_query_fallback === false) return;
 
-  const params = new URLSearchParams(window.location.search || "");
-  if (params.has("disable_km")) return;
+  const kioskConfig =
+    config?.kiosk_mode &&
+    typeof config.kiosk_mode === "object"
+      ? config.kiosk_mode
+      : {};
 
-  // This dashboard installation has already confirmed ?kiosk and
-  // ?disable_km as the reliable Kiosk-Mode switches. Drive that exact
-  // mechanism from the Header anzeigen setting instead of hide_header.
-  const shouldKiosk = config.force_kiosk === true;
-  const hasKiosk = params.has("kiosk");
+  const rawQuery = String(
+    window.location.search || ""
+  );
 
-  if (shouldKiosk === hasKiosk) return;
+  let parts = rawQuery.startsWith("?")
+    ? rawQuery.slice(1).split("&").filter(Boolean)
+    : rawQuery
+      ? rawQuery.split("&").filter(Boolean)
+      : [];
 
-  if (shouldKiosk) {
-    params.set("kiosk", "");
+  const keyOf = (part) =>
+    decodeURIComponent(
+      String(part).split("=")[0] || ""
+    );
+
+  const hasKey = (key) =>
+    parts.some((part) => keyOf(part) === key);
+
+  const removeKey = (key) => {
+    const before = parts.length;
+
+    parts = parts.filter(
+      (part) => keyOf(part) !== key
+    );
+
+    return parts.length !== before;
+  };
+
+  if (hasKey("disable_km")) return;
+
+  const desired = [];
+
+  // On this dashboard installation the full ?kiosk switch is the
+  // confirmed working kiosk-mode entry point. Use that same switch
+  // whenever the strategy requests the header to be hidden.
+  if (kioskConfig.kiosk === true) {
+    desired.push("kiosk");
   } else {
-    params.delete("kiosk");
+    if (
+      config.force_kiosk === true ||
+      kioskConfig.hide_header === true
+    ) {
+      desired.push("hide_header");
+    }
+
+    if (kioskConfig.hide_sidebar === true) {
+      desired.push("hide_sidebar");
+    }
   }
 
-  // Remove query flags from the previous fallback implementation so they
-  // cannot keep Kiosk-Mode in a stale state.
-  params.delete("hide_header");
-  params.delete("atze_km_auto");
+  const markerKey = "atze_km_auto";
+  const autoManaged = hasKey(markerKey);
 
-  const query = params.toString()
-    .replace(/(?:^|&)kiosk=(?=&|$)/g, (match) =>
-      match.startsWith("&") ? "&kiosk" : "kiosk"
-    );
+  const managedKeys = [
+    "kiosk",
+    "hide_header",
+    "hide_sidebar",
+  ];
+
+  let changed = false;
+
+  if (desired.length) {
+    if (autoManaged) {
+      for (const key of managedKeys) {
+        if (
+          !desired.includes(key) &&
+          removeKey(key)
+        ) {
+          changed = true;
+        }
+      }
+    }
+
+    for (const key of desired) {
+      if (!hasKey(key)) {
+        parts.push(key);
+        changed = true;
+      }
+    }
+
+    if (!autoManaged) {
+      parts.push(`${markerKey}=1`);
+      changed = true;
+    }
+  } else if (autoManaged) {
+    for (const key of managedKeys) {
+      if (removeKey(key)) changed = true;
+    }
+
+    if (removeKey(markerKey)) changed = true;
+  }
+
+  if (!changed) return;
+
+  const query = parts.length
+    ? `?${parts.join("&")}`
+    : "";
+
   const target =
-    `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`;
+    `${window.location.pathname}${query}${window.location.hash || ""}`;
 
   window.location.replace(target);
 }
@@ -6978,7 +7058,6 @@ class AtzeDashboardStrategy extends HTMLElement {
   }
 
   static async generate(config, hass) {
-    applyAtzeKioskQueryFallback(config);
     applyAtzeSidebarAccess(config);
 
     hideAtzeDashboardScrollbars(
@@ -7399,9 +7478,70 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
-  _openDashboardSettings() {
-    // Disabled until the Home Assistant strategy-settings dialog can be
-    // invoked without touching kiosk/sidebar state.
+  _toggleKioskMode() {
+    if (this._config?.clock_kiosk_toggle === false) {
+      return;
+    }
+
+    const rawQuery = String(
+      window.location.search || ""
+    );
+
+    let parts = rawQuery.startsWith("?")
+      ? rawQuery.slice(1).split("&").filter(Boolean)
+      : rawQuery
+        ? rawQuery.split("&").filter(Boolean)
+        : [];
+
+    const keyOf = (part) =>
+      decodeURIComponent(
+        String(part).split("=")[0] || ""
+      );
+
+    const hasKey = (key) =>
+      parts.some((part) => keyOf(part) === key);
+
+    const removeKey = (key) => {
+      parts = parts.filter(
+        (part) => keyOf(part) !== key
+      );
+    };
+
+    const active =
+      !hasKey("disable_km") &&
+      (
+        hasKey("hide_header") ||
+        hasKey("kiosk") ||
+        this._config?.force_kiosk === true
+      );
+
+    for (const key of [
+      "kiosk",
+      "hide_header",
+      "hide_sidebar",
+      "disable_km",
+      "atze_km_auto",
+    ]) {
+      removeKey(key);
+    }
+
+    if (active) {
+      parts.push("disable_km");
+    } else {
+      parts.push("hide_header");
+
+      if (this._config?.force_kiosk === true) {
+        parts.push("atze_km_auto=1");
+      }
+    }
+
+    const query = parts.length
+      ? `?${parts.join("&")}`
+      : "";
+
+    window.location.replace(
+      `${window.location.pathname}${query}${window.location.hash || ""}`
+    );
   }
 
   _state(entityId) {
@@ -9960,13 +10100,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
             <div class="clock">
               <div
                 class="time ${
-                  true
+                  this._config.clock_kiosk_toggle !== false
                     ? "kiosk-toggle"
                     : ""
                 }"
                 ${
-                  true
-                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Dashboard Settings öffnen"'
+                  this._config.clock_kiosk_toggle !== false
+                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Kiosk-Modus umschalten"'
                     : ""
                 }
               >${time}</div>
@@ -10224,7 +10364,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     kioskClock?.addEventListener(
       "click",
-      () => this._openDashboardSettings()
+      () => this._toggleKioskMode()
     );
 
     kioskClock?.addEventListener(
@@ -10235,7 +10375,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.key === " "
         ) {
           event.preventDefault();
-          this._openDashboardSettings();
+          this._toggleKioskMode();
         }
       }
     );
@@ -14157,14 +14297,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              <label class="row">
-                <span class="copy">
-                  <span class="name">Header anzeigen</span>
-                  <span class="desc">Zeigt den Home-Assistant-Header an. Deaktiviert blendet ihn über Kiosk-Mode aus.</span>
-                </span>
-                <input class="setting-toggle" type="checkbox" data-key="force_kiosk" data-default="true"
-                  ${this._config?.force_kiosk === true ? "" : "checked"} />
-              </label>
+              ${this._toggleHtml(
+                "force_kiosk",
+                "Header ausblenden",
+                "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
+                false
+              )}
+              ${this._toggleHtml(
+                "clock_kiosk_toggle",
+                "Kiosk über Uhrzeit umschalten",
+                "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
+                true
+              )}
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
@@ -14766,12 +14910,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           return;
         }
 
-        if (target.dataset.key === "force_kiosk") {
-          // The UI is phrased positively (Header anzeigen), while the stored
-          // strategy option remains force_kiosk for backward compatibility.
-          this._setBoolean("force_kiosk", !target.checked, false);
-          return;
-        }
 
         this._setBoolean(
           target.dataset.key,
