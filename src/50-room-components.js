@@ -162,12 +162,14 @@ class AtzeRoomNavHeader extends HTMLElement {
           top: 10px;
           left: 50%;
           transform: translateX(-50%);
+          width: calc(100% - 20px);
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
           justify-content: center;
+          align-content: flex-start;
           gap: 8px;
           z-index: 2;
-          white-space: nowrap;
         }
 
         ha-card.has-background {
