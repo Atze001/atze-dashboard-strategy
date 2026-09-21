@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.196.0";
+const ATZE_VERSION = "0.197.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -7013,26 +7013,13 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const kioskEnabled =
+  const clockKioskAccess =
     config.clock_kiosk_toggle !== false;
-  const hasDisableKm = params.has("disable_km");
-
-  // Only add the Kiosk-Mode escape override automatically. Never remove it
-  // during dashboard generation: removing it here can immediately force the
-  // user back into kiosk mode before the changed dashboard config is saved.
-  if (!kioskEnabled && !hasDisableKm) {
-    params.set("disable_km", "");
-    const query = params.toString();
-    window.location.replace(
-      `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash || ""}`
-    );
-    return;
-  }
 
   const enabled =
     config.force_kiosk === true &&
-    kioskEnabled &&
-    !hasDisableKm;
+    !clockKioskAccess &&
+    !params.has("disable_km");
 
   const apply = () => {
     try {
@@ -7490,29 +7477,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _openDashboardSettings() {
-    // Do not toggle Home Assistant's sidebar here. In kiosk mode that leaves
-    // the user with a sidebar/menu button instead of the strategy settings.
-    // Ask Lovelace directly for edit mode; the strategy editor is then opened
-    // by Home Assistant for this dashboard.
-    const root = document.querySelector("home-assistant");
-    const main = root?.shadowRoot?.querySelector("home-assistant-main");
-    const panel =
-      main?.shadowRoot?.querySelector("ha-panel-lovelace") ||
-      document.querySelector("ha-panel-lovelace");
-    const huiRoot =
-      panel?.shadowRoot?.querySelector("hui-root") ||
-      document.querySelector("hui-root");
-
-    const target = huiRoot || panel;
-    if (!target) return;
-
-    target.dispatchEvent(
-      new CustomEvent("ll-edit-mode", {
-        bubbles: true,
-        composed: true,
-        detail: { editMode: true },
-      })
-    );
+    // Disabled until the Home Assistant strategy-settings dialog can be
+    // invoked without touching kiosk/sidebar state.
   }
 
   _state(entityId) {
@@ -14273,12 +14239,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "Header ausblenden",
                 "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
                 false
-              )}
-              ${this._toggleHtml(
-                "clock_kiosk_toggle",
-                "Kiosk-Modus",
-                "Aktiviert oder deaktiviert Kiosk-Mode. Beim Deaktivieren wird der Home-Assistant-Header wieder freigegeben.",
-                true
               )}
               ${this._toggleHtml(
                 "hide_scrollbar",
