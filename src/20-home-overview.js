@@ -70,29 +70,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _openDashboardSettings() {
-    // Do not toggle Home Assistant's sidebar here. In kiosk mode that leaves
-    // the user with a sidebar/menu button instead of the strategy settings.
-    // Ask Lovelace directly for edit mode; the strategy editor is then opened
-    // by Home Assistant for this dashboard.
-    const root = document.querySelector("home-assistant");
-    const main = root?.shadowRoot?.querySelector("home-assistant-main");
-    const panel =
-      main?.shadowRoot?.querySelector("ha-panel-lovelace") ||
-      document.querySelector("ha-panel-lovelace");
-    const huiRoot =
-      panel?.shadowRoot?.querySelector("hui-root") ||
-      document.querySelector("hui-root");
-
-    const target = huiRoot || panel;
-    if (!target) return;
-
-    target.dispatchEvent(
-      new CustomEvent("ll-edit-mode", {
-        bubbles: true,
-        composed: true,
-        detail: { editMode: true },
-      })
-    );
+    // Disabled until the Home Assistant strategy-settings dialog can be
+    // invoked without touching kiosk/sidebar state.
   }
 
   _state(entityId) {
