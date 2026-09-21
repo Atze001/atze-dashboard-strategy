@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.189.0";
+const ATZE_VERSION = "0.190.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_LIGHT_HELPER_CATEGORY =
@@ -357,6 +357,355 @@ action:
 mode: restart
 `;
 
+const ATZE_DS_LIGHT_BLUEPRINT_PATH =
+  "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
+
+const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.190.0";
+
+const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw\`blueprint:
+  author: Atze
+  name: Atze DS - Lichtsteuerung
+  description: >
+    Version 0.190.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
+    Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
+  domain: automation
+
+  input:
+    target_light:
+      name: Auswahl Licht
+      description: Wähle ein oder mehrere Lichter aus.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: light
+
+    motion_sensor:
+      name: Auswahl Motion Sensor (Optional)
+      description: Wähle optional einen oder mehrere Motion-/Anwesenheitssensoren aus.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: binary_sensor
+              device_class:
+                - motion
+                - occupancy
+
+    target_switch:
+      name: Schalter (Optional)
+      description: Wähle optional einen oder mehrere Schalter aus.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: switch
+
+    light_sensor:
+      name: Helligkeitssensor (Optional)
+      description: Wähle optional einen Helligkeitssensor aus.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: illuminance
+
+    cover_sensor:
+      name: Rollladen (Optional)
+      description: Wähle optional einen Rollladen aus.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: cover
+              device_class: shutter
+
+    break_sensor:
+      name: Unterbrecher (Optional)
+      description: >
+        Optionaler Unterbrecher. Ist dieser ausgeschaltet, wird das Einschalten
+        durch Motion blockiert. Manuelles Einschalten und Ausschalten bleiben möglich.
+      default: []
+      selector:
+        entity: {}
+
+    light_regler:
+      name: Helligkeitsregler (Optional)
+      description: Wähle optional einen Input-Number-Helfer als Helligkeitsgrenze aus.
+      default: []
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+
+    nachlaufzeit:
+      name: Nachlaufzeit
+      description: Zeit nach Ende der Anwesenheit bis Licht und Schalter ausgeschaltet werden.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          step: 1
+          unit_of_measurement: s
+          mode: box
+
+    morgen_zeit:
+      name: Morgen Startzeit
+      default: "05:30:00"
+      selector:
+        time: {}
+
+    helligkeit_morgen:
+      name: Helligkeit Morgen
+      default: 80
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
+
+    farbe_morgen:
+      name: Farbtemperatur Morgen
+      default: 4500
+      selector:
+        number:
+          min: 2000
+          max: 6500
+          step: 100
+          unit_of_measurement: K
+          mode: slider
+
+    abend_zeit:
+      name: Abend Startzeit
+      default: "21:00:00"
+      selector:
+        time: {}
+
+    helligkeit_abend:
+      name: Helligkeit Abend
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
+
+    farbe_abend:
+      name: Farbtemperatur Abend
+      default: 3300
+      selector:
+        number:
+          min: 2000
+          max: 6500
+          step: 100
+          unit_of_measurement: K
+          mode: slider
+
+    nacht_zeit:
+      name: Nacht Startzeit
+      default: "23:00:00"
+      selector:
+        time: {}
+
+    helligkeit_nacht:
+      name: Helligkeit Nacht
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+          mode: slider
+
+    farbe_nacht:
+      name: Farbtemperatur Nacht
+      default: 2700
+      selector:
+        number:
+          min: 2000
+          max: 6500
+          step: 100
+          unit_of_measurement: K
+          mode: slider
+
+mode: parallel
+max: 10
+max_exceeded: silent
+
+trigger_variables:
+  motion_sensor_trigger: !input motion_sensor
+
+triggers:
+  - trigger: state
+    entity_id: !input target_light
+    from: "off"
+    to: "on"
+    id: Licht Eingeschaltet
+
+  - trigger: template
+    value_template: >-
+      {{
+        motion_sensor_trigger | count > 0
+        and expand(motion_sensor_trigger)
+          | selectattr('state', 'eq', 'on')
+          | list | count > 0
+      }}
+    id: Presence Erkannt
+
+  - trigger: template
+    value_template: >-
+      {{
+        motion_sensor_trigger | count > 0
+        and expand(motion_sensor_trigger)
+          | selectattr('state', 'eq', 'on')
+          | list | count == 0
+      }}
+    id: Presence Frei
+
+conditions: []
+
+variables:
+  motion_sensor: !input motion_sensor
+  target_light: !input target_light
+  target_switch: !input target_switch
+  cover_sensor: !input cover_sensor
+  break_sensor: !input break_sensor
+  light_sensor: !input light_sensor
+  light_regler: !input light_regler
+  nachlaufzeit_wert: !input nachlaufzeit
+  morgen_zeit_wert: !input morgen_zeit
+  helligkeit_morgen_wert: !input helligkeit_morgen
+  farbe_morgen_wert: !input farbe_morgen
+  abend_zeit_wert: !input abend_zeit
+  helligkeit_abend_wert: !input helligkeit_abend
+  farbe_abend_wert: !input farbe_abend
+  nacht_zeit_wert: !input nacht_zeit
+  helligkeit_nacht_wert: !input helligkeit_nacht
+  farbe_nacht_wert: !input farbe_nacht
+
+  morgen_start_sekunden: >-
+    {% set t = morgen_zeit_wert.split(':') %}
+    {{ (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) }}
+  abend_start_sekunden: >-
+    {% set t = abend_zeit_wert.split(':') %}
+    {{ (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) }}
+  nacht_start_sekunden: >-
+    {% set t = nacht_zeit_wert.split(':') %}
+    {{ (t[0] | int * 3600) + (t[1] | int * 60) + (t[2] | int) }}
+
+  aktuelle_helligkeit: >-
+    {% set jetzt = now().hour * 3600 + now().minute * 60 + now().second %}
+    {% set morgen = morgen_start_sekunden | int %}
+    {% set abend = abend_start_sekunden | int %}
+    {% set nacht = nacht_start_sekunden | int %}
+    {% if (morgen <= abend and morgen <= jetzt < abend) or (morgen > abend and (jetzt >= morgen or jetzt < abend)) %}
+      {{ helligkeit_morgen_wert | int }}
+    {% elif (abend <= nacht and abend <= jetzt < nacht) or (abend > nacht and (jetzt >= abend or jetzt < nacht)) %}
+      {{ helligkeit_abend_wert | int }}
+    {% else %}
+      {{ helligkeit_nacht_wert | int }}
+    {% endif %}
+
+  aktuelle_farbtemperatur: >-
+    {% set jetzt = now().hour * 3600 + now().minute * 60 + now().second %}
+    {% set morgen = morgen_start_sekunden | int %}
+    {% set abend = abend_start_sekunden | int %}
+    {% set nacht = nacht_start_sekunden | int %}
+    {% if (morgen <= abend and morgen <= jetzt < abend) or (morgen > abend and (jetzt >= morgen or jetzt < abend)) %}
+      {{ farbe_morgen_wert | int }}
+    {% elif (abend <= nacht and abend <= jetzt < nacht) or (abend > nacht and (jetzt >= abend or jetzt < nacht)) %}
+      {{ farbe_abend_wert | int }}
+    {% else %}
+      {{ farbe_nacht_wert | int }}
+    {% endif %}
+
+actions:
+  - choose:
+      - alias: Licht eingeschaltet
+        conditions:
+          - condition: trigger
+            id: Licht Eingeschaltet
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ trigger.entity_id }}"
+            data:
+              brightness_pct: "{{ aktuelle_helligkeit | int }}"
+              color_temp_kelvin: "{{ aktuelle_farbtemperatur | int }}"
+
+      - alias: Presence Erkannt
+        conditions:
+          - condition: trigger
+            id: Presence Erkannt
+          - condition: template
+            value_template: >-
+              {{
+                break_sensor == none
+                or break_sensor == ''
+                or break_sensor == []
+                or is_state(break_sensor, 'on')
+              }}
+          - condition: template
+            value_template: >-
+              {% set helligkeit_aktiv = light_sensor != none and light_sensor != '' and light_sensor != [] and light_regler != none and light_regler != '' and light_regler != [] %}
+              {% set rollladen_aktiv = cover_sensor != none and cover_sensor != '' and cover_sensor != [] %}
+              {{
+                (not helligkeit_aktiv and not rollladen_aktiv)
+                or (helligkeit_aktiv and states(light_sensor) | float(0) < states(light_regler) | float(0))
+                or (rollladen_aktiv and is_state(cover_sensor, 'closed'))
+              }}
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input target_light
+            data:
+              brightness_pct: "{{ aktuelle_helligkeit | int }}"
+              color_temp_kelvin: "{{ aktuelle_farbtemperatur | int }}"
+          - if:
+              - condition: template
+                value_template: "{{ target_switch != none and target_switch != '' and target_switch != [] }}"
+            then:
+              - action: homeassistant.turn_on
+                target:
+                  entity_id: !input target_switch
+
+      - alias: Presence Frei
+        conditions:
+          - condition: trigger
+            id: Presence Frei
+        sequence:
+          - delay:
+              seconds: "{{ nachlaufzeit_wert | int(0) }}"
+          - condition: template
+            value_template: >-
+              {{
+                motion_sensor | count > 0
+                and expand(motion_sensor)
+                  | selectattr('state', 'eq', 'on')
+                  | list | count == 0
+              }}
+          - action: homeassistant.turn_off
+            target:
+              entity_id: !input target_light
+          - if:
+              - condition: template
+                value_template: "{{ target_switch != none and target_switch != '' and target_switch != [] }}"
+            then:
+              - action: homeassistant.turn_off
+                target:
+                  entity_id: !input target_switch
+\`;
+
 async function ensureAtzeLightBlueprint(hass) {
   if (!hass) {
     throw new Error("Home Assistant ist noch nicht verfügbar.");
@@ -434,12 +783,19 @@ async function ensureAtzeLightBlueprint(hass) {
     ATZE_LIGHT_BLUEPRINT_V2_VERSION
   );
 
+  const ds = await ensureBlueprint(
+    ATZE_DS_LIGHT_BLUEPRINT_PATH,
+    ATZE_DS_LIGHT_BLUEPRINT_YAML,
+    ATZE_DS_LIGHT_BLUEPRINT_VERSION
+  );
+
   return {
-    created: v1.created || v2.created,
-    updated: v1.updated || v2.updated,
-    verified: v1.verified && v2.verified,
+    created: v1.created || v2.created || ds.created,
+    updated: v1.updated || v2.updated || ds.updated,
+    verified: v1.verified && v2.verified && ds.verified,
     v1,
     v2,
+    ds,
   };
 }
 
