@@ -919,7 +919,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const miniPeople = asArray(
       this._config.people_entities
     )
-      .slice(0, 3)
+      .slice(0, 5)
       .map((entityId) => {
         const stateObj = this._state(entityId);
         if (!stateObj) return null;
