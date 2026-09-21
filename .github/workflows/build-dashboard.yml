@@ -40,3 +40,25 @@ jobs:
           git add dist/atze-dashboard-strategy.js package.json README.md
           git commit -m "build: sync generated files"
           git push
+
+      - name: Create GitHub release after successful build
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION="$(grep -m1 'const ATZE_VERSION = ' dist/atze-dashboard-strategy.js | cut -d '"' -f 2)"
+          if [ -z "$VERSION" ]; then
+            echo "Could not determine ATZE_VERSION"
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+            exit 0
+          fi
+          TARGET="$(git rev-parse HEAD)"
+          gh release create "$TAG" \\
+            --target "$TARGET" \\
+            --title "Atze Dashboard Strategy $TAG" \\
+            --generate-notes
