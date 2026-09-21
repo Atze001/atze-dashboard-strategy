@@ -115,11 +115,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (active) {
       parts.push("disable_km");
     } else {
+      // Enter the same stable kiosk state that the automatic fallback uses.
+      // The marker prevents a second corrective reload on the next render.
       parts.push("hide_header");
-
-      if (this._config?.force_kiosk === true) {
-        parts.push("atze_km_auto=1");
-      }
+      parts.push("atze_km_auto=1");
     }
 
     const query = parts.length
