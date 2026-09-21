@@ -119,8 +119,9 @@ Bei dieser Variante werden Startzeit, Helligkeit und Farbtemperatur für
 **Morgen**, **Abend** und **Nacht** direkt beim Erstellen der Automation
 eingetragen. Sie verwendet keine Home-Assistant-Helfer und enthält keine
 Zeitversätze. Aktiviert und deaktiviert wird sie über den normalen Schalter der
-erstellten Automation. Die vorhandene Lichtsteuerung bleibt unverändert und
-wird weiterhin automatisch von der Dashboard-Strategy installiert.
+erstellten Automation. Die vorhandene Lichtsteuerung bleibt unverändert. Ab Version **0.189.0** werden
+sowohl V1 als auch V2 automatisch von der Dashboard-Strategy installiert und
+bei Änderungen aktualisiert.
 
 ## Dashboard-YAML
 
@@ -160,6 +161,13 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.189.0
+
+- Automatische Blueprint-Installation um `lichtsteuerung-v2.yaml` erweitert.
+- V1 und V2 werden beim Laden der Startseite unabhängig geprüft, installiert
+  und bei einer neuen Blueprint-Version aktualisiert.
+- Die bestehende V1 bleibt unverändert erhalten.
 
 ### v0.188.0
 
