@@ -18,9 +18,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set();
-    this._lightHelpersEnsured = false;
-    this._lightHelperSetupState = "";
-    this._lightHelperSetupMessage = "";
   }
 
   set hass(value) {
@@ -34,7 +31,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._render();
     }
 
-    this._maybeEnsureLightControlHelpers();
   }
 
   get hass() {
@@ -44,7 +40,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   setConfig(config) {
     this._config = { ...(config || {}) };
     this._render();
-    this._maybeEnsureLightControlHelpers();
   }
 
   connectedCallback() {
@@ -58,7 +53,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingHassRender = false;
     this._loadRegistries();
     this._render();
-    this._maybeEnsureLightControlHelpers();
   }
 
   async _loadRegistries() {
@@ -875,9 +869,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _setHomePerson(index, entityId) {
-    const people = Array(3).fill("");
+    const people = Array(5).fill("");
     asArray(this._config.home_people_entities)
-      .slice(0, 3)
+      .slice(0, 5)
       .forEach((value, itemIndex) => {
         people[itemIndex] = String(value || "");
       });
@@ -942,216 +936,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     else delete next.custom_pages;
 
     this._fireConfigChanged(next);
-  }
-
-  _lightControlPopupEnabled() {
-    return lightControlPopupEnabled(this._config || {});
-  }
-
-  _maybeEnsureLightControlHelpers() {
-    if (
-      !this._hass ||
-      !this._lightControlPopupEnabled() ||
-      this._lightHelpersEnsured ||
-      this._lightHelperSetupState !== ""
-    ) {
-      return;
-    }
-
-    queueMicrotask(() => {
-      if (
-        this._hass &&
-        this._lightControlPopupEnabled() &&
-        !this._lightHelpersEnsured &&
-        this._lightHelperSetupState === ""
-      ) {
-        this._setupLightControlHelpers(false);
-      }
-    });
-  }
-
-  async _assignLightHelperCategory(entityId, categoryId) {
-    let lastError = null;
-
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      try {
-        await this._hass.callWS({
-          type: "config/entity_registry/update",
-          entity_id: entityId,
-          categories: { helpers: categoryId },
-        });
-        return;
-      } catch (error) {
-        lastError = error;
-
-        if (attempt < 3) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, 200 * (attempt + 1))
-          );
-        }
-      }
-    }
-
-    throw lastError;
-  }
-
-  async _ensureLightControlBlueprint() {
-    return ensureAtzeLightBlueprint(this._hass);
-  }
-
-  async _ensureLightControlHelpers() {
-    if (!this._hass) {
-      throw new Error("Home Assistant ist noch nicht verfügbar.");
-    }
-
-    const domains = [
-      ...new Set(
-        ATZE_LIGHT_HELPERS.map((helper) => helper.domain)
-      ),
-    ];
-    const helperLists = await Promise.all(
-      domains.map((domain) =>
-        this._hass.callWS({ type: `${domain}/list` })
-      )
-    );
-    const knownEntityIds = new Set([
-      ...Object.keys(this._hass.states || {}),
-      ...this._entities.map((entity) => entity.entity_id),
-    ]);
-
-    domains.forEach((domain, index) => {
-      for (const helper of helperLists[index] || []) {
-        if (helper?.id) {
-          knownEntityIds.add(`${domain}.${helper.id}`);
-        }
-      }
-    });
-
-    const entityIds = [];
-    let created = 0;
-
-    for (const helper of ATZE_LIGHT_HELPERS) {
-      const expectedEntityId = `${helper.domain}.${helper.id}`;
-
-      if (!knownEntityIds.has(expectedEntityId)) {
-        const result = await this._hass.callWS({
-          type: `${helper.domain}/create`,
-          ...helper.values,
-        });
-        const createdId = result?.id;
-
-        if (createdId !== helper.id) {
-          throw new Error(
-            `${expectedEntityId} konnte nicht mit der vorgesehenen Entity-ID angelegt werden.`
-          );
-        }
-
-        knownEntityIds.add(expectedEntityId);
-        created += 1;
-      }
-
-      entityIds.push(expectedEntityId);
-    }
-
-    const categories = await this._hass.callWS({
-      type: "config/category_registry/list",
-      scope: "helpers",
-    });
-    let category = (categories || []).find(
-      (entry) =>
-        String(entry?.name || "").trim().toLowerCase() ===
-        ATZE_LIGHT_HELPER_CATEGORY.toLowerCase()
-    );
-
-    if (!category) {
-      category = await this._hass.callWS({
-        type: "config/category_registry/create",
-        scope: "helpers",
-        name: ATZE_LIGHT_HELPER_CATEGORY,
-        icon: "mdi:lightbulb-group-outline",
-      });
-    }
-
-    if (!category?.category_id) {
-      throw new Error("Die Helfer-Kategorie konnte nicht angelegt werden.");
-    }
-
-    for (const entityId of entityIds) {
-      await this._assignLightHelperCategory(
-        entityId,
-        category.category_id
-      );
-    }
-
-    return { created, total: entityIds.length };
-  }
-
-  async _setupLightControlHelpers(enablePopup) {
-    if (this._lightHelperSetupState === "loading") return;
-
-    this._lightHelperSetupState = "loading";
-    this._lightHelperSetupMessage =
-      "Helfer, Kategorie und Blueprint werden geprüft …";
-    this._render();
-
-    try {
-      const [helperResult, blueprintResult] =
-        await Promise.all([
-          this._ensureLightControlHelpers(),
-          this._ensureLightControlBlueprint(),
-        ]);
-
-      this._lightHelpersEnsured = true;
-      this._lightHelperSetupState = "success";
-
-      const helperMessage = helperResult.created
-        ? `${helperResult.created} fehlende Helfer wurden angelegt; alle ${helperResult.total} sind der Kategorie zugeordnet.`
-        : `Alle ${helperResult.total} Helfer sind vorhanden und der Kategorie zugeordnet.`;
-
-      const blueprintMessage = blueprintResult.created
-        ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant angelegt."
-        : blueprintResult.updated
-          ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant aktualisiert."
-          : "Der Lichtsteuerungs-Blueprint ist bereits in der aktuellen Version vorhanden.";
-
-      this._lightHelperSetupMessage =
-        `${helperMessage} ${blueprintMessage}`;
-
-      if (enablePopup) {
-        this._fireConfigChanged({
-          ...this._config,
-          light_control_popup: true,
-        });
-      } else {
-        this._render();
-      }
-    } catch (error) {
-      this._lightHelpersEnsured = false;
-      this._lightHelperSetupState = "error";
-      this._lightHelperSetupMessage =
-        error?.message ||
-        "Die Lichtsteuerung konnte nicht vollständig eingerichtet werden.";
-      console.error(
-        "Atze Dashboard: Lichtsteuerung konnte nicht vollständig eingerichtet werden.",
-        error
-      );
-      this._render();
-    }
-  }
-
-  _setLightControlPopup(value) {
-    if (value !== true) {
-      this._lightHelpersEnsured = false;
-      this._lightHelperSetupState = "";
-      this._lightHelperSetupMessage = "";
-      this._fireConfigChanged({
-        ...this._config,
-        light_control_popup: false,
-      });
-      return;
-    }
-
-    this._setupLightControlHelpers(true);
   }
 
   _addCustomPage(template = "empty") {
@@ -1994,12 +1778,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           <div class="editor-section-body">
             <div class="rows">
               ${this._toggleHtml(
-                "home_view",
-                "Startseite anzeigen",
-                "Zuhause-Übersicht mit Statuskarten und Räumen.",
-                true
-              )}
-              ${this._toggleHtml(
                 "security_view",
                 "Sicherheit anzeigen",
                 "Labelbasierte Sicherheitsansicht.",
@@ -2052,25 +1830,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              <label class="row">
-                <span class="copy">
-                  <span class="name">Lichtsteuerung</span>
-                  <span class="desc">
-                    Öffnet die Lichtsteuerung in einem Bubble-Popup und legt fehlende Helfer automatisch an.
-                    ${this._lightHelperSetupMessage
-                      ? `<br><b>${this._escape(this._lightHelperSetupMessage)}</b>`
-                      : ""}
-                  </span>
-                </span>
-                <input
-                  class="setting-toggle"
-                  type="checkbox"
-                  data-key="light_control_popup"
-                  data-default="false"
-                  ${this._lightControlPopupEnabled() ? "checked" : ""}
-                  ${this._lightHelperSetupState === "loading" ? "disabled" : ""}
-                />
-              </label>
               ${this._toggleHtml(
                 "force_kiosk",
                 "Header ausblenden",
@@ -2115,7 +1874,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Bis zu drei Personen werden unter dem großen Profil auf
+              Bis zu fünf Personen werden unter dem großen Profil auf
               der Startseite angezeigt. Zuhause erscheint das normale
               Profilbild, bei Abwesenheit wird es rot dargestellt.
             </div>
@@ -2123,6 +1882,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._personSelectHtml(0)}
               ${this._personSelectHtml(1)}
               ${this._personSelectHtml(2)}
+              ${this._personSelectHtml(3)}
+              ${this._personSelectHtml(4)}
             </div>
           </div>
         </details>
@@ -2682,10 +2443,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           return;
         }
 
-        if (target.dataset.key === "light_control_popup") {
-          this._setLightControlPopup(target.checked);
-          return;
-        }
 
         this._setBoolean(
           target.dataset.key,

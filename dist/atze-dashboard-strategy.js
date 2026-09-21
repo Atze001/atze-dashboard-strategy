@@ -8,11 +8,8 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.192.0";
+const ATZE_VERSION = "0.193.0";
 const STRATEGY_TYPE = "atze-dashboard";
-
-const ATZE_LIGHT_HELPER_CATEGORY =
-  "Atze Dashboard Strategy - Licht";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
@@ -441,144 +438,6 @@ async function ensureAtzeLightBlueprint(hass) {
     ds,
   };
 }
-
-const ATZE_LIGHT_HELPERS = [
-  {
-    domain: "input_boolean",
-    id: "lichtsteuerung",
-    values: {
-      name: "Lichtsteuerung",
-      icon: "mdi:lightbulb-auto",
-      initial: false,
-    },
-  },
-  {
-    domain: "input_boolean",
-    id: "motion_unterbrecher",
-    values: {
-      name: "Motion Unterbrecher",
-      icon: "mdi:motion-sensor-off",
-      initial: false,
-    },
-  },
-  {
-    domain: "input_datetime",
-    id: "morgen",
-    values: {
-      name: "Morgen",
-      icon: "mdi:clock-start",
-      initial: "05:30:00",
-      has_date: false,
-      has_time: true,
-    },
-  },
-  {
-    domain: "input_number",
-    id: "helligkeit_morgen",
-    values: {
-      name: "Helligkeit Morgen",
-      icon: "mdi:white-balance-sunny",
-      initial: 80,
-      min: 0,
-      max: 100,
-      step: 5,
-      mode: "slider",
-      unit_of_measurement: "%",
-    },
-  },
-  {
-    domain: "input_number",
-    id: "farbe_morgen",
-    values: {
-      name: "Farbe Morgen",
-      icon: "mdi:white-balance-sunny",
-      initial: 4500,
-      min: 2000,
-      max: 6500,
-      step: 100,
-      mode: "slider",
-      unit_of_measurement: "K",
-    },
-  },
-  {
-    domain: "input_datetime",
-    id: "abend",
-    values: {
-      name: "Abend",
-      icon: "mdi:weather-night",
-      initial: "21:00:00",
-      has_date: false,
-      has_time: true,
-    },
-  },
-  {
-    domain: "input_number",
-    id: "helligkeit_abend",
-    values: {
-      name: "Helligkeit Abend",
-      icon: "mdi:weather-night",
-      initial: 50,
-      min: 0,
-      max: 100,
-      step: 5,
-      mode: "slider",
-      unit_of_measurement: "%",
-    },
-  },
-  {
-    domain: "input_number",
-    id: "farbe_abend",
-    values: {
-      name: "Farbe Abend",
-      icon: "mdi:weather-night",
-      initial: 3300,
-      min: 2000,
-      max: 6500,
-      step: 100,
-      mode: "slider",
-      unit_of_measurement: "K",
-    },
-  },
-  {
-    domain: "input_datetime",
-    id: "nacht",
-    values: {
-      name: "Nacht",
-      icon: "mdi:weather-night",
-      initial: "23:00:00",
-      has_date: false,
-      has_time: true,
-    },
-  },
-  {
-    domain: "input_number",
-    id: "helligkeit_nacht",
-    values: {
-      name: "Helligkeit Nacht",
-      icon: "mdi:weather-night",
-      initial: 5,
-      min: 0,
-      max: 100,
-      step: 5,
-      mode: "slider",
-      unit_of_measurement: "%",
-    },
-  },
-  {
-    domain: "input_number",
-    id: "farbe_nacht",
-    values: {
-      name: "Farbe Nacht",
-      icon: "mdi:weather-night",
-      initial: 2700,
-      min: 2000,
-      max: 6500,
-      step: 100,
-      mode: "slider",
-      unit_of_measurement: "K",
-    },
-  },
-];
 
 
 const ATZE_SCROLL_TOP_THRESHOLD = 250;
@@ -6252,8 +6111,6 @@ function buildHomeOverviewView(
     )?.entity_id || null;
 
   const showSchedulerPopup = schedulerPopupEnabled(config);
-  const showLightControlPopup = lightControlPopupEnabled(config);
-  const lightControlPopup = lightControlPopupConfig(config);
   const customPageLinks = buildCustomPageViews(config).map(
     (view) => ({
       title: view.title,
@@ -6280,7 +6137,7 @@ function buildHomeOverviewView(
           entityId.startsWith("person.") &&
           hass.states[entityId]
       )
-      .slice(0, 3),
+      .slice(0, 5),
     hacs_update_entities:
       selectHacsUpdateEntities(hass, usableEntities),
     weather_entity: selectHomeWeatherEntity(hass, config),
@@ -6326,17 +6183,9 @@ function buildHomeOverviewView(
             icon: "mdi:calendar-clock",
           }]
         : []),
-      ...(showLightControlPopup
-        ? [{
-            title: lightControlPopup.title,
-            popup_hash: "#lichtsteuerung",
-            icon: lightControlPopup.icon,
-          }]
-        : []),
       ...customPageLinks,
     ],
     scheduler_popup: showSchedulerPopup,
-    light_control_popup: showLightControlPopup,
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
     hero_day_image:
@@ -6363,7 +6212,7 @@ function buildHomeOverviewView(
     icon: config.home_icon || "mdi:home",
     subview: false,
     panel: true,
-    cards: showSchedulerPopup || showLightControlPopup
+    cards: showSchedulerPopup
       ? [
           {
             type: "vertical-stack",
@@ -6382,18 +6231,6 @@ function buildHomeOverviewView(
                         type: "custom:scheduler-card",
                       },
                     ],
-                  }]
-                : []),
-              ...(showLightControlPopup
-                ? [{
-                    type: "custom:bubble-card",
-                    card_type: "pop-up",
-                    hash: "#lichtsteuerung",
-                    name: lightControlPopup.title,
-                    icon: lightControlPopup.icon,
-                    popup_mode: "adaptive-dialog",
-                    width_desktop: "900px",
-                    cards: lightControlPopup.cards,
                   }]
                 : []),
               homeCard,
@@ -6435,92 +6272,6 @@ function schedulerPopupEnabled(config) {
   return asArray(config.custom_pages).some(isSchedulerCustomPage);
 }
 
-function isLightControlCustomPage(page) {
-  const source = customPageSource(page);
-  if (!source) return false;
-
-  const identifiers = [source.title, source.path]
-    .filter(Boolean)
-    .map(slugify);
-
-  return identifiers.some((value) =>
-    [
-      "lichtsteuerung",
-      "licht-steuerung",
-      "light-control",
-      "light-control-panel",
-    ].includes(value)
-  );
-}
-
-function lightControlPopupEnabled(config) {
-  if (config.light_control_popup != null) {
-    return config.light_control_popup === true;
-  }
-
-  return asArray(config.custom_pages).some(
-    isLightControlCustomPage
-  );
-}
-
-function lightControlPopupConfig(config) {
-  const page = asArray(config.custom_pages).find(
-    isLightControlCustomPage
-  );
-  const source = customPageSource(page);
-  let cards = [];
-
-  if (Array.isArray(source?.cards)) {
-    cards = source.cards;
-  } else if (source?.card && typeof source.card === "object") {
-    cards = [{ ...source.card }];
-  } else if (Array.isArray(source?.sections)) {
-    cards = source.sections
-      .filter(
-        (section) =>
-          section &&
-          typeof section === "object" &&
-          Array.isArray(section.cards)
-      )
-      .map((section) => ({
-        type: "grid",
-        columns: Number(section.columns || 1),
-        square: false,
-        cards: section.cards,
-      }));
-  }
-
-  if (cards.length === 0) {
-    cards = [
-      {
-        type: "entities",
-        entities: [
-          { entity: "input_boolean.lichtsteuerung" },
-          { entity: "input_boolean.motion_unterbrecher" },
-          { type: "section", label: "☀️ Morgen-Einstellungen" },
-          { entity: "input_datetime.morgen", name: "Startzeit Morgen" },
-          { entity: "input_number.helligkeit_morgen", name: "Helligkeit Morgen" },
-          { entity: "input_number.farbe_morgen", name: "Farbe Morgen" },
-          { type: "section", label: "🌙 Abend-Einstellungen" },
-          { entity: "input_datetime.abend", name: "Startzeit Abend" },
-          { entity: "input_number.helligkeit_abend", name: "Helligkeit Abend" },
-          { entity: "input_number.farbe_abend", name: "Farbe Abend" },
-          { type: "section", label: "💤 Nacht-Einstellungen" },
-          { entity: "input_datetime.nacht", name: "Startzeit Nacht" },
-          { entity: "input_number.helligkeit_nacht", name: "Helligkeit Nacht" },
-          { entity: "input_number.farbe_nacht", name: "Farbe Nacht" },
-        ],
-      },
-    ];
-  }
-
-  return {
-    title: String(source?.title || "Lichtsteuerung"),
-    icon: source?.icon || "mdi:lightbulb-group-outline",
-    cards,
-  };
-}
-
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -6529,11 +6280,7 @@ function buildCustomPageViews(config) {
   ]);
 
   return asArray(config.custom_pages)
-    .filter(
-      (page) =>
-        !isSchedulerCustomPage(page) &&
-        !isLightControlCustomPage(page)
-    )
+    .filter((page) => !isSchedulerCustomPage(page))
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
@@ -7269,7 +7016,6 @@ function applyAtzeSidebarAccess(config) {
     );
 
   const clockKioskAccess =
-    config.home_view !== false &&
     config.clock_kiosk_toggle !== false;
 
   const enabled =
@@ -8582,7 +8328,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const miniPeople = asArray(
       this._config.people_entities
     )
-      .slice(0, 3)
+      .slice(0, 5)
       .map((entityId) => {
         const stateObj = this._state(entityId);
         if (!stateObj) return null;
@@ -12739,9 +12485,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set();
-    this._lightHelpersEnsured = false;
-    this._lightHelperSetupState = "";
-    this._lightHelperSetupMessage = "";
   }
 
   set hass(value) {
@@ -12755,7 +12498,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._render();
     }
 
-    this._maybeEnsureLightControlHelpers();
   }
 
   get hass() {
@@ -12765,7 +12507,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   setConfig(config) {
     this._config = { ...(config || {}) };
     this._render();
-    this._maybeEnsureLightControlHelpers();
   }
 
   connectedCallback() {
@@ -12779,7 +12520,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingHassRender = false;
     this._loadRegistries();
     this._render();
-    this._maybeEnsureLightControlHelpers();
   }
 
   async _loadRegistries() {
@@ -13596,9 +13336,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _setHomePerson(index, entityId) {
-    const people = Array(3).fill("");
+    const people = Array(5).fill("");
     asArray(this._config.home_people_entities)
-      .slice(0, 3)
+      .slice(0, 5)
       .forEach((value, itemIndex) => {
         people[itemIndex] = String(value || "");
       });
@@ -13663,216 +13403,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     else delete next.custom_pages;
 
     this._fireConfigChanged(next);
-  }
-
-  _lightControlPopupEnabled() {
-    return lightControlPopupEnabled(this._config || {});
-  }
-
-  _maybeEnsureLightControlHelpers() {
-    if (
-      !this._hass ||
-      !this._lightControlPopupEnabled() ||
-      this._lightHelpersEnsured ||
-      this._lightHelperSetupState !== ""
-    ) {
-      return;
-    }
-
-    queueMicrotask(() => {
-      if (
-        this._hass &&
-        this._lightControlPopupEnabled() &&
-        !this._lightHelpersEnsured &&
-        this._lightHelperSetupState === ""
-      ) {
-        this._setupLightControlHelpers(false);
-      }
-    });
-  }
-
-  async _assignLightHelperCategory(entityId, categoryId) {
-    let lastError = null;
-
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      try {
-        await this._hass.callWS({
-          type: "config/entity_registry/update",
-          entity_id: entityId,
-          categories: { helpers: categoryId },
-        });
-        return;
-      } catch (error) {
-        lastError = error;
-
-        if (attempt < 3) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, 200 * (attempt + 1))
-          );
-        }
-      }
-    }
-
-    throw lastError;
-  }
-
-  async _ensureLightControlBlueprint() {
-    return ensureAtzeLightBlueprint(this._hass);
-  }
-
-  async _ensureLightControlHelpers() {
-    if (!this._hass) {
-      throw new Error("Home Assistant ist noch nicht verfügbar.");
-    }
-
-    const domains = [
-      ...new Set(
-        ATZE_LIGHT_HELPERS.map((helper) => helper.domain)
-      ),
-    ];
-    const helperLists = await Promise.all(
-      domains.map((domain) =>
-        this._hass.callWS({ type: `${domain}/list` })
-      )
-    );
-    const knownEntityIds = new Set([
-      ...Object.keys(this._hass.states || {}),
-      ...this._entities.map((entity) => entity.entity_id),
-    ]);
-
-    domains.forEach((domain, index) => {
-      for (const helper of helperLists[index] || []) {
-        if (helper?.id) {
-          knownEntityIds.add(`${domain}.${helper.id}`);
-        }
-      }
-    });
-
-    const entityIds = [];
-    let created = 0;
-
-    for (const helper of ATZE_LIGHT_HELPERS) {
-      const expectedEntityId = `${helper.domain}.${helper.id}`;
-
-      if (!knownEntityIds.has(expectedEntityId)) {
-        const result = await this._hass.callWS({
-          type: `${helper.domain}/create`,
-          ...helper.values,
-        });
-        const createdId = result?.id;
-
-        if (createdId !== helper.id) {
-          throw new Error(
-            `${expectedEntityId} konnte nicht mit der vorgesehenen Entity-ID angelegt werden.`
-          );
-        }
-
-        knownEntityIds.add(expectedEntityId);
-        created += 1;
-      }
-
-      entityIds.push(expectedEntityId);
-    }
-
-    const categories = await this._hass.callWS({
-      type: "config/category_registry/list",
-      scope: "helpers",
-    });
-    let category = (categories || []).find(
-      (entry) =>
-        String(entry?.name || "").trim().toLowerCase() ===
-        ATZE_LIGHT_HELPER_CATEGORY.toLowerCase()
-    );
-
-    if (!category) {
-      category = await this._hass.callWS({
-        type: "config/category_registry/create",
-        scope: "helpers",
-        name: ATZE_LIGHT_HELPER_CATEGORY,
-        icon: "mdi:lightbulb-group-outline",
-      });
-    }
-
-    if (!category?.category_id) {
-      throw new Error("Die Helfer-Kategorie konnte nicht angelegt werden.");
-    }
-
-    for (const entityId of entityIds) {
-      await this._assignLightHelperCategory(
-        entityId,
-        category.category_id
-      );
-    }
-
-    return { created, total: entityIds.length };
-  }
-
-  async _setupLightControlHelpers(enablePopup) {
-    if (this._lightHelperSetupState === "loading") return;
-
-    this._lightHelperSetupState = "loading";
-    this._lightHelperSetupMessage =
-      "Helfer, Kategorie und Blueprint werden geprüft …";
-    this._render();
-
-    try {
-      const [helperResult, blueprintResult] =
-        await Promise.all([
-          this._ensureLightControlHelpers(),
-          this._ensureLightControlBlueprint(),
-        ]);
-
-      this._lightHelpersEnsured = true;
-      this._lightHelperSetupState = "success";
-
-      const helperMessage = helperResult.created
-        ? `${helperResult.created} fehlende Helfer wurden angelegt; alle ${helperResult.total} sind der Kategorie zugeordnet.`
-        : `Alle ${helperResult.total} Helfer sind vorhanden und der Kategorie zugeordnet.`;
-
-      const blueprintMessage = blueprintResult.created
-        ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant angelegt."
-        : blueprintResult.updated
-          ? "Der Lichtsteuerungs-Blueprint wurde in Home Assistant aktualisiert."
-          : "Der Lichtsteuerungs-Blueprint ist bereits in der aktuellen Version vorhanden.";
-
-      this._lightHelperSetupMessage =
-        `${helperMessage} ${blueprintMessage}`;
-
-      if (enablePopup) {
-        this._fireConfigChanged({
-          ...this._config,
-          light_control_popup: true,
-        });
-      } else {
-        this._render();
-      }
-    } catch (error) {
-      this._lightHelpersEnsured = false;
-      this._lightHelperSetupState = "error";
-      this._lightHelperSetupMessage =
-        error?.message ||
-        "Die Lichtsteuerung konnte nicht vollständig eingerichtet werden.";
-      console.error(
-        "Atze Dashboard: Lichtsteuerung konnte nicht vollständig eingerichtet werden.",
-        error
-      );
-      this._render();
-    }
-  }
-
-  _setLightControlPopup(value) {
-    if (value !== true) {
-      this._lightHelpersEnsured = false;
-      this._lightHelperSetupState = "";
-      this._lightHelperSetupMessage = "";
-      this._fireConfigChanged({
-        ...this._config,
-        light_control_popup: false,
-      });
-      return;
-    }
-
-    this._setupLightControlHelpers(true);
   }
 
   _addCustomPage(template = "empty") {
@@ -14715,12 +14245,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           <div class="editor-section-body">
             <div class="rows">
               ${this._toggleHtml(
-                "home_view",
-                "Startseite anzeigen",
-                "Zuhause-Übersicht mit Statuskarten und Räumen.",
-                true
-              )}
-              ${this._toggleHtml(
                 "security_view",
                 "Sicherheit anzeigen",
                 "Labelbasierte Sicherheitsansicht.",
@@ -14773,25 +14297,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              <label class="row">
-                <span class="copy">
-                  <span class="name">Lichtsteuerung</span>
-                  <span class="desc">
-                    Öffnet die Lichtsteuerung in einem Bubble-Popup und legt fehlende Helfer automatisch an.
-                    ${this._lightHelperSetupMessage
-                      ? `<br><b>${this._escape(this._lightHelperSetupMessage)}</b>`
-                      : ""}
-                  </span>
-                </span>
-                <input
-                  class="setting-toggle"
-                  type="checkbox"
-                  data-key="light_control_popup"
-                  data-default="false"
-                  ${this._lightControlPopupEnabled() ? "checked" : ""}
-                  ${this._lightHelperSetupState === "loading" ? "disabled" : ""}
-                />
-              </label>
               ${this._toggleHtml(
                 "force_kiosk",
                 "Header ausblenden",
@@ -14836,7 +14341,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Bis zu drei Personen werden unter dem großen Profil auf
+              Bis zu fünf Personen werden unter dem großen Profil auf
               der Startseite angezeigt. Zuhause erscheint das normale
               Profilbild, bei Abwesenheit wird es rot dargestellt.
             </div>
@@ -14844,6 +14349,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._personSelectHtml(0)}
               ${this._personSelectHtml(1)}
               ${this._personSelectHtml(2)}
+              ${this._personSelectHtml(3)}
+              ${this._personSelectHtml(4)}
             </div>
           </div>
         </details>
@@ -15403,10 +14910,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           return;
         }
 
-        if (target.dataset.key === "light_control_popup") {
-          this._setLightControlPopup(target.checked);
-          return;
-        }
 
         this._setBoolean(
           target.dataset.key,
