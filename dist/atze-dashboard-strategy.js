@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.204.0";
+const ATZE_VERSION = "0.205.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -7015,13 +7015,7 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const clockKioskAccess =
-    config.clock_kiosk_toggle !== false;
-
-  const enabled =
-    config.force_kiosk === true &&
-    !clockKioskAccess &&
-    !params.has("disable_km");
+  const enabled = false;
 
   const apply = () => {
     try {
@@ -7479,10 +7473,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _toggleKioskMode() {
-    if (this._config?.clock_kiosk_toggle === false) {
-      return;
-    }
-
     const rawQuery = String(
       window.location.search || ""
     );
@@ -14297,12 +14287,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              ${this._toggleHtml(
-                "clock_kiosk_toggle",
-                "Kiosk über Uhrzeit umschalten",
-                "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
-                true
-              )}
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",

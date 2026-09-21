@@ -1831,12 +1831,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 />
               </label>
               ${this._toggleHtml(
-                "clock_kiosk_toggle",
-                "Kiosk über Uhrzeit umschalten",
-                "Tippen auf die Uhrzeit blendet den Home-Assistant-Header ein oder aus.",
-                true
-              )}
-              ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
                 "Scrollen bleibt möglich.",
