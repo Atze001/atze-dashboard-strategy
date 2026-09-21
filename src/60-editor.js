@@ -1232,7 +1232,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         .editor {
           display: grid;
           gap: 16px;
-          padding: 4px 0 24px;
+          padding: 12px 12px 24px;
+          border-radius: 18px;
+          background: rgba(10, 12, 16, 0.72);
         }
 
         .editor-version {
@@ -1248,10 +1250,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
 
         .panel {
-          background: var(
-            --ha-card-background,
-            var(--card-background-color)
-          );
+          background: rgba(24, 26, 31, 0.96);
           border: 1px solid var(
             --divider-color,
             rgba(127,127,127,.18)
