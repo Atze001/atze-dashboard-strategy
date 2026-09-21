@@ -1832,9 +1832,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               </label>
               ${this._toggleHtml(
                 "force_kiosk",
-                "Header ausblenden",
-                "Atze-Kiosk-Fallback mit Sidebar-Menüknopf.",
-                false
+                "Header anzeigen",
+                "Zeigt den Home-Assistant-Header an. Deaktiviert blendet ihn über Kiosk-Mode aus.",
+                true
               )}
               ${this._toggleHtml(
                 "hide_scrollbar",
@@ -2437,6 +2437,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           return;
         }
 
+        if (target.dataset.key === "force_kiosk") {
+          // The UI is phrased positively (Header anzeigen), while the stored
+          // strategy option remains force_kiosk for backward compatibility.
+          this._setBoolean("force_kiosk", !target.checked, false);
+          return;
+        }
 
         this._setBoolean(
           target.dataset.key,
