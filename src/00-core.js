@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.206.0";
+const ATZE_VERSION = "0.207.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6839,6 +6839,10 @@ function applyAtzeKioskQueryFallback(config) {
     return parts.length !== before;
   };
 
+  // disable_km is the explicit escape state used by the clock toggle.
+  // Do not let the automatic fallback rewrite the URL on the same load,
+  // otherwise one tap can cause an intermediate reload before the visible
+  // kiosk state changes.
   if (hasKey("disable_km")) return;
 
   const desired = [];
