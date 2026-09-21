@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.213.0";
+const ATZE_VERSION = "0.214.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -6731,6 +6731,7 @@ function buildAreaView(
               }
             : {}),
           ...(roomHeaderImage ? { background_image: roomHeaderImage } : {}),
+          ...(isBadRoom ? { overlay_badges: badgeSelection.badges } : {}),
         };
 
   return {
@@ -6754,10 +6755,10 @@ function buildAreaView(
     ),
     header: {
       layout: areaOverride.header_layout || config.header_layout || "center",
-      badges_position: isBadRoom ? "top" : "bottom",
+      badges_position: "bottom",
       ...(roomHeaderCard ? { card: roomHeaderCard } : {}),
     },
-    badges: badgeSelection.badges,
+    badges: isBadRoom ? [] : badgeSelection.badges,
     sections,
   };
 }

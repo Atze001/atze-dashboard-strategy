@@ -135,7 +135,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
 
         ha-card.has-background {
-          min-height: 160px;
+          min-height: 170px;
           padding: 0;
           border-radius: var(--ha-card-border-radius, 12px);
           overflow: hidden;
@@ -146,7 +146,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
 
         ha-card.has-background .nav-row {
-          min-height: 160px;
+          min-height: 170px;
           padding: 18px;
           box-sizing: border-box;
           align-items: flex-end;
@@ -155,6 +155,23 @@ class AtzeRoomNavHeader extends HTMLElement {
 
         ha-card.has-background .area-name {
           text-shadow: 0 1px 4px rgba(0,0,0,0.75);
+        }
+
+        .overlay-badges {
+          position: absolute;
+          top: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          z-index: 2;
+          white-space: nowrap;
+        }
+
+        ha-card.has-background {
+          position: relative;
         }
 
         .nav-row {
@@ -259,8 +276,28 @@ class AtzeRoomNavHeader extends HTMLElement {
           `}
           <span class="area-name">${areaName}</span>
         </div>
+        ${Array.isArray(this._config.overlay_badges) && this._config.overlay_badges.length ? `
+          <div class="overlay-badges" id="overlay-badges"></div>
+        ` : ""}
       </ha-card>
     `;
+
+    const overlayBadges = this.shadowRoot.querySelector("#overlay-badges");
+    if (overlayBadges) {
+      for (const badgeConfig of this._config.overlay_badges || []) {
+        const tagName = String(badgeConfig?.type || "").startsWith("custom:")
+          ? String(badgeConfig.type).slice(7)
+          : "hui-state-label-badge";
+        const badge = document.createElement(tagName);
+        if (typeof badge.setConfig === "function") {
+          badge.setConfig(badgeConfig);
+        }
+        if ("hass" in badge) {
+          badge.hass = this._hass;
+        }
+        overlayBadges.appendChild(badge);
+      }
+    }
 
     const row = this.shadowRoot.querySelector(".nav-row");
 
