@@ -14234,12 +14234,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              ${this._toggleHtml(
-                "force_kiosk",
-                "Header anzeigen",
-                "Zeigt den Home-Assistant-Header an. Deaktiviert blendet ihn über Kiosk-Mode aus.",
-                true
-              )}
+              <label class="row">
+                <span class="copy">
+                  <span class="name">Header anzeigen</span>
+                  <span class="desc">Zeigt den Home-Assistant-Header an. Deaktiviert blendet ihn über Kiosk-Mode aus.</span>
+                </span>
+                <input class="setting-toggle" type="checkbox" data-key="force_kiosk" data-default="true"
+                  ${this._config?.force_kiosk === true ? "" : "checked"} />
+              </label>
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
