@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.220.0";
+const ATZE_VERSION = "0.221.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -3807,6 +3807,7 @@ function selectEnvironmentBadges(
     );
 
     if (windowState) {
+      windowState.badge.atze_badge_group = "window";
       badges.push(windowState.badge);
       entityIds.add(windowState.entityId);
     }
@@ -3826,6 +3827,7 @@ function selectEnvironmentBadges(
     );
 
     if (rollerShutterState) {
+      rollerShutterState.badge.atze_badge_group = "roller_shutter";
       badges.push(rollerShutterState.badge);
       entityIds.add(rollerShutterState.entityId);
     }
@@ -12107,16 +12109,19 @@ class AtzeRoomNavHeader extends HTMLElement {
         .overlay-badges {
           position: absolute;
           top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: calc(100% - 20px);
+          left: 10px;
+          right: 10px;
+          display: grid;
+          gap: 8px;
+          z-index: 2;
+        }
+
+        .overlay-badge-row {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
           justify-content: center;
-          align-content: flex-start;
           gap: 8px;
-          z-index: 2;
         }
 
         ha-card.has-background {
@@ -12233,12 +12238,31 @@ class AtzeRoomNavHeader extends HTMLElement {
 
     const overlayBadges = this.shadowRoot.querySelector("#overlay-badges");
     if (overlayBadges) {
-      for (const badgeConfig of this._config.overlay_badges || []) {
-        const badge = document.createElement("hui-badge");
-        badge.hass = this._hass;
-        badge.config = badgeConfig;
-        overlayBadges.appendChild(badge);
-      }
+      const badges = this._config.overlay_badges || [];
+      const secondRowBadges = badges.filter((badgeConfig) =>
+        ["window", "roller_shutter"].includes(badgeConfig?.atze_badge_group)
+      );
+      const firstRowBadges = badges.filter((badgeConfig) =>
+        !["window", "roller_shutter"].includes(badgeConfig?.atze_badge_group)
+      );
+
+      const appendRow = (badgeConfigs) => {
+        if (!badgeConfigs.length) return;
+        const row = document.createElement("div");
+        row.className = "overlay-badge-row";
+
+        for (const badgeConfig of badgeConfigs) {
+          const badge = document.createElement("hui-badge");
+          badge.hass = this._hass;
+          badge.config = badgeConfig;
+          row.appendChild(badge);
+        }
+
+        overlayBadges.appendChild(row);
+      };
+
+      appendRow(firstRowBadges);
+      appendRow(secondRowBadges);
     }
 
     const row = this.shadowRoot.querySelector(".nav-row");
