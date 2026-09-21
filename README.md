@@ -108,6 +108,20 @@ gespeichert; dafür sind keine zusätzlichen Helfer nötig.
 Ändert sich die mitgelieferte Blueprint-Version, aktualisiert die Strategy den
 bereits in Home Assistant vorhandenen Blueprint automatisch.
 
+### Lichtsteuerung V2 ohne Helfer
+
+Als eigenständige Alternative liegt zusätzlich folgende Blueprint-Datei im
+Repository:
+
+`blueprints/lichtsteuerung-v2.yaml`
+
+Bei dieser Variante werden Startzeit, Helligkeit und Farbtemperatur für
+**Morgen**, **Abend** und **Nacht** direkt beim Erstellen der Automation
+eingetragen. Sie verwendet keine Home-Assistant-Helfer und enthält keine
+Zeitversätze. Aktiviert und deaktiviert wird sie über den normalen Schalter der
+erstellten Automation. Die vorhandene Lichtsteuerung bleibt unverändert und
+wird weiterhin automatisch von der Dashboard-Strategy installiert.
+
 ## Dashboard-YAML
 
 Die Strategy wird direkt verwendet – **kein äußeres `strategy:`**:
@@ -146,6 +160,13 @@ nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
+
+### v0.188.0
+
+- Eigenständigen Blueprint `lichtsteuerung-v2.yaml` ergänzt.
+- Zeiten, Helligkeiten und Farbtemperaturen werden direkt in der jeweiligen
+  Blueprint-Automation gespeichert.
+- V2 benötigt keine Helfer und enthält keine Zeitversätze.
 
 ### v0.187.0
 
