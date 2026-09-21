@@ -8,11 +8,8 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.192.0";
+const ATZE_VERSION = "0.193.0";
 const STRATEGY_TYPE = "atze-dashboard";
-
-const ATZE_LIGHT_HELPER_CATEGORY =
-  "Atze Dashboard Strategy - Licht";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
@@ -441,144 +438,6 @@ async function ensureAtzeLightBlueprint(hass) {
     ds,
   };
 }
-
-const ATZE_LIGHT_HELPERS = [
-  {
-    domain: "input_boolean",
-    id: "lichtsteuerung",
-    values: {
-      name: "Lichtsteuerung",
-      icon: "mdi:lightbulb-auto",
-      initial: false,
-    },
-  },
-  {
-    domain: "input_boolean",
-    id: "motion_unterbrecher",
-    values: {
-      name: "Motion Unterbrecher",
-      icon: "mdi:motion-sensor-off",
-      initial: false,
-    },
-  },
-  {
-    domain: "input_datetime",
-    id: "morgen",
-    values: {
-      name: "Morgen",
-      icon: "mdi:clock-start",
-      initial: "05:30:00",
-      has_date: false,
-      has_time: true,
-    },
-  },
-  {
-    domain: "input_number",
-    id: "helligkeit_morgen",
-    values: {
-      name: "Helligkeit Morgen",
-      icon: "mdi:white-balance-sunny",
-      initial: 80,
-      min: 0,
-      max: 100,
-      step: 5,
-      mode: "slider",
-      unit_of_measurement: "%",
-    },
-  },
-  {
-    domain: "input_number",
-    id: "farbe_morgen",
-    values: {
-      name: "Farbe Morgen",
-      icon: "mdi:white-balance-sunny",
-      initial: 4500,
-      min: 2000,
-      max: 6500,
-      step: 100,
-      mode: "slider",
-      unit_of_measurement: "K",
-    },
-  },
-  {
-    domain: "input_datetime",
-    id: "abend",
-    values: {
-      name: "Abend",
-      icon: "mdi:weather-night",
-      initial: "21:00:00",
-      has_date: false,
-      has_time: true,
-    },
-  },
-  {
-    domain: "input_number",
-    id: "helligkeit_abend",
-    values: {
-      name: "Helligkeit Abend",
-      icon: "mdi:weather-night",
-      initial: 50,
-      min: 0,
-      max: 100,
-      step: 5,
-      mode: "slider",
-      unit_of_measurement: "%",
-    },
-  },
-  {
-    domain: "input_number",
-    id: "farbe_abend",
-    values: {
-      name: "Farbe Abend",
-      icon: "mdi:weather-night",
-      initial: 3300,
-      min: 2000,
-      max: 6500,
-      step: 100,
-      mode: "slider",
-      unit_of_measurement: "K",
-    },
-  },
-  {
-    domain: "input_datetime",
-    id: "nacht",
-    values: {
-      name: "Nacht",
-      icon: "mdi:weather-night",
-      initial: "23:00:00",
-      has_date: false,
-      has_time: true,
-    },
-  },
-  {
-    domain: "input_number",
-    id: "helligkeit_nacht",
-    values: {
-      name: "Helligkeit Nacht",
-      icon: "mdi:weather-night",
-      initial: 5,
-      min: 0,
-      max: 100,
-      step: 5,
-      mode: "slider",
-      unit_of_measurement: "%",
-    },
-  },
-  {
-    domain: "input_number",
-    id: "farbe_nacht",
-    values: {
-      name: "Farbe Nacht",
-      icon: "mdi:weather-night",
-      initial: 2700,
-      min: 2000,
-      max: 6500,
-      step: 100,
-      mode: "slider",
-      unit_of_measurement: "K",
-    },
-  },
-];
 
 
 const ATZE_SCROLL_TOP_THRESHOLD = 250;
@@ -6252,8 +6111,6 @@ function buildHomeOverviewView(
     )?.entity_id || null;
 
   const showSchedulerPopup = schedulerPopupEnabled(config);
-  const showLightControlPopup = lightControlPopupEnabled(config);
-  const lightControlPopup = lightControlPopupConfig(config);
   const customPageLinks = buildCustomPageViews(config).map(
     (view) => ({
       title: view.title,
@@ -6280,7 +6137,7 @@ function buildHomeOverviewView(
           entityId.startsWith("person.") &&
           hass.states[entityId]
       )
-      .slice(0, 3),
+      .slice(0, 5),
     hacs_update_entities:
       selectHacsUpdateEntities(hass, usableEntities),
     weather_entity: selectHomeWeatherEntity(hass, config),
@@ -6326,17 +6183,9 @@ function buildHomeOverviewView(
             icon: "mdi:calendar-clock",
           }]
         : []),
-      ...(showLightControlPopup
-        ? [{
-            title: lightControlPopup.title,
-            popup_hash: "#lichtsteuerung",
-            icon: lightControlPopup.icon,
-          }]
-        : []),
       ...customPageLinks,
     ],
     scheduler_popup: showSchedulerPopup,
-    light_control_popup: showLightControlPopup,
     room_tiles: roomTiles,
     asset_base: config.home_asset_base || null,
     hero_day_image:
@@ -6363,7 +6212,7 @@ function buildHomeOverviewView(
     icon: config.home_icon || "mdi:home",
     subview: false,
     panel: true,
-    cards: showSchedulerPopup || showLightControlPopup
+    cards: showSchedulerPopup
       ? [
           {
             type: "vertical-stack",
@@ -6382,18 +6231,6 @@ function buildHomeOverviewView(
                         type: "custom:scheduler-card",
                       },
                     ],
-                  }]
-                : []),
-              ...(showLightControlPopup
-                ? [{
-                    type: "custom:bubble-card",
-                    card_type: "pop-up",
-                    hash: "#lichtsteuerung",
-                    name: lightControlPopup.title,
-                    icon: lightControlPopup.icon,
-                    popup_mode: "adaptive-dialog",
-                    width_desktop: "900px",
-                    cards: lightControlPopup.cards,
                   }]
                 : []),
               homeCard,
@@ -6435,92 +6272,6 @@ function schedulerPopupEnabled(config) {
   return asArray(config.custom_pages).some(isSchedulerCustomPage);
 }
 
-function isLightControlCustomPage(page) {
-  const source = customPageSource(page);
-  if (!source) return false;
-
-  const identifiers = [source.title, source.path]
-    .filter(Boolean)
-    .map(slugify);
-
-  return identifiers.some((value) =>
-    [
-      "lichtsteuerung",
-      "licht-steuerung",
-      "light-control",
-      "light-control-panel",
-    ].includes(value)
-  );
-}
-
-function lightControlPopupEnabled(config) {
-  if (config.light_control_popup != null) {
-    return config.light_control_popup === true;
-  }
-
-  return asArray(config.custom_pages).some(
-    isLightControlCustomPage
-  );
-}
-
-function lightControlPopupConfig(config) {
-  const page = asArray(config.custom_pages).find(
-    isLightControlCustomPage
-  );
-  const source = customPageSource(page);
-  let cards = [];
-
-  if (Array.isArray(source?.cards)) {
-    cards = source.cards;
-  } else if (source?.card && typeof source.card === "object") {
-    cards = [{ ...source.card }];
-  } else if (Array.isArray(source?.sections)) {
-    cards = source.sections
-      .filter(
-        (section) =>
-          section &&
-          typeof section === "object" &&
-          Array.isArray(section.cards)
-      )
-      .map((section) => ({
-        type: "grid",
-        columns: Number(section.columns || 1),
-        square: false,
-        cards: section.cards,
-      }));
-  }
-
-  if (cards.length === 0) {
-    cards = [
-      {
-        type: "entities",
-        entities: [
-          { entity: "input_boolean.lichtsteuerung" },
-          { entity: "input_boolean.motion_unterbrecher" },
-          { type: "section", label: "☀️ Morgen-Einstellungen" },
-          { entity: "input_datetime.morgen", name: "Startzeit Morgen" },
-          { entity: "input_number.helligkeit_morgen", name: "Helligkeit Morgen" },
-          { entity: "input_number.farbe_morgen", name: "Farbe Morgen" },
-          { type: "section", label: "🌙 Abend-Einstellungen" },
-          { entity: "input_datetime.abend", name: "Startzeit Abend" },
-          { entity: "input_number.helligkeit_abend", name: "Helligkeit Abend" },
-          { entity: "input_number.farbe_abend", name: "Farbe Abend" },
-          { type: "section", label: "💤 Nacht-Einstellungen" },
-          { entity: "input_datetime.nacht", name: "Startzeit Nacht" },
-          { entity: "input_number.helligkeit_nacht", name: "Helligkeit Nacht" },
-          { entity: "input_number.farbe_nacht", name: "Farbe Nacht" },
-        ],
-      },
-    ];
-  }
-
-  return {
-    title: String(source?.title || "Lichtsteuerung"),
-    icon: source?.icon || "mdi:lightbulb-group-outline",
-    cards,
-  };
-}
-
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -6529,11 +6280,7 @@ function buildCustomPageViews(config) {
   ]);
 
   return asArray(config.custom_pages)
-    .filter(
-      (page) =>
-        !isSchedulerCustomPage(page) &&
-        !isLightControlCustomPage(page)
-    )
+    .filter((page) => !isSchedulerCustomPage(page))
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
@@ -7269,7 +7016,6 @@ function applyAtzeSidebarAccess(config) {
     );
 
   const clockKioskAccess =
-    config.home_view !== false &&
     config.clock_kiosk_toggle !== false;
 
   const enabled =
