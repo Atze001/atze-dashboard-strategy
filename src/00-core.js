@@ -6142,6 +6142,9 @@ function buildHomeOverviewView(
       .slice(0, 5),
     hacs_update_entities:
       selectHacsUpdateEntities(hass, usableEntities),
+    home_assistant_update_entity:
+      config.home_assistant_update_entity ||
+      "binary_sensor.home_assistant_update_verfugbar",
     weather_entity: selectHomeWeatherEntity(hass, config),
     power_entity: selectGlobalPowerEntity(
       hass,
