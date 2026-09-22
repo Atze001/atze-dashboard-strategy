@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.221.0";
+const ATZE_VERSION = "0.222.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -8946,6 +8946,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .hacs-update-wrap {
           display: flex;
           justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
           margin: 0 0 12px;
         }
 
@@ -10487,6 +10489,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ?.addEventListener(
         "click",
         () => this._navigateHacs()
+      );
+
+    this.shadowRoot
+      .querySelector("#home-assistant-update-badge")
+      ?.addEventListener(
+        "click",
+        () => this._openHomeAssistantUpdate()
       );
 
     const kioskClock =
