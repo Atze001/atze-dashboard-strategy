@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.222.0**
+Version **0.223.0**
 
 Enthalten sind unter anderem:
 
@@ -126,6 +126,44 @@ optionale Zeitpläne-Popup verwendet werden soll. **Alarmo** ist ebenfalls nur
 notwendig, wenn die Alarmo-Anzeige genutzt wird; ist keine passende Entität
 vorhanden, wird die Kachel automatisch ausgeblendet.
 
+## Home-Assistant-Update-Hinweis bei Docker / Container
+
+Da Home Assistant Container kein Supervisor-Update bereitstellt, kann die Strategy den Update-Status über `binary_sensor.home_assistant_update_verfugbar` anzeigen.
+
+1. Die offizielle Home-Assistant-Integration **Version** hinzufügen und als Quelle die lokale Installation verwenden. In diesem Setup lautet die Entität `sensor.home_assistant_version_current_version`.
+2. In `configuration.yaml` die aktuelle stabile Home-Assistant-Version regelmäßig abrufen:
+
+```yaml
+rest:
+  - resource: https://version.home-assistant.io/stable.json
+    scan_interval: 21600
+    sensor:
+      - name: "Home Assistant Latest Version"
+        unique_id: home_assistant_latest_version
+        value_template: "{{ value_json.homeassistant.default }}"
+```
+
+3. In `template.yaml` den Update-Sensor anlegen:
+
+```yaml
+- binary_sensor:
+    - name: "Home Assistant Update verfügbar"
+      unique_id: home_assistant_update_verfuegbar
+      state: >
+        {% set current = states('sensor.home_assistant_version_current_version') %}
+        {% set latest = states('sensor.home_assistant_latest_version') %}
+        {{ current not in ['unknown', 'unavailable', 'none', '']
+           and latest not in ['unknown', 'unavailable', 'none', '']
+           and version(latest) > version(current) }}
+      attributes:
+        installierte_version: >
+          {{ states('sensor.home_assistant_version_current_version') }}
+        aktuelle_version: >
+          {{ states('sensor.home_assistant_latest_version') }}
+```
+
+Sind beide Versionen identisch, ist der Binary-Sensor `off`. Sobald die stabile Version neuer als die lokale Installation ist, wird er `on` und die Strategy blendet das rote **Home Assistant Update**-Badge ein. Über `home_assistant_update_entity` kann bei Bedarf eine andere Update-Entität konfiguriert werden.
+
 ## Blueprint Lichtsteuerung
 
 Der Blueprint liegt im Repository zusätzlich als gut sichtbare Quelldatei unter:
@@ -206,6 +244,12 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.223.0
+
+- Die README dokumentiert jetzt die vollständige Docker-/Container-Einrichtung für den Home-Assistant-Update-Hinweis.
+- Die lokale Version kommt aus der offiziellen Version-Integration; die stabile Version wird per REST-Sensor abgefragt und anschließend über einen Template-Binary-Sensor verglichen.
+- Der funktionierende Vergleich verwendet `version(latest) > version(current)` mit den beiden Versionssensoren.
+
 ### v0.222.0
 
 - Die Startseite kann jetzt zusätzlich ein verfügbares Home-Assistant-Update für Docker-/Container-Installationen anzeigen.
@@ -217,12 +261,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 - Fenster- und Rollladen-Badges werden in Raumansichten gemeinsam in einer festen zweiten Badge-Reihe angezeigt.
 - Andere Raum-Badges bleiben in der ersten Reihe; das vorhandene Titelbild- und Badge-Design bleibt erhalten.
 - README-Changelog auf die letzten drei Aktualisierungen begrenzt.
-
-### v0.220.0
-
-- Favoriten-Bereiche in den Dashboard Settings bleiben nach Suche und Aufklappen zuverlässig geöffnet.
-- Dashboard Settings erhalten einen dunkleren Hintergrund.
-- Die Wetter-Kachel öffnet ein Wetter-Popup mit aktuellen Wetterdaten und Tagesvorhersage.
 
 ## Lizenz
 
