@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.221.0**
+Version **0.222.0**
 
 Enthalten sind unter anderem:
 
@@ -206,6 +206,12 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.222.0
+
+- Die Startseite kann jetzt zusätzlich ein verfügbares Home-Assistant-Update für Docker-/Container-Installationen anzeigen.
+- Standardmäßig wird `binary_sensor.home_assistant_update_verfugbar` verwendet; über `home_assistant_update_entity` kann eine andere Entität konfiguriert werden.
+- HACS- und Home-Assistant-Updates erscheinen gemeinsam im vorhandenen Update-Bereich; ein Klick auf das Home-Assistant-Badge öffnet die Entitätsdetails.
+
 ### v0.221.0
 
 - Fenster- und Rollladen-Badges werden in Raumansichten gemeinsam in einer festen zweiten Badge-Reihe angezeigt.
@@ -217,10 +223,6 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 - Favoriten-Bereiche in den Dashboard Settings bleiben nach Suche und Aufklappen zuverlässig geöffnet.
 - Dashboard Settings erhalten einen dunkleren Hintergrund.
 - Die Wetter-Kachel öffnet ein Wetter-Popup mit aktuellen Wetterdaten und Tagesvorhersage.
-
-### v0.219.0
-
-- Favoriten-Icons wurden für die optische Zentrierung um 1 Pixel nach unten korrigiert.
 
 ## Lizenz
 

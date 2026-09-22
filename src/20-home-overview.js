@@ -553,6 +553,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
+  _openHomeAssistantUpdate() {
+    const entityId = this._config?.home_assistant_update_entity;
+    if (entityId) {
+      this._moreInfo(entityId);
+    }
+  }
+
   _openPopup(hash) {
     const target = String(hash || "").startsWith("#")
       ? String(hash)
@@ -950,6 +957,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const hacsUpdateAvailable =
       hacsUpdatesAvailable.length > 0;
+
+    const homeAssistantUpdateEntity =
+      this._config.home_assistant_update_entity;
+    const homeAssistantUpdateState =
+      this._state(homeAssistantUpdateEntity);
+    const homeAssistantUpdateAvailable =
+      String(homeAssistantUpdateState?.state || "").toLowerCase() === "on";
+    const homeAssistantInstalledVersion =
+      homeAssistantUpdateState?.attributes?.installierte_version || "";
+    const homeAssistantLatestVersion =
+      homeAssistantUpdateState?.attributes?.aktuelle_version || "";
 
     const person = this._state(this._config.person_entity);
     const personPicture = this._personPicture(person);
@@ -1486,6 +1504,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .hacs-update-wrap {
           display: flex;
           justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
           margin: 0 0 12px;
         }
 
@@ -2682,17 +2702,30 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
       <ha-card>
         <div class="page">
-          ${hacsUpdateAvailable ? `
+          ${hacsUpdateAvailable || homeAssistantUpdateAvailable ? `
             <div class="hacs-update-wrap">
-              <button
-                class="hacs-update-badge"
-                id="hacs-update-badge"
-                type="button"
-                title="${hacsUpdatesAvailable.length} HACS-Update${hacsUpdatesAvailable.length === 1 ? "" : "s"} verfügbar"
-              >
-                <ha-icon icon="mdi:package-up"></ha-icon>
-                <span>Update vorhanden</span>
-              </button>
+              ${hacsUpdateAvailable ? `
+                <button
+                  class="hacs-update-badge"
+                  id="hacs-update-badge"
+                  type="button"
+                  title="${hacsUpdatesAvailable.length} HACS-Update${hacsUpdatesAvailable.length === 1 ? "" : "s"} verfügbar"
+                >
+                  <ha-icon icon="mdi:package-up"></ha-icon>
+                  <span>HACS Update</span>
+                </button>
+              ` : ""}
+              ${homeAssistantUpdateAvailable ? `
+                <button
+                  class="hacs-update-badge"
+                  id="home-assistant-update-badge"
+                  type="button"
+                  title="Home Assistant Update verfügbar${homeAssistantInstalledVersion && homeAssistantLatestVersion ? `: ${homeAssistantInstalledVersion} → ${homeAssistantLatestVersion}` : ""}"
+                >
+                  <ha-icon icon="mdi:home-assistant"></ha-icon>
+                  <span>Home Assistant Update</span>
+                </button>
+              ` : ""}
             </div>
           ` : ""}
 
@@ -3014,6 +3047,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ?.addEventListener(
         "click",
         () => this._navigateHacs()
+      );
+
+    this.shadowRoot
+      .querySelector("#home-assistant-update-badge")
+      ?.addEventListener(
+        "click",
+        () => this._openHomeAssistantUpdate()
       );
 
     const kioskClock =
