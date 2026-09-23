@@ -2962,6 +2962,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
     hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
+    if (!hiddenRoomIds.length) hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
     if (!hiddenRoomIds.length) try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
     if (Array.isArray(hiddenRoomIds)) {
       for (const el of this.shadowRoot.querySelectorAll(".room")) if (hiddenRoomIds.includes(el.dataset.areaId)) el.remove();
@@ -2969,6 +2970,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const roomOrderKey = "atze-dashboard:home-room-order";
     let roomOrder = [];
     roomOrder = atzeLayoutValue(this._config, "home_room_order", []);
+    if (!roomOrder.length) roomOrder = atzeLayoutValue(this._config, "home_room_order", []);
     if (!roomOrder.length) try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
     if (roomGrid && Array.isArray(roomOrder) && roomOrder.length) {
       const rank = new Map(roomOrder.map((id, index) => [id, index]));
