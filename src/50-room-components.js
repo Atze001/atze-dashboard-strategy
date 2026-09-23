@@ -832,7 +832,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
           grid-template-columns:repeat(${Number(this._config.columns) || 2}, minmax(0,1fr));
           gap:8px;
         }
-        .item { min-width:0; cursor:grab; touch-action:none; }
+        .item { min-width:0; cursor:grab; touch-action:pan-y; }
         .item.dragging { opacity:.45; }
         .item.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
         .trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
