@@ -206,20 +206,19 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.239.0
+
+- Die Hauptseiten-Sortierung verwendet für Touch jetzt explizite Touch-Events statt Pointer-/HTML5-Drag.
+- Während des Ziehens wird das DOM nicht mehr live umsortiert. Stattdessen wird nur das Ziel markiert und die endgültige Reihenfolge beim Loslassen gespeichert; dadurch kann die Karte nicht mehr kaskadenartig ans Ende springen.
+- Favoriten und Bereichskarten verwenden dieselbe stabile Long-Press-Sortierlogik.
+
 ### v0.238.0
 
-- Die eigentliche Ursache der fehlschlagenden Long-Press-Gesten auf der Hauptseite wurde behoben: Home-Assistant-State-Updates dürfen während einer laufenden Pointer-Interaktion das Shadow-DOM nicht mehr neu rendern.
-- Bereichskarten und Favoriten behalten dadurch während Long-Press und Verschieben dasselbe DOM-Element; die Geste wird nicht mehr durch ein Re-Render abgebrochen.
-- Für die Drag-Flächen wird während der direkten Interaktion die Browser-Touch-Geste unterdrückt, damit iOS den Pointer-Drag nicht übernimmt.
+- Re-Renders durch Home-Assistant-State-Updates werden während einer laufenden direkten Interaktion blockiert.
 
 ### v0.237.0
 
-- Touch Drag & Drop auf der Hauptseite wurde für Bereichskarten und Favoriten neu auf Pointer-Interaktionen umgestellt.
-- Die Reihenfolge wird aus der tatsächlichen DOM-Position gespeichert.
-
-### v0.236.0
-
-- Erste Korrektur der Touch-Sortierung für Favoriten und der Einfügeposition von Bereichskarten.
+- Touch Drag & Drop auf der Hauptseite wurde für Bereichskarten und Favoriten auf Pointer-Interaktionen umgestellt.
 
 ## Lizenz
 
