@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.224.0";
+const ATZE_VERSION = "0.225.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -3192,7 +3192,10 @@ function buildEntityCard(
   }
 
   if (options.popupHash && card.type === "custom:bubble-card") {
-    if (domainOf(entityId) === "climate") {
+    if (domainOf(entityId) === "light") {
+      // Keep light cards clean in room views: no three-dot popup button.
+      // The popup mapping itself remains intact for future/other navigation.
+    } else if (domainOf(entityId) === "climate") {
       card.button_action = deepMerge(
         card.button_action || {},
         {
