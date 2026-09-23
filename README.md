@@ -206,18 +206,18 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.246.0
+
+- Vertikales Scrollen auf der Hauptseite bleibt beim Berühren einer Bereichskarte wieder möglich.
+- Bereichskarten verwenden `touch-action: pan-y` statt `none`; die native Long-Press-Drag-Logik und der Papierkorb bleiben erhalten.
+
 ### v0.245.0
 
-- Hauptseiten-Bereichskarten übernehmen für Drag & Drop und Papierkorb jetzt bewusst exakt das bewährte native Ereignismuster der funktionierenden Bereichsseiten.
-- Die zusätzlichen Pointer-/Timer-Sonderwege der letzten Versuche wurden entfernt; Bereichskarten verwenden wie die Bereichsseiten `touch-action: none`.
+- Hauptseiten-Bereichskarten übernehmen für Drag & Drop und Papierkorb das native Ereignismuster der Bereichsseiten.
 
 ### v0.244.0
 
 - Papierkorb-Geste der Hauptseiten-Bereiche testete auf Touch/Pen separates Pointer-Tracking.
-
-### v0.243.0
-
-- Papierkorb blieb während des nativen Drag-Vorgangs sichtbar und erhielt eine größere Drop-Fläche.
 
 ## Lizenz
 
