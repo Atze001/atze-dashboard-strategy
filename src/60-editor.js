@@ -275,7 +275,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
-  _resetDirectDragLayout() {
+  async _resetDirectDragLayout() {
     const keys = [];
     try {
       for (let index = 0; index < localStorage.length; index += 1) {
@@ -292,6 +292,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       }
       keys.forEach((key) => localStorage.removeItem(key));
     } catch (_e) {}
+    try {
+      const raw = await this._hass.callWS({ type: "lovelace/config", force: true });
+      if (raw?.strategy?.type === STRATEGY_TYPE) {
+        const strategy = { ...raw.strategy };
+        delete strategy[ATZE_LAYOUT_FIELD];
+        await this._hass.callWS({ type: "lovelace/config/save", config: { ...raw, strategy } });
+        delete this._config[ATZE_LAYOUT_FIELD];
+      }
+    } catch (error) {
+      console.error("Atze Dashboard: zentraler Drag-&-Drop-Reset fehlgeschlagen", error);
+    }
     window.dispatchEvent(new Event("location-changed"));
     window.location.reload();
   }

@@ -8,8 +8,42 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.239.0";
+const ATZE_VERSION = "0.240.0";
 const STRATEGY_TYPE = "atze-dashboard";
+const ATZE_LAYOUT_FIELD = "direct_layout";
+
+function atzeLayout(config) {
+  return config?.[ATZE_LAYOUT_FIELD] || {};
+}
+
+function atzeLayoutValue(config, key, fallback = []) {
+  const value = atzeLayout(config)?.[key];
+  return Array.isArray(value) ? value : fallback;
+}
+
+async function saveAtzeStrategyLayout(hass, config, patch) {
+  const nextLayout = { ...atzeLayout(config), ...patch };
+  const nextConfig = { ...config, [ATZE_LAYOUT_FIELD]: nextLayout };
+  // Home Assistant stores the raw Lovelace config server-side. Preserve the
+  // existing dashboard and only replace the strategy options.
+  try {
+    const raw = await hass.callWS({ type: "lovelace/config", force: true });
+    if (!raw?.strategy || raw.strategy.type !== STRATEGY_TYPE) {
+      throw new Error("Atze strategy root not found");
+    }
+    await hass.callWS({
+      type: "lovelace/config/save",
+      config: { ...raw, strategy: { ...raw.strategy, ...nextConfig } },
+    });
+    Object.assign(config, nextConfig);
+    window.dispatchEvent(new CustomEvent("atze-layout-saved", { detail: nextLayout }));
+    return true;
+  } catch (error) {
+    console.error("Atze Dashboard: zentrale Layout-Speicherung fehlgeschlagen", error);
+    return false;
+  }
+}
+
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";

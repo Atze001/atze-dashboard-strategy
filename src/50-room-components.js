@@ -759,6 +759,14 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     return card?.[field];
   }
 
+  _layoutOrderKey() {
+    return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
+  }
+
+  _layoutOrderKey() {
+    return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
+  }
+
   _storageKey() {
     if (this._config?.storage_key) return this._config.storage_key;
     return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
@@ -772,10 +780,12 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     const entityId = card?.entity;
     if (!entityId) return;
     let hidden = [];
-    try { hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]"); } catch (_e) {}
+    hidden = atzeLayoutValue(this._config?.strategy_config, "hidden_cards:" + String(this._config?.area_id || "room"), []);
+    if (!hidden.length) try { hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]"); } catch (_e) {}
     hidden = Array.isArray(hidden) ? hidden : [];
     if (!hidden.includes(entityId)) hidden.push(entityId);
     try { localStorage.setItem(this._hiddenKey(), JSON.stringify(hidden)); } catch (_e) {}
+    if (this._hass && this._config?.strategy_config) saveAtzeStrategyLayout(this._hass, this._config.strategy_config, { ["hidden_cards:" + String(this._config?.area_id || "room")]: hidden });
     this._cards = this._cards.filter((entry) => entry.entity !== entityId);
     this._saveOrder();
     window.dispatchEvent(new CustomEvent("atze-card-hidden", { detail: { entityId, areaId: this._config?.area_id } }));
@@ -784,7 +794,9 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 
   _orderedCards(cards) {
     let saved = [];
-    try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
+    saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
+    if (!saved.length) saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
+    if (!saved.length) try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
     if (!Array.isArray(saved) || !saved.length) return [...cards];
     const rank = new Map(saved.map((id, index) => [id, index]));
     return [...cards].sort((a, b) => {
@@ -795,12 +807,11 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   }
 
   _saveOrder() {
-    try {
-      localStorage.setItem(
-        this._storageKey(),
-        JSON.stringify(this._cards.map((card) => this._itemId(card)).filter(Boolean))
-      );
-    } catch (_e) {}
+    const ids = this._cards.map((card) => this._itemId(card)).filter(Boolean);
+    try { localStorage.setItem(this._storageKey(), JSON.stringify(ids)); } catch (_e) {}
+    if (this._hass && this._config?.strategy_config) {
+      saveAtzeStrategyLayout(this._hass, this._config.strategy_config, { [this._layoutOrderKey()]: ids });
+    }
   }
 
   _move(from, to) {
