@@ -206,15 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.254.0
+- Migration der alten Schalter-/Steckdosen-Filter greift jetzt auch in der eigentlichen Laufzeit-Klassifizierung.
+- Bereits gespeicherte alte Filter können die neue Steckdosen-Gruppe damit nicht mehr übersteuern.
+
 ### v0.253.0
-- Alte automatisch gespeicherte Schalter-Namensfilter werden einmalig auf die neue eindeutige Vorauswahl migriert.
-- Eigene, abweichend konfigurierte Filterwerte bleiben unverändert.
+- Alte automatisch gespeicherte Schalter-Namensfilter werden auf die neue eindeutige Vorauswahl migriert.
 
 ### v0.252.0
-- Standard-Namensfilter bereinigt: Schalter verwendet „Schalter, Taster“ statt des generischen Begriffs „Switch“.
-
-### v0.251.0
-- Eigene Gruppe „Steckdosen“ mit separatem Namensfilter ergänzt.
+- Standard-Namensfilter für Schalter und Steckdosen eindeutig getrennt.
 
 ## Lizenz
 
