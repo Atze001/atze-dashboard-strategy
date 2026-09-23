@@ -755,7 +755,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   getCardSize() { return 1; }
 
   _storageKey() {
-    return "atze-dashboard:switch-order:" + String(this._config?.area_id || "room");
+    return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
   }
 
   _orderedCards(cards) {
