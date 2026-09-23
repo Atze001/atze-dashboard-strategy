@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.247.0";
+const ATZE_VERSION = "0.248.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4680,35 +4680,6 @@ function buildGroupSection(
     Number(config.compact_columns) ||
     2;
 
-  // Lights always use a two-column grid in room views.
-  // Keep Bubble pop-ups outside the inner grid so they stay invisible until opened.
-  if (groupKey === "light") {
-    const visibleCards = cards.filter(
-      (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
-    );
-    const popupCards = cards.filter(
-      (card) => card.type === "custom:bubble-card" && card.card_type === "pop-up"
-    );
-
-    return {
-      type: "grid",
-      cards: [
-        {
-          type: "heading",
-          heading: meta.title,
-          icon: meta.icon,
-        },
-        {
-          type: "grid",
-          columns: 2,
-          square: false,
-          cards: visibleCards,
-        },
-        ...popupCards,
-      ],
-    };
-  }
-
   // Switches are sorted directly in the room view. The custom grid stores
   // the chosen order per room in the browser and applies it immediately.
   if (groupKey !== "technik") {
@@ -4731,10 +4702,9 @@ function buildGroupSection(
           type: "custom:atze-sortable-switch-grid",
           area_id: area.area_id,
           group_key: groupKey,
-          // Preserve the layout from before direct drag & drop:
-          // regular room groups remain one-column; compact groups keep their
-          // configured column count. Lights use their dedicated 2-column path.
-          columns: compact ? columns : 1,
+          // Lights keep their established two-column layout, but now use
+          // the same direct drag & drop ordering as the other room groups.
+          columns: groupKey === "light" ? 2 : (compact ? columns : 1),
           cards: visibleCards,
         },
         ...popupCards,
