@@ -1186,17 +1186,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         <label
           class="row area-config-row ${blockedArea ? "blocked" : ""}"
           data-area-row="${this._escape(area.area_id)}"
-          draggable="${blockedArea ? "false" : "true"}"
         >
-          <span class="area">
-            <span
-              class="drag-handle"
-              title="${blockedArea ? "" : "Ziehen zum Sortieren"}"
-              aria-hidden="true"
-            >
-              <ha-icon icon="mdi:drag-vertical"></ha-icon>
-            </span>
-            <ha-icon
+          <span class="area">\n            <ha-icon
               class="area-icon"
               icon="${this._escape(
                 area.icon || "mdi:home-outline"
@@ -2033,18 +2024,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           <div class="editor-section-body">
             <div class="editor-section-help">
               Wähle aus, welche Bereiche angezeigt werden.
-              Ziehe Räume am Griff nach oben oder unten, um ihre
-              Reihenfolge zu ändern. Bereiche mit
-              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
+              Die Reihenfolge der Räume wird direkt auf der Startseite\n              per langem Drücken und Verschieben geändert. Bereiche mit\n              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
               immer ausgeblendet.
             </div>
 
             <div class="toolbar">
               <button id="select-all" type="button">Alle</button>
               <button id="select-none" type="button">Keine</button>
-              <button id="reset-order" type="button">
-                Reihenfolge zurücksetzen
-              </button>
             </div>
 
             <div class="rows">
@@ -2229,75 +2215,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       else customElements.whenDefined("ha-yaml-editor").then(initialize);
     }
 
-    for (
-      const row of
-        this.shadowRoot.querySelectorAll(
-          ".area-config-row[draggable='true']"
-        )
-    ) {
-      row.addEventListener("dragstart", (event) => {
-        const areaId = row.dataset.areaRow;
-        this._draggedAreaId = areaId || null;
-        row.classList.add("dragging");
-
-        if (event.dataTransfer) {
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData(
-            "text/plain",
-            areaId || ""
-          );
-        }
-      });
-
-      row.addEventListener("dragend", () => {
-        this._draggedAreaId = null;
-
-        for (
-          const item of
-            this.shadowRoot.querySelectorAll(
-              ".area-config-row"
-            )
-        ) {
-          item.classList.remove(
-            "dragging",
-            "drag-over"
-          );
-        }
-      });
-
-      row.addEventListener("dragover", (event) => {
-        event.preventDefault();
-
-        if (
-          this._draggedAreaId &&
-          this._draggedAreaId !== row.dataset.areaRow
-        ) {
-          row.classList.add("drag-over");
-
-          if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = "move";
-          }
-        }
-      });
-
-      row.addEventListener("dragleave", () => {
-        row.classList.remove("drag-over");
-      });
-
-      row.addEventListener("drop", (event) => {
-        event.preventDefault();
-        row.classList.remove("drag-over");
-
-        const dragged =
-          this._draggedAreaId ||
-          event.dataTransfer?.getData("text/plain");
-
-        this._moveArea(
-          dragged,
-          row.dataset.areaRow
-        );
-      });
-    }
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
       input.addEventListener("change", (event) => {
