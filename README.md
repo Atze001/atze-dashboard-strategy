@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.235.0**
+Version **0.236.0**
 
 Enthalten sind unter anderem:
 
@@ -206,22 +206,21 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.236.0
+
+- Drag & Drop der Favoriten funktioniert jetzt auch per langem Drücken auf Touch-Geräten und speichert die neue Reihenfolge zuverlässig.
+- Die Bereichsanordnung auf der Hauptseite verwendet eine stabile Einfügeposition, damit die gezogene Raumkarte nicht mehr unerwartet ans Ende springt.
+- Die gespeicherte Raumreihenfolge behandelt neu oder noch nicht sortierte Bereiche stabil.
+
 ### v0.235.0
 
-- Favoriten auf der Startseite können jetzt ebenfalls direkt per Drag & Drop angeordnet werden.
-- In den Dashboard-Einstellungen gibt es einen vollständigen Reset für Drag & Drop: Reihenfolgen von Räumen, Favoriten und Karten in den Bereichsseiten werden zurückgesetzt.
-- Der Reset stellt zusätzlich alle per Drag-&-Drop-Papierkorb ausgeblendeten Raum- und Entitätskarten wieder her, sodass die direkte Dashboard-Anpassung vollständig auf den Ausgangszustand zurückgesetzt werden kann.
+- Favoriten auf der Startseite können direkt per Drag & Drop angeordnet werden.
+- In den Dashboard-Einstellungen gibt es einen vollständigen Reset für Drag & Drop: Reihenfolgen und per Papierkorb ausgeblendete Karten bzw. Räume werden auf den Ausgangszustand zurückgesetzt.
 
 ### v0.234.0
 
 - README bereinigt: den speziellen Abschnitt zum Home-Assistant-Update-Hinweis für Docker-/Container-Installationen entfernt.
 - Changelog wieder auf die letzten drei Dashboard-Versionen aktualisiert.
-
-### v0.233.0
-
-- Der Layout-Nebeneffekt der direkten Drag-&-Drop-Sortierung wurde korrigiert.
-- Normale Raumgruppen sind wieder einspaltig; Licht bleibt zweispaltig und kompakte Gruppen behalten ihre konfigurierte Spaltenzahl.
-- Drag & Drop sowie der Papierkorb zum Ausblenden bleiben erhalten.
 
 ## Lizenz
 

@@ -2958,8 +2958,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
     try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
     if (roomGrid && Array.isArray(roomOrder) && roomOrder.length) {
       const rank = new Map(roomOrder.map((id, index) => [id, index]));
-      [...roomGrid.querySelectorAll(".room")]
-        .sort((a, b) => (rank.get(a.dataset.areaId) ?? 9999) - (rank.get(b.dataset.areaId) ?? 9999))
+      const rooms = [...roomGrid.querySelectorAll(".room")];
+      const sourceRank = new Map(rooms.map((room, index) => [room.dataset.areaId, index]));
+      rooms
+        .sort((a, b) => {
+          const ai = rank.has(a.dataset.areaId) ? rank.get(a.dataset.areaId) : roomOrder.length + (sourceRank.get(a.dataset.areaId) ?? 0);
+          const bi = rank.has(b.dataset.areaId) ? rank.get(b.dataset.areaId) : roomOrder.length + (sourceRank.get(b.dataset.areaId) ?? 0);
+          return ai - bi;
+        })
         .forEach((room) => roomGrid.appendChild(room));
     }
 
@@ -3022,8 +3028,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.preventDefault();
           const source = this._roomDrag?.element;
           if (!source || source === element || !roomGrid) return;
-          const rooms = [...roomGrid.querySelectorAll(".room")];
-          if (rooms.indexOf(source) < rooms.indexOf(element)) element.after(source);
+          const rect = element.getBoundingClientRect();
+          const after = event.clientY > rect.top + rect.height / 2 ||
+            (Math.abs(event.clientY - (rect.top + rect.height / 2)) < rect.height / 4 &&
+             event.clientX > rect.left + rect.width / 2);
+          if (after) element.after(source);
           else element.before(source);
         });
         element.addEventListener("drop", (event) => {
@@ -3084,28 +3093,72 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
     if (favoriteGrid) {
       let draggedFavorite = null;
+      let favoriteHoldTimer = null;
+      let favoritePointerId = null;
+      const saveFavoriteOrder = () => {
+        const ids = [...favoriteGrid.querySelectorAll(".favorite-card")].map((card) => card.dataset.entityId);
+        try { localStorage.setItem("atze-dashboard:favorite-order", JSON.stringify(ids)); } catch (_e) {}
+      };
+      const moveFavoriteAtPoint = (x, y) => {
+        if (!draggedFavorite) return;
+        const target = [...favoriteGrid.querySelectorAll(".favorite-card")]
+          .find((card) => card !== draggedFavorite && (() => {
+            const r = card.getBoundingClientRect();
+            return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+          })());
+        if (!target) return;
+        const rect = target.getBoundingClientRect();
+        const after = y > rect.top + rect.height / 2 ||
+          (Math.abs(y - (rect.top + rect.height / 2)) < rect.height / 4 && x > rect.left + rect.width / 2);
+        if (after) target.after(draggedFavorite);
+        else target.before(draggedFavorite);
+      };
       for (const element of favoriteGrid.querySelectorAll(".favorite-card")) {
         element.draggable = true;
+        element.addEventListener("pointerdown", (event) => {
+          favoritePointerId = event.pointerId;
+          favoriteHoldTimer = window.setTimeout(() => {
+            draggedFavorite = element;
+            element.classList.add("dragging", "just-dragged");
+            try { element.setPointerCapture(favoritePointerId); } catch (_e) {}
+          }, 450);
+        });
+        element.addEventListener("pointermove", (event) => {
+          if (!draggedFavorite || draggedFavorite !== element) return;
+          event.preventDefault();
+          moveFavoriteAtPoint(event.clientX, event.clientY);
+        });
+        const finishFavoritePointerDrag = () => {
+          if (favoriteHoldTimer) window.clearTimeout(favoriteHoldTimer);
+          favoriteHoldTimer = null;
+          if (draggedFavorite === element) {
+            saveFavoriteOrder();
+            element.classList.remove("dragging");
+            window.setTimeout(() => element.classList.remove("just-dragged"), 250);
+            draggedFavorite = null;
+          }
+        };
+        element.addEventListener("pointerup", finishFavoritePointerDrag);
+        element.addEventListener("pointercancel", finishFavoritePointerDrag);
         element.addEventListener("dragstart", (event) => {
           draggedFavorite = element;
-          element.classList.add("dragging");
+          element.classList.add("dragging", "just-dragged");
           event.dataTransfer?.setData("text/plain", element.dataset.entityId || "");
         });
         element.addEventListener("dragend", () => {
+          saveFavoriteOrder();
           element.classList.remove("dragging");
+          window.setTimeout(() => element.classList.remove("just-dragged"), 250);
           draggedFavorite = null;
         });
         element.addEventListener("dragover", (event) => {
           event.preventDefault();
           if (!draggedFavorite || draggedFavorite === element) return;
-          const cards = [...favoriteGrid.querySelectorAll(".favorite-card")];
-          if (cards.indexOf(draggedFavorite) < cards.indexOf(element)) element.after(draggedFavorite);
-          else element.before(draggedFavorite);
+          moveFavoriteAtPoint(event.clientX, event.clientY);
         });
         element.addEventListener("drop", (event) => {
           event.preventDefault();
-          const ids = [...favoriteGrid.querySelectorAll(".favorite-card")].map((card) => card.dataset.entityId);
-          try { localStorage.setItem("atze-dashboard:favorite-order", JSON.stringify(ids)); } catch (_e) {}
+          saveFavoriteOrder();
         });
       }
     }
@@ -3113,11 +3166,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelectorAll(".favorite-card[data-entity-id]")
       .forEach((element) => {
-        element.addEventListener("click", () =>
-          this._activateFavorite(
-            element.dataset.entityId
-          )
-        );
+        element.addEventListener("click", (event) => {
+          if (element.classList.contains("just-dragged")) {
+            event.preventDefault();
+            return;
+          }
+          this._activateFavorite(element.dataset.entityId);
+        });
       });
 
     this.shadowRoot
