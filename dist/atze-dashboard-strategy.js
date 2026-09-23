@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.256.0";
+const ATZE_VERSION = "0.257.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6357,6 +6357,7 @@ function buildHomeOverviewView(
           {
             type: "vertical-stack",
             cards: [
+              homeCard,
               ...(showSchedulerPopup
                 ? [{
                     type: "custom:bubble-card",
@@ -6373,7 +6374,6 @@ function buildHomeOverviewView(
                     ],
                   }]
                 : []),
-              homeCard,
             ],
           },
         ]
