@@ -1174,6 +1174,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         `
       : "";
 
+    const favoriteOrderKey = "atze-dashboard:favorite-order";
+    let savedFavoriteOrder = [];
+    try { savedFavoriteOrder = JSON.parse(localStorage.getItem(favoriteOrderKey) || "[]"); } catch (_e) {}
+    if (Array.isArray(savedFavoriteOrder) && savedFavoriteOrder.length) {
+      const rank = new Map(savedFavoriteOrder.map((id, index) => [id, index]));
+      favoriteStates.sort((a, b) => (rank.get(a.entityId) ?? 9999) - (rank.get(b.entityId) ?? 9999));
+    }
+
     const favoriteHtml = favoriteStates.length
       ? `
           <section class="favorites" aria-label="Favoriten">
@@ -3072,6 +3080,35 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
         });
       });
+
+    const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
+    if (favoriteGrid) {
+      let draggedFavorite = null;
+      for (const element of favoriteGrid.querySelectorAll(".favorite-card")) {
+        element.draggable = true;
+        element.addEventListener("dragstart", (event) => {
+          draggedFavorite = element;
+          element.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", element.dataset.entityId || "");
+        });
+        element.addEventListener("dragend", () => {
+          element.classList.remove("dragging");
+          draggedFavorite = null;
+        });
+        element.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          if (!draggedFavorite || draggedFavorite === element) return;
+          const cards = [...favoriteGrid.querySelectorAll(".favorite-card")];
+          if (cards.indexOf(draggedFavorite) < cards.indexOf(element)) element.after(draggedFavorite);
+          else element.before(draggedFavorite);
+        });
+        element.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const ids = [...favoriteGrid.querySelectorAll(".favorite-card")].map((card) => card.dataset.entityId);
+          try { localStorage.setItem("atze-dashboard:favorite-order", JSON.stringify(ids)); } catch (_e) {}
+        });
+      }
+    }
 
     this.shadowRoot
       .querySelectorAll(".favorite-card[data-entity-id]")

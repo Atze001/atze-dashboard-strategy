@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.234.0";
+const ATZE_VERSION = "0.235.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -8706,6 +8706,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         `
       : "";
 
+    const favoriteOrderKey = "atze-dashboard:favorite-order";
+    let savedFavoriteOrder = [];
+    try { savedFavoriteOrder = JSON.parse(localStorage.getItem(favoriteOrderKey) || "[]"); } catch (_e) {}
+    if (Array.isArray(savedFavoriteOrder) && savedFavoriteOrder.length) {
+      const rank = new Map(savedFavoriteOrder.map((id, index) => [id, index]));
+      favoriteStates.sort((a, b) => (rank.get(a.entityId) ?? 9999) - (rank.get(b.entityId) ?? 9999));
+    }
+
     const favoriteHtml = favoriteStates.length
       ? `
           <section class="favorites" aria-label="Favoriten">
@@ -10604,6 +10612,35 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
         });
       });
+
+    const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
+    if (favoriteGrid) {
+      let draggedFavorite = null;
+      for (const element of favoriteGrid.querySelectorAll(".favorite-card")) {
+        element.draggable = true;
+        element.addEventListener("dragstart", (event) => {
+          draggedFavorite = element;
+          element.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", element.dataset.entityId || "");
+        });
+        element.addEventListener("dragend", () => {
+          element.classList.remove("dragging");
+          draggedFavorite = null;
+        });
+        element.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          if (!draggedFavorite || draggedFavorite === element) return;
+          const cards = [...favoriteGrid.querySelectorAll(".favorite-card")];
+          if (cards.indexOf(draggedFavorite) < cards.indexOf(element)) element.after(draggedFavorite);
+          else element.before(draggedFavorite);
+        });
+        element.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const ids = [...favoriteGrid.querySelectorAll(".favorite-card")].map((card) => card.dataset.entityId);
+          try { localStorage.setItem("atze-dashboard:favorite-order", JSON.stringify(ids)); } catch (_e) {}
+        });
+      }
+    }
 
     this.shadowRoot
       .querySelectorAll(".favorite-card[data-entity-id]")
@@ -13301,6 +13338,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _resetDirectDragLayout() {
+    const keys = [];
+    try {
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key && key.startsWith("atze-dashboard:")) {
+          if (
+            key.startsWith("atze-dashboard:card-order:") ||
+            key.startsWith("atze-dashboard:hidden-cards:") ||
+            key === "atze-dashboard:home-room-order" ||
+            key === "atze-dashboard:hidden-home-rooms" ||
+            key === "atze-dashboard:favorite-order"
+          ) keys.push(key);
+        }
+      }
+      keys.forEach((key) => localStorage.removeItem(key));
+    } catch (_e) {}
+    window.dispatchEvent(new Event("location-changed"));
+    window.location.reload();
+  }
+
   _deviceById() {
     return new Map(
       (this._devices || []).map(
@@ -15057,6 +15115,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="toolbar">
               <button id="select-all" type="button">Alle</button>
               <button id="select-none" type="button">Keine</button>
+              <button id="reset-drag-layout" type="button">Drag & Drop komplett zurücksetzen</button>
             </div>
 
             <div class="rows">
@@ -15175,6 +15234,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .querySelector("#select-none")
       ?.addEventListener("click", () =>
         this._selectNoAreas()
+      );
+
+    this.shadowRoot
+      .querySelector("#reset-drag-layout")
+      ?.addEventListener("click", () =>
+        this._resetDirectDragLayout()
       );
 
     this.shadowRoot

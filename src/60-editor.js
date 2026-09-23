@@ -275,6 +275,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _resetDirectDragLayout() {
+    const keys = [];
+    try {
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (key && key.startsWith("atze-dashboard:")) {
+          if (
+            key.startsWith("atze-dashboard:card-order:") ||
+            key.startsWith("atze-dashboard:hidden-cards:") ||
+            key === "atze-dashboard:home-room-order" ||
+            key === "atze-dashboard:hidden-home-rooms" ||
+            key === "atze-dashboard:favorite-order"
+          ) keys.push(key);
+        }
+      }
+      keys.forEach((key) => localStorage.removeItem(key));
+    } catch (_e) {}
+    window.dispatchEvent(new Event("location-changed"));
+    window.location.reload();
+  }
+
   _deviceById() {
     return new Map(
       (this._devices || []).map(
@@ -2031,6 +2052,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="toolbar">
               <button id="select-all" type="button">Alle</button>
               <button id="select-none" type="button">Keine</button>
+              <button id="reset-drag-layout" type="button">Drag & Drop komplett zurücksetzen</button>
             </div>
 
             <div class="rows">
@@ -2149,6 +2171,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .querySelector("#select-none")
       ?.addEventListener("click", () =>
         this._selectNoAreas()
+      );
+
+    this.shadowRoot
+      .querySelector("#reset-drag-layout")
+      ?.addEventListener("click", () =>
+        this._resetDirectDragLayout()
       );
 
     this.shadowRoot
