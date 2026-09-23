@@ -8,8 +8,42 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.239.0";
+const ATZE_VERSION = "0.240.0";
 const STRATEGY_TYPE = "atze-dashboard";
+const ATZE_LAYOUT_FIELD = "direct_layout";
+
+function atzeLayout(config) {
+  return config?.[ATZE_LAYOUT_FIELD] || {};
+}
+
+function atzeLayoutValue(config, key, fallback = []) {
+  const value = atzeLayout(config)?.[key];
+  return Array.isArray(value) ? value : fallback;
+}
+
+async function saveAtzeStrategyLayout(hass, config, patch) {
+  const nextLayout = { ...atzeLayout(config), ...patch };
+  const nextConfig = { ...config, [ATZE_LAYOUT_FIELD]: nextLayout };
+  // Home Assistant stores the raw Lovelace config server-side. Preserve the
+  // existing dashboard and only replace the strategy options.
+  try {
+    const raw = await hass.callWS({ type: "lovelace/config", force: true });
+    if (!raw?.strategy || raw.strategy.type !== STRATEGY_TYPE) {
+      throw new Error("Atze strategy root not found");
+    }
+    await hass.callWS({
+      type: "lovelace/config/save",
+      config: { ...raw, strategy: { ...raw.strategy, ...nextConfig } },
+    });
+    Object.assign(config, nextConfig);
+    window.dispatchEvent(new CustomEvent("atze-layout-saved", { detail: nextLayout }));
+    return true;
+  } catch (error) {
+    console.error("Atze Dashboard: zentrale Layout-Speicherung fehlgeschlagen", error);
+    return false;
+  }
+}
+
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
@@ -10493,13 +10527,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
-    try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
+    hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
+    if (!hiddenRoomIds.length) try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
     if (Array.isArray(hiddenRoomIds)) {
       for (const el of this.shadowRoot.querySelectorAll(".room")) if (hiddenRoomIds.includes(el.dataset.areaId)) el.remove();
     }
     const roomOrderKey = "atze-dashboard:home-room-order";
     let roomOrder = [];
-    try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
+    roomOrder = atzeLayoutValue(this._config, "home_room_order", []);
+    if (!roomOrder.length) try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
     if (roomGrid && Array.isArray(roomOrder) && roomOrder.length) {
       const rank = new Map(roomOrder.map((id, index) => [id, index]));
       const rooms = [...roomGrid.querySelectorAll(".room")];
@@ -10574,6 +10610,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           if (from < index) target.after(source); else target.before(source);
           const ids = [...container.querySelectorAll(selector)].map(idGetter).filter(Boolean);
           try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch (_e) {}
+          const field = storageKey === roomOrderKey ? "home_room_order" : "favorite_order";
+          saveAtzeStrategyLayout(this._hass, this._config, { [field]: ids });
           dragIndex = null;
         });
       });
@@ -12936,6 +12974,10 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     return card?.[field];
   }
 
+  _layoutOrderKey() {
+    return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
+  }
+
   _storageKey() {
     if (this._config?.storage_key) return this._config.storage_key;
     return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
@@ -12949,10 +12991,12 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     const entityId = card?.entity;
     if (!entityId) return;
     let hidden = [];
-    try { hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]"); } catch (_e) {}
+    hidden = atzeLayoutValue(this._config?.strategy_config, "hidden_cards:" + String(this._config?.area_id || "room"), []);
+    if (!hidden.length) try { hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]"); } catch (_e) {}
     hidden = Array.isArray(hidden) ? hidden : [];
     if (!hidden.includes(entityId)) hidden.push(entityId);
     try { localStorage.setItem(this._hiddenKey(), JSON.stringify(hidden)); } catch (_e) {}
+    if (this._hass && this._config?.strategy_config) saveAtzeStrategyLayout(this._hass, this._config.strategy_config, { ["hidden_cards:" + String(this._config?.area_id || "room")]: hidden });
     this._cards = this._cards.filter((entry) => entry.entity !== entityId);
     this._saveOrder();
     window.dispatchEvent(new CustomEvent("atze-card-hidden", { detail: { entityId, areaId: this._config?.area_id } }));
@@ -12961,7 +13005,8 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 
   _orderedCards(cards) {
     let saved = [];
-    try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
+    saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
+    if (!saved.length) try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
     if (!Array.isArray(saved) || !saved.length) return [...cards];
     const rank = new Map(saved.map((id, index) => [id, index]));
     return [...cards].sort((a, b) => {
@@ -12972,12 +13017,11 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   }
 
   _saveOrder() {
-    try {
-      localStorage.setItem(
-        this._storageKey(),
-        JSON.stringify(this._cards.map((card) => this._itemId(card)).filter(Boolean))
-      );
-    } catch (_e) {}
+    const ids = this._cards.map((card) => this._itemId(card)).filter(Boolean);
+    try { localStorage.setItem(this._storageKey(), JSON.stringify(ids)); } catch (_e) {}
+    if (this._hass && this._config?.strategy_config) {
+      saveAtzeStrategyLayout(this._hass, this._config.strategy_config, { [this._layoutOrderKey()]: ids });
+    }
   }
 
   _move(from, to) {
