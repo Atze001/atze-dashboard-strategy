@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.223.0";
+const ATZE_VERSION = "0.224.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -3244,12 +3244,25 @@ function buildEntityCard(
 
 function entityOrder(hass, entity, config, area) {
   const override = getOverride(config.entity_overrides, entity.entity_id);
-  const order = Number.isFinite(Number(override.order))
+  const hasExplicitOrder = Number.isFinite(Number(override.order));
+  const order = hasExplicitOrder
     ? Number(override.order)
     : 1000;
 
   const name = displayName(hass, entity, config, area).toLowerCase();
-  return { order, name };
+
+  // Lights whose name/entity id contains Decke, Haupt or Main are shown first.
+  // An explicit entity_overrides.order always keeps the highest priority.
+  const lightPriority =
+    !hasExplicitOrder &&
+    domainOf(entity.entity_id) === "light" &&
+    /(^|[\\s._-])(decke|haupt|main)([\\s._-]|$)/i.test(
+      `${name} ${entity.entity_id}`
+    )
+      ? 0
+      : 1;
+
+  return { order, lightPriority, name };
 }
 
 function compareEntities(hass, config, area) {
@@ -3258,6 +3271,9 @@ function compareEntities(hass, config, area) {
     const bb = entityOrder(hass, b, config, area);
 
     if (aa.order !== bb.order) return aa.order - bb.order;
+    if (aa.lightPriority !== bb.lightPriority) {
+      return aa.lightPriority - bb.lightPriority;
+    }
     return aa.name.localeCompare(bb.name, undefined, {
       numeric: true,
       sensitivity: "base",
@@ -4617,6 +4633,35 @@ function buildGroupSection(
     Number(areaOverride.compact_columns) ||
     Number(config.compact_columns) ||
     2;
+
+  // Lights always use a two-column grid in room views.
+  // Keep Bubble pop-ups outside the inner grid so they stay invisible until opened.
+  if (groupKey === "light") {
+    const visibleCards = cards.filter(
+      (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
+    );
+    const popupCards = cards.filter(
+      (card) => card.type === "custom:bubble-card" && card.card_type === "pop-up"
+    );
+
+    return {
+      type: "grid",
+      cards: [
+        {
+          type: "heading",
+          heading: meta.title,
+          icon: meta.icon,
+        },
+        {
+          type: "grid",
+          columns: 2,
+          square: false,
+          cards: visibleCards,
+        },
+        ...popupCards,
+      ],
+    };
+  }
 
   // Never wrap pop-up cards inside an additional grid.
   // Bubble standalone pop-ups are safest as direct section cards.
