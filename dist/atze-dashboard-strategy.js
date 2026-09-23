@@ -3192,7 +3192,10 @@ function buildEntityCard(
   }
 
   if (options.popupHash && card.type === "custom:bubble-card") {
-    if (domainOf(entityId) === "climate") {
+    if (domainOf(entityId) === "light") {
+      // Lights intentionally stay clean in the room grid: no three-dot
+      // settings button. Their popup mapping remains available internally.
+    } else if (domainOf(entityId) === "climate") {
       card.button_action = deepMerge(
         card.button_action || {},
         {
