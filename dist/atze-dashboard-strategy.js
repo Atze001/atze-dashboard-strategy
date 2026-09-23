@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.252.0";
+const ATZE_VERSION = "0.253.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -14063,7 +14063,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
     };
     const configured = this._config.name_group_filters;
-    return configured && typeof configured === "object" ? { ...defaults, ...configured } : defaults;
+    if (!configured || typeof configured !== "object") return defaults;
+
+    const filters = { ...defaults, ...configured };
+    const oldSwitchDefaults = ["steckdose", "plug", "socket", "schalter", "switch"];
+    const currentSwitch = Array.isArray(configured.switch) ? configured.switch : [];
+    if (
+      currentSwitch.length === oldSwitchDefaults.length &&
+      oldSwitchDefaults.every((word) => currentSwitch.includes(word))
+    ) {
+      filters.switch = defaults.switch;
+    }
+    return filters;
   }
 
   _setNameGroupFilter(group, value) {
