@@ -206,15 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.253.0
+- Alte automatisch gespeicherte Schalter-Namensfilter werden einmalig auf die neue eindeutige Vorauswahl migriert.
+- Eigene, abweichend konfigurierte Filterwerte bleiben unverändert.
+
 ### v0.252.0
-- Standard-Namensfilter bereinigt: Schalter verwendet jetzt „Schalter, Taster“ statt des generischen Begriffs „Switch“.
-- Steckdosen bleiben eindeutig über „Steckdose, Plug, Socket, Outlet“ getrennt.
+- Standard-Namensfilter bereinigt: Schalter verwendet „Schalter, Taster“ statt des generischen Begriffs „Switch“.
 
 ### v0.251.0
 - Eigene Gruppe „Steckdosen“ mit separatem Namensfilter ergänzt.
-
-### v0.250.0
-- Namensfilter-Eingabefelder behalten auf Mobilgeräten den Fokus; die Tastatur bleibt beim Bearbeiten geöffnet.
 
 ## Lizenz
 
