@@ -206,19 +206,19 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.248.0
+
+- Automatische Sonder-Sortierung der Lichtkarten entfernt.
+- Lichtkarten verwenden jetzt dieselbe direkte Drag-&-Drop-Sortierung wie die übrigen Raumkarten und behalten dabei das zweispaltige Layout.
+
 ### v0.247.0
 
 - Papierkorb auf der Hauptseite entfernt; Bereichskarten lassen sich dort weiterhin direkt sortieren.
-- `touch-action: pan-y` wird nun auch auf den sortierbaren Karten der Bereichsseiten verwendet, damit vertikales Scrollen beim Berühren einer Karte möglich bleibt.
-- Der Papierkorb auf den Bereichsseiten bleibt erhalten.
+- Vertikales Scrollen wurde auch für sortierbare Karten der Bereichsseiten freigegeben.
 
 ### v0.246.0
 
 - Vertikales Scrollen auf der Hauptseite bleibt beim Berühren einer Bereichskarte wieder möglich.
-
-### v0.245.0
-
-- Hauptseiten-Bereichskarten übernahmen für Drag & Drop und Papierkorb das native Ereignismuster der Bereichsseiten.
 
 ## Lizenz
 
