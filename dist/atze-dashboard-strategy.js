@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.242.0";
+const ATZE_VERSION = "0.243.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9745,7 +9745,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .room.dragging { opacity:.45; }
         .room.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
-        .home-room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+        .home-room-trash { position:fixed; left:50%; bottom:18px; transform:translate(-50%,24px); z-index:9999; display:flex; justify-content:center; gap:8px; align-items:center; width:min(320px,72vw); min-height:64px; padding:10px 18px; border-radius:28px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.12s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
         .home-room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; }
         .home-room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
 
@@ -10593,7 +10593,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
       let dragIndex = null;
-      let trashHideTimer = null;
       elements.forEach((element, index) => {
         element.draggable = true;
         element.addEventListener("dragstart", (event) => {
@@ -10605,12 +10604,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.addEventListener("dragend", () => {
           dragIndex = null;
           elements.forEach((entry) => entry.classList.remove("dragging", "drag-over"));
-          if (trash) {
-            window.clearTimeout(trashHideTimer);
-            trashHideTimer = window.setTimeout(() => {
-              if (!trash.classList.contains("over")) trash.classList.remove("visible");
-            }, 700);
-          }
+          trash?.classList.remove("visible", "over");
         });
         element.addEventListener("dragover", (event) => {
           event.preventDefault();
@@ -10637,14 +10631,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (trash) {
         trash.addEventListener("dragover", (event) => {
           event.preventDefault();
-          window.clearTimeout(trashHideTimer);
           trash.classList.add("visible", "over");
         });
-        trash.addEventListener("dragleave", () => {
-          trash.classList.remove("over");
-          window.clearTimeout(trashHideTimer);
-          trashHideTimer = window.setTimeout(() => trash.classList.remove("visible"), 500);
-        });
+        trash.addEventListener("dragleave", () => trash.classList.remove("over"));
         trash.addEventListener("drop", (event) => {
           event.preventDefault();
           const current = [...container.querySelectorAll(selector)];
