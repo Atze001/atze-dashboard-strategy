@@ -206,18 +206,18 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.245.0
+
+- Hauptseiten-Bereichskarten übernehmen für Drag & Drop und Papierkorb jetzt bewusst exakt das bewährte native Ereignismuster der funktionierenden Bereichsseiten.
+- Die zusätzlichen Pointer-/Timer-Sonderwege der letzten Versuche wurden entfernt; Bereichskarten verwenden wie die Bereichsseiten `touch-action: none`.
+
 ### v0.244.0
 
-- Papierkorb-Geste der Hauptseiten-Bereiche verwendet auf Touch/Pen jetzt Pointer-Tracking statt des unzuverlässigen nativen HTML5-Drops.
-- Desktop/Maus und die bereits funktionierende normale Sortierung bleiben auf dem bewährten nativen Drag-&-Drop-Pfad.
+- Papierkorb-Geste der Hauptseiten-Bereiche testete auf Touch/Pen separates Pointer-Tracking.
 
 ### v0.243.0
 
 - Papierkorb blieb während des nativen Drag-Vorgangs sichtbar und erhielt eine größere Drop-Fläche.
-
-### v0.242.0
-
-- Papierkorb der Hauptseiten-Bereichskarten erhielt eine Nachlaufzeit beim Übergang zum Drop-Ziel.
 
 ## Lizenz
 
