@@ -206,15 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.256.0
+- „Luftreiniger / Entfeuchter“ wird in Raumansichten direkt unter „Lüfter“ einsortiert.
+
 ### v0.255.0
 - Neue Namensfilter-Gruppe „Luftreiniger / Entfeuchter“ ergänzt.
 - Standardbegriffe: Luftreiniger, Air Purifier, Entfeuchter und Dehumidifier.
 
 ### v0.254.0
 - Migration der alten Schalter-/Steckdosen-Filter greift jetzt auch in der Laufzeit-Klassifizierung.
-
-### v0.253.0
-- Alte automatisch gespeicherte Schalter-Namensfilter werden auf die neue eindeutige Vorauswahl migriert.
 
 ## Lizenz
 
