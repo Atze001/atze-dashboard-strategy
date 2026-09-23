@@ -13346,7 +13346,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         if (key && key.startsWith("atze-dashboard:")) {
           if (
             key.startsWith("atze-dashboard:card-order:") ||
+            key.startsWith("atze-dashboard:hidden-cards:") ||
             key === "atze-dashboard:home-room-order" ||
+            key === "atze-dashboard:hidden-home-rooms" ||
             key === "atze-dashboard:favorite-order"
           ) keys.push(key);
         }
@@ -15113,7 +15115,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="toolbar">
               <button id="select-all" type="button">Alle</button>
               <button id="select-none" type="button">Keine</button>
-              <button id="reset-drag-layout" type="button">Drag & Drop zurücksetzen</button>
+              <button id="reset-drag-layout" type="button">Drag & Drop komplett zurücksetzen</button>
             </div>
 
             <div class="rows">
