@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.226.0";
+const ATZE_VERSION = "0.227.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -2476,12 +2476,10 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
       --bubble-accent-color: ${accent} !important;
       --bubble-icon-background-color: rgba(118,118,128,0.18) !important;
       --bubble-sub-button-background-color: rgba(118,118,128,0.18) !important;
-      --bubble-border: 1px solid rgba(255,255,255,0.055) !important;
+      --bubble-border: 0 !important;
       --bubble-box-shadow: none !important;
-      border: 1px solid rgba(255,255,255,0.055) !important;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.025),
-        0 1px 2px rgba(0,0,0,0.16) !important;
+      border: 0 !important;
+      box-shadow: none !important;
       overflow: hidden !important;
     }
 
