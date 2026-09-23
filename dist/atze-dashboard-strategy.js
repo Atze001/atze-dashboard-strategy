@@ -14053,6 +14053,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _nameGroupFilters() {
+    const defaults = {
+      switch: ["steckdose", "plug", "socket", "schalter", "switch"],
+      fan: ["ventilator", "lüfter", "luefter", "fan"],
+      cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
+    };
+    const configured = this._config.name_group_filters;
+    return configured && typeof configured === "object" ? { ...defaults, ...configured } : defaults;
+  }
+
+  _setNameGroupFilter(group, value) {
+    const filters = this._nameGroupFilters();
+    const words = String(value || "").split(",").map((word) => word.trim()).filter(Boolean);
+    this._fireConfigChanged({ ...this._config, name_group_filters: { ...filters, [group]: words } });
+  }
+
+  _nameGroupFilterRow(group, label, description) {
+    const value = (this._nameGroupFilters()[group] || []).join(", ");
+    return `<label class="row"><span class="copy"><span class="name">${this._escape(label)}</span><span class="desc">${this._escape(description)}</span></span><input class="name-group-filter" data-group="${this._escape(group)}" type="text" value="${this._escape(value)}" placeholder="Begriffe, durch Komma getrennt" /></label>`;
+  }
+
   _toggleHtml(key, label, description, defaultValue) {
     const checked =
       this._effectiveBoolean(key, defaultValue);
@@ -15182,6 +15203,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           </div>
         </details>
 
+        <details class="panel editor-section" data-editor-section="name-filters" ${this._openEditorSections.has("name-filters") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main"><ha-icon icon="mdi:filter-cog-outline"></ha-icon><span class="editor-section-summary-title">Namensfilter / Zuordnung</span></span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body">
+            <div class="editor-section-help">Ordnet Entitäten anhand von Entity-ID oder Friendly Name einer Gruppe zu. Manuelle Gruppen-Zuordnungen haben weiterhin Vorrang. Begriffe mit Komma trennen.</div>
+            <div class="rows">
+              ${this._toggleHtml("name_group_filters_enabled", "Namensfilter aktiv", "Automatische Zuordnung anhand der folgenden Begriffe verwenden.", true)}
+              ${this._nameGroupFilterRow("switch", "Schalter / Steckdosen", "z. B. Steckdose, Plug, Socket, Schalter")}
+              ${this._nameGroupFilterRow("fan", "Lüfter", "z. B. Ventilator, Lüfter, Fan")}
+              ${this._nameGroupFilterRow("cover", "Rollläden", "z. B. Rollladen, Rollo, Jalousie, Shutter")}
+            </div>
+          </div>
+        </details>
+
         <details
           class="panel editor-section"
           data-editor-section="entities"
@@ -15506,6 +15540,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           target.value
         );
       });
+    }
+
+    for (const input of this.shadowRoot.querySelectorAll(".name-group-filter")) {
+      input.addEventListener("change", (event) => this._setNameGroupFilter(event.currentTarget.dataset.group, event.currentTarget.value));
     }
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
