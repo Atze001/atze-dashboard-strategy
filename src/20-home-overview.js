@@ -12,6 +12,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
+    this._hiddenRoomIds = [];
   }
 
   setConfig(config) {
@@ -1457,6 +1458,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
+        .room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:99999; display:flex; align-items:center; gap:8px; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); } .room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; } .room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
+
         :host {
           display: block;
           width: auto;
@@ -2937,6 +2940,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
     `;
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
+    let hiddenRoomIds = [];
+    try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
+    if (Array.isArray(hiddenRoomIds)) {
+      for (const el of this.shadowRoot.querySelectorAll(".room")) if (hiddenRoomIds.includes(el.dataset.areaId)) el.remove();
+    }
     const roomOrderKey = "atze-dashboard:home-room-order";
     let roomOrder = [];
     try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
@@ -2994,6 +3002,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           this._navigate(element.dataset.path);
         });
         element.addEventListener("dragstart", (event) => {
+          let trash = this.shadowRoot.querySelector(".room-trash");
+          if (!trash) { trash = document.createElement("div"); trash.className = "room-trash"; trash.innerHTML = '<ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span>'; this.shadowRoot.appendChild(trash); trash.addEventListener("dragover", (e) => { e.preventDefault(); trash.classList.add("over"); }); trash.addEventListener("dragleave", () => trash.classList.remove("over")); trash.addEventListener("drop", (e) => { e.preventDefault(); const source = this._roomDrag?.element; if (!source) return; let hidden=[]; try { hidden=JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms")||"[]"); } catch(_e){} hidden=Array.isArray(hidden)?hidden:[]; if(!hidden.includes(source.dataset.areaId)) hidden.push(source.dataset.areaId); try{localStorage.setItem("atze-dashboard:hidden-home-rooms",JSON.stringify(hidden));}catch(_e){} source.remove(); trash.remove(); this._roomDrag=null; }); }
+          trash.classList.add("visible");
           this._roomDrag = { element };
           element.classList.add("dragging");
           event.dataTransfer?.setData("text/plain", element.dataset.areaId || "");
@@ -3015,6 +3026,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           const source = this._roomDrag?.element;
           source?.classList.remove("dragging");
           source?.classList.add("just-dragged");
+          this.shadowRoot.querySelector(".room-trash")?.remove();
           this._roomDrag = null;
         });
 
