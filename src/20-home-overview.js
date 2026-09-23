@@ -37,7 +37,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     }
 
-    this._render();
+    if (!this._interactionActive) this._render();
   }
 
   get hass() {
@@ -926,7 +926,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _render() {
-    if (!this.shadowRoot || !this._config || !this._hass) return;
+    if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -2090,7 +2090,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           font: inherit;
           text-align: left;
           cursor: pointer;
-          touch-action: pan-y;
+          touch-action: none;
           user-select: none;
           -webkit-user-select: none;
         }
@@ -2171,7 +2171,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           transition:
             transform 120ms ease,
             filter 120ms ease;
-          touch-action: pan-y;
+          touch-action: none;
           user-select: none;
           -webkit-user-select: none;
         }
@@ -3019,6 +3019,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           if (after) target.after(source); else target.before(source);
         };
         element.addEventListener("pointerdown", (event) => {
+          this._interactionActive = true;
           roomPointerId = event.pointerId;
           holdTimer = window.setTimeout(() => {
             roomPointerDragging = true;
@@ -3042,6 +3043,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             this._roomDrag = null;
           }
           roomPointerDragging = false;
+          this._interactionActive = false;
         };
         element.addEventListener("pointerup", finishRoomPointer);
         element.addEventListener("pointercancel", finishRoomPointer);
@@ -3145,6 +3147,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       for (const element of favoriteGrid.querySelectorAll(".favorite-card")) {
         element.draggable = true;
         element.addEventListener("pointerdown", (event) => {
+          this._interactionActive = true;
           favoritePointerId = event.pointerId;
           favoriteStartX = event.clientX;
           favoriteStartY = event.clientY;
@@ -3175,6 +3178,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             window.setTimeout(() => element.classList.remove("just-dragged"), 250);
             draggedFavorite = null;
           }
+          this._interactionActive = false;
         };
         element.addEventListener("pointerup", finishFavoritePointerDrag);
         element.addEventListener("pointercancel", finishFavoritePointerDrag);
