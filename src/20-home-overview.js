@@ -3056,7 +3056,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
       elements.forEach((element, index) => {
         element.draggable = true;
-        element.style.touchAction = "none";
+        // Keep normal vertical page scrolling available until the browser
+        // actually starts a native long-press drag.
+        element.style.touchAction = "pan-y";
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
