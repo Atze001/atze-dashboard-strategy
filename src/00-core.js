@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.255.0";
+const ATZE_VERSION = "0.256.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -1270,7 +1270,7 @@ const DOMAIN_META = {
 const SPECIAL_GROUP_META = {
   raumverbrauch: { title: "Raumverbrauch", icon: "mdi:flash", order: 105 },
   steckdose: { title: "Steckdosen", icon: "mdi:power-socket-de", order: 74 },
-  luftpflege: { title: "Luftreiniger / Entfeuchter", icon: "mdi:air-purifier", order: 76 },
+  luftpflege: { title: "Luftreiniger / Entfeuchter", icon: "mdi:air-purifier", order: 51 },
   technik: { title: "Technik", icon: "mdi:cog-outline", order: 900 },
 };
 
