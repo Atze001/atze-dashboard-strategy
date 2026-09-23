@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.246.0";
+const ATZE_VERSION = "0.247.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9745,9 +9745,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .room.dragging { opacity:.45; }
         .room.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
-        .home-room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
-        .home-room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; }
-        .home-room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
 
         .room:active {
           transform: scale(0.985);
@@ -10554,11 +10551,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .forEach((room) => roomGrid.appendChild(room));
     }
 
-    const roomTrash = document.createElement("div");
-    roomTrash.className = "home-room-trash";
-    roomTrash.setAttribute("aria-label", "Bereich ausblenden");
-    roomTrash.innerHTML = '<ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span>';
-    this.shadowRoot.appendChild(roomTrash);
 
     this.shadowRoot
       .querySelectorAll(".room")
@@ -10589,36 +10581,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
 
-    const installProvenDrag = (container, selector, idGetter, storageKey, trash = null) => {
+    const installProvenDrag = (container, selector, idGetter, storageKey) => {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
       let dragIndex = null;
-
-      const hideSource = (source) => {
-        const id = source ? idGetter(source) : null;
-        if (!id) return;
-        let hidden = atzeLayoutValue(this._config, "hidden_home_rooms", []);
-        if (!hidden.includes(id)) hidden = [...hidden, id];
-        try { localStorage.setItem("atze-dashboard:hidden-home-rooms", JSON.stringify(hidden)); } catch (_e) {}
-        saveAtzeStrategyLayout(this._hass, this._config, { hidden_home_rooms: hidden });
-        source.remove();
-      };
-
-      if (trash) {
-        trash.addEventListener("dragover", (event) => {
-          event.preventDefault();
-          trash.classList.add("over");
-        });
-        trash.addEventListener("dragleave", () => trash.classList.remove("over"));
-        trash.addEventListener("drop", (event) => {
-          event.preventDefault();
-          const current = [...container.querySelectorAll(selector)];
-          const source = current[dragIndex ?? Number(event.dataTransfer?.getData("text/plain"))];
-          trash.classList.remove("over", "visible");
-          dragIndex = null;
-          if (source) hideSource(source);
-        });
-      }
 
       elements.forEach((element, index) => {
         element.draggable = true;
@@ -10628,12 +10594,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
-          trash?.classList.add("visible");
           event.dataTransfer?.setData("text/plain", String(index));
         });
         element.addEventListener("dragend", () => {
           dragIndex = null;
-          trash?.classList.remove("visible", "over");
           for (const entry of container.querySelectorAll(selector)) {
             entry.classList.remove("dragging", "drag-over");
           }
@@ -10666,8 +10630,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       roomGrid,
       ".room",
       (element) => element.dataset.areaId,
-      roomOrderKey,
-      roomTrash
+      roomOrderKey
     );
     installProvenDrag(
       this.shadowRoot.querySelector(".favorite-grid"),
@@ -13093,7 +13056,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
           grid-template-columns:repeat(${Number(this._config.columns) || 2}, minmax(0,1fr));
           gap:8px;
         }
-        .item { min-width:0; cursor:grab; touch-action:none; }
+        .item { min-width:0; cursor:grab; touch-action:pan-y; }
         .item.dragging { opacity:.45; }
         .item.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
         .trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
