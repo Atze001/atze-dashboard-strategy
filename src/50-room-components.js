@@ -755,7 +755,25 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   getCardSize() { return 1; }
 
   _storageKey() {
-    return "atze-dashboard:switch-order:" + String(this._config?.area_id || "room");
+    return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
+  }
+
+  _hiddenKey() {
+    return "atze-dashboard:hidden-cards:" + String(this._config?.area_id || "room");
+  }
+
+  _hideCard(card) {
+    const entityId = card?.entity;
+    if (!entityId) return;
+    let hidden = [];
+    try { hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]"); } catch (_e) {}
+    hidden = Array.isArray(hidden) ? hidden : [];
+    if (!hidden.includes(entityId)) hidden.push(entityId);
+    try { localStorage.setItem(this._hiddenKey(), JSON.stringify(hidden)); } catch (_e) {}
+    this._cards = this._cards.filter((entry) => entry.entity !== entityId);
+    this._saveOrder();
+    window.dispatchEvent(new CustomEvent("atze-card-hidden", { detail: { entityId, areaId: this._config?.area_id } }));
+    this._render();
   }
 
   _orderedCards(cards) {
@@ -800,10 +818,18 @@ class AtzeSortableSwitchGrid extends HTMLElement {
         .item { min-width:0; cursor:grab; touch-action:none; }
         .item.dragging { opacity:.45; }
         .item.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
+        .trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+        .trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; }
+        .trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
       </style>
       <div class="grid"></div>
+      <div class="trash" aria-label="Karte ausblenden"><ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span></div>
     `;
     const grid = this.shadowRoot.querySelector(".grid");
+    const trash = this.shadowRoot.querySelector(".trash");
+    trash?.addEventListener("dragover", (event) => { event.preventDefault(); trash.classList.add("over"); });
+    trash?.addEventListener("dragleave", () => trash.classList.remove("over"));
+    trash?.addEventListener("drop", (event) => { event.preventDefault(); const index = this._dragIndex ?? Number(event.dataTransfer?.getData("text/plain")); const card = this._cards[index]; trash.classList.remove("over","visible"); this._dragIndex = null; if (card) this._hideCard(card); });
     this._cards.forEach((cardConfig, index) => {
       const item = document.createElement("div");
       item.className = "item";
@@ -816,10 +842,12 @@ class AtzeSortableSwitchGrid extends HTMLElement {
       item.addEventListener("dragstart", (event) => {
         this._dragIndex = index;
         item.classList.add("dragging");
+        trash?.classList.add("visible");
         event.dataTransfer?.setData("text/plain", String(index));
       });
       item.addEventListener("dragend", () => {
         this._dragIndex = null;
+        trash?.classList.remove("visible","over");
         for (const el of grid.querySelectorAll(".item")) el.classList.remove("dragging","drag-over");
       });
       item.addEventListener("dragover", (event) => {

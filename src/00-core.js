@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.231.0";
+const ATZE_VERSION = "0.232.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -4677,7 +4677,7 @@ function buildGroupSection(
 
   // Switches are sorted directly in the room view. The custom grid stores
   // the chosen order per room in the browser and applies it immediately.
-  if (groupKey === "switch") {
+  if (groupKey !== "technik") {
     const visibleCards = cards.filter(
       (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
     );
@@ -4696,6 +4696,7 @@ function buildGroupSection(
         {
           type: "custom:atze-sortable-switch-grid",
           area_id: area.area_id,
+          group_key: groupKey,
           columns,
           cards: visibleCards,
         },
