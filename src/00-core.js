@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.251.0";
+const ATZE_VERSION = "0.252.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3948,7 +3948,7 @@ function autoTechnicalGroup(hass, entity, config) {
 
 const DEFAULT_NAME_GROUP_FILTERS = {
   steckdose: ["steckdose", "plug", "socket", "outlet"],
-  switch: ["schalter", "switch"],
+  switch: ["schalter", "taster"],
   fan: ["ventilator", "lüfter", "luefter", "fan"],
   cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
 };
