@@ -763,6 +763,10 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
   }
 
+  _layoutOrderKey() {
+    return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
+  }
+
   _storageKey() {
     if (this._config?.storage_key) return this._config.storage_key;
     return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
@@ -791,6 +795,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   _orderedCards(cards) {
     let saved = [];
     saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
+    if (!saved.length) saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
     if (!saved.length) try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
     if (!Array.isArray(saved) || !saved.length) return [...cards];
     const rank = new Map(saved.map((id, index) => [id, index]));
