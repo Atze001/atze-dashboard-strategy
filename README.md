@@ -206,19 +206,19 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.240.0
+
+- Drag-&-Drop-Reihenfolgen werden zentral in der Home-Assistant-Lovelace-Konfiguration gespeichert und dadurch geräteübergreifend verwendet.
+- Bereichsreihenfolge, Favoritenreihenfolge und Kartenreihenfolgen der Räume nutzen den zentralen Layout-Zustand; bestehende lokale Werte dienen als Fallback für die Migration.
+- Der Drag-&-Drop-Reset entfernt auch den zentral gespeicherten Layout-Zustand.
+
 ### v0.239.0
 
-- Hauptseite und Favoriten verwenden jetzt dasselbe native Drag-&-Drop-Ereignismodell wie die bereits zuverlässig funktionierende Sortierung auf den Bereichsseiten.
-- Die zuvor separat entwickelten Pointer-/Long-Press-Sonderwege für Hauptseite und Favoriten wurden entfernt.
-- Die funktionierende Sortierkomponente wurde so verallgemeinert, dass unterschiedliche IDs und Speicherbereiche verwendet werden können, ohne ihr bewährtes Drag-Verhalten zu verändern.
+- Hauptseite und Favoriten verwenden dasselbe native Drag-&-Drop-Ereignismodell wie die zuverlässig funktionierende Sortierung auf den Bereichsseiten.
 
 ### v0.238.0
 
 - Re-Renders durch Home-Assistant-State-Updates werden während einer laufenden direkten Interaktion blockiert.
-
-### v0.237.0
-
-- Touch Drag & Drop auf der Hauptseite wurde für Bereichskarten und Favoriten auf Pointer-Interaktionen umgestellt.
 
 ## Lizenz
 
