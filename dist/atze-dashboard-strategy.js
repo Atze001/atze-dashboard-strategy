@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.253.0";
+const ATZE_VERSION = "0.254.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3955,9 +3955,23 @@ const DEFAULT_NAME_GROUP_FILTERS = {
 
 function nameFilterGroup(hass, entity, config) {
   if (config.name_group_filters_enabled === false) return null;
-  const filters = config.name_group_filters && typeof config.name_group_filters === "object"
+  const configured = config.name_group_filters && typeof config.name_group_filters === "object"
     ? config.name_group_filters
-    : DEFAULT_NAME_GROUP_FILTERS;
+    : {};
+  const filters = { ...DEFAULT_NAME_GROUP_FILTERS, ...configured };
+
+  // v0.249 stored the original combined switch/outlet defaults in existing
+  // dashboards. Treat only that exact legacy value as a default, never a
+  // genuinely customized user filter.
+  const legacySwitchDefaults = ["steckdose", "plug", "socket", "schalter", "switch"];
+  const configuredSwitch = Array.isArray(configured.switch) ? configured.switch : [];
+  if (
+    configuredSwitch.length === legacySwitchDefaults.length &&
+    legacySwitchDefaults.every((word) => configuredSwitch.includes(word))
+  ) {
+    filters.switch = DEFAULT_NAME_GROUP_FILTERS.switch;
+  }
+
   const text = normalizedText(`${entity.entity_id} ${rawFriendlyName(hass, entity.entity_id, entity)}`);
   for (const [group, keywords] of Object.entries(filters)) {
     if (asArray(keywords).some((keyword) => {
