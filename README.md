@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.243.0**
+Version **0.244.0**
 
 Enthalten sind unter anderem:
 
@@ -206,18 +206,18 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.244.0
+
+- Papierkorb-Geste der Hauptseiten-Bereiche verwendet auf Touch/Pen jetzt Pointer-Tracking statt des unzuverlässigen nativen HTML5-Drops.
+- Desktop/Maus und die bereits funktionierende normale Sortierung bleiben auf dem bewährten nativen Drag-&-Drop-Pfad.
+
 ### v0.243.0
 
-- Papierkorb auf der Hauptseite bleibt jetzt während des kompletten nativen Drag-Vorgangs sichtbar; die fehleranfälligen Ausblend-Timer wurden entfernt.
-- Die Drop-Fläche wurde deutlich vergrößert, damit Bereichskarten auf Touch-Geräten sicherer abgelegt werden können.
+- Papierkorb blieb während des nativen Drag-Vorgangs sichtbar und erhielt eine größere Drop-Fläche.
 
 ### v0.242.0
 
 - Papierkorb der Hauptseiten-Bereichskarten erhielt eine Nachlaufzeit beim Übergang zum Drop-Ziel.
-
-### v0.241.0
-
-- Bereichskarten auf der Hauptseite können beim Drag & Drop auf einen Papierkorb gezogen und ausgeblendet werden.
 
 ## Lizenz
 

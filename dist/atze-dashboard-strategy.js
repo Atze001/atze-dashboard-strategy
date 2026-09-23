@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.243.0";
+const ATZE_VERSION = "0.244.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -10593,6 +10593,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
       let dragIndex = null;
+      let pointerDrag = null;
+
+      const saveOrder = () => {
+        const ids = [...container.querySelectorAll(selector)].map(idGetter).filter(Boolean);
+        try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch (_e) {}
+        const field = storageKey === roomOrderKey ? "home_room_order" : "favorite_order";
+        saveAtzeStrategyLayout(this._hass, this._config, { [field]: ids });
+      };
+
+      const hideSource = (source) => {
+        const id = source ? idGetter(source) : null;
+        if (!id) return;
+        let hidden = atzeLayoutValue(this._config, "hidden_home_rooms", []);
+        if (!hidden.includes(id)) hidden = [...hidden, id];
+        try { localStorage.setItem("atze-dashboard:hidden-home-rooms", JSON.stringify(hidden)); } catch (_e) {}
+        saveAtzeStrategyLayout(this._hass, this._config, { hidden_home_rooms: hidden });
+        source.remove();
+      };
+
       elements.forEach((element, index) => {
         element.draggable = true;
         element.addEventListener("dragstart", (event) => {
@@ -10621,30 +10640,70 @@ class AtzeHomeOverviewCard extends HTMLElement {
           const target = current[index];
           if (!source || !target) return;
           if (from < index) target.after(source); else target.before(source);
-          const ids = [...container.querySelectorAll(selector)].map(idGetter).filter(Boolean);
-          try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch (_e) {}
-          const field = storageKey === roomOrderKey ? "home_room_order" : "favorite_order";
-          saveAtzeStrategyLayout(this._hass, this._config, { [field]: ids });
+          saveOrder();
           dragIndex = null;
         });
+
+        // Touch/pen: native HTML5 drag is unreliable when the pointer leaves
+        // the source element. Keep the proven native path for mouse/desktop,
+        // but track the finger ourselves for the trash gesture.
+        if (trash) {
+          let holdTimer = null;
+          let startX = 0;
+          let startY = 0;
+          element.addEventListener("pointerdown", (event) => {
+            if (event.pointerType === "mouse") return;
+            startX = event.clientX;
+            startY = event.clientY;
+            holdTimer = window.setTimeout(() => {
+              pointerDrag = { source: element, pointerId: event.pointerId };
+              element.classList.add("dragging", "just-dragged");
+              trash.classList.add("visible");
+              try { element.setPointerCapture(event.pointerId); } catch (_e) {}
+            }, 450);
+          });
+          element.addEventListener("pointermove", (event) => {
+            if (!pointerDrag) {
+              if (holdTimer && Math.hypot(event.clientX - startX, event.clientY - startY) > 12) {
+                window.clearTimeout(holdTimer);
+                holdTimer = null;
+              }
+              return;
+            }
+            if (pointerDrag.pointerId !== event.pointerId) return;
+            event.preventDefault();
+            const rect = trash.getBoundingClientRect();
+            const over = event.clientX >= rect.left && event.clientX <= rect.right &&
+              event.clientY >= rect.top && event.clientY <= rect.bottom;
+            trash.classList.toggle("over", over);
+          });
+          const finishPointer = (event) => {
+            if (holdTimer) window.clearTimeout(holdTimer);
+            holdTimer = null;
+            if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+            const source = pointerDrag.source;
+            const rect = trash.getBoundingClientRect();
+            const over = event.clientX >= rect.left && event.clientX <= rect.right &&
+              event.clientY >= rect.top && event.clientY <= rect.bottom;
+            pointerDrag = null;
+            trash.classList.remove("visible", "over");
+            source.classList.remove("dragging");
+            if (over) hideSource(source);
+            window.setTimeout(() => source.classList.remove("just-dragged"), 250);
+          };
+          element.addEventListener("pointerup", finishPointer);
+          element.addEventListener("pointercancel", finishPointer);
+        }
       });
+
       if (trash) {
-        trash.addEventListener("dragover", (event) => {
-          event.preventDefault();
-          trash.classList.add("visible", "over");
-        });
+        trash.addEventListener("dragover", (event) => { event.preventDefault(); trash.classList.add("visible", "over"); });
         trash.addEventListener("dragleave", () => trash.classList.remove("over"));
         trash.addEventListener("drop", (event) => {
           event.preventDefault();
           const current = [...container.querySelectorAll(selector)];
           const source = current[dragIndex ?? Number(event.dataTransfer?.getData("text/plain"))];
-          const id = source ? idGetter(source) : null;
-          if (!id) return;
-          let hidden = atzeLayoutValue(this._config, "hidden_home_rooms", []);
-          if (!hidden.includes(id)) hidden = [...hidden, id];
-          try { localStorage.setItem("atze-dashboard:hidden-home-rooms", JSON.stringify(hidden)); } catch (_e) {}
-          saveAtzeStrategyLayout(this._hass, this._config, { hidden_home_rooms: hidden });
-          source.remove();
+          if (source) hideSource(source);
           trash.classList.remove("visible", "over");
           dragIndex = null;
         });
