@@ -469,6 +469,26 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _setSwitchOrder(areaId, entityIds) {
+    const entityOverrides = { ...(this._config.entity_overrides || {}) };
+    entityIds.forEach((entityId, index) => {
+      entityOverrides[entityId] = { ...(entityOverrides[entityId] || {}), order: (index + 1) * 10 };
+    });
+    this._openEntityAreaIds.add(areaId);
+    this._fireConfigChanged({ ...this._config, entity_overrides: entityOverrides });
+  }
+
+  _moveSwitch(areaId, draggedEntityId, targetEntityId) {
+    if (!areaId || !draggedEntityId || !targetEntityId || draggedEntityId === targetEntityId) return;
+    const entityIds = this._entitiesForArea(areaId).filter((entity) => domainOf(entity.entity_id) === "switch").sort(compareEntities(this._hass, this._config, { area_id: areaId })).map((entity) => entity.entity_id);
+    const from = entityIds.indexOf(draggedEntityId);
+    const to = entityIds.indexOf(targetEntityId);
+    if (from < 0 || to < 0) return;
+    const [moved] = entityIds.splice(from, 1);
+    entityIds.splice(to, 0, moved);
+    this._setSwitchOrder(areaId, entityIds);
+  }
+
   _setFavoriteEntity(entityId, checked) {
     const favorites = asArray(
       this._config.favorite_entities
@@ -695,7 +715,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             : "Auto";
 
       return `
-        <div class="entity-row entity-config-row">
+        <div
+          class="entity-row entity-config-row"
+          data-order-area="${this._escape(area.area_id)}"
+          data-order-entity="${this._escape(entityId)}"
+          draggable="${domain === "switch" ? "true" : "false"}"
+        >
+          ${domain === "switch" ? '<span class="entity-drag-handle" title="Ziehen zum Sortieren"><ha-icon icon="mdi:drag-vertical"></ha-icon></span>' : ""}
           <span class="entity-copy">
             <span class="entity-name">
               ${this._escape(name)}
@@ -1324,6 +1350,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           font-size: 13px;
           line-height: 1.4;
         }
+
+        .entity-drag-handle { width: 32px; min-width: 32px; display: inline-flex; align-items: center; justify-content: center; color: var(--secondary-text-color); cursor: grab; }
+        .entity-config-row.dragging { opacity: 0.45; }
+        .entity-config-row.drag-over { box-shadow: inset 0 2px 0 var(--primary-color, #03a9f4); }
 
         .header {
           padding: 16px 18px 12px;
@@ -2227,6 +2257,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
       if (customElements.get("ha-yaml-editor")) initialize();
       else customElements.whenDefined("ha-yaml-editor").then(initialize);
+    }
+
+    for (const row of this.shadowRoot.querySelectorAll(".entity-config-row[draggable='true']")) {
+      row.addEventListener("dragstart", (event) => {
+        this._draggedSwitchEntityId = row.dataset.orderEntity || null;
+        row.classList.add("dragging");
+        if (event.dataTransfer) { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", this._draggedSwitchEntityId || ""); }
+      });
+      row.addEventListener("dragend", () => {
+        this._draggedSwitchEntityId = null;
+        for (const item of this.shadowRoot.querySelectorAll(".entity-config-row")) item.classList.remove("dragging", "drag-over");
+      });
+      row.addEventListener("dragover", (event) => {
+        const dragging = this.shadowRoot.querySelector(".entity-config-row.dragging");
+        if (dragging?.dataset?.orderArea === row.dataset.orderArea && this._draggedSwitchEntityId !== row.dataset.orderEntity) { event.preventDefault(); row.classList.add("drag-over"); }
+      });
+      row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+      row.addEventListener("drop", (event) => {
+        event.preventDefault(); row.classList.remove("drag-over");
+        this._moveSwitch(row.dataset.orderArea, this._draggedSwitchEntityId || event.dataTransfer?.getData("text/plain"), row.dataset.orderEntity);
+      });
     }
 
     for (
