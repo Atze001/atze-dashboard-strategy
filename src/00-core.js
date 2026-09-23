@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.227.0";
+const ATZE_VERSION = "0.228.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -2481,6 +2481,17 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
       border: 0 !important;
       box-shadow: none !important;
       overflow: hidden !important;
+    }
+
+    /* Give all standard room cards 4 px more vertical space. */
+    ha-card,
+    .bubble-button-card-container,
+    .bubble-media-player-container,
+    .bubble-climate-container,
+    .bubble-select-card-container,
+    .bubble-cover-card-container,
+    .bubble-cover-container {
+      min-height: ${${compact ? "52" : "60"} + 4}px !important;
     }
 
     .bubble-button-card-container {
