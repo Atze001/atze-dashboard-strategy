@@ -209,8 +209,8 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 ### v0.235.0
 
 - Favoriten auf der Startseite können jetzt ebenfalls direkt per Drag & Drop angeordnet werden.
-- In den Dashboard-Einstellungen gibt es einen Reset für die gespeicherten Drag-&-Drop-Reihenfolgen von Räumen, Favoriten und Karten in den Bereichsseiten.
-- Ausgeblendete Karten bleiben davon unberührt und können weiterhin gezielt über die Einstellungen wieder eingeblendet werden.
+- In den Dashboard-Einstellungen gibt es einen vollständigen Reset für Drag & Drop: Reihenfolgen von Räumen, Favoriten und Karten in den Bereichsseiten werden zurückgesetzt.
+- Der Reset stellt zusätzlich alle per Drag-&-Drop-Papierkorb ausgeblendeten Raum- und Entitätskarten wieder her, sodass die direkte Dashboard-Anpassung vollständig auf den Ausgangszustand zurückgesetzt werden kann.
 
 ### v0.234.0
 
