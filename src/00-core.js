@@ -4697,7 +4697,10 @@ function buildGroupSection(
           type: "custom:atze-sortable-switch-grid",
           area_id: area.area_id,
           group_key: groupKey,
-          columns,
+          // Preserve the room layout that existed before direct drag & drop:
+          // compact groups use their configured grid, regular groups stay
+          // one-column. Lights keep their dedicated two-column branch above.
+          columns: compact ? columns : 1,
           cards: visibleCards,
         },
         ...popupCards,
