@@ -206,19 +206,16 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
-### v0.248.0
+### v0.249.0
+- Testweise konfigurierbare Namensfilter für die automatische Gruppen-Zuordnung.
+- Neuer Settings-Bereich „Namensfilter / Zuordnung“ für Schalter/Steckdosen, Lüfter und Rollläden.
+- Manuelle Gruppen-Zuordnungen behalten Vorrang.
 
-- Automatische Sonder-Sortierung der Lichtkarten entfernt.
-- Lichtkarten verwenden jetzt dieselbe direkte Drag-&-Drop-Sortierung wie die übrigen Raumkarten und behalten dabei das zweispaltige Layout.
+### v0.248.0
+- Lichtkarten verwenden jetzt die direkte Drag-&-Drop-Sortierung bei unverändertem zweispaltigem Layout.
 
 ### v0.247.0
-
-- Papierkorb auf der Hauptseite entfernt; Bereichskarten lassen sich dort weiterhin direkt sortieren.
-- Vertikales Scrollen wurde auch für sortierbare Karten der Bereichsseiten freigegeben.
-
-### v0.246.0
-
-- Vertikales Scrollen auf der Hauptseite bleibt beim Berühren einer Bereichskarte wieder möglich.
+- Papierkorb auf der Hauptseite entfernt; vertikales Scrollen auf sortierbaren Karten vereinheitlicht.
 
 ## Lizenz
 
