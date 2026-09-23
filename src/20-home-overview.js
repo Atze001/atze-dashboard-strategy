@@ -2090,7 +2090,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
           font: inherit;
           text-align: left;
           cursor: pointer;
+          touch-action: pan-y;
+          user-select: none;
+          -webkit-user-select: none;
         }
+
+        .favorite-card.dragging { opacity: .55; transform: scale(.98); }
 
         .favorite-card:active {
           transform: scale(0.98);
@@ -2166,7 +2171,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
           transition:
             transform 120ms ease,
             filter 120ms ease;
+          touch-action: pan-y;
+          user-select: none;
+          -webkit-user-select: none;
         }
+
+        .room.dragging { opacity: .62; }
 
         .room:active {
           transform: scale(0.985);
@@ -2987,63 +2997,79 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         let holdTimer = null;
-        let dragging = false;
-        const beginHold = (event) => {
-          const point = event.touches?.[0] || event;
-          holdTimer = window.setTimeout(() => {
-            dragging = true;
-            this._roomDrag = {
-              element,
-              startX: point.clientX,
-              startY: point.clientY,
-            };
-            element.classList.add("dragging");
-          }, 450);
+        let roomPointerDragging = false;
+        let roomPointerId = null;
+        const saveRoomOrder = () => {
+          if (!roomGrid) return;
+          const ids = [...roomGrid.querySelectorAll(".room")].map((room) => room.dataset.areaId);
+          try { localStorage.setItem(roomOrderKey, JSON.stringify(ids)); } catch (_e) {}
         };
-        const cancelHold = () => {
+        const moveRoomAtPoint = (x, y) => {
+          const source = this._roomDrag?.element;
+          if (!source || !roomGrid) return;
+          const target = [...roomGrid.querySelectorAll(".room")].find((candidate) => {
+            if (candidate === source) return false;
+            const rect = candidate.getBoundingClientRect();
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+          });
+          if (!target) return;
+          const rect = target.getBoundingClientRect();
+          const after = y > rect.top + rect.height / 2 ||
+            (y >= rect.top && y <= rect.bottom && x > rect.left + rect.width / 2);
+          if (after) target.after(source); else target.before(source);
+        };
+        element.addEventListener("pointerdown", (event) => {
+          roomPointerId = event.pointerId;
+          holdTimer = window.setTimeout(() => {
+            roomPointerDragging = true;
+            this._roomDrag = { element };
+            element.classList.add("dragging", "just-dragged");
+            try { element.setPointerCapture(roomPointerId); } catch (_e) {}
+          }, 450);
+        });
+        element.addEventListener("pointermove", (event) => {
+          if (!roomPointerDragging || this._roomDrag?.element !== element) return;
+          event.preventDefault();
+          moveRoomAtPoint(event.clientX, event.clientY);
+        });
+        const finishRoomPointer = () => {
           if (holdTimer) window.clearTimeout(holdTimer);
           holdTimer = null;
+          if (roomPointerDragging && this._roomDrag?.element === element) {
+            saveRoomOrder();
+            element.classList.remove("dragging");
+            window.setTimeout(() => element.classList.remove("just-dragged"), 250);
+            this._roomDrag = null;
+          }
+          roomPointerDragging = false;
         };
-        element.addEventListener("pointerdown", beginHold);
-        element.addEventListener("pointerup", cancelHold);
-        element.addEventListener("pointercancel", cancelHold);
+        element.addEventListener("pointerup", finishRoomPointer);
+        element.addEventListener("pointercancel", finishRoomPointer);
         element.addEventListener("click", (event) => {
-          if (dragging || element.classList.contains("just-dragged")) {
+          if (element.classList.contains("just-dragged")) {
             event.preventDefault();
-            element.classList.remove("just-dragged");
             return;
           }
           this._navigate(element.dataset.path);
         });
+        element.draggable = true;
         element.addEventListener("dragstart", (event) => {
-          let trash = this.shadowRoot.querySelector(".room-trash");
-          if (!trash) { trash = document.createElement("div"); trash.className = "room-trash"; trash.innerHTML = '<ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span>'; this.shadowRoot.appendChild(trash); trash.addEventListener("dragover", (e) => { e.preventDefault(); trash.classList.add("over"); }); trash.addEventListener("dragleave", () => trash.classList.remove("over")); trash.addEventListener("drop", (e) => { e.preventDefault(); const source = this._roomDrag?.element; if (!source) return; let hidden=[]; try { hidden=JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms")||"[]"); } catch(_e){} hidden=Array.isArray(hidden)?hidden:[]; if(!hidden.includes(source.dataset.areaId)) hidden.push(source.dataset.areaId); try{localStorage.setItem("atze-dashboard:hidden-home-rooms",JSON.stringify(hidden));}catch(_e){} source.remove(); trash.remove(); this._roomDrag=null; }); }
-          trash.classList.add("visible");
           this._roomDrag = { element };
-          element.classList.add("dragging");
+          element.classList.add("dragging", "just-dragged");
           event.dataTransfer?.setData("text/plain", element.dataset.areaId || "");
         });
-        element.draggable = true;
         element.addEventListener("dragover", (event) => {
           event.preventDefault();
-          const source = this._roomDrag?.element;
-          if (!source || source === element || !roomGrid) return;
-          const rect = element.getBoundingClientRect();
-          const after = event.clientY > rect.top + rect.height / 2 ||
-            (Math.abs(event.clientY - (rect.top + rect.height / 2)) < rect.height / 4 &&
-             event.clientX > rect.left + rect.width / 2);
-          if (after) element.after(source);
-          else element.before(source);
+          moveRoomAtPoint(event.clientX, event.clientY);
         });
         element.addEventListener("drop", (event) => {
           event.preventDefault();
-          if (!roomGrid) return;
-          const ids = [...roomGrid.querySelectorAll(".room")].map((room) => room.dataset.areaId);
-          try { localStorage.setItem(roomOrderKey, JSON.stringify(ids)); } catch (_e) {}
-          const source = this._roomDrag?.element;
-          source?.classList.remove("dragging");
-          source?.classList.add("just-dragged");
-          this.shadowRoot.querySelector(".room-trash")?.remove();
+          saveRoomOrder();
+        });
+        element.addEventListener("dragend", () => {
+          saveRoomOrder();
+          element.classList.remove("dragging");
+          window.setTimeout(() => element.classList.remove("just-dragged"), 250);
           this._roomDrag = null;
         });
 
@@ -3095,6 +3121,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
       let draggedFavorite = null;
       let favoriteHoldTimer = null;
       let favoritePointerId = null;
+      let favoriteStartX = 0;
+      let favoriteStartY = 0;
       const saveFavoriteOrder = () => {
         const ids = [...favoriteGrid.querySelectorAll(".favorite-card")].map((card) => card.dataset.entityId);
         try { localStorage.setItem("atze-dashboard:favorite-order", JSON.stringify(ids)); } catch (_e) {}
@@ -3102,10 +3130,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const moveFavoriteAtPoint = (x, y) => {
         if (!draggedFavorite) return;
         const target = [...favoriteGrid.querySelectorAll(".favorite-card")]
-          .find((card) => card !== draggedFavorite && (() => {
+          .find((card) => {
+            if (card === draggedFavorite) return false;
             const r = card.getBoundingClientRect();
             return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-          })());
+          });
         if (!target) return;
         const rect = target.getBoundingClientRect();
         const after = y > rect.top + rect.height / 2 ||
@@ -3117,6 +3146,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.draggable = true;
         element.addEventListener("pointerdown", (event) => {
           favoritePointerId = event.pointerId;
+          favoriteStartX = event.clientX;
+          favoriteStartY = event.clientY;
           favoriteHoldTimer = window.setTimeout(() => {
             draggedFavorite = element;
             element.classList.add("dragging", "just-dragged");
@@ -3124,7 +3155,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }, 450);
         });
         element.addEventListener("pointermove", (event) => {
-          if (!draggedFavorite || draggedFavorite !== element) return;
+          if (!draggedFavorite) {
+            if (Math.hypot(event.clientX - favoriteStartX, event.clientY - favoriteStartY) > 12 && favoriteHoldTimer) {
+              window.clearTimeout(favoriteHoldTimer);
+              favoriteHoldTimer = null;
+            }
+            return;
+          }
+          if (draggedFavorite !== element) return;
           event.preventDefault();
           moveFavoriteAtPoint(event.clientX, event.clientY);
         });
