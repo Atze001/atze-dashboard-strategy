@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.231.0";
+const ATZE_VERSION = "0.232.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -4677,7 +4677,7 @@ function buildGroupSection(
 
   // Switches are sorted directly in the room view. The custom grid stores
   // the chosen order per room in the browser and applies it immediately.
-  if (groupKey === "switch") {
+  if (groupKey !== "technik") {
     const visibleCards = cards.filter(
       (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
     );
@@ -4696,6 +4696,7 @@ function buildGroupSection(
         {
           type: "custom:atze-sortable-switch-grid",
           area_id: area.area_id,
+          group_key: groupKey,
           columns,
           cards: visibleCards,
         },
@@ -7539,6 +7540,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherPopupOpen = false;
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
+    this._roomDrag = null;
   }
 
   setConfig(config) {
@@ -10463,6 +10465,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </ha-card>
     `;
 
+    const roomGrid = this.shadowRoot.querySelector(".rooms");
+    const roomOrderKey = "atze-dashboard:home-room-order";
+    let roomOrder = [];
+    try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
+    if (roomGrid && Array.isArray(roomOrder) && roomOrder.length) {
+      const rank = new Map(roomOrder.map((id, index) => [id, index]));
+      [...roomGrid.querySelectorAll(".room")]
+        .sort((a, b) => (rank.get(a.dataset.areaId) ?? 9999) - (rank.get(b.dataset.areaId) ?? 9999))
+        .forEach((room) => roomGrid.appendChild(room));
+    }
+
     this.shadowRoot
       .querySelectorAll(".room")
       .forEach((element) => {
@@ -10480,10 +10493,59 @@ class AtzeHomeOverviewCard extends HTMLElement {
           );
         }
 
-        element.addEventListener(
-          "click",
-          () => this._navigate(element.dataset.path)
-        );
+        let holdTimer = null;
+        let dragging = false;
+        const beginHold = (event) => {
+          const point = event.touches?.[0] || event;
+          holdTimer = window.setTimeout(() => {
+            dragging = true;
+            this._roomDrag = {
+              element,
+              startX: point.clientX,
+              startY: point.clientY,
+            };
+            element.classList.add("dragging");
+          }, 450);
+        };
+        const cancelHold = () => {
+          if (holdTimer) window.clearTimeout(holdTimer);
+          holdTimer = null;
+        };
+        element.addEventListener("pointerdown", beginHold);
+        element.addEventListener("pointerup", cancelHold);
+        element.addEventListener("pointercancel", cancelHold);
+        element.addEventListener("click", (event) => {
+          if (dragging || element.classList.contains("just-dragged")) {
+            event.preventDefault();
+            element.classList.remove("just-dragged");
+            return;
+          }
+          this._navigate(element.dataset.path);
+        });
+        element.addEventListener("dragstart", (event) => {
+          this._roomDrag = { element };
+          element.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", element.dataset.areaId || "");
+        });
+        element.draggable = true;
+        element.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          const source = this._roomDrag?.element;
+          if (!source || source === element || !roomGrid) return;
+          const rooms = [...roomGrid.querySelectorAll(".room")];
+          if (rooms.indexOf(source) < rooms.indexOf(element)) element.after(source);
+          else element.before(source);
+        });
+        element.addEventListener("drop", (event) => {
+          event.preventDefault();
+          if (!roomGrid) return;
+          const ids = [...roomGrid.querySelectorAll(".room")].map((room) => room.dataset.areaId);
+          try { localStorage.setItem(roomOrderKey, JSON.stringify(ids)); } catch (_e) {}
+          const source = this._roomDrag?.element;
+          source?.classList.remove("dragging");
+          source?.classList.add("just-dragged");
+          this._roomDrag = null;
+        });
 
         element.addEventListener("keydown", (event) => {
           if (event.target !== element) return;
@@ -12833,7 +12895,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   getCardSize() { return 1; }
 
   _storageKey() {
-    return "atze-dashboard:switch-order:" + String(this._config?.area_id || "room");
+    return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
   }
 
   _orderedCards(cards) {
@@ -14107,17 +14169,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         <label
           class="row area-config-row ${blockedArea ? "blocked" : ""}"
           data-area-row="${this._escape(area.area_id)}"
-          draggable="${blockedArea ? "false" : "true"}"
         >
-          <span class="area">
-            <span
-              class="drag-handle"
-              title="${blockedArea ? "" : "Ziehen zum Sortieren"}"
-              aria-hidden="true"
-            >
-              <ha-icon icon="mdi:drag-vertical"></ha-icon>
-            </span>
-            <ha-icon
+          <span class="area">\n            <ha-icon
               class="area-icon"
               icon="${this._escape(
                 area.icon || "mdi:home-outline"
@@ -14954,18 +15007,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           <div class="editor-section-body">
             <div class="editor-section-help">
               Wähle aus, welche Bereiche angezeigt werden.
-              Ziehe Räume am Griff nach oben oder unten, um ihre
-              Reihenfolge zu ändern. Bereiche mit
-              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
+              Die Reihenfolge der Räume wird direkt auf der Startseite\n              per langem Drücken und Verschieben geändert. Bereiche mit\n              <b>no-strategy</b> oder <b>no-dboard</b> bleiben
               immer ausgeblendet.
             </div>
 
             <div class="toolbar">
               <button id="select-all" type="button">Alle</button>
               <button id="select-none" type="button">Keine</button>
-              <button id="reset-order" type="button">
-                Reihenfolge zurücksetzen
-              </button>
             </div>
 
             <div class="rows">
@@ -15150,75 +15198,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       else customElements.whenDefined("ha-yaml-editor").then(initialize);
     }
 
-    for (
-      const row of
-        this.shadowRoot.querySelectorAll(
-          ".area-config-row[draggable='true']"
-        )
-    ) {
-      row.addEventListener("dragstart", (event) => {
-        const areaId = row.dataset.areaRow;
-        this._draggedAreaId = areaId || null;
-        row.classList.add("dragging");
-
-        if (event.dataTransfer) {
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData(
-            "text/plain",
-            areaId || ""
-          );
-        }
-      });
-
-      row.addEventListener("dragend", () => {
-        this._draggedAreaId = null;
-
-        for (
-          const item of
-            this.shadowRoot.querySelectorAll(
-              ".area-config-row"
-            )
-        ) {
-          item.classList.remove(
-            "dragging",
-            "drag-over"
-          );
-        }
-      });
-
-      row.addEventListener("dragover", (event) => {
-        event.preventDefault();
-
-        if (
-          this._draggedAreaId &&
-          this._draggedAreaId !== row.dataset.areaRow
-        ) {
-          row.classList.add("drag-over");
-
-          if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = "move";
-          }
-        }
-      });
-
-      row.addEventListener("dragleave", () => {
-        row.classList.remove("drag-over");
-      });
-
-      row.addEventListener("drop", (event) => {
-        event.preventDefault();
-        row.classList.remove("drag-over");
-
-        const dragged =
-          this._draggedAreaId ||
-          event.dataTransfer?.getData("text/plain");
-
-        this._moveArea(
-          dragged,
-          row.dataset.areaRow
-        );
-      });
-    }
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
       input.addEventListener("change", (event) => {
