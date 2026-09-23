@@ -10528,6 +10528,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
     hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
+    if (!hiddenRoomIds.length) hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
     if (!hiddenRoomIds.length) try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
     if (Array.isArray(hiddenRoomIds)) {
       for (const el of this.shadowRoot.querySelectorAll(".room")) if (hiddenRoomIds.includes(el.dataset.areaId)) el.remove();
@@ -10535,6 +10536,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const roomOrderKey = "atze-dashboard:home-room-order";
     let roomOrder = [];
     roomOrder = atzeLayoutValue(this._config, "home_room_order", []);
+    if (!roomOrder.length) roomOrder = atzeLayoutValue(this._config, "home_room_order", []);
     if (!roomOrder.length) try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
     if (roomGrid && Array.isArray(roomOrder) && roomOrder.length) {
       const rank = new Map(roomOrder.map((id, index) => [id, index]));
@@ -12978,6 +12980,10 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
   }
 
+  _layoutOrderKey() {
+    return "card_order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
+  }
+
   _storageKey() {
     if (this._config?.storage_key) return this._config.storage_key;
     return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
@@ -13006,6 +13012,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   _orderedCards(cards) {
     let saved = [];
     saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
+    if (!saved.length) saved = atzeLayoutValue(this._config?.strategy_config, this._layoutOrderKey(), []);
     if (!saved.length) try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
     if (!Array.isArray(saved) || !saved.length) return [...cards];
     const rank = new Map(saved.map((id, index) => [id, index]));
@@ -13373,7 +13380,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
-  _resetDirectDragLayout() {
+  async _resetDirectDragLayout() {
     const keys = [];
     try {
       for (let index = 0; index < localStorage.length; index += 1) {
@@ -13390,6 +13397,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       }
       keys.forEach((key) => localStorage.removeItem(key));
     } catch (_e) {}
+    try {
+      const raw = await this._hass.callWS({ type: "lovelace/config", force: true });
+      if (raw?.strategy?.type === STRATEGY_TYPE) {
+        const strategy = { ...raw.strategy };
+        delete strategy[ATZE_LAYOUT_FIELD];
+        await this._hass.callWS({ type: "lovelace/config/save", config: { ...raw, strategy } });
+        delete this._config[ATZE_LAYOUT_FIELD];
+      }
+    } catch (error) {
+      console.error("Atze Dashboard: zentraler Drag-&-Drop-Reset fehlgeschlagen", error);
+    }
     window.dispatchEvent(new Event("location-changed"));
     window.location.reload();
   }
