@@ -754,7 +754,13 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 
   getCardSize() { return 1; }
 
+  _itemId(card) {
+    const field = this._config?.id_field || "entity";
+    return card?.[field];
+  }
+
   _storageKey() {
+    if (this._config?.storage_key) return this._config.storage_key;
     return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
   }
 
@@ -782,8 +788,8 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     if (!Array.isArray(saved) || !saved.length) return [...cards];
     const rank = new Map(saved.map((id, index) => [id, index]));
     return [...cards].sort((a, b) => {
-      const ai = rank.has(a.entity) ? rank.get(a.entity) : Number.MAX_SAFE_INTEGER;
-      const bi = rank.has(b.entity) ? rank.get(b.entity) : Number.MAX_SAFE_INTEGER;
+      const ai = rank.has(this._itemId(a)) ? rank.get(this._itemId(a)) : Number.MAX_SAFE_INTEGER;
+      const bi = rank.has(this._itemId(b)) ? rank.get(this._itemId(b)) : Number.MAX_SAFE_INTEGER;
       return ai - bi;
     });
   }
@@ -792,7 +798,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     try {
       localStorage.setItem(
         this._storageKey(),
-        JSON.stringify(this._cards.map((card) => card.entity).filter(Boolean))
+        JSON.stringify(this._cards.map((card) => this._itemId(card)).filter(Boolean))
       );
     } catch (_e) {}
   }
