@@ -14076,6 +14076,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       steckdose: ["steckdose", "plug", "socket", "outlet"],
       switch: ["schalter", "taster"],
       fan: ["ventilator", "lüfter", "luefter", "fan"],
+      luftpflege: ["luftreiniger", "air purifier", "airpurifier", "entfeuchter", "dehumidifier"],
       cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
     };
     const configured = this._config.name_group_filters;
@@ -15242,6 +15243,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._nameGroupFilterRow("steckdose", "Steckdosen", "z. B. Steckdose, Plug, Socket, Outlet")}
               ${this._nameGroupFilterRow("switch", "Schalter", "z. B. Schalter, Taster")}
               ${this._nameGroupFilterRow("fan", "Lüfter", "z. B. Ventilator, Lüfter, Fan")}
+              ${this._nameGroupFilterRow("luftpflege", "Luftreiniger / Entfeuchter", "z. B. Luftreiniger, Air Purifier, Entfeuchter, Dehumidifier")}
               ${this._nameGroupFilterRow("cover", "Rollläden", "z. B. Rollladen, Rollo, Jalousie, Shutter")}
             </div>
           </div>
