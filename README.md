@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.250.0**
+Version **0.251.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.251.0
+- Eigene Gruppe „Steckdosen“ mit separatem Namensfilter ergänzt.
+- Begriffe wie Steckdose, Plug, Socket und Outlet werden unabhängig von „Schalter“ klassifiziert.
+
 ### v0.250.0
 - Namensfilter-Eingabefelder behalten auf Mobilgeräten den Fokus; die Tastatur bleibt beim Bearbeiten geöffnet.
 
 ### v0.249.0
 - Konfigurierbare Namensfilter für Schalter/Steckdosen, Lüfter und Rollläden eingeführt.
-
-### v0.248.0
-- Lichtkarten verwenden jetzt die direkte Drag-&-Drop-Sortierung bei unverändertem zweispaltigem Layout.
 
 ## Lizenz
 

@@ -950,7 +950,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   _nameGroupFilters() {
     const defaults = {
-      switch: ["steckdose", "plug", "socket", "schalter", "switch"],
+      steckdose: ["steckdose", "plug", "socket", "outlet"],
+      switch: ["schalter", "switch"],
       fan: ["ventilator", "lüfter", "luefter", "fan"],
       cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
     };
@@ -2104,7 +2105,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="editor-section-help">Ordnet Entitäten anhand von Entity-ID oder Friendly Name einer Gruppe zu. Manuelle Gruppen-Zuordnungen haben weiterhin Vorrang. Begriffe mit Komma trennen.</div>
             <div class="rows">
               ${this._toggleHtml("name_group_filters_enabled", "Namensfilter aktiv", "Automatische Zuordnung anhand der folgenden Begriffe verwenden.", true)}
-              ${this._nameGroupFilterRow("switch", "Schalter / Steckdosen", "z. B. Steckdose, Plug, Socket, Schalter")}
+              ${this._nameGroupFilterRow("steckdose", "Steckdosen", "z. B. Steckdose, Plug, Socket, Outlet")}
+              ${this._nameGroupFilterRow("switch", "Schalter", "z. B. Schalter, Switch")}
               ${this._nameGroupFilterRow("fan", "Lüfter", "z. B. Ventilator, Lüfter, Fan")}
               ${this._nameGroupFilterRow("cover", "Rollläden", "z. B. Rollladen, Rollo, Jalousie, Shutter")}
             </div>
