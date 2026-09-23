@@ -7541,6 +7541,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
+    this._hiddenRoomIds = [];
   }
 
   setConfig(config) {
@@ -8986,6 +8987,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
+        .room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:99999; display:flex; align-items:center; gap:8px; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); } .room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; } .room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
+
         :host {
           display: block;
           width: auto;
@@ -10466,6 +10469,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
     `;
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
+    let hiddenRoomIds = [];
+    try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
+    if (Array.isArray(hiddenRoomIds)) {
+      for (const el of this.shadowRoot.querySelectorAll(".room")) if (hiddenRoomIds.includes(el.dataset.areaId)) el.remove();
+    }
     const roomOrderKey = "atze-dashboard:home-room-order";
     let roomOrder = [];
     try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
@@ -10523,6 +10531,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           this._navigate(element.dataset.path);
         });
         element.addEventListener("dragstart", (event) => {
+          let trash = this.shadowRoot.querySelector(".room-trash");
+          if (!trash) { trash = document.createElement("div"); trash.className = "room-trash"; trash.innerHTML = '<ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span>'; this.shadowRoot.appendChild(trash); trash.addEventListener("dragover", (e) => { e.preventDefault(); trash.classList.add("over"); }); trash.addEventListener("dragleave", () => trash.classList.remove("over")); trash.addEventListener("drop", (e) => { e.preventDefault(); const source = this._roomDrag?.element; if (!source) return; let hidden=[]; try { hidden=JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms")||"[]"); } catch(_e){} hidden=Array.isArray(hidden)?hidden:[]; if(!hidden.includes(source.dataset.areaId)) hidden.push(source.dataset.areaId); try{localStorage.setItem("atze-dashboard:hidden-home-rooms",JSON.stringify(hidden));}catch(_e){} source.remove(); trash.remove(); this._roomDrag=null; }); }
+          trash.classList.add("visible");
           this._roomDrag = { element };
           element.classList.add("dragging");
           event.dataTransfer?.setData("text/plain", element.dataset.areaId || "");
@@ -10544,6 +10555,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           const source = this._roomDrag?.element;
           source?.classList.remove("dragging");
           source?.classList.add("just-dragged");
+          this.shadowRoot.querySelector(".room-trash")?.remove();
           this._roomDrag = null;
         });
 
@@ -12898,6 +12910,24 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     return "atze-dashboard:card-order:" + String(this._config?.area_id || "room") + ":" + String(this._config?.group_key || "switch");
   }
 
+  _hiddenKey() {
+    return "atze-dashboard:hidden-cards:" + String(this._config?.area_id || "room");
+  }
+
+  _hideCard(card) {
+    const entityId = card?.entity;
+    if (!entityId) return;
+    let hidden = [];
+    try { hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]"); } catch (_e) {}
+    hidden = Array.isArray(hidden) ? hidden : [];
+    if (!hidden.includes(entityId)) hidden.push(entityId);
+    try { localStorage.setItem(this._hiddenKey(), JSON.stringify(hidden)); } catch (_e) {}
+    this._cards = this._cards.filter((entry) => entry.entity !== entityId);
+    this._saveOrder();
+    window.dispatchEvent(new CustomEvent("atze-card-hidden", { detail: { entityId, areaId: this._config?.area_id } }));
+    this._render();
+  }
+
   _orderedCards(cards) {
     let saved = [];
     try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
@@ -12940,10 +12970,18 @@ class AtzeSortableSwitchGrid extends HTMLElement {
         .item { min-width:0; cursor:grab; touch-action:none; }
         .item.dragging { opacity:.45; }
         .item.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
+        .trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+        .trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; }
+        .trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
       </style>
       <div class="grid"></div>
+      <div class="trash" aria-label="Karte ausblenden"><ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span></div>
     `;
     const grid = this.shadowRoot.querySelector(".grid");
+    const trash = this.shadowRoot.querySelector(".trash");
+    trash?.addEventListener("dragover", (event) => { event.preventDefault(); trash.classList.add("over"); });
+    trash?.addEventListener("dragleave", () => trash.classList.remove("over"));
+    trash?.addEventListener("drop", (event) => { event.preventDefault(); const index = this._dragIndex ?? Number(event.dataTransfer?.getData("text/plain")); const card = this._cards[index]; trash.classList.remove("over","visible"); this._dragIndex = null; if (card) this._hideCard(card); });
     this._cards.forEach((cardConfig, index) => {
       const item = document.createElement("div");
       item.className = "item";
@@ -12956,10 +12994,12 @@ class AtzeSortableSwitchGrid extends HTMLElement {
       item.addEventListener("dragstart", (event) => {
         this._dragIndex = index;
         item.classList.add("dragging");
+        trash?.classList.add("visible");
         event.dataTransfer?.setData("text/plain", String(index));
       });
       item.addEventListener("dragend", () => {
         this._dragIndex = null;
+        trash?.classList.remove("visible","over");
         for (const el of grid.querySelectorAll(".item")) el.classList.remove("dragging","drag-over");
       });
       item.addEventListener("dragover", (event) => {
