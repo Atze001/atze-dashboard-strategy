@@ -2961,13 +2961,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
-    try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
+    hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
+    if (!hiddenRoomIds.length) try { hiddenRoomIds = JSON.parse(localStorage.getItem("atze-dashboard:hidden-home-rooms") || "[]"); } catch (_e) {}
     if (Array.isArray(hiddenRoomIds)) {
       for (const el of this.shadowRoot.querySelectorAll(".room")) if (hiddenRoomIds.includes(el.dataset.areaId)) el.remove();
     }
     const roomOrderKey = "atze-dashboard:home-room-order";
     let roomOrder = [];
-    try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
+    roomOrder = atzeLayoutValue(this._config, "home_room_order", []);
+    if (!roomOrder.length) try { roomOrder = JSON.parse(localStorage.getItem(roomOrderKey) || "[]"); } catch (_e) {}
     if (roomGrid && Array.isArray(roomOrder) && roomOrder.length) {
       const rank = new Map(roomOrder.map((id, index) => [id, index]));
       const rooms = [...roomGrid.querySelectorAll(".room")];
@@ -3042,6 +3044,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           if (from < index) target.after(source); else target.before(source);
           const ids = [...container.querySelectorAll(selector)].map(idGetter).filter(Boolean);
           try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch (_e) {}
+          const field = storageKey === roomOrderKey ? "home_room_order" : "favorite_order";
+          saveAtzeStrategyLayout(this._hass, this._config, { [field]: ids });
           dragIndex = null;
         });
       });
