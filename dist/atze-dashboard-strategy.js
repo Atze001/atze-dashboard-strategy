@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.251.0";
+const ATZE_VERSION = "0.252.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3948,7 +3948,7 @@ function autoTechnicalGroup(hass, entity, config) {
 
 const DEFAULT_NAME_GROUP_FILTERS = {
   steckdose: ["steckdose", "plug", "socket", "outlet"],
-  switch: ["schalter", "switch"],
+  switch: ["schalter", "taster"],
   fan: ["ventilator", "lüfter", "luefter", "fan"],
   cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
 };
@@ -14058,7 +14058,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   _nameGroupFilters() {
     const defaults = {
       steckdose: ["steckdose", "plug", "socket", "outlet"],
-      switch: ["schalter", "switch"],
+      switch: ["schalter", "taster"],
       fan: ["ventilator", "lüfter", "luefter", "fan"],
       cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
     };
@@ -15213,7 +15213,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="rows">
               ${this._toggleHtml("name_group_filters_enabled", "Namensfilter aktiv", "Automatische Zuordnung anhand der folgenden Begriffe verwenden.", true)}
               ${this._nameGroupFilterRow("steckdose", "Steckdosen", "z. B. Steckdose, Plug, Socket, Outlet")}
-              ${this._nameGroupFilterRow("switch", "Schalter", "z. B. Schalter, Switch")}
+              ${this._nameGroupFilterRow("switch", "Schalter", "z. B. Schalter, Taster")}
               ${this._nameGroupFilterRow("fan", "Lüfter", "z. B. Ventilator, Lüfter, Fan")}
               ${this._nameGroupFilterRow("cover", "Rollläden", "z. B. Rollladen, Rollo, Jalousie, Shutter")}
             </div>
