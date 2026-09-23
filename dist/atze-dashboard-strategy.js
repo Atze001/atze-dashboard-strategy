@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.225.0";
+const ATZE_VERSION = "0.226.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -3160,7 +3160,7 @@ function buildEntityCard(
       override.card_layout ||
       (
         domainOf(entityId) === "climate"
-          ? (config.climate_card_layout || "normal")
+          ? (config.climate_card_layout || config.apple_card_layout || "large")
           : (config.apple_card_layout || "large")
       );
 
