@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.237.0**
+Version **0.238.0**
 
 Enthalten sind unter anderem:
 
@@ -206,20 +206,20 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.238.0
+
+- Die eigentliche Ursache der fehlschlagenden Long-Press-Gesten auf der Hauptseite wurde behoben: Home-Assistant-State-Updates dürfen während einer laufenden Pointer-Interaktion das Shadow-DOM nicht mehr neu rendern.
+- Bereichskarten und Favoriten behalten dadurch während Long-Press und Verschieben dasselbe DOM-Element; die Geste wird nicht mehr durch ein Re-Render abgebrochen.
+- Für die Drag-Flächen wird während der direkten Interaktion die Browser-Touch-Geste unterdrückt, damit iOS den Pointer-Drag nicht übernimmt.
+
 ### v0.237.0
 
-- Drag & Drop auf der Hauptseite wurde für Touch-Geräte neu umgesetzt: Bereichskarten und Favoriten lassen sich nach langem Drücken direkt verschieben.
-- Die Bereichsreihenfolge wird erst aus der tatsächlichen DOM-Reihenfolge gespeichert, sodass eine gezogene Karte nicht mehr automatisch ans Ende springt.
-- Normales vertikales Scrollen bleibt möglich; eine Bewegung vor Ablauf des Long-Press bricht den Drag-Start ab.
+- Touch Drag & Drop auf der Hauptseite wurde für Bereichskarten und Favoriten neu auf Pointer-Interaktionen umgestellt.
+- Die Reihenfolge wird aus der tatsächlichen DOM-Position gespeichert.
 
 ### v0.236.0
 
 - Erste Korrektur der Touch-Sortierung für Favoriten und der Einfügeposition von Bereichskarten.
-
-### v0.235.0
-
-- Favoriten auf der Startseite können direkt per Drag & Drop angeordnet werden.
-- In den Dashboard-Einstellungen gibt es einen vollständigen Reset für Drag & Drop inklusive Reihenfolge und per Papierkorb ausgeblendeter Karten bzw. Räume.
 
 ## Lizenz
 
