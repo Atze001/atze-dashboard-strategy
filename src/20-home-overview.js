@@ -2179,6 +2179,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .room.dragging { opacity:.45; }
         .room.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
+        .home-room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:9999; display:flex; gap:8px; align-items:center; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+        .home-room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; }
+        .home-room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
 
         .room:active {
           transform: scale(0.985);
@@ -2985,6 +2988,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .forEach((room) => roomGrid.appendChild(room));
     }
 
+    const roomTrash = document.createElement("div");
+    roomTrash.className = "home-room-trash";
+    roomTrash.setAttribute("aria-label", "Bereich ausblenden");
+    roomTrash.innerHTML = '<ha-icon icon="mdi:trash-can-outline"></ha-icon><span>Ausblenden</span>';
+    this.shadowRoot.appendChild(roomTrash);
+
     this.shadowRoot
       .querySelectorAll(".room")
       .forEach((element) => {
@@ -3014,7 +3023,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
 
-    const installProvenDrag = (container, selector, idGetter, storageKey) => {
+    const installProvenDrag = (container, selector, idGetter, storageKey, trash = null) => {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
       let dragIndex = null;
@@ -3023,11 +3032,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
+          trash?.classList.add("visible");
           event.dataTransfer?.setData("text/plain", String(index));
         });
         element.addEventListener("dragend", () => {
           dragIndex = null;
           elements.forEach((entry) => entry.classList.remove("dragging", "drag-over"));
+          trash?.classList.remove("visible", "over");
         });
         element.addEventListener("dragover", (event) => {
           event.preventDefault();
@@ -3051,13 +3062,32 @@ class AtzeHomeOverviewCard extends HTMLElement {
           dragIndex = null;
         });
       });
+      if (trash) {
+        trash.addEventListener("dragover", (event) => { event.preventDefault(); trash.classList.add("over"); });
+        trash.addEventListener("dragleave", () => trash.classList.remove("over"));
+        trash.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const current = [...container.querySelectorAll(selector)];
+          const source = current[dragIndex ?? Number(event.dataTransfer?.getData("text/plain"))];
+          const id = source ? idGetter(source) : null;
+          if (!id) return;
+          let hidden = atzeLayoutValue(this._config, "hidden_home_rooms", []);
+          if (!hidden.includes(id)) hidden = [...hidden, id];
+          try { localStorage.setItem("atze-dashboard:hidden-home-rooms", JSON.stringify(hidden)); } catch (_e) {}
+          saveAtzeStrategyLayout(this._hass, this._config, { hidden_home_rooms: hidden });
+          source.remove();
+          trash.classList.remove("visible", "over");
+          dragIndex = null;
+        });
+      }
     };
 
     installProvenDrag(
       roomGrid,
       ".room",
       (element) => element.dataset.areaId,
-      roomOrderKey
+      roomOrderKey,
+      roomTrash
     );
     installProvenDrag(
       this.shadowRoot.querySelector(".favorite-grid"),

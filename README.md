@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.240.0**
+Version **0.241.0**
 
 Enthalten sind unter anderem:
 
@@ -206,19 +206,19 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.241.0
+
+- Bereichskarten auf der Hauptseite können beim Drag & Drop jetzt wie Raumkarten auf den Bereichsseiten auf einen eingeblendeten Papierkorb gezogen und ausgeblendet werden.
+- Ausgeblendete Hauptseiten-Bereiche werden im zentralen geräteübergreifenden Layout-Zustand gespeichert.
+
 ### v0.240.0
 
 - Drag-&-Drop-Reihenfolgen werden zentral in der Home-Assistant-Lovelace-Konfiguration gespeichert und dadurch geräteübergreifend verwendet.
-- Bereichsreihenfolge, Favoritenreihenfolge und Kartenreihenfolgen der Räume nutzen den zentralen Layout-Zustand; bestehende lokale Werte dienen als Fallback für die Migration.
-- Der Drag-&-Drop-Reset entfernt auch den zentral gespeicherten Layout-Zustand.
+- Bereichsreihenfolge, Favoritenreihenfolge und Kartenreihenfolgen der Räume nutzen den zentralen Layout-Zustand.
 
 ### v0.239.0
 
 - Hauptseite und Favoriten verwenden dasselbe native Drag-&-Drop-Ereignismodell wie die zuverlässig funktionierende Sortierung auf den Bereichsseiten.
-
-### v0.238.0
-
-- Re-Renders durch Home-Assistant-State-Updates werden während einer laufenden direkten Interaktion blockiert.
 
 ## Lizenz
 
