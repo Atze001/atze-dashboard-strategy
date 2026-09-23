@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.245.0";
+const ATZE_VERSION = "0.246.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -10622,7 +10622,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
       elements.forEach((element, index) => {
         element.draggable = true;
-        element.style.touchAction = "none";
+        // Keep normal vertical page scrolling available until the browser
+        // actually starts a native long-press drag.
+        element.style.touchAction = "pan-y";
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
