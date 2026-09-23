@@ -2438,7 +2438,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
 
     for (const input of this.shadowRoot.querySelectorAll(".name-group-filter")) {
-      input.addEventListener("change", (event) => this._setNameGroupFilter(event.currentTarget.dataset.group, event.currentTarget.value));
+      input.addEventListener("pointerdown", () => this._beginEntityVisibilityInteraction());
+      input.addEventListener("focus", () => this._beginEntityVisibilityInteraction());
+      input.addEventListener("blur", (event) => {
+        const target = event.currentTarget;
+        this._setNameGroupFilter(target.dataset.group, target.value);
+        this._endEntityVisibilityInteraction();
+      });
     }
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {

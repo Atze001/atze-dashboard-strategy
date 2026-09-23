@@ -206,16 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.250.0
+- Namensfilter-Eingabefelder behalten auf Mobilgeräten den Fokus; die Tastatur bleibt beim Bearbeiten geöffnet.
+
 ### v0.249.0
-- Testweise konfigurierbare Namensfilter für die automatische Gruppen-Zuordnung.
-- Neuer Settings-Bereich „Namensfilter / Zuordnung“ für Schalter/Steckdosen, Lüfter und Rollläden.
-- Manuelle Gruppen-Zuordnungen behalten Vorrang.
+- Konfigurierbare Namensfilter für Schalter/Steckdosen, Lüfter und Rollläden eingeführt.
 
 ### v0.248.0
 - Lichtkarten verwenden jetzt die direkte Drag-&-Drop-Sortierung bei unverändertem zweispaltigem Layout.
-
-### v0.247.0
-- Papierkorb auf der Hauptseite entfernt; vertikales Scrollen auf sortierbaren Karten vereinheitlicht.
 
 ## Lizenz
 
