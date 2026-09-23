@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.241.0";
+const ATZE_VERSION = "0.242.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -10593,6 +10593,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
       let dragIndex = null;
+      let trashHideTimer = null;
       elements.forEach((element, index) => {
         element.draggable = true;
         element.addEventListener("dragstart", (event) => {
@@ -10604,7 +10605,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.addEventListener("dragend", () => {
           dragIndex = null;
           elements.forEach((entry) => entry.classList.remove("dragging", "drag-over"));
-          trash?.classList.remove("visible", "over");
+          if (trash) {
+            window.clearTimeout(trashHideTimer);
+            trashHideTimer = window.setTimeout(() => {
+              if (!trash.classList.contains("over")) trash.classList.remove("visible");
+            }, 700);
+          }
         });
         element.addEventListener("dragover", (event) => {
           event.preventDefault();
@@ -10629,8 +10635,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
       if (trash) {
-        trash.addEventListener("dragover", (event) => { event.preventDefault(); trash.classList.add("over"); });
-        trash.addEventListener("dragleave", () => trash.classList.remove("over"));
+        trash.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          window.clearTimeout(trashHideTimer);
+          trash.classList.add("visible", "over");
+        });
+        trash.addEventListener("dragleave", () => {
+          trash.classList.remove("over");
+          window.clearTimeout(trashHideTimer);
+          trashHideTimer = window.setTimeout(() => trash.classList.remove("visible"), 500);
+        });
         trash.addEventListener("drop", (event) => {
           event.preventDefault();
           const current = [...container.querySelectorAll(selector)];
