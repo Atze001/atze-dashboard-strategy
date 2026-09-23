@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.230.0";
+const ATZE_VERSION = "0.231.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -4668,6 +4668,35 @@ function buildGroupSection(
           type: "grid",
           columns: 2,
           square: false,
+          cards: visibleCards,
+        },
+        ...popupCards,
+      ],
+    };
+  }
+
+  // Switches are sorted directly in the room view. The custom grid stores
+  // the chosen order per room in the browser and applies it immediately.
+  if (groupKey === "switch") {
+    const visibleCards = cards.filter(
+      (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
+    );
+    const popupCards = cards.filter(
+      (card) => card.type === "custom:bubble-card" && card.card_type === "pop-up"
+    );
+
+    return {
+      type: "grid",
+      cards: [
+        {
+          type: "heading",
+          heading: meta.title,
+          icon: meta.icon,
+        },
+        {
+          type: "custom:atze-sortable-switch-grid",
+          area_id: area.area_id,
+          columns,
           cards: visibleCards,
         },
         ...popupCards,
@@ -12777,6 +12806,120 @@ if (!customElements.get("atze-status-badge-v1")) {
 }
 
 
+
+class AtzeSortableSwitchGrid extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = null;
+    this._hass = null;
+    this._dragIndex = null;
+    this._cards = [];
+  }
+
+  setConfig(config) {
+    this._config = { columns: 2, cards: [], ...config };
+    this._cards = this._orderedCards(this._config.cards || []);
+    this._render();
+  }
+
+  set hass(value) {
+    this._hass = value;
+    for (const card of this.shadowRoot?.querySelectorAll("hui-card")) {
+      card.hass = value;
+    }
+  }
+
+  getCardSize() { return 1; }
+
+  _storageKey() {
+    return "atze-dashboard:switch-order:" + String(this._config?.area_id || "room");
+  }
+
+  _orderedCards(cards) {
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
+    if (!Array.isArray(saved) || !saved.length) return [...cards];
+    const rank = new Map(saved.map((id, index) => [id, index]));
+    return [...cards].sort((a, b) => {
+      const ai = rank.has(a.entity) ? rank.get(a.entity) : Number.MAX_SAFE_INTEGER;
+      const bi = rank.has(b.entity) ? rank.get(b.entity) : Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
+  }
+
+  _saveOrder() {
+    try {
+      localStorage.setItem(
+        this._storageKey(),
+        JSON.stringify(this._cards.map((card) => card.entity).filter(Boolean))
+      );
+    } catch (_e) {}
+  }
+
+  _move(from, to) {
+    if (from == null || to == null || from === to) return;
+    const [moved] = this._cards.splice(from, 1);
+    this._cards.splice(to, 0, moved);
+    this._saveOrder();
+    this._render();
+  }
+
+  _render() {
+    if (!this.shadowRoot || !this._config) return;
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; }
+        .grid {
+          display:grid;
+          grid-template-columns:repeat(${Number(this._config.columns) || 2}, minmax(0,1fr));
+          gap:8px;
+        }
+        .item { min-width:0; cursor:grab; touch-action:none; }
+        .item.dragging { opacity:.45; }
+        .item.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
+      </style>
+      <div class="grid"></div>
+    `;
+    const grid = this.shadowRoot.querySelector(".grid");
+    this._cards.forEach((cardConfig, index) => {
+      const item = document.createElement("div");
+      item.className = "item";
+      item.draggable = true;
+      item.dataset.index = String(index);
+      const card = document.createElement("hui-card");
+      card.hass = this._hass;
+      card.config = cardConfig;
+      item.appendChild(card);
+      item.addEventListener("dragstart", (event) => {
+        this._dragIndex = index;
+        item.classList.add("dragging");
+        event.dataTransfer?.setData("text/plain", String(index));
+      });
+      item.addEventListener("dragend", () => {
+        this._dragIndex = null;
+        for (const el of grid.querySelectorAll(".item")) el.classList.remove("dragging","drag-over");
+      });
+      item.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        if (this._dragIndex !== index) item.classList.add("drag-over");
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("drag-over"));
+      item.addEventListener("drop", (event) => {
+        event.preventDefault();
+        item.classList.remove("drag-over");
+        const from = this._dragIndex ?? Number(event.dataTransfer?.getData("text/plain"));
+        this._move(from, index);
+      });
+      grid.appendChild(item);
+    });
+  }
+}
+
+if (!customElements.get("atze-sortable-switch-grid")) {
+  customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
+}
+
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
     super();
@@ -13247,26 +13390,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
-  _setSwitchOrder(areaId, entityIds) {
-    const entityOverrides = { ...(this._config.entity_overrides || {}) };
-    entityIds.forEach((entityId, index) => {
-      entityOverrides[entityId] = { ...(entityOverrides[entityId] || {}), order: (index + 1) * 10 };
-    });
-    this._openEntityAreaIds.add(areaId);
-    this._fireConfigChanged({ ...this._config, entity_overrides: entityOverrides });
-  }
-
-  _moveSwitch(areaId, draggedEntityId, targetEntityId) {
-    if (!areaId || !draggedEntityId || !targetEntityId || draggedEntityId === targetEntityId) return;
-    const entityIds = this._entitiesForArea(areaId).filter((entity) => domainOf(entity.entity_id) === "switch").sort(compareEntities(this._hass, this._config, { area_id: areaId })).map((entity) => entity.entity_id);
-    const from = entityIds.indexOf(draggedEntityId);
-    const to = entityIds.indexOf(targetEntityId);
-    if (from < 0 || to < 0) return;
-    const [moved] = entityIds.splice(from, 1);
-    entityIds.splice(to, 0, moved);
-    this._setSwitchOrder(areaId, entityIds);
-  }
-
   _setFavoriteEntity(entityId, checked) {
     const favorites = asArray(
       this._config.favorite_entities
@@ -13493,13 +13616,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             : "Auto";
 
       return `
-        <div
-          class="entity-row entity-config-row"
-          data-order-area="${this._escape(area.area_id)}"
-          data-order-entity="${this._escape(entityId)}"
-          draggable="${domain === "switch" ? "true" : "false"}"
-        >
-          ${domain === "switch" ? '<span class="entity-drag-handle" title="Ziehen zum Sortieren"><ha-icon icon="mdi:drag-vertical"></ha-icon></span>' : ""}
+        <div class="entity-row entity-config-row">
           <span class="entity-copy">
             <span class="entity-name">
               ${this._escape(name)}
@@ -14128,10 +14245,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           font-size: 13px;
           line-height: 1.4;
         }
-
-        .entity-drag-handle { width: 32px; min-width: 32px; display: inline-flex; align-items: center; justify-content: center; color: var(--secondary-text-color); cursor: grab; }
-        .entity-config-row.dragging { opacity: 0.45; }
-        .entity-config-row.drag-over { box-shadow: inset 0 2px 0 var(--primary-color, #03a9f4); }
 
         .header {
           padding: 16px 18px 12px;
@@ -15035,27 +15148,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
       if (customElements.get("ha-yaml-editor")) initialize();
       else customElements.whenDefined("ha-yaml-editor").then(initialize);
-    }
-
-    for (const row of this.shadowRoot.querySelectorAll(".entity-config-row[draggable='true']")) {
-      row.addEventListener("dragstart", (event) => {
-        this._draggedSwitchEntityId = row.dataset.orderEntity || null;
-        row.classList.add("dragging");
-        if (event.dataTransfer) { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", this._draggedSwitchEntityId || ""); }
-      });
-      row.addEventListener("dragend", () => {
-        this._draggedSwitchEntityId = null;
-        for (const item of this.shadowRoot.querySelectorAll(".entity-config-row")) item.classList.remove("dragging", "drag-over");
-      });
-      row.addEventListener("dragover", (event) => {
-        const dragging = this.shadowRoot.querySelector(".entity-config-row.dragging");
-        if (dragging?.dataset?.orderArea === row.dataset.orderArea && this._draggedSwitchEntityId !== row.dataset.orderEntity) { event.preventDefault(); row.classList.add("drag-over"); }
-      });
-      row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
-      row.addEventListener("drop", (event) => {
-        event.preventDefault(); row.classList.remove("drag-over");
-        this._moveSwitch(row.dataset.orderArea, this._draggedSwitchEntityId || event.dataTransfer?.getData("text/plain"), row.dataset.orderEntity);
-      });
     }
 
     for (

@@ -727,3 +727,117 @@ if (!customElements.get("atze-status-badge-v1")) {
   );
 }
 
+
+
+class AtzeSortableSwitchGrid extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = null;
+    this._hass = null;
+    this._dragIndex = null;
+    this._cards = [];
+  }
+
+  setConfig(config) {
+    this._config = { columns: 2, cards: [], ...config };
+    this._cards = this._orderedCards(this._config.cards || []);
+    this._render();
+  }
+
+  set hass(value) {
+    this._hass = value;
+    for (const card of this.shadowRoot?.querySelectorAll("hui-card")) {
+      card.hass = value;
+    }
+  }
+
+  getCardSize() { return 1; }
+
+  _storageKey() {
+    return "atze-dashboard:switch-order:" + String(this._config?.area_id || "room");
+  }
+
+  _orderedCards(cards) {
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(this._storageKey()) || "[]"); } catch (_e) {}
+    if (!Array.isArray(saved) || !saved.length) return [...cards];
+    const rank = new Map(saved.map((id, index) => [id, index]));
+    return [...cards].sort((a, b) => {
+      const ai = rank.has(a.entity) ? rank.get(a.entity) : Number.MAX_SAFE_INTEGER;
+      const bi = rank.has(b.entity) ? rank.get(b.entity) : Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
+  }
+
+  _saveOrder() {
+    try {
+      localStorage.setItem(
+        this._storageKey(),
+        JSON.stringify(this._cards.map((card) => card.entity).filter(Boolean))
+      );
+    } catch (_e) {}
+  }
+
+  _move(from, to) {
+    if (from == null || to == null || from === to) return;
+    const [moved] = this._cards.splice(from, 1);
+    this._cards.splice(to, 0, moved);
+    this._saveOrder();
+    this._render();
+  }
+
+  _render() {
+    if (!this.shadowRoot || !this._config) return;
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; }
+        .grid {
+          display:grid;
+          grid-template-columns:repeat(${Number(this._config.columns) || 2}, minmax(0,1fr));
+          gap:8px;
+        }
+        .item { min-width:0; cursor:grab; touch-action:none; }
+        .item.dragging { opacity:.45; }
+        .item.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
+      </style>
+      <div class="grid"></div>
+    `;
+    const grid = this.shadowRoot.querySelector(".grid");
+    this._cards.forEach((cardConfig, index) => {
+      const item = document.createElement("div");
+      item.className = "item";
+      item.draggable = true;
+      item.dataset.index = String(index);
+      const card = document.createElement("hui-card");
+      card.hass = this._hass;
+      card.config = cardConfig;
+      item.appendChild(card);
+      item.addEventListener("dragstart", (event) => {
+        this._dragIndex = index;
+        item.classList.add("dragging");
+        event.dataTransfer?.setData("text/plain", String(index));
+      });
+      item.addEventListener("dragend", () => {
+        this._dragIndex = null;
+        for (const el of grid.querySelectorAll(".item")) el.classList.remove("dragging","drag-over");
+      });
+      item.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        if (this._dragIndex !== index) item.classList.add("drag-over");
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("drag-over"));
+      item.addEventListener("drop", (event) => {
+        event.preventDefault();
+        item.classList.remove("drag-over");
+        const from = this._dragIndex ?? Number(event.dataTransfer?.getData("text/plain"));
+        this._move(from, index);
+      });
+      grid.appendChild(item);
+    });
+  }
+}
+
+if (!customElements.get("atze-sortable-switch-grid")) {
+  customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
+}
