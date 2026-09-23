@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.250.0";
+const ATZE_VERSION = "0.251.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -1269,6 +1269,7 @@ const DOMAIN_META = {
 
 const SPECIAL_GROUP_META = {
   raumverbrauch: { title: "Raumverbrauch", icon: "mdi:flash", order: 105 },
+  steckdose: { title: "Steckdosen", icon: "mdi:power-socket-de", order: 74 },
   technik: { title: "Technik", icon: "mdi:cog-outline", order: 900 },
 };
 
@@ -3946,7 +3947,8 @@ function autoTechnicalGroup(hass, entity, config) {
 }
 
 const DEFAULT_NAME_GROUP_FILTERS = {
-  switch: ["steckdose", "plug", "socket", "schalter", "switch"],
+  steckdose: ["steckdose", "plug", "socket", "outlet"],
+  switch: ["schalter", "switch"],
   fan: ["ventilator", "lüfter", "luefter", "fan"],
   cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
 };
@@ -14055,7 +14057,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   _nameGroupFilters() {
     const defaults = {
-      switch: ["steckdose", "plug", "socket", "schalter", "switch"],
+      steckdose: ["steckdose", "plug", "socket", "outlet"],
+      switch: ["schalter", "switch"],
       fan: ["ventilator", "lüfter", "luefter", "fan"],
       cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
     };
@@ -15209,7 +15212,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="editor-section-help">Ordnet Entitäten anhand von Entity-ID oder Friendly Name einer Gruppe zu. Manuelle Gruppen-Zuordnungen haben weiterhin Vorrang. Begriffe mit Komma trennen.</div>
             <div class="rows">
               ${this._toggleHtml("name_group_filters_enabled", "Namensfilter aktiv", "Automatische Zuordnung anhand der folgenden Begriffe verwenden.", true)}
-              ${this._nameGroupFilterRow("switch", "Schalter / Steckdosen", "z. B. Steckdose, Plug, Socket, Schalter")}
+              ${this._nameGroupFilterRow("steckdose", "Steckdosen", "z. B. Steckdose, Plug, Socket, Outlet")}
+              ${this._nameGroupFilterRow("switch", "Schalter", "z. B. Schalter, Switch")}
               ${this._nameGroupFilterRow("fan", "Lüfter", "z. B. Ventilator, Lüfter, Fan")}
               ${this._nameGroupFilterRow("cover", "Rollläden", "z. B. Rollladen, Rollo, Jalousie, Shutter")}
             </div>
