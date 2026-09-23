@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.228.0";
+const ATZE_VERSION = "0.229.0";
 const STRATEGY_TYPE = "atze-dashboard";
 
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
@@ -2491,7 +2491,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
     .bubble-select-card-container,
     .bubble-cover-card-container,
     .bubble-cover-container {
-      min-height: ${${compact ? "52" : "60"} + 4}px !important;
+      min-height: ${compact ? "56px" : "64px"} !important;
     }
 
     .bubble-button-card-container {
