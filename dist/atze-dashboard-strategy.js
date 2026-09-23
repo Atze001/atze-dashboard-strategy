@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.248.0";
+const ATZE_VERSION = "0.249.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3945,10 +3945,33 @@ function autoTechnicalGroup(hass, entity, config) {
   );
 }
 
+const DEFAULT_NAME_GROUP_FILTERS = {
+  switch: ["steckdose", "plug", "socket", "schalter", "switch"],
+  fan: ["ventilator", "lüfter", "luefter", "fan"],
+  cover: ["rollladen", "rollo", "jalousie", "shutter", "blind"],
+};
+
+function nameFilterGroup(hass, entity, config) {
+  if (config.name_group_filters_enabled === false) return null;
+  const filters = config.name_group_filters && typeof config.name_group_filters === "object"
+    ? config.name_group_filters
+    : DEFAULT_NAME_GROUP_FILTERS;
+  const text = normalizedText(`${entity.entity_id} ${rawFriendlyName(hass, entity.entity_id, entity)}`);
+  for (const [group, keywords] of Object.entries(filters)) {
+    if (asArray(keywords).some((keyword) => {
+      const needle = normalizedText(String(keyword || "").trim());
+      return needle && text.includes(needle);
+    })) return group;
+  }
+  return null;
+}
+
 function groupKeyForEntity(hass, entity, config) {
   const override = getOverride(config.entity_overrides, entity.entity_id);
 
   if (override.group) return String(override.group);
+  const filteredGroup = nameFilterGroup(hass, entity, config);
+  if (filteredGroup) return filteredGroup;
   if (isRoomMeterEntity(hass, entity, config)) return "raumverbrauch";
   if (autoTechnicalGroup(hass, entity, config)) return "technik";
 
