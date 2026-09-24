@@ -206,15 +206,16 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.263.0
+- Raumansichten erhalten die neuen Gruppen „Szenen“ und „Automation“ am Ende der normalen Raumgruppen.
+- Szenen werden vor Automation einsortiert; Automation ist die letzte normale Gruppe.
+
 ### v0.262.0
 - Raumsektionen mit ausschließlich per Papierkorb ausgeblendeten Karten werden vor dem Rendern vollständig verworfen; dadurch bleiben keine verwaisten Überschriften wie „Sensoren“ zurück.
 
 ### v0.261.0
 - Per Papierkorb ausgeblendete Entitäten werden bereits vor dem Aufbau der Raumgruppen herausgefiltert.
 - Dadurch werden leere Gruppen samt Überschrift und Icon nach einem Neuaufbau zuverlässig entfernt.
-
-### v0.260.0
-- Leere Raumgruppen werden nach dem Ausblenden ihrer letzten Karte vollständig ausgeblendet, einschließlich Überschrift und Icon.
 
 ## Lizenz
 
