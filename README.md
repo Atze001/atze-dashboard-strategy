@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.266.0**
+Version **0.267.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.267.0
+- Abschnittsüberschriften in Raumansichten nochmals verkleinert: 18px Schriftgröße bei 26px Zeilenhöhe.
+
 ### v0.266.0
 - Schriftgröße der Abschnittsüberschriften in Raumansichten auf die ursprüngliche Größe zurückgesetzt; der neue Wrapper für leere Gruppen bleibt erhalten.
 
 ### v0.265.0
 - Sortierbare Raumgruppen verwenden einen gemeinsamen Wrapper für Überschrift und Karten; ist keine sichtbare Karte mehr vorhanden, verschwindet die komplette Gruppe samt Icon und Titel.
-
-### v0.264.0
-- Szenen und Automationen werden in Raumansichten zweispaltig dargestellt.
 
 ## Lizenz
 
