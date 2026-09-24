@@ -206,16 +206,16 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.261.0
+- Per Papierkorb ausgeblendete Entitäten werden bereits vor dem Aufbau der Raumgruppen herausgefiltert.
+- Dadurch werden leere Gruppen samt Überschrift und Icon nach einem Neuaufbau zuverlässig entfernt.
+
 ### v0.260.0
 - Leere Raumgruppen werden nach dem Ausblenden ihrer letzten Karte vollständig ausgeblendet, einschließlich Überschrift und Icon.
 
 ### v0.259.0
 - Per Drag & Drop in den Papierkorb ausgeblendete Raumkarten bleiben jetzt auch nach Navigation und Dashboard-Neuladen ausgeblendet.
 - Die Ausblendung wird zusätzlich im zentralen `direct_layout` der Strategy gespeichert; bestehende lokale Ausblendungen bleiben kompatibel.
-
-### v0.258.0
-- Helligkeitssensoren werden automatisch als Lux-Badge im Raumbild angezeigt.
-- Als Badge verwendete Helligkeitssensoren werden aus dem Abschnitt „Sensoren“ ausgeblendet; die bestehende zentrierte Badge-Anordnung bleibt unverändert.
 
 ## Lizenz
 
