@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.262.0";
+const ATZE_VERSION = "0.263.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -1265,6 +1265,8 @@ const DOMAIN_META = {
   select:        { title: "Auswahl",     icon: "mdi:form-dropdown",   order: 100 },
   sensor:        { title: "Sensoren",    icon: "mdi:gauge",           order: 110 },
   binary_sensor: { title: "Sicherheit",  icon: "mdi:shield-home-outline", order: 120 },
+  scene:         { title: "Szenen",      icon: "mdi:palette-outline", order: 980 },
+  automation:    { title: "Automation",  icon: "mdi:robot-outline",   order: 990 },
 };
 
 const SPECIAL_GROUP_META = {
@@ -1379,6 +1381,8 @@ const AUTO_ROOM_PRIMARY_DOMAINS = new Set([
   "lock",
   "media_player",
   "input_boolean",
+  "scene",
+  "automation",
 ]);
 
 const AUTO_ROOM_SECURITY_DEVICE_CLASSES = new Set([
