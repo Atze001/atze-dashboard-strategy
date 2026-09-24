@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.270.0
+- Zeitpläne-Popup setzt den Hash ohne Home-Assistant-Navigation und löst Bubble Card anschließend direkt per `hashchange` aus; dadurch soll kein Strategy-Neuaufbau mehr vor dem Popup stattfinden.
+
 ### v0.269.0
 - Abschnittsüberschriften in Raumansichten auf 16px Schriftgröße und 20px Zeilenhöhe feinjustiert.
 
 ### v0.268.0
 - Abschnittsüberschriften in Raumansichten auf 14px verkleinert.
-
-### v0.267.0
-- Abschnittsüberschriften in Raumansichten nochmals verkleinert: 18px Schriftgröße bei 26px Zeilenhöhe.
 
 ## Lizenz
 
