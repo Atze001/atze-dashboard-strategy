@@ -758,7 +758,16 @@ class AtzeSortableSwitchGrid extends HTMLElement {
       (card) => !hidden.includes(card?.entity)
     );
     this._cards = this._orderedCards(visibleCards);
+    this._syncGroupVisibility();
     this._render();
+  }
+
+  _syncGroupVisibility() {
+    const section = this.closest("hui-card, hui-grid-card, .card");
+    const groupContainer = section?.parentElement;
+    if (groupContainer) {
+      groupContainer.style.display = this._cards.length ? "" : "none";
+    }
   }
 
   set hass(value) {
@@ -805,6 +814,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
     this._cards = this._cards.filter((entry) => entry.entity !== entityId);
     this._saveOrder();
     window.dispatchEvent(new CustomEvent("atze-card-hidden", { detail: { entityId, areaId: this._config?.area_id } }));
+    this._syncGroupVisibility();
     this._render();
   }
 
