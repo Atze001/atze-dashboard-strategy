@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.264.0";
+const ATZE_VERSION = "0.265.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4738,25 +4738,15 @@ function buildGroupSection(
     );
 
     return {
-      type: "grid",
-      cards: [
-        {
-          type: "heading",
-          heading: meta.title,
-          icon: meta.icon,
-        },
-        {
-          type: "custom:atze-sortable-switch-grid",
-          area_id: area.area_id,
-          group_key: groupKey,
-          strategy_config: config,
-          // Lights keep their established two-column layout, but now use
-          // the same direct drag & drop ordering as the other room groups.
-          columns: ["light", "scene", "automation"].includes(groupKey) ? 2 : (compact ? columns : 1),
-          cards: visibleCards,
-        },
-        ...popupCards,
-      ],
+      type: "custom:atze-room-group",
+      heading: meta.title,
+      icon: meta.icon,
+      area_id: area.area_id,
+      group_key: groupKey,
+      strategy_config: config,
+      columns: ["light", "scene", "automation"].includes(groupKey) ? 2 : (compact ? columns : 1),
+      cards: visibleCards,
+      popup_cards: popupCards,
     };
   }
 
