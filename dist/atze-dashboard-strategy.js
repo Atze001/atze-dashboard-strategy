@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.265.0";
+const ATZE_VERSION = "0.266.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -13042,7 +13042,7 @@ class AtzeRoomGroup extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host { display:block; }
-        .heading { display:flex; align-items:center; gap:12px; margin:20px 8px 12px; font-size:24px; line-height:32px; }
+        .heading { display:flex; align-items:center; gap:12px; margin:20px 8px 12px; font-size:20px; line-height:28px; font-weight:400; }
         .heading ha-icon { --mdc-icon-size:24px; }
       </style>
       <div class="heading"><ha-icon></ha-icon><span></span></div>
