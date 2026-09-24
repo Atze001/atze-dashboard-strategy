@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.268.0**
+Version **0.269.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.269.0
+- Abschnittsüberschriften in Raumansichten auf 16px Schriftgröße und 20px Zeilenhöhe feinjustiert.
+
 ### v0.268.0
 - Abschnittsüberschriften in Raumansichten auf 14px verkleinert.
 
 ### v0.267.0
 - Abschnittsüberschriften in Raumansichten nochmals verkleinert: 18px Schriftgröße bei 26px Zeilenhöhe.
-
-### v0.266.0
-- Schriftgröße der Abschnittsüberschriften in Raumansichten auf die ursprüngliche Größe zurückgesetzt; der neue Wrapper für leere Gruppen bleibt erhalten.
 
 ## Lizenz
 
