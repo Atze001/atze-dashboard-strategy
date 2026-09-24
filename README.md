@@ -206,15 +206,16 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.259.0
+- Per Drag & Drop in den Papierkorb ausgeblendete Raumkarten bleiben jetzt auch nach Navigation und Dashboard-Neuladen ausgeblendet.
+- Die Ausblendung wird zusätzlich im zentralen `direct_layout` der Strategy gespeichert; bestehende lokale Ausblendungen bleiben kompatibel.
+
 ### v0.258.0
 - Helligkeitssensoren werden automatisch als Lux-Badge im Raumbild angezeigt.
 - Als Badge verwendete Helligkeitssensoren werden aus dem Abschnitt „Sensoren“ ausgeblendet; die bestehende zentrierte Badge-Anordnung bleibt unverändert.
 
 ### v0.257.0
 - Zeitpläne-Popup hinter der eigentlichen Startseitenkarte einsortiert, damit Bubble Card beim Öffnen nicht den Dashboard-Aufbau neu initialisiert.
-
-### v0.256.0
-- „Luftreiniger / Entfeuchter“ wird in Raumansichten direkt unter „Lüfter“ einsortiert.
 
 ## Lizenz
 
