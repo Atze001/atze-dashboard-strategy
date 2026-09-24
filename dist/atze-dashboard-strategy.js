@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.257.0";
+const ATZE_VERSION = "0.258.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3731,7 +3731,7 @@ function selectEnvironmentBadges(
     ? asArray(areaOverride.environment_badges)
     : asArray(config.environment_badges_classes).length
       ? asArray(config.environment_badges_classes)
-      : ["temperature", "humidity", "power"];
+      : ["temperature", "humidity", "illuminance", "power"];
 
   for (const deviceClass of requestedClasses) {
     const candidates = entities
@@ -3764,9 +3764,11 @@ function selectEnvironmentBadges(
           ? "red"
           : deviceClass === "humidity"
             ? "blue"
-            : deviceClass === "power"
+            : deviceClass === "illuminance"
               ? "yellow"
-              : undefined,
+              : deviceClass === "power"
+                ? "yellow"
+                : undefined,
     };
 
     if (badge.color === undefined) {
