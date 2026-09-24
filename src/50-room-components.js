@@ -741,7 +741,23 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 
   setConfig(config) {
     this._config = { columns: 2, cards: [], ...config };
-    this._cards = this._orderedCards(this._config.cards || []);
+
+    let hidden = atzeLayoutValue(
+      this._config?.strategy_config,
+      "hidden_cards:" + String(this._config?.area_id || "room"),
+      []
+    );
+    if (!hidden.length) {
+      try {
+        hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]");
+      } catch (_e) {}
+    }
+    hidden = Array.isArray(hidden) ? hidden : [];
+
+    const visibleCards = (this._config.cards || []).filter(
+      (card) => !hidden.includes(card?.entity)
+    );
+    this._cards = this._orderedCards(visibleCards);
     this._render();
   }
 
