@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.260.0";
+const ATZE_VERSION = "0.261.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6529,8 +6529,15 @@ function buildAreaView(
   );
 
   const grouped = new Map();
+  const directlyHiddenEntities = new Set(
+    atzeLayoutValue(config, "hidden_cards:" + String(area.area_id || "room"), [])
+  );
 
   for (const entity of entities) {
+    if (directlyHiddenEntities.has(entity.entity_id)) {
+      continue;
+    }
+
     if (shouldHideExactEntity(config, entity.entity_id)) {
       continue;
     }
