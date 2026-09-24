@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.261.0";
+const ATZE_VERSION = "0.262.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6748,7 +6748,24 @@ function buildAreaView(
         registryByEntityId
       )
     )
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((section) => {
+      const sortable = section?.cards?.find(
+        (card) => card?.type === "custom:atze-sortable-switch-grid"
+      );
+      if (!sortable) return true;
+
+      const hidden = new Set(
+        atzeLayoutValue(
+          config,
+          "hidden_cards:" + String(area.area_id || "room"),
+          []
+        )
+      );
+      return (sortable.cards || []).some(
+        (card) => card?.entity && !hidden.has(card.entity)
+      );
+    });
 
   if (occupancyAggregatePopupEnabled) {
     const occupancyParent = entities.find(
