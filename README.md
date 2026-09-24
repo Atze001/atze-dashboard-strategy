@@ -206,15 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.265.0
+- Sortierbare Raumgruppen verwenden einen gemeinsamen Wrapper für Überschrift und Karten; ist keine sichtbare Karte mehr vorhanden, verschwindet die komplette Gruppe samt Icon und Titel.
+
 ### v0.264.0
 - Szenen und Automationen werden in Raumansichten zweispaltig dargestellt.
 
 ### v0.263.0
 - Raumansichten erhalten die neuen Gruppen „Szenen“ und „Automation“ am Ende der normalen Raumgruppen.
 - Szenen werden vor Automation einsortiert; Automation ist die letzte normale Gruppe.
-
-### v0.262.0
-- Raumsektionen mit ausschließlich per Papierkorb ausgeblendeten Karten werden vor dem Rendern vollständig verworfen; dadurch bleiben keine verwaisten Überschriften wie „Sensoren“ zurück.
 
 ## Lizenz
 
