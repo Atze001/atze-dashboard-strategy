@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.268.0
+- Abschnittsüberschriften in Raumansichten auf 14px verkleinert.
+
 ### v0.267.0
 - Abschnittsüberschriften in Raumansichten nochmals verkleinert: 18px Schriftgröße bei 26px Zeilenhöhe.
 
 ### v0.266.0
 - Schriftgröße der Abschnittsüberschriften in Raumansichten auf die ursprüngliche Größe zurückgesetzt; der neue Wrapper für leere Gruppen bleibt erhalten.
-
-### v0.265.0
-- Sortierbare Raumgruppen verwenden einen gemeinsamen Wrapper für Überschrift und Karten; ist keine sichtbare Karte mehr vorhanden, verschwindet die komplette Gruppe samt Icon und Titel.
 
 ## Lizenz
 
