@@ -729,6 +729,101 @@ if (!customElements.get("atze-status-badge-v1")) {
 
 
 
+class AtzeRoomGroup extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = null;
+    this._hass = null;
+  }
+
+  setConfig(config) {
+    this._config = config;
+    this._render();
+  }
+
+  set hass(value) {
+    this._hass = value;
+    for (const card of this.shadowRoot?.querySelectorAll("hui-card")) {
+      card.hass = value;
+    }
+  }
+
+  getCardSize() { return 1; }
+
+  _hiddenEntities() {
+    let hidden = atzeLayoutValue(
+      this._config?.strategy_config,
+      "hidden_cards:" + String(this._config?.area_id || "room"),
+      []
+    );
+    if (!hidden.length) {
+      try {
+        hidden = JSON.parse(
+          localStorage.getItem(
+            "atze-dashboard:hidden-cards:" + String(this._config?.area_id || "room")
+          ) || "[]"
+        );
+      } catch (_e) {}
+    }
+    return new Set(Array.isArray(hidden) ? hidden : []);
+  }
+
+  _render() {
+    if (!this.shadowRoot || !this._config) return;
+    const hidden = this._hiddenEntities();
+    const visibleCards = (this._config.cards || []).filter(
+      (card) => card?.entity && !hidden.has(card.entity)
+    );
+
+    if (!visibleCards.length) {
+      this.style.display = "none";
+      this.shadowRoot.innerHTML = "";
+      return;
+    }
+
+    this.style.display = "block";
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; }
+        .heading { display:flex; align-items:center; gap:12px; margin:20px 8px 12px; font-size:24px; line-height:32px; }
+        .heading ha-icon { --mdc-icon-size:24px; }
+      </style>
+      <div class="heading"><ha-icon></ha-icon><span></span></div>
+      <hui-card class="sortable"></hui-card>
+      <div class="popups"></div>
+    `;
+
+    const heading = this.shadowRoot.querySelector(".heading");
+    heading.querySelector("ha-icon").setAttribute("icon", this._config.icon || "mdi:shape-outline");
+    heading.querySelector("span").textContent = this._config.heading || "";
+
+    const sortable = this.shadowRoot.querySelector(".sortable");
+    sortable.hass = this._hass;
+    sortable.config = {
+      type: "custom:atze-sortable-switch-grid",
+      area_id: this._config.area_id,
+      group_key: this._config.group_key,
+      strategy_config: this._config.strategy_config,
+      columns: this._config.columns,
+      cards: visibleCards,
+    };
+
+    const popups = this.shadowRoot.querySelector(".popups");
+    for (const popupConfig of this._config.popup_cards || []) {
+      const popup = document.createElement("hui-card");
+      popup.hass = this._hass;
+      popup.config = popupConfig;
+      popups.appendChild(popup);
+    }
+  }
+}
+
+if (!customElements.get("atze-room-group")) {
+  customElements.define("atze-room-group", AtzeRoomGroup);
+}
+
+
 class AtzeSortableSwitchGrid extends HTMLElement {
   constructor() {
     super();
