@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.258.0";
+const ATZE_VERSION = "0.259.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4745,6 +4745,7 @@ function buildGroupSection(
           type: "custom:atze-sortable-switch-grid",
           area_id: area.area_id,
           group_key: groupKey,
+          strategy_config: config,
           // Lights keep their established two-column layout, but now use
           // the same direct drag & drop ordering as the other room groups.
           columns: groupKey === "light" ? 2 : (compact ? columns : 1),
