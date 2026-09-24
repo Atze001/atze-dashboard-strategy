@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.263.0";
+const ATZE_VERSION = "0.264.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4752,7 +4752,7 @@ function buildGroupSection(
           strategy_config: config,
           // Lights keep their established two-column layout, but now use
           // the same direct drag & drop ordering as the other room groups.
-          columns: groupKey === "light" ? 2 : (compact ? columns : 1),
+          columns: ["light", "scene", "automation"].includes(groupKey) ? 2 : (compact ? columns : 1),
           cards: visibleCards,
         },
         ...popupCards,
