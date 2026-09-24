@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.258.0";
+const ATZE_VERSION = "0.259.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4745,6 +4745,7 @@ function buildGroupSection(
           type: "custom:atze-sortable-switch-grid",
           area_id: area.area_id,
           group_key: groupKey,
+          strategy_config: config,
           // Lights keep their established two-column layout, but now use
           // the same direct drag & drop ordering as the other room groups.
           columns: groupKey === "light" ? 2 : (compact ? columns : 1),
@@ -12978,7 +12979,23 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 
   setConfig(config) {
     this._config = { columns: 2, cards: [], ...config };
-    this._cards = this._orderedCards(this._config.cards || []);
+
+    let hidden = atzeLayoutValue(
+      this._config?.strategy_config,
+      "hidden_cards:" + String(this._config?.area_id || "room"),
+      []
+    );
+    if (!hidden.length) {
+      try {
+        hidden = JSON.parse(localStorage.getItem(this._hiddenKey()) || "[]");
+      } catch (_e) {}
+    }
+    hidden = Array.isArray(hidden) ? hidden : [];
+
+    const visibleCards = (this._config.cards || []).filter(
+      (card) => !hidden.includes(card?.entity)
+    );
+    this._cards = this._orderedCards(visibleCards);
     this._render();
   }
 
