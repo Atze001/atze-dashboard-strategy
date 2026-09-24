@@ -569,11 +569,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     if (target === "#") return;
 
-    if (window.location.hash === target) {
-      window.dispatchEvent(new Event("hashchange"));
-    } else {
-      window.location.hash = target;
-    }
+    const url = new URL(window.location.href);
+    url.hash = target;
+    window.history.replaceState(window.history.state, "", url);
+
+    // Bubble Card listens for hashchange. Updating the history entry directly
+    // avoids Home Assistant treating the popup hash as dashboard navigation
+    // and rebuilding the strategy before the popup opens.
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
 
   _escapeHtml(value) {
