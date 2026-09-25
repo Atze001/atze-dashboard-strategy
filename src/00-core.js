@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.280.0";
+const ATZE_VERSION = "0.281.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6268,6 +6268,15 @@ function buildHomeOverviewView(
       DEFAULT_HOME_ROOM_LIGHT_IMAGES[lightImageKey] ||
       null;
 
+    const stateImageKey = defaultHomeRoomImageKey(
+      area,
+      DEFAULT_HOME_ROOM_STATE_IMAGES
+    );
+    const stateImages =
+      override.state_images ||
+      config.room_state_images?.[area.area_id] ||
+      (stateImageKey ? DEFAULT_HOME_ROOM_STATE_IMAGES[stateImageKey] : null);
+
     roomTiles.push({
       area_id: area.area_id,
       name,
@@ -6281,6 +6290,7 @@ function buildHomeOverviewView(
       light_image_file:
         DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES[lightImageKey] ||
         null,
+      state_images: stateImages,
       temperature,
       humidity,
       power,
