@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.288.0";
+const ATZE_VERSION = "0.289.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5091,6 +5091,14 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_open_cover_open: "balkon-licht-an-fenster-offen-rollladen-oben.webp",
     light_on_window_closed_cover_open: "balkon-licht-an-fenster-zu-rollladen-oben.webp",
   },
+  flur: {
+    light_off_door_open: "flur-licht-aus-tuer-offen.webp",
+    light_off_door_closed_unlocked: "flur-licht-aus-tuer-zu-entriegelt.webp",
+    light_off_door_closed_locked: "flur-licht-aus-tuer-zu-verriegelt.webp",
+    light_on_door_open: "flur-licht-an-tuer-offen.webp",
+    light_on_door_closed_unlocked: "flur-licht-an-tuer-zu-entriegelt.webp",
+    light_on_door_closed_locked: "flur-licht-an-tuer-zu-verriegelt.webp",
+  },
 };
 
 const DEFAULT_HOME_ROOM_STATE_IMAGES = Object.fromEntries(
@@ -7024,6 +7032,8 @@ function buildAreaView(
                 light_entities: roomLightEntities,
                 window_entities: roomWindowEntities,
                 cover_entities: roomCoverEntities,
+                lock_entities: entities.filter((entity) => domainOf(entity.entity_id) === "lock").map((entity) => entity.entity_id),
+                state_mode: roomStateImageKey === "flur" ? "door_lock" : "window_cover",
                 ...(dynamicRoomImages ? { state_images: dynamicRoomImages } : {}),
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
                 light_image:
@@ -7365,6 +7375,7 @@ function applyAtzeSidebarAccess(config) {
   setTimeout(apply, 250);
   setTimeout(apply, 1000);
 }
+
 
 
 class AtzeDashboardStrategy extends HTMLElement {
@@ -7733,6 +7744,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
+
 
 
 
@@ -8121,6 +8133,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
   _roomImageState(room, lightsOn = false) {
     const windowState = room.window_entity ? this._state(room.window_entity) : null;
     const windowOpen = Boolean(windowState && ["on", "open"].includes(String(windowState.state || "").toLowerCase()));
+    if (room.area_id === "flur" && room.state_images) {
+      const lockState = room.lock_entity ? String(this._state(room.lock_entity)?.state || "").toLowerCase() : "";
+      if (windowOpen) return `light_${lightsOn ? "on" : "off"}_door_open`;
+      return `light_${lightsOn ? "on" : "off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`;
+    }
     const coverEntity = room.cover_entity || room.roller_sensor_entity;
     const coverState = coverEntity ? this._state(coverEntity) : null;
     const coverPosition = Number(coverState?.attributes?.current_position);
@@ -10923,6 +10940,7 @@ if (
 
 
 
+
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11641,6 +11659,7 @@ if (
 
 
 
+
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12298,6 +12317,7 @@ if (
 }
 
 
+
 class AtzeRoomNavHeader extends HTMLElement {
   constructor() {
     super();
@@ -12415,6 +12435,9 @@ class AtzeRoomNavHeader extends HTMLElement {
     const coverEntities = Array.isArray(this._config.cover_entities)
       ? this._config.cover_entities
       : [];
+    const lockEntities = Array.isArray(this._config.lock_entities)
+      ? this._config.lock_entities
+      : [];
     const windowOpen = windowEntities.some((entityId) => {
       const state = this._hass?.states?.[entityId]?.state;
       return state === "on" || state === "open";
@@ -12424,8 +12447,13 @@ class AtzeRoomNavHeader extends HTMLElement {
       const pos = Number(stateObj?.attributes?.current_position);
       return stateObj?.state === "open" || (Number.isFinite(pos) && pos > 0);
     });
+    const lockState = lockEntities.map((entityId) => String(this._hass?.states?.[entityId]?.state || "").toLowerCase()).find(Boolean) || "";
     const stateKey =
-      `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
+      this._config.state_mode === "door_lock"
+        ? (windowOpen
+            ? `${lightsOn ? "light_on" : "light_off"}_door_open`
+            : `${lightsOn ? "light_on" : "light_off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`)
+        : `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
     const stateImages =
       this._config.state_images && typeof this._config.state_images === "object"
         ? this._config.state_images
@@ -13326,6 +13354,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
+
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15914,3 +15943,4 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
+
