@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.282.0";
+const ATZE_VERSION = "0.283.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -7331,6 +7331,7 @@ function applyAtzeSidebarAccess(config) {
 }
 
 
+
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -7697,6 +7698,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
+
 
 
 
@@ -8951,30 +8953,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             String(this._state(entityId)?.state || "").toLowerCase() === "on"
         );
 
-        const roomStatusBadges = this._roomStatusBadges(room);
-
-        const roomStatusHtml = roomStatusBadges.length
-          ? `
-              <div class="room-status-badges">
-                ${roomStatusBadges
-                  .map(
-                    (badge) => `
-                      <span
-                        class="room-status-badge ${
-                          badge.active ? "warning" : "safe"
-                        }"
-                        title="${badge.title || ""}"
-                        aria-label="${badge.title || ""}"
-                      >
-                        <ha-icon icon="${badge.icon}"></ha-icon>
-                      </span>
-                    `
-                  )
-                  .join("")}
-              </div>
-            `
-          : "";
-
         return `
           <div
             class="room ${roomPrimaryMetric ? "has-power" : ""}"
@@ -9017,14 +8995,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 `
                 : ""
             }
-
-            ${roomStatusHtml}
-
-            <div class="room-top">
-              <span class="room-icon">
-                <ha-icon icon="${room.icon}"></ha-icon>
-              </span>
-            </div>
 
             <div class="room-bottom">
               <div class="room-name">${room.name}</div>
@@ -10919,6 +10889,7 @@ if (
 
 
 
+
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11637,6 +11608,7 @@ if (
 
 
 
+
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12292,6 +12264,7 @@ if (
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
   });
 }
+
 
 
 class AtzeRoomNavHeader extends HTMLElement {
@@ -13322,6 +13295,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
+
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15910,3 +15884,4 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
+
