@@ -116,6 +116,9 @@ class AtzeRoomNavHeader extends HTMLElement {
     const coverEntities = Array.isArray(this._config.cover_entities)
       ? this._config.cover_entities
       : [];
+    const lockEntities = Array.isArray(this._config.lock_entities)
+      ? this._config.lock_entities
+      : [];
     const windowOpen = windowEntities.some((entityId) => {
       const state = this._hass?.states?.[entityId]?.state;
       return state === "on" || state === "open";
@@ -125,8 +128,13 @@ class AtzeRoomNavHeader extends HTMLElement {
       const pos = Number(stateObj?.attributes?.current_position);
       return stateObj?.state === "open" || (Number.isFinite(pos) && pos > 0);
     });
+    const lockState = lockEntities.map((entityId) => String(this._hass?.states?.[entityId]?.state || "").toLowerCase()).find(Boolean) || "";
     const stateKey =
-      `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
+      this._config.state_mode === "door_lock"
+        ? (windowOpen
+            ? `${lightsOn ? "light_on" : "light_off"}_door_open`
+            : `${lightsOn ? "light_on" : "light_off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`)
+        : `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
     const stateImages =
       this._config.state_images && typeof this._config.state_images === "object"
         ? this._config.state_images
