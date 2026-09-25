@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.288.0";
+const ATZE_VERSION = "0.289.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5091,6 +5091,14 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_open_cover_open: "balkon-licht-an-fenster-offen-rollladen-oben.webp",
     light_on_window_closed_cover_open: "balkon-licht-an-fenster-zu-rollladen-oben.webp",
   },
+  flur: {
+    light_off_door_open: "flur-licht-aus-tuer-offen.webp",
+    light_off_door_closed_unlocked: "flur-licht-aus-tuer-zu-entriegelt.webp",
+    light_off_door_closed_locked: "flur-licht-aus-tuer-zu-verriegelt.webp",
+    light_on_door_open: "flur-licht-an-tuer-offen.webp",
+    light_on_door_closed_unlocked: "flur-licht-an-tuer-zu-entriegelt.webp",
+    light_on_door_closed_locked: "flur-licht-an-tuer-zu-verriegelt.webp",
+  },
 };
 
 const DEFAULT_HOME_ROOM_STATE_IMAGES = Object.fromEntries(
@@ -7024,6 +7032,8 @@ function buildAreaView(
                 light_entities: roomLightEntities,
                 window_entities: roomWindowEntities,
                 cover_entities: roomCoverEntities,
+                lock_entities: entities.filter((entity) => domainOf(entity.entity_id) === "lock").map((entity) => entity.entity_id),
+                state_mode: roomStateImageKey === "flur" ? "door_lock" : "window_cover",
                 ...(dynamicRoomImages ? { state_images: dynamicRoomImages } : {}),
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
                 light_image:
