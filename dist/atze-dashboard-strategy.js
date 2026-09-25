@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.286.0";
+const ATZE_VERSION = "0.287.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5072,6 +5072,15 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_open_cover_closed: "kueche-licht-an-fenster-offen-rollladen-unten.webp",
     light_on_window_open_cover_open: "kueche-licht-an-fenster-offen-rollladen-oben.webp",
     light_on_window_closed_cover_open: "kueche-licht-an-fenster-zu-rollladen-oben.webp",
+  },  bad: {
+    light_off_window_closed_cover_closed: "bad-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "bad-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "bad-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "bad-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "bad-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "bad-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "bad-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "bad-licht-an-fenster-zu-rollladen-oben.webp",
   },
 };
 
