@@ -7331,7 +7331,6 @@ function applyAtzeSidebarAccess(config) {
 }
 
 
-
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -7698,7 +7697,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
-
 
 
 
@@ -8995,6 +8993,66 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 `
                 : ""
             }
+
+            <div class="room-bottom">
+              <div class="room-name">${room.name}</div>
+
+              <div class="room-meta">
+                ${
+                  temp
+                    ? `
+                      <span class="room-temperature">
+                        <ha-icon icon="mdi:thermometer"></ha-icon>
+                        <span class="room-meta-value">${temp}</span>
+                      </span>
+                    `
+                    : ""
+                }
+
+                ${
+                  humidity
+                    ? `
+                      <span class="room-humidity">
+                        <ha-icon icon="mdi:water-percent"></ha-icon>
+                        <span class="room-meta-value">${humidity}</span>
+                      </span>
+                    `
+                    : ""
+                }
+
+                ${
+                  occupancyText
+                    ? `
+                      <span
+                        class="room-presence ${
+                          motionInterrupterOff
+                            ? "interrupted"
+                            : occupancyState
+                              ? "active"
+                              : ""
+                        }"
+                        title="${
+                          motionInterrupterOff
+                            ? "Anwesenheitserkennung deaktiviert"
+                            : `Anwesenheit: ${occupancyText}`
+                        }"
+                        aria-label="${
+                          motionInterrupterOff
+                            ? "Anwesenheitserkennung deaktiviert"
+                            : `Anwesenheit: ${occupancyText}`
+                        }"
+                      >
+                        <ha-icon icon="${
+                          motionInterrupterOff
+                            ? "mdi:account-off"
+                            : "mdi:account"
+                        }"></ha-icon>
+                      </span>
+                    `
+                    : ""
+                }
+              </div>
+            </div>
 
           </div>
         `;
@@ -10829,7 +10887,6 @@ if (
 
 
 
-
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11548,7 +11605,6 @@ if (
 
 
 
-
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12204,7 +12260,6 @@ if (
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
   });
 }
-
 
 
 class AtzeRoomNavHeader extends HTMLElement {
@@ -13235,7 +13290,6 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
-
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15824,4 +15878,3 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
-
