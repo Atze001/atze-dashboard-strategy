@@ -1293,6 +1293,66 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 : ""
             }
 
+            <div class="room-bottom">
+              <div class="room-name">${room.name}</div>
+
+              <div class="room-meta">
+                ${
+                  temp
+                    ? `
+                      <span class="room-temperature">
+                        <ha-icon icon="mdi:thermometer"></ha-icon>
+                        <span class="room-meta-value">${temp}</span>
+                      </span>
+                    `
+                    : ""
+                }
+
+                ${
+                  humidity
+                    ? `
+                      <span class="room-humidity">
+                        <ha-icon icon="mdi:water-percent"></ha-icon>
+                        <span class="room-meta-value">${humidity}</span>
+                      </span>
+                    `
+                    : ""
+                }
+
+                ${
+                  occupancyText
+                    ? `
+                      <span
+                        class="room-presence ${
+                          motionInterrupterOff
+                            ? "interrupted"
+                            : occupancyState
+                              ? "active"
+                              : ""
+                        }"
+                        title="${
+                          motionInterrupterOff
+                            ? "Anwesenheitserkennung deaktiviert"
+                            : `Anwesenheit: ${occupancyText}`
+                        }"
+                        aria-label="${
+                          motionInterrupterOff
+                            ? "Anwesenheitserkennung deaktiviert"
+                            : `Anwesenheit: ${occupancyText}`
+                        }"
+                      >
+                        <ha-icon icon="${
+                          motionInterrupterOff
+                            ? "mdi:account-off"
+                            : "mdi:account"
+                        }"></ha-icon>
+                      </span>
+                    `
+                    : ""
+                }
+              </div>
+            </div>
+
           </div>
         `;
       })
