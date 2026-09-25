@@ -2,7 +2,7 @@ blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
-    Version 0.196.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Version 0.197.0. Kombiniert die Atze Motion Licht Logik mit der direkten
     Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
     Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
   domain: automation
