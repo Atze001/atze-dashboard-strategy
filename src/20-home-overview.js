@@ -1250,30 +1250,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             String(this._state(entityId)?.state || "").toLowerCase() === "on"
         );
 
-        const roomStatusBadges = this._roomStatusBadges(room);
-
-        const roomStatusHtml = roomStatusBadges.length
-          ? `
-              <div class="room-status-badges">
-                ${roomStatusBadges
-                  .map(
-                    (badge) => `
-                      <span
-                        class="room-status-badge ${
-                          badge.active ? "warning" : "safe"
-                        }"
-                        title="${badge.title || ""}"
-                        aria-label="${badge.title || ""}"
-                      >
-                        <ha-icon icon="${badge.icon}"></ha-icon>
-                      </span>
-                    `
-                  )
-                  .join("")}
-              </div>
-            `
-          : "";
-
         return `
           <div
             class="room ${roomPrimaryMetric ? "has-power" : ""}"
@@ -1316,74 +1292,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 `
                 : ""
             }
-
-            ${roomStatusHtml}
-
-            <div class="room-top">
-              <span class="room-icon">
-                <ha-icon icon="${room.icon}"></ha-icon>
-              </span>
-            </div>
-
-            <div class="room-bottom">
-              <div class="room-name">${room.name}</div>
-
-              <div class="room-meta">
-                ${
-                  temp
-                    ? `
-                      <span class="room-temperature">
-                        <ha-icon icon="mdi:thermometer"></ha-icon>
-                        <span class="room-meta-value">${temp}</span>
-                      </span>
-                    `
-                    : ""
-                }
-
-                ${
-                  humidity
-                    ? `
-                      <span class="room-humidity">
-                        <ha-icon icon="mdi:water-percent"></ha-icon>
-                        <span class="room-meta-value">${humidity}</span>
-                      </span>
-                    `
-                    : ""
-                }
-
-                ${
-                  occupancyText
-                    ? `
-                      <span
-                        class="room-presence ${
-                          motionInterrupterOff
-                            ? "interrupted"
-                            : occupancyState
-                              ? "active"
-                              : ""
-                        }"
-                        title="${
-                          motionInterrupterOff
-                            ? "Anwesenheitserkennung deaktiviert"
-                            : `Anwesenheit: ${occupancyText}`
-                        }"
-                        aria-label="${
-                          motionInterrupterOff
-                            ? "Anwesenheitserkennung deaktiviert"
-                            : `Anwesenheit: ${occupancyText}`
-                        }"
-                      >
-                        <ha-icon icon="${
-                          motionInterrupterOff
-                            ? "mdi:account-off"
-                            : "mdi:account"
-                        }"></ha-icon>
-                      </span>
-                    `
-                    : ""
-                }
-              </div>
-            </div>
 
           </div>
         `;
