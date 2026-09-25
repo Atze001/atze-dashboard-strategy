@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.277.0
+- 10-Sekunden-Profilwechsel der Lichtsteuerung als softwaregesteuertes Fade umgesetzt: Helligkeit wird in zehn 1-Sekunden-Schritten interpoliert und ist nicht mehr von der `transition`-Unterstützung der Lampe abhängig.
+
 ### v0.276.0
-- Kritischen Blueprint-Updatefehler behoben: Die im Dashboard eingebettete Lichtsteuerungs-YAML war noch auf einem alten Stand und überschrieb die neue Blueprint-Datei. Eingebettete und Repository-Version sind jetzt synchron; Blueprint-Version 0.197.0 erzwingt das Update in Home Assistant.
+- Eingebetteten Licht-Blueprint mit der Repository-Version synchronisiert und den automatischen Blueprint-Updatepfad repariert.
 
 ### v0.275.0
 - Lichtprofil-Wechsel wird über einen festen minütlichen Home-Assistant-Takt erkannt und auf eingeschaltete Lichter angewendet.
-
-### v0.274.0
-- Lichtsteuerung auf drei direkte Zeittrigger für Morgen, Abend und Nacht umgestellt.
 
 ## Lizenz
 
