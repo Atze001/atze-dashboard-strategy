@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.283.0";
+const ATZE_VERSION = "0.284.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5054,6 +5054,15 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_open_cover_closed: "schlafzimmer-licht-an-fenster-offen-rollladen-unten.webp",
     light_on_window_open_cover_open: "schlafzimmer-licht-an-fenster-offen-rollladen-oben.webp",
     light_on_window_closed_cover_open: "schlafzimmer-licht-an-fenster-zu-rollladen-oben.webp",
+  },  wohnzimmer: {
+    light_off_window_closed_cover_closed: "wohnzimmer-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "wohnzimmer-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "wohnzimmer-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "wohnzimmer-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "wohnzimmer-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "wohnzimmer-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "wohnzimmer-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "wohnzimmer-licht-an-fenster-zu-rollladen-oben.webp",
   },
 };
 
