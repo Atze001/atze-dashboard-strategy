@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.289.0
+- Dynamische Flurbilder nach Licht, Haustür und Schlosszustand ergänzt.
+
 ### v0.288.0
 - Dynamische Balkonbilder für Licht, Balkontür und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ### v0.287.0
 - Dynamische Bad-Bilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
-
-### v0.286.0
-- Dynamische Küchenbilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ## Lizenz
 
