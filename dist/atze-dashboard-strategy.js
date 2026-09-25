@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.280.0";
+const ATZE_VERSION = "0.281.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6268,6 +6268,15 @@ function buildHomeOverviewView(
       DEFAULT_HOME_ROOM_LIGHT_IMAGES[lightImageKey] ||
       null;
 
+    const stateImageKey = defaultHomeRoomImageKey(
+      area,
+      DEFAULT_HOME_ROOM_STATE_IMAGES
+    );
+    const stateImages =
+      override.state_images ||
+      config.room_state_images?.[area.area_id] ||
+      (stateImageKey ? DEFAULT_HOME_ROOM_STATE_IMAGES[stateImageKey] : null);
+
     roomTiles.push({
       area_id: area.area_id,
       name,
@@ -6281,6 +6290,7 @@ function buildHomeOverviewView(
       light_image_file:
         DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES[lightImageKey] ||
         null,
+      state_images: stateImages,
       temperature,
       humidity,
       power,
@@ -7321,6 +7331,7 @@ function applyAtzeSidebarAccess(config) {
 }
 
 
+
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -7687,6 +7698,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
+
 
 
 
@@ -8072,149 +8084,82 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
 
 
+  _roomImageState(room, lightsOn = false) {
+    const windowState = room.window_entity ? this._state(room.window_entity) : null;
+    const windowOpen = Boolean(windowState && ["on", "open"].includes(String(windowState.state || "").toLowerCase()));
+    const coverEntity = room.cover_entity || room.roller_sensor_entity;
+    const coverState = coverEntity ? this._state(coverEntity) : null;
+    const coverPosition = Number(coverState?.attributes?.current_position);
+    const coverOpen = Boolean(coverState && (
+      Number.isFinite(coverPosition)
+        ? coverPosition > 0
+        : ["open", "opening", "on"].includes(String(coverState.state || "").toLowerCase())
+    ));
+    return `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
+  }
+
   _roomImageCandidates(room, lightsOn = false) {
-    const useLightImage = Boolean(lightsOn && room.light_image);
-    const cacheKey = `${room.area_id}:${useLightImage ? "light" : "dark"}`;
-    const fileName = useLightImage
-      ? room.light_image_file
-      : (
-          room.image_file ||
-          `${room.area_id}.jpg`
-        );
+    const stateKey = this._roomImageState(room, lightsOn);
+    const stateImage = room.state_images?.[stateKey];
+    const useLightImage = Boolean(!stateImage && lightsOn && room.light_image);
+    const cacheKey = `${room.area_id}:${stateImage ? stateKey : (useLightImage ? "light" : "dark")}`;
+    const fileName = stateImage
+      ? String(stateImage).split("/").pop()
+      : useLightImage
+        ? room.light_image_file
+        : (room.image_file || `${room.area_id}.jpg`);
     const candidates = [];
 
     const add = (value) => {
       if (!value) return;
-
       try {
         const absolute = new URL(value, window.location.origin).href;
-
-        if (!candidates.includes(absolute)) {
-          candidates.push(absolute);
-        }
-      } catch (_error) {
-        // Ignore malformed candidates.
-      }
+        if (!candidates.includes(absolute)) candidates.push(absolute);
+      } catch (_error) {}
     };
 
-    // 0) Reuse the path that already loaded successfully for this room.
-    add(
-      ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey)
-    );
+    add(ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey));
+    add(stateImage || (useLightImage ? room.light_image : room.image));
 
-    // 1) Generated/default room image for the current light state.
-    add(useLightImage ? room.light_image : room.image);
-
-    // 2) Explicit YAML asset root.
     if (this._config.asset_base && fileName) {
       try {
-        const base = String(this._config.asset_base).endsWith("/")
-          ? String(this._config.asset_base)
-          : `${this._config.asset_base}/`;
-
-        add(
-          new URL(
-            fileName,
-            new URL(base, window.location.origin)
-          ).href
-        );
-      } catch (_error) {
-        // Continue with automatic paths.
-      }
+        const base = String(this._config.asset_base).endsWith("/") ? String(this._config.asset_base) : `${this._config.asset_base}/`;
+        add(new URL(fileName, new URL(base, window.location.origin)).href);
+      } catch (_error) {}
     }
-
-    // 3) Relative to the loaded ES module.
-    if (fileName) {
-      add(new URL(fileName, ATZE_ASSET_BASE_URL).href);
-    }
-
-    // 4) Discover the actual HA resource URL from browser performance entries.
+    if (fileName) add(new URL(fileName, ATZE_ASSET_BASE_URL).href);
     try {
-      const resources = performance
-        .getEntriesByType("resource")
-        .map((entry) => entry.name)
-        .filter((name) =>
-          /atze-dashboard-strat.*\.js/i.test(name)
-        )
-        .reverse();
-
+      const resources = performance.getEntriesByType("resource").map((entry) => entry.name).filter((name) => /atze-dashboard-strat.*\.js/i.test(name)).reverse();
       for (const resourceUrl of resources) {
-        try {
-          if (fileName) {
-            add(
-              new URL(
-                `assets/${fileName}`,
-                new URL("./", resourceUrl)
-              ).href
-            );
-          }
-        } catch (_error) {
-          // Try next resource entry.
-        }
+        try { if (fileName) add(new URL(`assets/${fileName}`, new URL("./", resourceUrl)).href); } catch (_error) {}
       }
-    } catch (_error) {
-      // Fixed fallbacks below still work.
-    }
-
-    // 5) Common installation names.
+    } catch (_error) {}
     if (fileName) {
       add(`/hacsfiles/atze-dashboard-strategy/assets/${fileName}`);
       add(`/local/atze-dashboard-strategy/assets/${fileName}`);
       add(`/local/atze-dashboard-strat/assets/${fileName}`);
     }
-
-    return candidates;
+    return { candidates, cacheKey };
   }
 
   _loadRoomImage(img, room, lightsOn = false) {
-    const useLightImage = Boolean(lightsOn && room.light_image);
-    const cacheKey = `${room.area_id}:${useLightImage ? "light" : "dark"}`;
-    const candidates = this._roomImageCandidates(room, lightsOn);
-
-    if (!candidates.length) {
-      img.remove();
-      return;
-    }
-
+    const { candidates, cacheKey } = this._roomImageCandidates(room, lightsOn);
+    if (!candidates.length) { img.remove(); return; }
     let index = 0;
     let currentCandidate = null;
-
     const loadNext = () => {
-      if (index >= candidates.length) {
-        img.style.display = "none";
-        return;
-      }
-
-      currentCandidate = candidates[index];
-      index += 1;
-
-      // Keep the element visible while the browser resolves the cached image.
-      // No opacity reset = no blinking on every hass update.
+      if (index >= candidates.length) { img.style.display = "none"; return; }
+      currentCandidate = candidates[index++];
       img.src = currentCandidate;
     };
-
     img.addEventListener("error", () => {
-      if (
-        ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey) ===
-        currentCandidate
-      ) {
-        ATZE_HOME_ROOM_IMAGE_CACHE.delete(cacheKey);
-      }
-
+      if (ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey) === currentCandidate) ATZE_HOME_ROOM_IMAGE_CACHE.delete(cacheKey);
       loadNext();
     });
-
     img.addEventListener("load", () => {
-      if (currentCandidate) {
-        ATZE_HOME_ROOM_IMAGE_CACHE.set(
-          cacheKey,
-          currentCandidate
-        );
-      }
-
+      if (currentCandidate) ATZE_HOME_ROOM_IMAGE_CACHE.set(cacheKey, currentCandidate);
       img.style.display = "block";
     });
-
     loadNext();
   }
 
@@ -10976,6 +10921,7 @@ if (
 
 
 
+
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11694,6 +11640,7 @@ if (
 
 
 
+
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12349,6 +12296,7 @@ if (
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
   });
 }
+
 
 
 class AtzeRoomNavHeader extends HTMLElement {
@@ -13379,6 +13327,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
+
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15967,3 +15916,4 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
+
