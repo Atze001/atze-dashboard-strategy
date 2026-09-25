@@ -154,3 +154,18 @@ entity_overrides:
   select.kuche_decke_licht_power_on_behavior:
     name: Startverhalten
     popup_parent: light.kuche_decke_licht
+
+
+# Dynamische Raumbilder (optional)
+# Schlüssel: Lichtstatus + Fensterstatus + Rollladenstatus.
+# Nicht gesetzte Kombinationen fallen automatisch auf das normale Hell-/Dunkelbild zurück.
+room_state_images:
+  schlafzimmer:
+    light_off_window_closed_cover_closed: /local/atze-dashboard/schlafzimmer/licht-aus-fenster-zu-rollladen-unten.webp
+    light_off_window_open_cover_closed: /local/atze-dashboard/schlafzimmer/licht-aus-fenster-offen-rollladen-unten.webp
+    light_off_window_open_cover_open: /local/atze-dashboard/schlafzimmer/licht-aus-fenster-offen-rollladen-oben.webp
+    light_off_window_closed_cover_open: /local/atze-dashboard/schlafzimmer/licht-aus-fenster-zu-rollladen-oben.webp
+    light_on_window_closed_cover_closed: /local/atze-dashboard/schlafzimmer/licht-an-fenster-zu-rollladen-unten.webp
+    light_on_window_open_cover_closed: /local/atze-dashboard/schlafzimmer/licht-an-fenster-offen-rollladen-unten.webp
+    light_on_window_open_cover_open: /local/atze-dashboard/schlafzimmer/licht-an-fenster-offen-rollladen-oben.webp
+    light_on_window_closed_cover_open: /local/atze-dashboard/schlafzimmer/licht-an-fenster-zu-rollladen-oben.webp
