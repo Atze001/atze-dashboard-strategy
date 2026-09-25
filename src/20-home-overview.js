@@ -384,6 +384,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
   _roomImageState(room, lightsOn = false) {
     const windowState = room.window_entity ? this._state(room.window_entity) : null;
     const windowOpen = Boolean(windowState && ["on", "open"].includes(String(windowState.state || "").toLowerCase()));
+    if (room.area_id === "flur" && room.state_images) {
+      const lockState = room.lock_entity ? String(this._state(room.lock_entity)?.state || "").toLowerCase() : "";
+      if (windowOpen) return `light_${lightsOn ? "on" : "off"}_door_open`;
+      return `light_${lightsOn ? "on" : "off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`;
+    }
     const coverEntity = room.cover_entity || room.roller_sensor_entity;
     const coverState = coverEntity ? this._state(coverEntity) : null;
     const coverPosition = Number(coverState?.attributes?.current_position);
