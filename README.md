@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.272.0**
+Version **0.273.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.273.0
+- Zeiterkennung der Lichtsteuerung auf einen zuverlässigen minütlichen `time_pattern`-Trigger umgestellt; bei einer konfigurierten Profilzeit werden bereits eingeschaltete Lichter mit 10 Sekunden Übergang angepasst.
+
 ### v0.272.0
-- Zeiterkennung der Lichtsteuerung korrigiert: Morgen-, Abend- und Nachtwechsel werden nun per Template-Zeitvergleich erkannt und auf bereits eingeschaltete Lichter mit 10 Sekunden Übergang angewendet.
+- Zeiterkennung der Lichtsteuerung per Template-Zeitvergleich ergänzt.
 
 ### v0.271.0
-- Lichtsteuerungs-Blueprint reagiert direkt auf Morgen-, Abend- und Nachtzeit: Bereits eingeschaltete Lichter übernehmen Helligkeit und Farbtemperatur mit 10 Sekunden Übergang.
-
-### v0.270.0
-- Zeitpläne-Popup setzt den Hash ohne Home-Assistant-Navigation und löst Bubble Card anschließend direkt per `hashchange` aus; dadurch findet kein Strategy-Neuaufbau mehr vor dem Popup statt.
+- Lichtsteuerungs-Blueprint reagiert auf Morgen-, Abend- und Nachtzeit und passt bereits eingeschaltete Lichter mit 10 Sekunden Übergang an.
 
 ## Lizenz
 

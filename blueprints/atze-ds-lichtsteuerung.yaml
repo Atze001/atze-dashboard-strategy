@@ -2,7 +2,7 @@ blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
-    Version 0.193.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Version 0.194.0. Kombiniert die Atze Motion Licht Logik mit der direkten
     Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
     Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
   domain: automation
@@ -211,13 +211,9 @@ triggers:
       }}
     id: Presence Frei
 
-  - trigger: template
-    value_template: >-
-      {{
-        now().strftime('%H:%M:%S') in
-        [morgen_zeit_wert, abend_zeit_wert, nacht_zeit_wert]
-      }}
-    id: Zeitprofil Gewechselt
+  - trigger: time_pattern
+    minutes: "/1"
+    id: Zeitprofil Prüfen
 
 conditions: []
 
@@ -281,11 +277,17 @@ actions:
       - alias: Zeitprofil auf bereits eingeschaltete Lichter anwenden
         conditions:
           - condition: trigger
-            id: Zeitprofil Gewechselt
+            id: Zeitprofil Prüfen
           - condition: template
             value_template: >-
+              {% set jetzt = now().strftime('%H:%M') %}
               {{
-                expand(target_light)
+                jetzt in [
+                  morgen_zeit_wert[:5],
+                  abend_zeit_wert[:5],
+                  nacht_zeit_wert[:5]
+                ]
+                and expand(target_light)
                   | selectattr('state', 'eq', 'on')
                   | list | count > 0
               }}
