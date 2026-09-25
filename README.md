@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.274.0
+- Lichtsteuerung auf drei direkte Zeittrigger für Morgen, Abend und Nacht umgestellt; bereits eingeschaltete Lichter werden einzeln mit dem jeweiligen Profil und 10 Sekunden Übergang aktualisiert.
+
 ### v0.273.0
-- Zeiterkennung der Lichtsteuerung auf einen zuverlässigen minütlichen `time_pattern`-Trigger umgestellt; bei einer konfigurierten Profilzeit werden bereits eingeschaltete Lichter mit 10 Sekunden Übergang angepasst.
+- Zeiterkennung der Lichtsteuerung auf einen minütlichen `time_pattern`-Trigger umgestellt.
 
 ### v0.272.0
 - Zeiterkennung der Lichtsteuerung per Template-Zeitvergleich ergänzt.
-
-### v0.271.0
-- Lichtsteuerungs-Blueprint reagiert auf Morgen-, Abend- und Nachtzeit und passt bereits eingeschaltete Lichter mit 10 Sekunden Übergang an.
 
 ## Lizenz
 
