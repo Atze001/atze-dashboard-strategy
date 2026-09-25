@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.275.0";
+const ATZE_VERSION = "0.276.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -48,13 +48,13 @@ async function saveAtzeStrategyLayout(hass, config, patch) {
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
 
-const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.196.0";
+const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.197.0";
 
 const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
-    Version 0.191.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Version 0.197.0. Kombiniert die Atze Motion Licht Logik mit der direkten
     Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
     Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
   domain: automation
@@ -232,6 +232,9 @@ max_exceeded: silent
 
 trigger_variables:
   motion_sensor_trigger: !input motion_sensor
+  morgen_zeit_wert: !input morgen_zeit
+  abend_zeit_wert: !input abend_zeit
+  nacht_zeit_wert: !input nacht_zeit
 
 triggers:
   - trigger: state
@@ -259,6 +262,10 @@ triggers:
           | list | count == 0
       }}
     id: Presence Frei
+
+  - trigger: time_pattern
+    minutes: "*"
+    id: Zeitprofil Synchronisieren
 
 conditions: []
 
@@ -319,6 +326,34 @@ variables:
 
 actions:
   - choose:
+      - alias: Zeitprofil auf eingeschaltete Lichter synchronisieren
+        conditions:
+          - condition: trigger
+            id: Zeitprofil Synchronisieren
+          - condition: template
+            value_template: >-
+              {% set jetzt = now().hour * 60 + now().minute %}
+              {% set m = morgen_zeit_wert.split(':') %}
+              {% set a = abend_zeit_wert.split(':') %}
+              {% set n = nacht_zeit_wert.split(':') %}
+              {% set morgen = m[0] | int * 60 + m[1] | int %}
+              {% set abend = a[0] | int * 60 + a[1] | int %}
+              {% set nacht = n[0] | int * 60 + n[1] | int %}
+              {{ jetzt in [morgen, abend, nacht] }}
+        sequence:
+          - repeat:
+              for_each: "{{ target_light }}"
+              sequence:
+                - condition: template
+                  value_template: "{{ is_state(repeat.item, 'on') }}"
+                - action: light.turn_on
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    brightness_pct: "{{ aktuelle_helligkeit | int }}"
+                    color_temp_kelvin: "{{ aktuelle_farbtemperatur | int }}"
+                    transition: 10
+
       - alias: Licht eingeschaltet
         conditions:
           - condition: trigger
