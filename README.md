@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.276.0
+- Kritischen Blueprint-Updatefehler behoben: Die im Dashboard eingebettete Lichtsteuerungs-YAML war noch auf einem alten Stand und überschrieb die neue Blueprint-Datei. Eingebettete und Repository-Version sind jetzt synchron; Blueprint-Version 0.197.0 erzwingt das Update in Home Assistant.
+
 ### v0.275.0
-- Lichtprofil-Wechsel wird nun über einen festen minütlichen Home-Assistant-Takt erkannt; die konfigurierten Profilzeiten werden innerhalb der Aktion als Minutenwerte verglichen und eingeschaltete Lichter mit 10 Sekunden Übergang synchronisiert.
+- Lichtprofil-Wechsel wird über einen festen minütlichen Home-Assistant-Takt erkannt und auf eingeschaltete Lichter angewendet.
 
 ### v0.274.0
 - Lichtsteuerung auf drei direkte Zeittrigger für Morgen, Abend und Nacht umgestellt.
-
-### v0.273.0
-- Zeiterkennung der Lichtsteuerung auf einen minütlichen `time_pattern`-Trigger umgestellt.
 
 ## Lizenz
 
