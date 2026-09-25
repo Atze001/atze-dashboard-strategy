@@ -2,7 +2,7 @@ blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
-    Version 0.195.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Version 0.196.0. Kombiniert die Atze Motion Licht Logik mit der direkten
     Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
     Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
   domain: automation
@@ -211,17 +211,9 @@ triggers:
       }}
     id: Presence Frei
 
-  - trigger: time
-    at: !input morgen_zeit
-    id: Zeitprofil Morgen
-
-  - trigger: time
-    at: !input abend_zeit
-    id: Zeitprofil Abend
-
-  - trigger: time
-    at: !input nacht_zeit
-    id: Zeitprofil Nacht
+  - trigger: time_pattern
+    minutes: "*"
+    id: Zeitprofil Synchronisieren
 
 conditions: []
 
@@ -282,10 +274,20 @@ variables:
 
 actions:
   - choose:
-      - alias: Zeitprofil Morgen auf eingeschaltete Lichter anwenden
+      - alias: Zeitprofil auf eingeschaltete Lichter synchronisieren
         conditions:
           - condition: trigger
-            id: Zeitprofil Morgen
+            id: Zeitprofil Synchronisieren
+          - condition: template
+            value_template: >-
+              {% set jetzt = now().hour * 60 + now().minute %}
+              {% set m = morgen_zeit_wert.split(':') %}
+              {% set a = abend_zeit_wert.split(':') %}
+              {% set n = nacht_zeit_wert.split(':') %}
+              {% set morgen = m[0] | int * 60 + m[1] | int %}
+              {% set abend = a[0] | int * 60 + a[1] | int %}
+              {% set nacht = n[0] | int * 60 + n[1] | int %}
+              {{ jetzt in [morgen, abend, nacht] }}
         sequence:
           - repeat:
               for_each: "{{ target_light }}"
@@ -296,44 +298,8 @@ actions:
                   target:
                     entity_id: "{{ repeat.item }}"
                   data:
-                    brightness_pct: "{{ helligkeit_morgen_wert | int }}"
-                    color_temp_kelvin: "{{ farbe_morgen_wert | int }}"
-                    transition: 10
-
-      - alias: Zeitprofil Abend auf eingeschaltete Lichter anwenden
-        conditions:
-          - condition: trigger
-            id: Zeitprofil Abend
-        sequence:
-          - repeat:
-              for_each: "{{ target_light }}"
-              sequence:
-                - condition: template
-                  value_template: "{{ is_state(repeat.item, 'on') }}"
-                - action: light.turn_on
-                  target:
-                    entity_id: "{{ repeat.item }}"
-                  data:
-                    brightness_pct: "{{ helligkeit_abend_wert | int }}"
-                    color_temp_kelvin: "{{ farbe_abend_wert | int }}"
-                    transition: 10
-
-      - alias: Zeitprofil Nacht auf eingeschaltete Lichter anwenden
-        conditions:
-          - condition: trigger
-            id: Zeitprofil Nacht
-        sequence:
-          - repeat:
-              for_each: "{{ target_light }}"
-              sequence:
-                - condition: template
-                  value_template: "{{ is_state(repeat.item, 'on') }}"
-                - action: light.turn_on
-                  target:
-                    entity_id: "{{ repeat.item }}"
-                  data:
-                    brightness_pct: "{{ helligkeit_nacht_wert | int }}"
-                    color_temp_kelvin: "{{ farbe_nacht_wert | int }}"
+                    brightness_pct: "{{ aktuelle_helligkeit | int }}"
+                    color_temp_kelvin: "{{ aktuelle_farbtemperatur | int }}"
                     transition: 10
 
       - alias: Licht eingeschaltet

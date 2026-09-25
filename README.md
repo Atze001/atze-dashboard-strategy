@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.274.0**
+Version **0.275.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.275.0
+- Lichtprofil-Wechsel wird nun über einen festen minütlichen Home-Assistant-Takt erkannt; die konfigurierten Profilzeiten werden innerhalb der Aktion als Minutenwerte verglichen und eingeschaltete Lichter mit 10 Sekunden Übergang synchronisiert.
+
 ### v0.274.0
-- Lichtsteuerung auf drei direkte Zeittrigger für Morgen, Abend und Nacht umgestellt; bereits eingeschaltete Lichter werden einzeln mit dem jeweiligen Profil und 10 Sekunden Übergang aktualisiert.
+- Lichtsteuerung auf drei direkte Zeittrigger für Morgen, Abend und Nacht umgestellt.
 
 ### v0.273.0
 - Zeiterkennung der Lichtsteuerung auf einen minütlichen `time_pattern`-Trigger umgestellt.
-
-### v0.272.0
-- Zeiterkennung der Lichtsteuerung per Template-Zeitvergleich ergänzt.
 
 ## Lizenz
 
