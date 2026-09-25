@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.274.0";
+const ATZE_VERSION = "0.275.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -48,7 +48,7 @@ async function saveAtzeStrategyLayout(hass, config, patch) {
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
 
-const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.195.0";
+const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.196.0";
 
 const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
   author: Atze
