@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.286.0";
+const ATZE_VERSION = "0.287.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5072,6 +5072,15 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_open_cover_closed: "kueche-licht-an-fenster-offen-rollladen-unten.webp",
     light_on_window_open_cover_open: "kueche-licht-an-fenster-offen-rollladen-oben.webp",
     light_on_window_closed_cover_open: "kueche-licht-an-fenster-zu-rollladen-oben.webp",
+  },  bad: {
+    light_off_window_closed_cover_closed: "bad-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "bad-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "bad-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "bad-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "bad-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "bad-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "bad-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "bad-licht-an-fenster-zu-rollladen-oben.webp",
   },
 };
 
@@ -7349,6 +7358,7 @@ function applyAtzeSidebarAccess(config) {
 }
 
 
+
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -7715,6 +7725,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
+
 
 
 
@@ -10905,6 +10916,7 @@ if (
 
 
 
+
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11623,6 +11635,7 @@ if (
 
 
 
+
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12278,6 +12291,7 @@ if (
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
   });
 }
+
 
 
 class AtzeRoomNavHeader extends HTMLElement {
@@ -13308,6 +13322,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
+
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15896,3 +15911,4 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
+
