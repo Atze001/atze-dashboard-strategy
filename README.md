@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.287.0
+- Dynamische Bad-Bilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
+
 ### v0.286.0
 - Dynamische Küchenbilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ### v0.285.0
 - Korrigierte, unbeschnittene Wohnzimmerbilder für die dynamischen Zustände übernommen.
-
-### v0.284.0
-- Dynamische Wohnzimmerbilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ## Lizenz
 
