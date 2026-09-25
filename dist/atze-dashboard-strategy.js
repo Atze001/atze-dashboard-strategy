@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.277.0";
+const ATZE_VERSION = "0.278.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -48,13 +48,13 @@ async function saveAtzeStrategyLayout(hass, config, patch) {
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
 
-const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.198.0";
+const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.199.0";
 
 const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
-    Version 0.198.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Version 0.199.0. Kombiniert die Atze Motion Licht Logik mit der direkten
     Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
     Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
   domain: automation
@@ -263,8 +263,16 @@ triggers:
       }}
     id: Presence Frei
 
-  - trigger: time_pattern
-    minutes: "*"
+  - trigger: template
+    value_template: >-
+      {% set jetzt = now().hour * 60 + now().minute %}
+      {% set m = morgen_zeit_wert.split(':') %}
+      {% set a = abend_zeit_wert.split(':') %}
+      {% set n = nacht_zeit_wert.split(':') %}
+      {% set morgen = m[0] | int * 60 + m[1] | int %}
+      {% set abend = a[0] | int * 60 + a[1] | int %}
+      {% set nacht = n[0] | int * 60 + n[1] | int %}
+      {{ jetzt in [morgen, abend, nacht] }}
     id: Zeitprofil Synchronisieren
 
 conditions: []
@@ -330,16 +338,6 @@ actions:
         conditions:
           - condition: trigger
             id: Zeitprofil Synchronisieren
-          - condition: template
-            value_template: >-
-              {% set jetzt = now().hour * 60 + now().minute %}
-              {% set m = morgen_zeit_wert.split(':') %}
-              {% set a = abend_zeit_wert.split(':') %}
-              {% set n = nacht_zeit_wert.split(':') %}
-              {% set morgen = m[0] | int * 60 + m[1] | int %}
-              {% set abend = a[0] | int * 60 + a[1] | int %}
-              {% set nacht = n[0] | int * 60 + n[1] | int %}
-              {{ jetzt in [morgen, abend, nacht] }}
         sequence:
           - repeat:
               for_each: "{{ target_light }}"
