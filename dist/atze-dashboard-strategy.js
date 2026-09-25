@@ -7377,7 +7377,6 @@ function applyAtzeSidebarAccess(config) {
 }
 
 
-
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -7744,7 +7743,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
-
 
 
 
@@ -10940,7 +10938,6 @@ if (
 
 
 
-
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11659,7 +11656,6 @@ if (
 
 
 
-
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12315,7 +12311,6 @@ if (
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
   });
 }
-
 
 
 class AtzeRoomNavHeader extends HTMLElement {
@@ -13354,7 +13349,6 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
-
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15943,4 +15937,3 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
-
