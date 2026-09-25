@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.278.0";
+const ATZE_VERSION = "0.280.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5044,6 +5044,31 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
   )
 );
 
+const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
+  schlafzimmer: {
+    light_off_window_closed_cover_closed: "schlafzimmer-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "schlafzimmer-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "schlafzimmer-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "schlafzimmer-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "schlafzimmer-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "schlafzimmer-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "schlafzimmer-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "schlafzimmer-licht-an-fenster-zu-rollladen-oben.webp",
+  },
+};
+
+const DEFAULT_HOME_ROOM_STATE_IMAGES = Object.fromEntries(
+  Object.entries(DEFAULT_HOME_ROOM_STATE_IMAGE_FILES).map(([areaId, states]) => [
+    areaId,
+    Object.fromEntries(
+      Object.entries(states).map(([state, fileName]) => [
+        state,
+        new URL(fileName, ATZE_ASSET_BASE_URL).href,
+      ])
+    ),
+  ])
+);
+
 const DEFAULT_HOME_ROOM_IMAGE_ALIASES = {
   treppenhaus: "hausflur",
   treppenflur: "hausflur",
@@ -6920,9 +6945,12 @@ function buildAreaView(
   const roomCoverEntities = entities
     .filter((entity) => domainOf(entity.entity_id) === "cover")
     .map((entity) => entity.entity_id);
+  const roomStateImageKey =
+    defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_STATE_IMAGES);
   const dynamicRoomImages =
     areaOverride.state_images ||
-    config.room_state_images?.[area.area_id];
+    config.room_state_images?.[area.area_id] ||
+    (roomStateImageKey ? DEFAULT_HOME_ROOM_STATE_IMAGES[roomStateImageKey] : undefined);
   const roomLightsOn = roomLightEntities.some(
     (entityId) => hass.states?.[entityId]?.state === "on"
   );
@@ -7293,6 +7321,7 @@ function applyAtzeSidebarAccess(config) {
 }
 
 
+
 class AtzeDashboardStrategy extends HTMLElement {
   static getCreateSuggestions(_hass) {
     return {
@@ -7659,6 +7688,7 @@ class AtzeDashboardStrategy extends HTMLElement {
     };
   }
 }
+
 
 
 
@@ -10948,6 +10978,7 @@ if (
 
 
 
+
 class AtzeSecurityOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -11666,6 +11697,7 @@ if (
 
 
 
+
 class AtzeMaintenanceOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -12321,6 +12353,7 @@ if (
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
   });
 }
+
 
 
 class AtzeRoomNavHeader extends HTMLElement {
@@ -13351,6 +13384,7 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
+
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
@@ -15939,3 +15973,4 @@ console.info(
   "background:#03a9f4;color:white;font-weight:700;padding:2px 6px;border-radius:4px 0 0 4px;",
   "background:#263238;color:white;padding:2px 6px;border-radius:0 4px 4px 0;"
 );
+
