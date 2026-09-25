@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.276.0";
+const ATZE_VERSION = "0.277.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -48,13 +48,13 @@ async function saveAtzeStrategyLayout(hass, config, patch) {
 const ATZE_DS_LIGHT_BLUEPRINT_PATH =
   "atze dashboard strategy/atze-ds-lichtsteuerung.yaml";
 
-const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.197.0";
+const ATZE_DS_LIGHT_BLUEPRINT_VERSION = "0.198.0";
 
 const ATZE_DS_LIGHT_BLUEPRINT_YAML = String.raw`blueprint:
   author: Atze
   name: Atze DS - Lichtsteuerung
   description: >
-    Version 0.197.0. Kombiniert die Atze Motion Licht Logik mit der direkten
+    Version 0.198.0. Kombiniert die Atze Motion Licht Logik mit der direkten
     Morgen-/Abend-/Nacht-Lichtsteuerung. Motion Sensoren, Schalter,
     Helligkeitssensor, Rollladen, Unterbrecher und Helligkeitsregler sind optional.
   domain: automation
@@ -346,13 +346,28 @@ actions:
               sequence:
                 - condition: template
                   value_template: "{{ is_state(repeat.item, 'on') }}"
-                - action: light.turn_on
-                  target:
-                    entity_id: "{{ repeat.item }}"
-                  data:
-                    brightness_pct: "{{ aktuelle_helligkeit | int }}"
-                    color_temp_kelvin: "{{ aktuelle_farbtemperatur | int }}"
-                    transition: 10
+                - variables:
+                    fade_light: "{{ repeat.item }}"
+                    fade_start: >-
+                      {{ ((state_attr(repeat.item, 'brightness') | int(0)) / 255 * 100) | round(0) | int }}
+                    fade_ziel: "{{ aktuelle_helligkeit | int }}"
+                - repeat:
+                    count: 10
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: "{{ fade_light }}"
+                        data:
+                          brightness_pct: >-
+                            {{
+                              (
+                                fade_start
+                                + ((fade_ziel - fade_start) * repeat.index / 10)
+                              ) | round(0) | int
+                            }}
+                          color_temp_kelvin: "{{ aktuelle_farbtemperatur | int }}"
+                      - delay:
+                          seconds: 1
 
       - alias: Licht eingeschaltet
         conditions:
