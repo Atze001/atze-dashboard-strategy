@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.284.0**
+Version **0.285.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
-### v0.278.0
-- Lichtsteuerung erzeugt keine Ausführung mehr jede Minute: Der Zeitprofil-Trigger wird nur noch beim Erreichen einer konfigurierten Morgen-, Abend- oder Nachtzeit aktiv; der softwaregesteuerte 10-Sekunden-Fade bleibt erhalten.
+### v0.285.0
+- Korrigierte, unbeschnittene Wohnzimmerbilder für die dynamischen Zustände übernommen.
 
-### v0.277.0
-- 10-Sekunden-Profilwechsel als lampenunabhängiges Software-Fade in zehn 1-Sekunden-Schritten umgesetzt.
+### v0.284.0
+- Dynamische Wohnzimmerbilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
-### v0.276.0
-- Eingebetteten Licht-Blueprint mit der Repository-Version synchronisiert und den automatischen Blueprint-Updatepfad repariert.
+### v0.283.0
+- Blaue Raum-Icons auf der Hauptseite entfernt.
 
 ## Lizenz
 
