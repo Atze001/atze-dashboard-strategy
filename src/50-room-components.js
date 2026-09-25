@@ -110,10 +110,30 @@ class AtzeRoomNavHeader extends HTMLElement {
     const lightsOn = lightEntities.some(
       (entityId) => this._hass?.states?.[entityId]?.state === "on"
     );
+    const windowEntities = Array.isArray(this._config.window_entities)
+      ? this._config.window_entities
+      : [];
+    const coverEntities = Array.isArray(this._config.cover_entities)
+      ? this._config.cover_entities
+      : [];
+    const windowOpen = windowEntities.some((entityId) => {
+      const state = this._hass?.states?.[entityId]?.state;
+      return state === "on" || state === "open";
+    });
+    const coverOpen = coverEntities.some((entityId) => {
+      const stateObj = this._hass?.states?.[entityId];
+      const pos = Number(stateObj?.attributes?.current_position);
+      return stateObj?.state === "open" || (Number.isFinite(pos) && pos > 0);
+    });
+    const stateKey =
+      `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
+    const stateImages =
+      this._config.state_images && typeof this._config.state_images === "object"
+        ? this._config.state_images
+        : {};
     const reactiveImage =
-      lightsOn
-        ? this._config.light_image
-        : this._config.dark_image;
+      stateImages[stateKey] ||
+      (lightsOn ? this._config.light_image : this._config.dark_image);
     const backgroundImage =
       reactiveImage || this._config.background_image || "";
 
