@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.271.0**
+Version **0.272.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.272.0
+- Zeiterkennung der Lichtsteuerung korrigiert: Morgen-, Abend- und Nachtwechsel werden nun per Template-Zeitvergleich erkannt und auf bereits eingeschaltete Lichter mit 10 Sekunden Übergang angewendet.
+
 ### v0.271.0
-- Lichtsteuerungs-Blueprint reagiert jetzt direkt auf Morgen-, Abend- und Nachtzeit: Bereits eingeschaltete Lichter übernehmen Helligkeit und Farbtemperatur sofort mit 10 Sekunden Übergang.
+- Lichtsteuerungs-Blueprint reagiert direkt auf Morgen-, Abend- und Nachtzeit: Bereits eingeschaltete Lichter übernehmen Helligkeit und Farbtemperatur mit 10 Sekunden Übergang.
 
 ### v0.270.0
 - Zeitpläne-Popup setzt den Hash ohne Home-Assistant-Navigation und löst Bubble Card anschließend direkt per `hashchange` aus; dadurch findet kein Strategy-Neuaufbau mehr vor dem Popup statt.
-
-### v0.269.0
-- Abschnittsüberschriften in Raumansichten auf 16px Schriftgröße und 20px Zeilenhöhe feinjustiert.
 
 ## Lizenz
 
