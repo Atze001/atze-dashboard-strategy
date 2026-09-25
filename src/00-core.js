@@ -6909,6 +6909,20 @@ function buildAreaView(
   const roomLightEntities = entities
     .filter((entity) => domainOf(entity.entity_id) === "light")
     .map((entity) => entity.entity_id);
+  const roomWindowEntities = entities
+    .filter((entity) => {
+      const domain = domainOf(entity.entity_id);
+      const deviceClass = String(entity.device_class || entity.attributes?.device_class || "");
+      return (domain === "binary_sensor" && ["window", "door", "opening"].includes(deviceClass)) ||
+        domain === "window";
+    })
+    .map((entity) => entity.entity_id);
+  const roomCoverEntities = entities
+    .filter((entity) => domainOf(entity.entity_id) === "cover")
+    .map((entity) => entity.entity_id);
+  const dynamicRoomImages =
+    areaOverride.state_images ||
+    config.room_state_images?.[area.area_id];
   const roomLightsOn = roomLightEntities.some(
     (entityId) => hass.states?.[entityId]?.state === "on"
   );
@@ -6934,6 +6948,9 @@ function buildAreaView(
           ...(hasRoomHeaderImage
             ? {
                 light_entities: roomLightEntities,
+                window_entities: roomWindowEntities,
+                cover_entities: roomCoverEntities,
+                ...(dynamicRoomImages ? { state_images: dynamicRoomImages } : {}),
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
                 light_image:
                   DEFAULT_HOME_ROOM_LIGHT_IMAGES[roomLightImageKey] ||
