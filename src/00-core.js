@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.297.0";
+const ATZE_VERSION = "0.298.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4995,19 +4995,19 @@ const ATZE_HOME_ROOM_IMAGE_CACHE =
   window.__atzeHomeRoomImageCache;
 
 const DEFAULT_HOME_ROOM_IMAGE_FILES = {
-  kuche: "kueche.jpg",
-  schlafzimmer: "schlafzimmer.jpg",
-  bad: "bad.jpg",
-  flur: "flur.jpg",
-  wohnzimmer: "05-tag-licht-aus-fenster-zu-rollladen-unten.png",
-  buro: "buro.jpg",
-  arbeitszimmer: "buro.jpg",
-  kinderzimmer: "kinderzimmer.webp",
-  hausflur: "hausflur.webp",
-  balkon: "balkon.jpg",
-  "3d_drucker": "3d-drucker.webp",
-  "3d-drucker": "3d-drucker.webp",
-  zentrale: "zentrale.webp",
+  kuche: "kueche/kueche.jpg",
+  schlafzimmer: "schlafzimmer/schlafzimmer.jpg",
+  bad: "bad/bad.jpg",
+  flur: "flur/flur.jpg",
+  wohnzimmer: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.png",
+  buro: "buero/buro.jpg",
+  arbeitszimmer: "buero/buro.jpg",
+  kinderzimmer: "kinderzimmer/kinderzimmer.webp",
+  hausflur: "hausflur/hausflur.webp",
+  balkon: "balkon/balkon.jpg",
+  "3d_drucker": "3d-drucker/3d-drucker.webp",
+  "3d-drucker": "3d-drucker/3d-drucker.webp",
+  zentrale: "zentrale/zentrale.webp",
 };
 
 const DEFAULT_HOME_ROOM_IMAGES = Object.fromEntries(
@@ -5020,19 +5020,19 @@ const DEFAULT_HOME_ROOM_IMAGES = Object.fromEntries(
 );
 
 const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
-  kuche: "kueche-light.webp",
-  schlafzimmer: "schlafzimmer-light.webp",
-  bad: "bad-light.webp",
-  flur: "flur-light.webp",
-  wohnzimmer: "01-tag-licht-an-fenster-zu-rollladen-unten.png",
-  buro: "buro-light.webp",
-  arbeitszimmer: "buro-light.webp",
-  kinderzimmer: "kinderzimmer-light.webp",
-  hausflur: "hausflur-light.webp",
-  balkon: "balkon-light.webp",
-  "3d_drucker": "3d-drucker-light.webp",
-  "3d-drucker": "3d-drucker-light.webp",
-  zentrale: "zentrale-light.webp",
+  kuche: "kueche/kueche-light.webp",
+  schlafzimmer: "schlafzimmer/schlafzimmer-light.webp",
+  bad: "bad/bad-light.webp",
+  flur: "flur/flur-light.webp",
+  wohnzimmer: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.png",
+  buro: "buero/buro-light.webp",
+  arbeitszimmer: "buero/buro-light.webp",
+  kinderzimmer: "kinderzimmer/kinderzimmer-light.webp",
+  hausflur: "hausflur/hausflur-light.webp",
+  balkon: "balkon/balkon-light.webp",
+  "3d_drucker": "3d-drucker/3d-drucker-light.webp",
+  "3d-drucker": "3d-drucker/3d-drucker-light.webp",
+  zentrale: "zentrale/zentrale-light.webp",
 };
 
 const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
@@ -5046,66 +5046,66 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
 
 const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
   schlafzimmer: {
-    light_off_window_closed_cover_closed: "schlafzimmer-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "schlafzimmer-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "schlafzimmer-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "schlafzimmer-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "schlafzimmer-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "schlafzimmer-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "schlafzimmer-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "schlafzimmer-licht-an-fenster-zu-rollladen-oben.webp",
+    light_off_window_closed_cover_closed: "schlafzimmer/schlafzimmer-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "schlafzimmer/schlafzimmer-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "schlafzimmer/schlafzimmer-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "schlafzimmer/schlafzimmer-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "schlafzimmer/schlafzimmer-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "schlafzimmer/schlafzimmer-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "schlafzimmer/schlafzimmer-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "schlafzimmer/schlafzimmer-licht-an-fenster-zu-rollladen-oben.webp",
   },  wohnzimmer: {
-    day_light_on_window_closed_cover_closed: "01-tag-licht-an-fenster-zu-rollladen-unten.png",
-    day_light_on_window_closed_cover_open: "02-tag-licht-an-fenster-zu-rollladen-oben.png",
-    day_light_on_window_open_cover_open: "03-tag-licht-an-fenster-offen-rollladen-oben.png",
-    day_light_on_window_open_cover_closed: "04-tag-licht-an-fenster-offen-rollladen-unten.png",
-    day_light_off_window_closed_cover_closed: "05-tag-licht-aus-fenster-zu-rollladen-unten.png",
-    day_light_off_window_open_cover_closed: "06-tag-licht-aus-fenster-offen-rollladen-unten.png",
-    day_light_off_window_closed_cover_open: "07-tag-licht-aus-fenster-zu-rollladen-oben.png",
-    day_light_off_window_open_cover_open: "08-tag-licht-aus-fenster-offen-rollladen-oben.png",
-    night_light_on_window_closed_cover_closed: "09-nacht-licht-an-fenster-zu-rollladen-unten.png",
-    night_light_on_window_open_cover_closed: "10-nacht-licht-an-fenster-offen-rollladen-unten.png",
-    night_light_on_window_closed_cover_open: "11-nacht-licht-an-fenster-zu-rollladen-oben.png",
-    night_light_on_window_open_cover_open: "12-nacht-licht-an-fenster-offen-rollladen-oben.png",
-    night_light_off_window_closed_cover_closed: "13-nacht-licht-aus-fenster-zu-rollladen-unten.png",
-    night_light_off_window_open_cover_closed: "14-nacht-licht-aus-fenster-offen-rollladen-unten.png",
-    night_light_off_window_closed_cover_open: "15-nacht-licht-aus-fenster-zu-rollladen-oben.png",
-    night_light_off_window_open_cover_open: "16-nacht-licht-aus-fenster-offen-rollladen-oben.png",
+    day_light_on_window_closed_cover_closed: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.png",
+    day_light_on_window_closed_cover_open: "wohnzimmer/02-tag-licht-an-fenster-zu-rollladen-oben.png",
+    day_light_on_window_open_cover_open: "wohnzimmer/03-tag-licht-an-fenster-offen-rollladen-oben.png",
+    day_light_on_window_open_cover_closed: "wohnzimmer/04-tag-licht-an-fenster-offen-rollladen-unten.png",
+    day_light_off_window_closed_cover_closed: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.png",
+    day_light_off_window_open_cover_closed: "wohnzimmer/06-tag-licht-aus-fenster-offen-rollladen-unten.png",
+    day_light_off_window_closed_cover_open: "wohnzimmer/07-tag-licht-aus-fenster-zu-rollladen-oben.png",
+    day_light_off_window_open_cover_open: "wohnzimmer/08-tag-licht-aus-fenster-offen-rollladen-oben.png",
+    night_light_on_window_closed_cover_closed: "wohnzimmer/09-nacht-licht-an-fenster-zu-rollladen-unten.png",
+    night_light_on_window_open_cover_closed: "wohnzimmer/10-nacht-licht-an-fenster-offen-rollladen-unten.png",
+    night_light_on_window_closed_cover_open: "wohnzimmer/11-nacht-licht-an-fenster-zu-rollladen-oben.png",
+    night_light_on_window_open_cover_open: "wohnzimmer/12-nacht-licht-an-fenster-offen-rollladen-oben.png",
+    night_light_off_window_closed_cover_closed: "wohnzimmer/13-nacht-licht-aus-fenster-zu-rollladen-unten.png",
+    night_light_off_window_open_cover_closed: "wohnzimmer/14-nacht-licht-aus-fenster-offen-rollladen-unten.png",
+    night_light_off_window_closed_cover_open: "wohnzimmer/15-nacht-licht-aus-fenster-zu-rollladen-oben.png",
+    night_light_off_window_open_cover_open: "wohnzimmer/16-nacht-licht-aus-fenster-offen-rollladen-oben.png",
   },  kuche: {
-    light_off_window_closed_cover_closed: "kueche-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "kueche-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "kueche-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "kueche-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "kueche-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "kueche-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "kueche-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "kueche-licht-an-fenster-zu-rollladen-oben.webp",
+    light_off_window_closed_cover_closed: "kueche/kueche-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "kueche/kueche-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "kueche/kueche-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "kueche/kueche-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "kueche/kueche-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "kueche/kueche-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "kueche/kueche-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "kueche/kueche-licht-an-fenster-zu-rollladen-oben.webp",
   },  bad: {
-    light_off_window_closed_cover_closed: "bad-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "bad-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "bad-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "bad-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "bad-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "bad-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "bad-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "bad-licht-an-fenster-zu-rollladen-oben.webp",
+    light_off_window_closed_cover_closed: "bad/bad-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "bad/bad-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "bad/bad-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "bad/bad-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "bad/bad-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "bad/bad-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "bad/bad-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "bad/bad-licht-an-fenster-zu-rollladen-oben.webp",
   },  balkon: {
-    light_off_window_closed_cover_closed: "balkon-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "balkon-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "balkon-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "balkon-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "balkon-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "balkon-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "balkon-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "balkon-licht-an-fenster-zu-rollladen-oben.webp",
+    light_off_window_closed_cover_closed: "balkon/balkon-licht-aus-fenster-zu-rollladen-unten.webp",
+    light_off_window_open_cover_closed: "balkon/balkon-licht-aus-fenster-offen-rollladen-unten.webp",
+    light_off_window_open_cover_open: "balkon/balkon-licht-aus-fenster-offen-rollladen-oben.webp",
+    light_off_window_closed_cover_open: "balkon/balkon-licht-aus-fenster-zu-rollladen-oben.webp",
+    light_on_window_closed_cover_closed: "balkon/balkon-licht-an-fenster-zu-rollladen-unten.webp",
+    light_on_window_open_cover_closed: "balkon/balkon-licht-an-fenster-offen-rollladen-unten.webp",
+    light_on_window_open_cover_open: "balkon/balkon-licht-an-fenster-offen-rollladen-oben.webp",
+    light_on_window_closed_cover_open: "balkon/balkon-licht-an-fenster-zu-rollladen-oben.webp",
   },
   flur: {
-    light_off_door_open: "flur-licht-aus-tuer-offen.webp",
-    light_off_door_closed_unlocked: "flur-licht-aus-tuer-zu-entriegelt.webp",
-    light_off_door_closed_locked: "flur-licht-aus-tuer-zu-verriegelt.webp",
-    light_on_door_open: "flur-licht-an-tuer-offen.webp",
-    light_on_door_closed_unlocked: "flur-licht-an-tuer-zu-entriegelt.webp",
-    light_on_door_closed_locked: "flur-licht-an-tuer-zu-verriegelt.webp",
+    light_off_door_open: "flur/flur-licht-aus-tuer-offen.webp",
+    light_off_door_closed_unlocked: "flur/flur-licht-aus-tuer-zu-entriegelt.webp",
+    light_off_door_closed_locked: "flur/flur-licht-aus-tuer-zu-verriegelt.webp",
+    light_on_door_open: "flur/flur-licht-an-tuer-offen.webp",
+    light_on_door_closed_unlocked: "flur/flur-licht-an-tuer-zu-entriegelt.webp",
+    light_on_door_closed_locked: "flur/flur-licht-an-tuer-zu-verriegelt.webp",
   },
 };
 
@@ -5177,17 +5177,17 @@ function defaultHomeRoomImageKey(area, imageMap) {
 }
 
 const DEFAULT_HOME_HERO_DAY_IMAGE = new URL(
-  "home-hero-day.webp",
+  "startseite/home-hero-day.webp",
   ATZE_ASSET_BASE_URL
 ).href;
 
 const DEFAULT_HOME_HERO_NIGHT_IMAGE = new URL(
-  "home-hero-night.webp",
+  "startseite/home-hero-night.webp",
   ATZE_ASSET_BASE_URL
 ).href;
 
 const DEFAULT_HOME_CONTROL_CENTER_IMAGE = new URL(
-  "home-control-center-clear.webp",
+  "startseite/home-control-center-clear.webp",
   ATZE_ASSET_BASE_URL
 ).href;
 
