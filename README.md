@@ -1,7 +1,7 @@
 # Atze Dashboard Strategy
 <sub>KI-Generiert: ChatGPT</sub>
 
-![Atze Dashboard Strategy](dist/assets/wohnzimmer.jpg)
+![Atze Dashboard Strategy](dist/assets/01-tag-licht-an-fenster-zu-rollladen-unten.png)
 
 Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
 Stil. Räume und Entities werden automatisch aus Home Assistant erzeugt und über
@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.289.0**
+Version **0.290.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.290.0
+- Wohnzimmer auf 16 neue Tag-/Nacht-Bilder für Licht, Fenster und Rollladen umgestellt.
+- Alte Wohnzimmerbilder entfernt; Tag ist 07:00–19:59 Uhr, Nacht ab 20:00 Uhr bis 06:59 Uhr.
+
 ### v0.289.0
 - Dynamische Flurbilder nach Licht, Haustür und Schlosszustand ergänzt.
 
 ### v0.288.0
 - Dynamische Balkonbilder für Licht, Balkontür und Rollladen auf Hauptseite und Raumansicht ergänzt.
-
-### v0.287.0
-- Dynamische Bad-Bilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ## Lizenz
 
