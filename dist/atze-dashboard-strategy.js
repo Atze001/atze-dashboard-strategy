@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.299.0";
+const ATZE_VERSION = "0.300.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5046,14 +5046,22 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
 
 const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
   schlafzimmer: {
-    light_off_window_closed_cover_closed: "schlafzimmer/schlafzimmer-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "schlafzimmer/schlafzimmer-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "schlafzimmer/schlafzimmer-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "schlafzimmer/schlafzimmer-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "schlafzimmer/schlafzimmer-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "schlafzimmer/schlafzimmer-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "schlafzimmer/schlafzimmer-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "schlafzimmer/schlafzimmer-licht-an-fenster-zu-rollladen-oben.webp",
+    day_light_on_window_closed_cover_closed: "schlafzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.png",
+    day_light_on_window_open_cover_closed: "schlafzimmer/02-tag-licht-an-fenster-offen-rollladen-unten.png",
+    day_light_on_window_closed_cover_open: "schlafzimmer/03-tag-licht-an-fenster-zu-rollladen-oben.png",
+    day_light_on_window_open_cover_open: "schlafzimmer/04-tag-licht-an-fenster-offen-rollladen-oben.png",
+    day_light_off_window_closed_cover_closed: "schlafzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.png",
+    day_light_off_window_open_cover_closed: "schlafzimmer/06-tag-licht-aus-fenster-offen-rollladen-unten.png",
+    day_light_off_window_closed_cover_open: "schlafzimmer/07-tag-licht-aus-fenster-zu-rollladen-oben.png",
+    day_light_off_window_open_cover_open: "schlafzimmer/08-tag-licht-aus-fenster-offen-rollladen-oben.png",
+    night_light_on_window_closed_cover_closed: "schlafzimmer/09-nacht-licht-an-fenster-zu-rollladen-unten.png",
+    night_light_on_window_open_cover_closed: "schlafzimmer/10-nacht-licht-an-fenster-offen-rollladen-unten.png",
+    night_light_on_window_closed_cover_open: "schlafzimmer/11-nacht-licht-an-fenster-zu-rollladen-oben.png",
+    night_light_on_window_open_cover_open: "schlafzimmer/12-nacht-licht-an-fenster-offen-rollladen-oben.png",
+    night_light_off_window_closed_cover_closed: "schlafzimmer/13-nacht-licht-aus-fenster-zu-rollladen-unten.png",
+    night_light_off_window_open_cover_closed: "schlafzimmer/14-nacht-licht-aus-fenster-offen-rollladen-unten.png",
+    night_light_off_window_closed_cover_open: "schlafzimmer/15-nacht-licht-aus-fenster-zu-rollladen-oben.png",
+    night_light_off_window_open_cover_open: "schlafzimmer/16-nacht-licht-aus-fenster-offen-rollladen-oben.png",
   },  wohnzimmer: {
     day_light_on_window_closed_cover_closed: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.png",
     day_light_on_window_closed_cover_open: "wohnzimmer/02-tag-licht-an-fenster-zu-rollladen-oben.png",
