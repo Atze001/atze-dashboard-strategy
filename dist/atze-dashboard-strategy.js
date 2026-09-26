@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.296.0";
+const ATZE_VERSION = "0.297.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9830,7 +9830,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room {
           position: relative;
           min-height: 235px;
-          border: 1px solid var(--home-card-border);
+          border: 2px solid rgba(210, 210, 210, 0.78);
           border-radius: 30px;
           overflow: hidden;
           padding: 20px;
