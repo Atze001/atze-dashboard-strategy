@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.298.0";
+const ATZE_VERSION = "0.299.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
