@@ -275,6 +275,10 @@ class AtzeRoomNavHeader extends HTMLElement {
             padding-bottom: 8px;
           }
 
+          ha-card.has-background {
+            min-height: 190px;
+          }
+
           .nav-row {
             min-height: 38px;
             gap: 9px;
