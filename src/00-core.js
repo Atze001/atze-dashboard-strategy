@@ -7035,7 +7035,7 @@ function buildAreaView(
           area_name: areaName,
           navigation_path: roomHomePath,
           hide_home_icon: hasRoomHeaderImage,
-          ...(roomStateImageKey === "wohnzimmer" ? { image_height: 235 } : {}),
+          ...(hasRoomHeaderImage ? { image_height: 235 } : {}),
           ...(hasRoomHeaderImage
             ? {
                 light_entities: roomLightEntities,
