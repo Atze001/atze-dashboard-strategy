@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.298.0";
+const ATZE_VERSION = "0.299.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9233,7 +9233,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 26px;
           padding: 28px;
           overflow: hidden;
-          border: 2px solid rgba(210, 210, 210, 0.78);
+          border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
           box-shadow: 0 14px 38px rgba(0,0,0,0.28);
         }
@@ -9523,7 +9523,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 7px;
-          border: 2px solid rgba(210, 210, 210, 0.78);
+          border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 28px;
           background: var(--home-card-bg);
           backdrop-filter: blur(18px);
@@ -9620,7 +9620,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 28px;
           padding: 22px;
           overflow: hidden;
-          border: 2px solid rgba(210, 210, 210, 0.78);
+          border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
           box-shadow: 0 14px 38px rgba(0,0,0,0.25);
         }
@@ -9830,7 +9830,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room {
           position: relative;
           min-height: 235px;
-          border: 2px solid rgba(210, 210, 210, 0.78);
+          border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 30px;
           overflow: hidden;
           padding: 20px;
@@ -12502,7 +12502,7 @@ class AtzeRoomNavHeader extends HTMLElement {
           padding: 0;
           border-radius: var(--ha-card-border-radius, 12px);
           overflow: hidden;
-          border: 2px solid rgba(210, 210, 210, 0.78);
+          border: 1px solid rgba(210, 210, 210, 0.78);
           background:
             linear-gradient(180deg, rgba(0,0,0,0.02) 45%, rgba(0,0,0,0.62) 100%),
             var(--atze-room-header-image) center / cover no-repeat;
