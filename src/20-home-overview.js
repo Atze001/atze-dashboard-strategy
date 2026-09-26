@@ -2074,7 +2074,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room {
           position: relative;
           min-height: 235px;
-          border: 1px solid var(--home-card-border);
+          border: 2px solid rgba(210, 210, 210, 0.78);
           border-radius: 30px;
           overflow: hidden;
           padding: 20px;
