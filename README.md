@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.298.0**
+Version **0.299.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.299.0
+- Alle zuletzt ergänzten hellgrauen Rahmen von 2 px auf dezente 1 px reduziert.
+
 ### v0.298.0
 - Assets nach Bereichen in Unterordner sortiert und alle internen Bildpfade angepasst.
 
 ### v0.297.0
-- 2 px hellgrauen Rahmen gezielt auf die eigentlichen Raum-/Bereichskarten der Hauptseite angewendet.
-
-### v0.296.0
-- 2 px hellgrauen Rahmen um die großen Hauptseiten-Container ergänzt.
+- Rahmen gezielt auf die eigentlichen Raum-/Bereichskarten der Hauptseite angewendet.
 
 ## Lizenz
 
