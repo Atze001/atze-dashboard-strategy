@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.291.0";
+const ATZE_VERSION = "0.292.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -12603,6 +12603,10 @@ class AtzeRoomNavHeader extends HTMLElement {
         @media (max-width: 600px) {
           ha-card {
             padding-bottom: 8px;
+          }
+
+          ha-card.has-background {
+            min-height: 190px;
           }
 
           .nav-row {
