@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.290.0**
+Version **0.291.0**
 
 Enthalten sind unter anderem:
 
@@ -206,15 +206,15 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.291.0
+- Bildkacheln auf allen Raumseiten mit Raumbild auf 235 px Höhe vereinheitlicht.
+
 ### v0.290.0
 - Wohnzimmer auf 16 neue Tag-/Nacht-Bilder für Licht, Fenster und Rollladen umgestellt.
 - Alte Wohnzimmerbilder entfernt; Tag ist 07:00–19:59 Uhr, Nacht ab 20:00 Uhr bis 06:59 Uhr.
 
 ### v0.289.0
 - Dynamische Flurbilder nach Licht, Haustür und Schlosszustand ergänzt.
-
-### v0.288.0
-- Dynamische Balkonbilder für Licht, Balkontür und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ## Lizenz
 
