@@ -1,7 +1,7 @@
 # Atze Dashboard Strategy
 <sub>KI-Generiert: ChatGPT</sub>
 
-![Atze Dashboard Strategy](dist/assets/wohnzimmer.jpg)
+![Atze Dashboard Strategy](dist/assets/wohnzimmer/wohnzimmer.jpg)
 
 Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
 Stil. Räume und Entities werden automatisch aus Home Assistant erzeugt und über
@@ -189,7 +189,7 @@ bei Bedarf mit `npm run build` ausführen.
 
 ## Raum-Bilder
 
-Die mitgelieferten Bilder liegen unter `dist/assets/` und werden automatisch
+Die mitgelieferten Raumbilder liegen in Unterordnern unter `dist/assets/` und werden automatisch
 den Bereichen Küche, Schlafzimmer, Bad, Flur, Hausflur, Wohnzimmer, Büro,
 Arbeitszimmer, Kinderzimmer, Balkon, 3D-Drucker und Zentrale zugeordnet.
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.290.0
+- Raumbilder unter dist/assets in eigene Bereichsordner verschoben und alle internen Bildpfade angepasst.
+
 ### v0.289.0
 - Dynamische Flurbilder nach Licht, Haustür und Schlosszustand ergänzt.
 
 ### v0.288.0
 - Dynamische Balkonbilder für Licht, Balkontür und Rollladen auf Hauptseite und Raumansicht ergänzt.
-
-### v0.287.0
-- Dynamische Bad-Bilder für Licht, Fenster und Rollladen auf Hauptseite und Raumansicht ergänzt.
 
 ## Lizenz
 
