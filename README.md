@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.296.0**
+Version **0.297.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.297.0
+- 2 px hellgrauen Rahmen gezielt auf die eigentlichen Raum-/Bereichskarten der Hauptseite angewendet.
+
 ### v0.296.0
-- 2 px hellgrauen Rahmen auch um die großen Bereichskarten der Hauptseite ergänzt.
+- 2 px hellgrauen Rahmen um die großen Hauptseiten-Container ergänzt.
 
 ### v0.295.0
-- 2 px hellgrauen Rahmen der Raumbildkacheln auch auf der Hauptseite angewendet.
-
-### v0.294.0
-- Raumbildkacheln auf den Raumseiten erhalten einen 2 px starken hellgrauen CSS-Rahmen.
+- Rahmenanpassung der Hauptseite vorbereitet.
 
 ## Lizenz
 
