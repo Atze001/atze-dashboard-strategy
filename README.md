@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.294.0**
+Version **0.295.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.295.0
+- 2 px hellgrauen Rahmen der Raumbildkacheln auch auf der Hauptseite angewendet.
+
 ### v0.294.0
-- Raumbildkacheln erhalten einen 2 px starken hellgrauen CSS-Rahmen; die Bilddateien bleiben unverändert.
+- Raumbildkacheln auf den Raumseiten erhalten einen 2 px starken hellgrauen CSS-Rahmen.
 
 ### v0.293.0
 - Mobile Raumbildhöhe korrigiert: auch die innere Navigationsfläche wird auf 190 px reduziert.
-
-### v0.292.0
-- Raumbildhöhe responsiv an die Hauptseite angeglichen.
 
 ## Lizenz
 
