@@ -1,7 +1,7 @@
 {
   "name": "atze-dashboard-strategy",
   "private": true,
-  "version": "0.298.0",
+  "version": "0.299.0",
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node --check dist/atze-dashboard-strategy.js"
