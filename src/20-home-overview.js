@@ -397,7 +397,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ? coverPosition > 0
         : ["open", "opening", "on"].includes(String(coverState.state || "").toLowerCase())
     ));
-    return `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
+    const baseState = `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
+    if (room.area_id === "wohnzimmer" && room.state_images) {
+      const hour = new Date().getHours();
+      const period = hour >= 7 && hour < 20 ? "day" : "night";
+      const timedState = `${period}_${baseState}`;
+      if (room.state_images[timedState]) return timedState;
+    }
+    return baseState;
   }
 
   _roomImageCandidates(room, lightsOn = false) {
