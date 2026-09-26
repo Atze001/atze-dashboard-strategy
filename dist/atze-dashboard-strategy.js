@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.289.0";
+const ATZE_VERSION = "0.290.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4999,7 +4999,7 @@ const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   schlafzimmer: "schlafzimmer.jpg",
   bad: "bad.jpg",
   flur: "flur.jpg",
-  wohnzimmer: "wohnzimmer.jpg",
+  wohnzimmer: "05-tag-licht-aus-fenster-zu-rollladen-unten.png",
   buro: "buro.jpg",
   arbeitszimmer: "buro.jpg",
   kinderzimmer: "kinderzimmer.webp",
@@ -5024,7 +5024,7 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   schlafzimmer: "schlafzimmer-light.webp",
   bad: "bad-light.webp",
   flur: "flur-light.webp",
-  wohnzimmer: "wohnzimmer-light.webp",
+  wohnzimmer: "01-tag-licht-an-fenster-zu-rollladen-unten.png",
   buro: "buro-light.webp",
   arbeitszimmer: "buro-light.webp",
   kinderzimmer: "kinderzimmer-light.webp",
@@ -5055,14 +5055,22 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_open_cover_open: "schlafzimmer-licht-an-fenster-offen-rollladen-oben.webp",
     light_on_window_closed_cover_open: "schlafzimmer-licht-an-fenster-zu-rollladen-oben.webp",
   },  wohnzimmer: {
-    light_off_window_closed_cover_closed: "wohnzimmer-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "wohnzimmer-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "wohnzimmer-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "wohnzimmer-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "wohnzimmer-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "wohnzimmer-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "wohnzimmer-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "wohnzimmer-licht-an-fenster-zu-rollladen-oben.webp",
+    day_light_on_window_closed_cover_closed: "01-tag-licht-an-fenster-zu-rollladen-unten.png",
+    day_light_on_window_closed_cover_open: "02-tag-licht-an-fenster-zu-rollladen-oben.png",
+    day_light_on_window_open_cover_open: "03-tag-licht-an-fenster-offen-rollladen-oben.png",
+    day_light_on_window_open_cover_closed: "04-tag-licht-an-fenster-offen-rollladen-unten.png",
+    day_light_off_window_closed_cover_closed: "05-tag-licht-aus-fenster-zu-rollladen-unten.png",
+    day_light_off_window_open_cover_closed: "06-tag-licht-aus-fenster-offen-rollladen-unten.png",
+    day_light_off_window_closed_cover_open: "07-tag-licht-aus-fenster-zu-rollladen-oben.png",
+    day_light_off_window_open_cover_open: "08-tag-licht-aus-fenster-offen-rollladen-oben.png",
+    night_light_on_window_closed_cover_closed: "09-nacht-licht-an-fenster-zu-rollladen-unten.png",
+    night_light_on_window_open_cover_closed: "10-nacht-licht-an-fenster-offen-rollladen-unten.png",
+    night_light_on_window_closed_cover_open: "11-nacht-licht-an-fenster-zu-rollladen-oben.png",
+    night_light_on_window_open_cover_open: "12-nacht-licht-an-fenster-offen-rollladen-oben.png",
+    night_light_off_window_closed_cover_closed: "13-nacht-licht-aus-fenster-zu-rollladen-unten.png",
+    night_light_off_window_open_cover_closed: "14-nacht-licht-aus-fenster-offen-rollladen-unten.png",
+    night_light_off_window_closed_cover_open: "15-nacht-licht-aus-fenster-zu-rollladen-oben.png",
+    night_light_off_window_open_cover_open: "16-nacht-licht-aus-fenster-offen-rollladen-oben.png",
   },  kuche: {
     light_off_window_closed_cover_closed: "kueche-licht-aus-fenster-zu-rollladen-unten.webp",
     light_off_window_open_cover_closed: "kueche-licht-aus-fenster-offen-rollladen-unten.webp",
@@ -8144,7 +8152,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ? coverPosition > 0
         : ["open", "opening", "on"].includes(String(coverState.state || "").toLowerCase())
     ));
-    return `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
+    const baseState = `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
+    if (room.area_id === "wohnzimmer" && room.state_images) {
+      const hour = new Date().getHours();
+      const period = hour >= 7 && hour < 20 ? "day" : "night";
+      const timedState = `${period}_${baseState}`;
+      if (room.state_images[timedState]) return timedState;
+    }
+    return baseState;
   }
 
   _roomImageCandidates(room, lightsOn = false) {
@@ -12453,7 +12468,11 @@ class AtzeRoomNavHeader extends HTMLElement {
       this._config.state_images && typeof this._config.state_images === "object"
         ? this._config.state_images
         : {};
+    const hour = new Date().getHours();
+    const period = hour >= 7 && hour < 20 ? "day" : "night";
+    const timedStateKey = `${period}_${stateKey}`;
     const reactiveImage =
+      stateImages[timedStateKey] ||
       stateImages[stateKey] ||
       (lightsOn ? this._config.light_image : this._config.dark_image);
     const backgroundImage =
