@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.292.0**
+Version **0.293.0**
 
 Enthalten sind unter anderem:
 
@@ -206,15 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.293.0
+- Mobile Raumbildhöhe korrigiert: auch die innere Navigationsfläche wird auf 190 px reduziert.
+
 ### v0.292.0
-- Raumbildhöhe responsiv an die Hauptseite angeglichen: 235 px auf größeren Ansichten, 190 px bis 600 px Breite.
+- Raumbildhöhe responsiv an die Hauptseite angeglichen.
 
 ### v0.291.0
 - Bildkacheln auf allen Raumseiten mit Raumbild auf 235 px Höhe vereinheitlicht.
-
-### v0.290.0
-- Wohnzimmer auf 16 neue Tag-/Nacht-Bilder für Licht, Fenster und Rollladen umgestellt.
-- Alte Wohnzimmerbilder entfernt; Tag ist 07:00–19:59 Uhr, Nacht ab 20:00 Uhr bis 06:59 Uhr.
 
 ## Lizenz
 
