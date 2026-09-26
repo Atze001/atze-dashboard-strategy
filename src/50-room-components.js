@@ -148,6 +148,7 @@ class AtzeRoomNavHeader extends HTMLElement {
       (lightsOn ? this._config.light_image : this._config.dark_image);
     const backgroundImage =
       reactiveImage || this._config.background_image || "";
+    const imageHeight = Math.max(170, Number(this._config.image_height) || 170);
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -167,7 +168,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
 
         ha-card.has-background {
-          min-height: 170px;
+          min-height: ${imageHeight}px;
           padding: 0;
           border-radius: var(--ha-card-border-radius, 12px);
           overflow: hidden;
@@ -178,7 +179,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
 
         ha-card.has-background .nav-row {
-          min-height: 170px;
+          min-height: ${imageHeight}px;
           padding: 18px;
           box-sizing: border-box;
           align-items: flex-end;
