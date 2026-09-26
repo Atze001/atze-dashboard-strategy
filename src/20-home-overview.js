@@ -1477,7 +1477,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 26px;
           padding: 28px;
           overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.12);
+          border: 2px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
           box-shadow: 0 14px 38px rgba(0,0,0,0.28);
         }
@@ -1864,7 +1864,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 28px;
           padding: 22px;
           overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.12);
+          border: 2px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
           box-shadow: 0 14px 38px rgba(0,0,0,0.25);
         }
