@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.300.0";
+const ATZE_VERSION = "0.301.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -7002,19 +7002,32 @@ function buildAreaView(
   const hasRoomHeaderImage =
     Boolean(roomImageKey && DEFAULT_HOME_ROOM_IMAGES[roomImageKey]);
   const roomLightEntities = entities
-    .filter((entity) => domainOf(entity.entity_id) === "light")
+    .filter(
+      (entity) =>
+        domainOf(entity.entity_id) === "light" &&
+        hass.states[entity.entity_id] &&
+        !popupMap.childToParent.has(entity.entity_id) &&
+        !shouldHideExactEntity(config, entity.entity_id)
+    )
     .map((entity) => entity.entity_id);
-  const roomWindowEntities = entities
-    .filter((entity) => {
-      const domain = domainOf(entity.entity_id);
-      const deviceClass = String(entity.device_class || entity.attributes?.device_class || "");
-      return (domain === "binary_sensor" && ["window", "door", "opening"].includes(deviceClass)) ||
-        domain === "window";
-    })
-    .map((entity) => entity.entity_id);
-  const roomCoverEntities = entities
-    .filter((entity) => domainOf(entity.entity_id) === "cover")
-    .map((entity) => entity.entity_id);
+  // Use the same primary window and cover selection as the home tile.
+  // This keeps both views on exactly the same physical state source.
+  const roomWindowEntity = bestBinaryEntity(
+    hass,
+    entities,
+    config,
+    area,
+    popupMap,
+    "window"
+  );
+  const roomCoverEntity = bestCoverEntity(
+    hass,
+    entities,
+    config,
+    popupMap
+  );
+  const roomWindowEntities = roomWindowEntity ? [roomWindowEntity] : [];
+  const roomCoverEntities = roomCoverEntity ? [roomCoverEntity] : [];
   const roomStateImageKey =
     defaultHomeRoomImageKey(area, DEFAULT_HOME_ROOM_STATE_IMAGES);
   const dynamicRoomImages =
@@ -8162,7 +8175,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         : ["open", "opening", "on"].includes(String(coverState.state || "").toLowerCase())
     ));
     const baseState = `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
-    if (room.area_id === "wohnzimmer" && room.state_images) {
+    if (room.state_images) {
       const hour = new Date().getHours();
       const period = hour >= 7 && hour < 20 ? "day" : "night";
       const timedState = `${period}_${baseState}`;

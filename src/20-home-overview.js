@@ -398,7 +398,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         : ["open", "opening", "on"].includes(String(coverState.state || "").toLowerCase())
     ));
     const baseState = `light_${lightsOn ? "on" : "off"}_window_${windowOpen ? "open" : "closed"}_cover_${coverOpen ? "open" : "closed"}`;
-    if (room.area_id === "wohnzimmer" && room.state_images) {
+    if (room.state_images) {
       const hour = new Date().getHours();
       const period = hour >= 7 && hour < 20 ? "day" : "night";
       const timedState = `${period}_${baseState}`;
