@@ -1,7 +1,7 @@
 # Atze Dashboard Strategy
 <sub>KI-Generiert: ChatGPT</sub>
 
-![Atze Dashboard Strategy](dist/assets/01-tag-licht-an-fenster-zu-rollladen-unten.png)
+![Atze Dashboard Strategy](dist/assets/wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.png)
 
 Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
 Stil. Räume und Entities werden automatisch aus Home Assistant erzeugt und über
@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.297.0**
+Version **0.298.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.298.0
+- Assets nach Bereichen in Unterordner sortiert und alle internen Bildpfade angepasst.
+
 ### v0.297.0
 - 2 px hellgrauen Rahmen gezielt auf die eigentlichen Raum-/Bereichskarten der Hauptseite angewendet.
 
 ### v0.296.0
 - 2 px hellgrauen Rahmen um die großen Hauptseiten-Container ergänzt.
-
-### v0.295.0
-- Rahmenanpassung der Hauptseite vorbereitet.
 
 ## Lizenz
 
