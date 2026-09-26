@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.300.0**
+Version **0.301.0**
 
 Enthalten sind unter anderem:
 
@@ -206,14 +206,14 @@ Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
 ## Letzte Änderungen
 
+### v0.301.0
+- Tag-/Nacht-Zustandsbilder auf der Hauptseite für alle Räume aktiviert und Statusquellen zwischen Haupt- und Raumseite vereinheitlicht.
+
 ### v0.300.0
 - Schlafzimmer auf 16 Tag-/Nacht-Zustandsbilder wie beim Wohnzimmer umgestellt; alte Schlafzimmerbilder entfernt.
 
 ### v0.299.0
 - Alle zuletzt ergänzten hellgrauen Rahmen von 2 px auf dezente 1 px reduziert.
-
-### v0.298.0
-- Assets nach Bereichen in Unterordner sortiert und alle internen Bildpfade angepasst.
 
 ## Lizenz
 
