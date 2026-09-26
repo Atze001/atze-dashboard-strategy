@@ -139,7 +139,11 @@ class AtzeRoomNavHeader extends HTMLElement {
       this._config.state_images && typeof this._config.state_images === "object"
         ? this._config.state_images
         : {};
+    const hour = new Date().getHours();
+    const period = hour >= 7 && hour < 20 ? "day" : "night";
+    const timedStateKey = `${period}_${stateKey}`;
     const reactiveImage =
+      stateImages[timedStateKey] ||
       stateImages[stateKey] ||
       (lightsOn ? this._config.light_image : this._config.dark_image);
     const backgroundImage =
