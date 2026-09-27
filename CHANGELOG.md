@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.330.0
+- Scrollposition wird jetzt unmittelbar vor jedem DOM-Neuaufbau gesichert und danach wiederhergestellt.
+- Der 10-Sekunden-Zeitpunkt bleibt auch über Home-Assistant-Re-Renders hinweg erhalten.
+- Programmgesteuertes Wiederherstellen der Position startet den Timer nicht versehentlich neu.
+
 ## v0.329.0
 - Scrollposition der Navigationsleiste bleibt bei Home-Assistant-State-Updates erhalten.
 - Während der Touch-Geste wird ein Neuaufbau der Startseite verhindert.
