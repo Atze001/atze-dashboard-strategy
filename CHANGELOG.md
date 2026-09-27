@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.317.0
+- Den abgestimmten Glass-Look auf die normalen Status-Badges im Raumbild erweitert.
+- Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und weitere neutrale Badges nutzen nun denselben transparenten Grundton mit 8-px-Blur.
+- Warn- und aktive Statusfarben bleiben unverändert erhalten.
+
 ## v0.316.0
 - Den neuen Glass-Look auf Bubble Cards erweitert.
 - Inaktive Button-, Climate-, Media-Player-, Select- und Cover-Flächen verwenden nun denselben transparenten Grundton mit 8-px-Blur.
