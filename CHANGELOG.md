@@ -4,6 +4,7 @@
 - Den abgestimmten Glass-Look auf die normalen Status-Badges im Raumbild erweitert.
 - Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und weitere neutrale Badges nutzen nun denselben transparenten Grundton mit 8-px-Blur.
 - Warn- und aktive Statusfarben bleiben unverändert erhalten.
+- Tag-/Nacht-Umschaltung der Bereichsbilder für 3D-Drucker, Büro und Zentrale repariert.
 
 ## v0.316.0
 - Den neuen Glass-Look auf Bubble Cards erweitert.
