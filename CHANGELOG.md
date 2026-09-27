@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.325.0
+- Navigations-Einträge erhalten eine kompakte, mobile Eingabemaske statt des YAML-Editors.
+- Name, Icon und Ziel können direkt über drei Eingabefelder geändert werden.
+- Normale eigene Seiten behalten weiterhin den YAML-Editor.
+
 ## v0.324.0
 - Speichern von Navigations-Einträgen im Editor korrigiert.
 - Navigations-Einträge werden jetzt an die Startseite übergeben und dort als Button angezeigt.
