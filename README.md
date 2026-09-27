@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.327.0**
+Version **0.328.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.328.0
+- Die horizontal scrollbare Leiste der eigenen Seiten springt nach 10 Sekunden ohne weitere Interaktion weich zum ersten Eintrag zurück.
+- Weiteres Scrollen oder Berühren startet die 10 Sekunden erneut.
+
 ## v0.327.0
 - Fokusproblem der nativen Icon- und Navigationsauswahl behoben.
 - `setConfig()` baut den Editor während einer geöffneten Navigationsauswahl nicht mehr neu auf.
@@ -252,11 +256,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Icon-Auswahl auf den nativen Home-Assistant Icon-Selector umgestellt.
 - Ziel-Auswahl auf den nativen Home-Assistant Navigation-Selector umgestellt.
 - Navigationseingaben werden gespeichert, ohne den Editor bei jedem Tastendruck neu aufzubauen.
-
-## v0.325.0
-- Navigations-Einträge erhalten eine kompakte, mobile Eingabemaske statt des YAML-Editors.
-- Name, Icon und Ziel können direkt über drei Eingabefelder geändert werden.
-- Normale eigene Seiten behalten weiterhin den YAML-Editor.
 <!-- latest-changes:end -->
 
 ## Lizenz
