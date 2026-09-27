@@ -509,7 +509,7 @@ class AtzeWarningBadgeV2 extends HTMLElement {
           background:
             ${active
               ? "rgba(255, 69, 58, 0.90)"
-              : "var(--ha-card-background, var(--card-background-color, rgba(44,44,46,0.92)))"};
+              : "rgba(48, 50, 54, 0.30)"};
           border:
             var(--ha-card-border-width, 1px)
             solid
@@ -521,7 +521,8 @@ class AtzeWarningBadgeV2 extends HTMLElement {
               ? "white"
               : "var(--primary-text-color)"};
           box-shadow: var(--ha-card-box-shadow, none);
-          backdrop-filter: var(--ha-card-backdrop-filter, none);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
         }
 
         ha-state-icon {
