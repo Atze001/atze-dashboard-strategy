@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.318.0
+- Glass-Effekt der normalen Raum-Status-Badges korrigiert.
+- Eine nachgelagerte `backdrop-filter`-Regel entfernte den 8-px-Blur bei Temperatur, Luftfeuchtigkeit, Leistung und Anwesenheit; diese Überschreibung wurde entfernt.
+
 ## v0.317.0
 - Den abgestimmten Glass-Look auf die normalen Status-Badges im Raumbild erweitert.
 - Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und weitere neutrale Badges nutzen nun denselben transparenten Grundton mit 8-px-Blur.

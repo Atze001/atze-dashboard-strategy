@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.317.0";
+const ATZE_VERSION = "0.318.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -13126,7 +13126,6 @@ class AtzeStatusBadgeV1 extends HTMLElement {
             );
           color: var(--primary-text-color);
           box-shadow: var(--ha-card-box-shadow, none);
-          backdrop-filter: var(--ha-card-backdrop-filter, none);
         }
 
         ha-state-icon {
