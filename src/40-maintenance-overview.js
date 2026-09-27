@@ -426,7 +426,9 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           gap: 12px;
           border: 1px solid rgba(255,255,255,0.11);
           border-radius: 22px;
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           text-align: left;
@@ -510,7 +512,9 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           padding: 30px 20px;
           border: 1px solid rgba(255,255,255,0.11);
           border-radius: 24px;
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: rgba(235,235,245,0.68);
           text-align: center;
         }
