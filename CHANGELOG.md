@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.332.0
+- Auto-Rücklauf der horizontalen Navigation ohne Blockieren von Home-Assistant-Updates umgesetzt.
+- Scrollposition und 10-Sekunden-Zielzeit werden unabhängig vom neu aufgebauten DOM gespeichert und nach Re-Renders wiederhergestellt.
+- Licht-, Anwesenheits-, Temperatur- und andere Statusänderungen können währenddessen normal weiter aktualisiert werden.
+
 ## v0.331.0
 - Die 10 Sekunden beginnen jetzt erst nach dem Ende der Benutzerinteraktion (`touchend`).
 - Reine Scroll-Events und DOM-Wiederherstellungen verändern den Countdown nicht mehr.

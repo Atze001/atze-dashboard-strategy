@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.331.0";
+const ATZE_VERSION = "0.332.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -7813,6 +7813,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._customLinksScrollLeft = 0;
     this._customLinksResetAt = 0;
     this._customLinksUserScrolling = false;
+    this._customLinksScrollKey = "atze-dashboard:custom-links-scroll";
   }
 
   setConfig(config) {
@@ -9203,6 +9204,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
     if (customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1) {
       this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
+      try {
+        sessionStorage.setItem(this._customLinksScrollKey, JSON.stringify({
+          left: this._customLinksScrollLeft,
+          resetAt: this._customLinksResetAt || 0,
+        }));
+      } catch (_e) {}
     }
 
     this.shadowRoot.innerHTML = `
@@ -10822,54 +10829,63 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const customPageLinksBar = this.shadowRoot.querySelector(".custom-page-links");
     if (customPageLinksBar) {
-      let restoringCustomLinks = false;
+      const saveCustomLinksState = () => {
+        try {
+          sessionStorage.setItem(this._customLinksScrollKey, JSON.stringify({
+            left: this._customLinksScrollLeft,
+            resetAt: this._customLinksResetAt,
+          }));
+        } catch (_e) {}
+      };
 
-      const resetAfterTenSeconds = () => {
+      const finishCustomLinksReset = () => {
+        this._customLinksScrollLeft = 0;
+        this._customLinksResetAt = 0;
+        try { sessionStorage.removeItem(this._customLinksScrollKey); } catch (_e) {}
+        customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
+        this._customLinksScrollTimer = null;
+      };
+
+      const armCustomLinksReset = () => {
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
         this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
         if (this._customLinksScrollLeft <= 1) return;
         this._customLinksResetAt = Date.now() + 10000;
-        this._customLinksScrollTimer = window.setTimeout(() => {
-          this._customLinksScrollLeft = 0;
-          this._customLinksResetAt = 0;
-          customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
-          this._customLinksScrollTimer = null;
-        }, 10000);
+        saveCustomLinksState();
+        this._customLinksScrollTimer = window.setTimeout(finishCustomLinksReset, 10000);
       };
 
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(this._customLinksScrollKey) || "null");
+        if (saved?.left > 1) {
+          this._customLinksScrollLeft = Number(saved.left) || 0;
+          this._customLinksResetAt = Number(saved.resetAt) || 0;
+        }
+      } catch (_e) {}
+
       if (this._customLinksScrollLeft > 1) {
-        restoringCustomLinks = true;
         customPageLinksBar.scrollLeft = this._customLinksScrollLeft;
-        requestAnimationFrame(() => { restoringCustomLinks = false; });
         if (this._customLinksResetAt > Date.now()) {
           if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
-          const remaining = this._customLinksResetAt - Date.now();
-          this._customLinksScrollTimer = window.setTimeout(() => {
-            this._customLinksScrollLeft = 0;
-            this._customLinksResetAt = 0;
-            customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
-            this._customLinksScrollTimer = null;
-          }, remaining);
+          this._customLinksScrollTimer = window.setTimeout(
+            finishCustomLinksReset,
+            this._customLinksResetAt - Date.now()
+          );
         }
       }
 
       customPageLinksBar.addEventListener("scroll", () => {
-        if (!restoringCustomLinks) this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
+        this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
+        if (this._customLinksScrollLeft > 1) saveCustomLinksState();
       }, { passive: true });
       customPageLinksBar.addEventListener("touchstart", () => {
-        this._interactionActive = true;
-        this._customLinksUserScrolling = true;
-        this._customLinksResetAt = 0;
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
+        this._customLinksResetAt = 0;
       }, { passive: true });
-      customPageLinksBar.addEventListener("touchend", () => {
-        this._interactionActive = false;
-        this._customLinksUserScrolling = false;
-        resetAfterTenSeconds();
-      }, { passive: true });
+      customPageLinksBar.addEventListener("touchend", armCustomLinksReset, { passive: true });
       customPageLinksBar.addEventListener("wheel", () => {
         window.clearTimeout(this._customLinksWheelTimer);
-        this._customLinksWheelTimer = window.setTimeout(resetAfterTenSeconds, 150);
+        this._customLinksWheelTimer = window.setTimeout(armCustomLinksReset, 150);
       }, { passive: true });
     }
 
