@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.331.0
+- Die 10 Sekunden beginnen jetzt erst nach dem Ende der Benutzerinteraktion (`touchend`).
+- Reine Scroll-Events und DOM-Wiederherstellungen verändern den Countdown nicht mehr.
+- Home-Assistant-Re-Renders übernehmen nur die verbleibende Zeit eines bereits gestarteten Countdowns.
+
 ## v0.330.0
 - Scrollposition wird jetzt unmittelbar vor jedem DOM-Neuaufbau gesichert und danach wiederhergestellt.
 - Der 10-Sekunden-Zeitpunkt bleibt auch über Home-Assistant-Re-Renders hinweg erhalten.
