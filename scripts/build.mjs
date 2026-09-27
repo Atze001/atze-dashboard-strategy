@@ -41,7 +41,7 @@ if (!versionLine.test(readme)) {
   throw new Error("Current version line was not found in README.md.");
 }
 
-const changelogSections = [...changelog.matchAll(/^## v[^\n]+[\s\S]*?(?=^## v|$)/gm)]
+const changelogSections = [...changelog.matchAll(/^## v[^\n]+[\s\S]*?(?=^## v|(?![\s\S]))/gm)]
   .slice(0, 3)
   .map((match) => match[0].trim())
   .join("\n\n");
