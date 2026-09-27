@@ -34,28 +34,37 @@ packageJson.version = version;
 
 const readmePath = resolve(root, "README.md");
 const readme = await readFile(readmePath, "utf8");
+const changelog = await readFile(resolve(root, "CHANGELOG.md"), "utf8");
 const versionLine = /^Version \*\*[^*]+\*\*$/m;
 
 if (!versionLine.test(readme)) {
   throw new Error("Current version line was not found in README.md.");
 }
 
-const syncedReadme = readme.replace(
-  versionLine,
-  `Version **${version}**`
-);
+const changelogSections = [...changelog.matchAll(/^## v[^\n]+[\s\S]*?(?=^## v|$)/gm)]
+  .slice(0, 3)
+  .map((match) => match[0].trim())
+  .join("\n\n");
+
+if (!changelogSections) {
+  throw new Error("No version sections were found in CHANGELOG.md.");
+}
+
+const changesBlock = /<!-- latest-changes:start -->[\s\S]*?<!-- latest-changes:end -->/;
+if (!changesBlock.test(readme)) {
+  throw new Error("Latest changes markers were not found in README.md.");
+}
+
+const syncedReadme = readme
+  .replace(versionLine, `Version **${version}**`)
+  .replace(
+    changesBlock,
+    `<!-- latest-changes:start -->\n${changelogSections}\n<!-- latest-changes:end -->`
+  );
 
 await Promise.all([
-  writeFile(
-    resolve(root, "dist/atze-dashboard-strategy.js"),
-    bundle,
-    "utf8"
-  ),
-  writeFile(
-    packagePath,
-    `${JSON.stringify(packageJson, null, 2)}\n`,
-    "utf8"
-  ),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy.js"), bundle, "utf8"),
+  writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8"),
   writeFile(readmePath, syncedReadme, "utf8"),
 ]);
 

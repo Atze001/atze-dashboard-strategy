@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.308.0";
+const ATZE_VERSION = "0.309.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4996,7 +4996,7 @@ const ATZE_HOME_ROOM_IMAGE_CACHE =
 
 const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   kuche: "kueche/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
-  schlafzimmer: "schlafzimmer/schlafzimmer.jpg",
+  schlafzimmer: "schlafzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   bad: "bad/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   flur: "flur/04-tag-licht-aus-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
@@ -5021,7 +5021,7 @@ const DEFAULT_HOME_ROOM_IMAGES = Object.fromEntries(
 
 const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   kuche: "kueche/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
-  schlafzimmer: "schlafzimmer/schlafzimmer-light.webp",
+  schlafzimmer: "schlafzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   bad: "bad/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   flur: "flur/01-tag-licht-an-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",

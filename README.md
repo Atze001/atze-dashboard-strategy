@@ -7,11 +7,11 @@ Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
 Stil. Räume und Entities werden automatisch aus Home Assistant erzeugt und über
 YAML-Overrides angepasst.
 
-Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final ist.
+Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich bis zu einer finalen Version noch ändern.
 
 ## Aktueller Stand
 
-Version **0.308.0**
+Version **0.309.0**
 
 Enthalten sind unter anderem:
 
@@ -29,8 +29,7 @@ Enthalten sind unter anderem:
 - automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
 - optionales Zeitpläne-Bubble-Popup mit Scheduler Card
 - optionales Lichtsteuerungs-Bubble-Popup aus einer eigenen Seite
-- helle Raumbilder bei eingeschaltetem Licht und dunkle Bilder bei
-  ausgeschaltetem Licht
+- dynamische Raumbilder abhängig von Tag/Nacht und – je nach Bereich – Licht-, Fenster-, Tür-, Schloss- und Rollladenstatus
 - automatischer HACS-Update-Hinweis auf der Startseite
 
 ## Installation über HACS
@@ -231,16 +230,23 @@ Die Ansicht `wartung` erkennt Batteriesensoren automatisch und gruppiert sie
 nach **Gut (41–100 %)**, **Niedrig (21–40 %)** und **Kritisch (0–20 %)**.
 Innerhalb der Abschnitte stehen die niedrigsten Ladestände zuerst.
 
+## Qualitätssicherung
+
+Vor einem Pull Request kann lokal mit `npm run validate` dieselbe grundlegende Prüfung wie in GitHub Actions ausgeführt werden. Dabei werden Bundle und Version synchronisiert, die JavaScript-Syntax geprüft, alle im Source referenzierten Bilddateien kontrolliert und die festgelegten Raum-Aliase getestet.
+
+## Screenshots
+
+Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistant-Oberfläche vorgesehen. So werden Darstellung und Funktionen nicht mit Beispiel- oder generierten Bildern verwechselt. Screenshots können bei UI-Änderungen über Pull Requests ergänzt bzw. aktualisiert werden.
+
 ## Letzte Änderungen
 
-### v0.301.0
-- Tag-/Nacht-Zustandsbilder auf der Hauptseite für alle Räume aktiviert und Statusquellen zwischen Haupt- und Raumseite vereinheitlicht.
+<!-- latest-changes:start -->
+## v0.309.0
 
-### v0.300.0
-- Schlafzimmer auf 16 Tag-/Nacht-Zustandsbilder wie beim Wohnzimmer umgestellt; alte Schlafzimmerbilder entfernt.
+## v0.308.0
 
-### v0.299.0
-- Alle zuletzt ergänzten hellgrauen Rahmen von 2 px auf dezente 1 px reduziert.
+## v0.307.0
+<!-- latest-changes:end -->
 
 ## Lizenz
 

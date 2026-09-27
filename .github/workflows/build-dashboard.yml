@@ -4,7 +4,9 @@ on:
   push:
     paths:
       - "src/**"
-      - "scripts/build.mjs"
+      - "scripts/**"
+      - "CHANGELOG.md"
+      - "package.json"
       - ".github/workflows/build-dashboard.yml"
   workflow_dispatch:
 
@@ -26,8 +28,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Build and synchronize version
-        run: npm run build
+      - name: Build, validate assets and aliases
+        run: npm run validate
 
       - name: Commit generated files
         run: |
