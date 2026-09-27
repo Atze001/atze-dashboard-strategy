@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.334.0
+- Letzter Neuansatz für den Navigations-Rücklauf: Die 10-Sekunden-Frist hängt direkt am erhaltenen Navigationselement.
+- Das Element bleibt während der gesamten aktiven Frist erhalten, selbst wenn iOS kurzzeitig `scrollLeft = 0` meldet.
+- Der Countdown beginnt erst 250 ms nach dem letzten nativen Scroll-Event und läuft danach 10 Sekunden.
+
 ## v0.333.0
 - Die horizontal gescrollte Navigationsleiste wird während der 10-Sekunden-Frist nicht mehr neu erzeugt, sondern als bestehendes DOM-Element durch Home-Assistant-Re-Renders hindurch übernommen.
 - Alle übrigen Bereiche der Startseite werden weiterhin normal aktualisiert.
