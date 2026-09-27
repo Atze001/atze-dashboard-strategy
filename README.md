@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.321.0**
+Version **0.322.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.322.0
+- Flur-Statusbild auf der Hauptseite korrigiert.
+- Die Hauptseite berücksichtigt beim Flur nun wie die Bereichsseite den Tag-/Nacht-Präfix bei Tür-, Licht- und Verriegelungszuständen.
+- Dadurch wird das passende Verriegelt-Bild wieder zuverlässig ausgewählt.
+
 ## v0.321.0
 - Automatische Fenster-/Rollladen-Warn-Badges aus den Bereichsbildern entfernt.
 - Die Zustände werden bereits über die dynamischen Raum-/Statusbilder dargestellt und bleiben zusätzlich auf der Sicherheitsseite verfügbar.
@@ -250,11 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Verbleibende binäre Status-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
 - Damit nutzt insbesondere das Anwesenheits-/Belegungs-Badge denselben Glass-Look wie Temperatur, Luftfeuchtigkeit, Leistung und Rauchmelder.
 - Warn-Badges für Fenster/Rollladen behalten ihre separate Warn-Darstellung.
-
-## v0.319.0
-- Native Home-Assistant-Entity-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
-- Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und aggregierte Status-Badges erhalten dadurch denselben Glass-Look.
-- Bestehende Iconfarben und More-Info-Verhalten bleiben erhalten.
 <!-- latest-changes:end -->
 
 ## Lizenz

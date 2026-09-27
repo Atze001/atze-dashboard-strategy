@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.321.0";
+const ATZE_VERSION = "0.322.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -8175,8 +8175,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const windowOpen = Boolean(windowState && ["on", "open"].includes(String(windowState.state || "").toLowerCase()));
     if (room.area_id === "flur" && room.state_images) {
       const lockState = room.lock_entity ? String(this._state(room.lock_entity)?.state || "").toLowerCase() : "";
-      if (windowOpen) return `light_${lightsOn ? "on" : "off"}_door_open`;
-      return `light_${lightsOn ? "on" : "off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`;
+      const hour = new Date().getHours();
+      const period = hour >= 7 && hour < 20 ? "day" : "night";
+      const baseState = windowOpen
+        ? `light_${lightsOn ? "on" : "off"}_door_open`
+        : `light_${lightsOn ? "on" : "off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`;
+      return `${period}_${baseState}`;
     }
     const coverEntity = room.cover_entity || room.roller_sensor_entity;
     const coverState = coverEntity ? this._state(coverEntity) : null;
