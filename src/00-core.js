@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.322.0";
+const ATZE_VERSION = "0.323.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6571,7 +6571,7 @@ function buildCustomPageViews(config) {
   ]);
 
   return asArray(config.custom_pages)
-    .filter((page) => !isSchedulerCustomPage(page))
+    .filter((page) => !isSchedulerCustomPage(page) && !page?.navigation_path)
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
