@@ -13470,6 +13470,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._loading = false;
     this._draggedAreaId = null;
     this._entityVisibilityActive = false;
+    this._navigationEditActive = false;
     this._pendingHassRender = false;
     this._entityFilter = "";
     this._favoriteFilter = "";
@@ -13483,7 +13484,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._hass = value;
     if (first || this._areas.length === 0) {
       this._loadRegistries();
-    } else if (this._entityVisibilityActive) {
+    } else if (this._entityVisibilityActive || this._navigationEditActive) {
       this._pendingHassRender = true;
     } else {
       this._render();
@@ -14558,23 +14559,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     if (page.navigation_path) {
       return `
         <div class="custom-page" data-custom-page="${index}">
-          <div class="custom-page-heading">
-            <strong>${this._escape(page.title || "Navigation")}</strong>
-            <button class="custom-page-remove" type="button" data-index="${index}">Entfernen</button>
-          </div>
+          <div class="custom-page-heading"><strong>${this._escape(page.title || "Navigation")}</strong><button class="custom-page-remove" type="button" data-index="${index}">Entfernen</button></div>
           <div class="navigation-fields">
-            <label class="custom-page-field">
-              <span>Name</span>
-              <input class="navigation-field" data-index="${index}" data-key="title" type="text" value="${this._escape(page.title || "")}" placeholder="Geräte" />
-            </label>
-            <label class="custom-page-field">
-              <span>Icon</span>
-              <input class="navigation-field" data-index="${index}" data-key="icon" type="text" value="${this._escape(page.icon || "")}" placeholder="mdi:devices" />
-            </label>
-            <label class="custom-page-field">
-              <span>Ziel</span>
-              <input class="navigation-field" data-index="${index}" data-key="navigation_path" type="text" value="${this._escape(page.navigation_path || "")}" placeholder="/config/devices/dashboard" />
-            </label>
+            <label class="custom-page-field"><span>Name</span><input class="navigation-field" data-index="${index}" data-key="title" type="text" value="${this._escape(page.title || "")}" placeholder="Geräte" /></label>
+            <label class="custom-page-field"><span>Icon</span><ha-selector class="navigation-selector" data-index="${index}" data-key="icon"></ha-selector></label>
+            <label class="custom-page-field"><span>Ziel</span><ha-selector class="navigation-selector" data-index="${index}" data-key="navigation_path"></ha-selector></label>
           </div>
         </div>
       `;
@@ -15750,15 +15739,30 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         this._addCustomPage("empty")
       );
 
+    const saveNavigationValue = (index, key, value) => {
+      const pages = this._customPages().map((page) => ({ ...page }));
+      if (!pages[index] || !key) return;
+      pages[index][key] = String(value ?? "").trim();
+      this._config = { ...this._config, custom_pages: pages };
+      this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
+    };
+
     for (const input of this.shadowRoot.querySelectorAll(".navigation-field")) {
-      input.addEventListener("change", () => {
-        const index = Number(input.dataset.index);
-        const key = input.dataset.key;
-        const pages = this._customPages().map((page) => ({ ...page }));
-        if (!pages[index] || !key) return;
-        pages[index][key] = input.value.trim();
-        this._fireConfigChanged({ ...this._config, custom_pages: pages });
-      });
+      input.addEventListener("focus", () => { this._navigationEditActive = true; });
+      input.addEventListener("pointerdown", () => { this._navigationEditActive = true; });
+      input.addEventListener("input", () => saveNavigationValue(Number(input.dataset.index), input.dataset.key, input.value));
+      input.addEventListener("blur", () => { this._navigationEditActive = false; });
+    }
+
+    for (const selector of this.shadowRoot.querySelectorAll(".navigation-selector")) {
+      const index = Number(selector.dataset.index), key = selector.dataset.key;
+      const page = this._customPages()[index] || {};
+      selector.hass = this._hass;
+      selector.selector = key === "icon" ? { icon: {} } : { navigation: {} };
+      selector.value = page[key] || "";
+      selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
+      selector.addEventListener("value-changed", (event) => { event.stopPropagation(); saveNavigationValue(index, key, event.detail?.value || ""); });
+      selector.addEventListener("focusout", () => { window.setTimeout(() => { if (!selector.matches(":focus-within")) this._navigationEditActive = false; }, 100); });
     }
 
     for (const button of this.shadowRoot.querySelectorAll(".custom-page-remove")) {
