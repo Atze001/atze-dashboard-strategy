@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.326.0
+- Fokusverlust der Tastatur beim Bearbeiten von Navigations-Einträgen behoben.
+- Icon-Auswahl auf den nativen Home-Assistant Icon-Selector umgestellt.
+- Ziel-Auswahl auf den nativen Home-Assistant Navigation-Selector umgestellt.
+- Navigationseingaben werden gespeichert, ohne den Editor bei jedem Tastendruck neu aufzubauen.
+
 ## v0.325.0
 - Navigations-Einträge erhalten eine kompakte, mobile Eingabemaske statt des YAML-Editors.
 - Name, Icon und Ziel können direkt über drei Eingabefelder geändert werden.
