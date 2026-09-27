@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.315.0";
+const ATZE_VERSION = "0.316.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -2559,7 +2559,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
   return `
     ha-card {
       --bubble-border-radius: ${radius} !important;
-      --bubble-main-background-color: rgba(44,44,46,0.92) !important;
+      --bubble-main-background-color: rgba(48, 50, 54, 0.30) !important;
       --bubble-secondary-background-color: rgba(58,58,60,0.72) !important;
       --bubble-accent-color: ${accent} !important;
       --bubble-icon-background-color: rgba(118,118,128,0.18) !important;
@@ -2582,15 +2582,26 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
       min-height: ${compact ? "56px" : "64px"} !important;
     }
 
+    ha-card,
+    .bubble-button-card-container,
+    .bubble-media-player-container,
+    .bubble-climate-container,
+    .bubble-select-card-container,
+    .bubble-cover-card-container,
+    .bubble-cover-container {
+      backdrop-filter: blur(8px) saturate(1.12) !important;
+      -webkit-backdrop-filter: blur(8px) saturate(1.12) !important;
+    }
+
     .bubble-button-card-container {
       background:
-        \${${active} ? '${activeTint}' : 'rgba(44,44,46,0.92)'} !important;
+        \${${active} ? '${activeTint}' : 'rgba(48, 50, 54, 0.30)'} !important;
     }
 
     .bubble-media-player-container,
     .bubble-climate-container,
     .bubble-select-card-container {
-      background-color: rgba(44,44,46,0.92) !important;
+      background-color: rgba(48, 50, 54, 0.30) !important;
     }
 
     .bubble-cover-card-container,
@@ -2598,7 +2609,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
       background-color:
         \${${domain === "cover" ? active : "false"}
           ? 'rgba(255,255,255,0.96)'
-          : 'rgba(44,44,46,0.92)'} !important;
+          : 'rgba(48, 50, 54, 0.30)'} !important;
     }
 
     .bubble-cover-button {
