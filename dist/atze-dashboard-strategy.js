@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.322.0";
+const ATZE_VERSION = "0.323.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6571,7 +6571,7 @@ function buildCustomPageViews(config) {
   ]);
 
   return asArray(config.custom_pages)
-    .filter((page) => !isSchedulerCustomPage(page))
+    .filter((page) => !isSchedulerCustomPage(page) && !page?.navigation_path)
     .map((page, index) => {
       if (!page || typeof page !== "object") return null;
 
@@ -8889,7 +8889,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const customPageLinks = asArray(this._config.custom_pages)
       .filter(
         (page) =>
-          page?.title && (page?.path || page?.popup_hash)
+          page?.title && (page?.path || page?.popup_hash || page?.navigation_path)
       );
 
     const customPageLinksHtml = customPageLinks.length
@@ -8900,9 +8900,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <button
                   type="button"
                   class="custom-page-link"
-                  ${page.path
-                    ? `data-path="${this._escapeHtml(page.path)}"`
-                    : ""}
+                  ${page.navigation_path
+                    ? `data-navigation-path="${this._escapeHtml(page.navigation_path)}"`
+                    : page.path
+                      ? `data-path="${this._escapeHtml(page.path)}"`
+                      : ""}
                   ${page.popup_hash
                     ? `data-popup-hash="${this._escapeHtml(page.popup_hash)}"`
                     : ""}
@@ -10791,6 +10793,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
       (element) => element.dataset.entityId,
       "atze-dashboard:favorite-order"
     );
+
+    this.shadowRoot
+      .querySelectorAll(".custom-page-link[data-navigation-path]")
+      .forEach((element) => {
+        element.addEventListener("click", () => {
+          const target = element.dataset.navigationPath;
+          if (!target) return;
+          window.history.pushState(null, "", target);
+          window.dispatchEvent(new Event("location-changed"));
+        });
+      });
 
     this.shadowRoot
       .querySelectorAll(".custom-page-link[data-path]")
@@ -14471,6 +14484,15 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   _addCustomPage(template = "empty") {
     const pages = [...this._customPages()];
+    if (template === "navigation") {
+      pages.push({
+        title: "Geräte",
+        icon: "mdi:devices",
+        navigation_path: "/config/devices/dashboard",
+      });
+      this._fireConfigChanged({ ...this._config, custom_pages: pages });
+      return;
+    }
     const scheduler = template === "scheduler";
 
     pages.push({
@@ -14525,6 +14547,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   _customPageHtml(page, index) {
     const view = this._customPageView(page, index);
+    const editorValue = page.navigation_path
+      ? { title: page.title || "Geräte", icon: page.icon || "mdi:devices", navigation_path: page.navigation_path }
+      : view;
 
     return `
       <div class="custom-page" data-custom-page="${index}">
@@ -15495,13 +15520,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Lege zusätzliche Dashboard-Seiten an oder kopiere die YAML einer
-              vorhandenen Ansicht hinein. Verwende den Inhalt einer einzelnen
-              Ansicht mit title, path und cards oder sections – ohne den äußeren
-              Schlüssel views. Eigene Seiten erscheinen in der Navigation.
+              Lege zusätzliche Dashboard-Seiten oder reine Navigations-Buttons an.
+              Ein Navigations-Button kann direkt auf interne Home-Assistant-Seiten
+              wie Geräte, Entitäten oder Automationen führen. Eigene Seiten und
+              Navigationen erscheinen auf der Startseite.
             </div>
             <div class="toolbar">
               <button id="add-custom-page" type="button">Leere Seite</button>
+              <button id="add-navigation-link" type="button">Navigation</button>
             </div>
             <div class="custom-pages-list">
               ${customPagesHtml || '<div class="loading">Noch keine eigene Seite angelegt.</div>'}
@@ -15684,6 +15710,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       );
 
     this.shadowRoot
+      .querySelector("#add-navigation-link")
+      ?.addEventListener("click", () =>
+        this._addCustomPage("navigation")
+      );
+
+    this.shadowRoot
       .querySelector("#add-custom-page")
       ?.addEventListener("click", () =>
         this._addCustomPage("empty")
@@ -15734,7 +15766,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       field.addEventListener("editor-save", commitPendingValue);
 
       const page = this._customPages()[index];
-      const value = this._customPageView(page, index);
+      const value = page?.navigation_path
+        ? { title: page.title || "Geräte", icon: page.icon || "mdi:devices", navigation_path: page.navigation_path }
+        : this._customPageView(page, index);
       const initialize = () => field.setValue?.(value);
 
       if (customElements.get("ha-yaml-editor")) initialize();

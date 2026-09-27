@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.322.0**
+Version **0.323.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.323.0
+- Unter „Eigene Seiten“ können jetzt reine Navigations-Buttons angelegt werden.
+- Neue Navigation startet testweise mit „Geräte“ und `/config/devices/dashboard`.
+- Titel, Icon und `navigation_path` können anschließend im YAML-Editor geändert werden.
+- Navigations-Einträge erzeugen keine zusätzliche Dashboard-Ansicht.
+
 ## v0.322.0
 - Flur-Statusbild auf der Hauptseite korrigiert.
 - Die Hauptseite berücksichtigt beim Flur nun wie die Bereichsseite den Tag-/Nacht-Präfix bei Tür-, Licht- und Verriegelungszuständen.
@@ -250,11 +256,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Automatische Fenster-/Rollladen-Warn-Badges aus den Bereichsbildern entfernt.
 - Die Zustände werden bereits über die dynamischen Raum-/Statusbilder dargestellt und bleiben zusätzlich auf der Sicherheitsseite verfügbar.
 - Manuell konfigurierte Badges bleiben unverändert möglich.
-
-## v0.320.0
-- Verbleibende binäre Status-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
-- Damit nutzt insbesondere das Anwesenheits-/Belegungs-Badge denselben Glass-Look wie Temperatur, Luftfeuchtigkeit, Leistung und Rauchmelder.
-- Warn-Badges für Fenster/Rollladen behalten ihre separate Warn-Darstellung.
 <!-- latest-changes:end -->
 
 ## Lizenz
