@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.322.0
+- Flur-Statusbild auf der Hauptseite korrigiert.
+- Die Hauptseite berücksichtigt beim Flur nun wie die Bereichsseite den Tag-/Nacht-Präfix bei Tür-, Licht- und Verriegelungszuständen.
+- Dadurch wird das passende Verriegelt-Bild wieder zuverlässig ausgewählt.
+
 ## v0.321.0
 - Automatische Fenster-/Rollladen-Warn-Badges aus den Bereichsbildern entfernt.
 - Die Zustände werden bereits über die dynamischen Raum-/Statusbilder dargestellt und bleiben zusätzlich auf der Sicherheitsseite verfügbar.
