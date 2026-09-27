@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.313.0
+- Glass-Effekt der sechs Status-Buttons nochmals verstärkt: Hintergrunddeckkraft auf 0,25 reduziert.
+- Blur auf 8 px reduziert, damit das Hero-Bild deutlicher durch die Buttons sichtbar bleibt.
+
 ## v0.312.0
 - Transparenz der sechs Status-Buttons deutlich erhöht, damit der Glass-Effekt klar sichtbar wird.
 - Blur von 20 px auf 12 px reduziert; Icons und Texte bleiben vollständig deckend.
