@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.330.0";
+const ATZE_VERSION = "0.331.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -7812,6 +7812,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._customLinksScrollTimer = null;
     this._customLinksScrollLeft = 0;
     this._customLinksResetAt = 0;
+    this._customLinksUserScrolling = false;
   }
 
   setConfig(config) {
@@ -9202,7 +9203,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
     if (customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1) {
       this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
-      if (!this._customLinksResetAt) this._customLinksResetAt = Date.now() + 10000;
     }
 
     this.shadowRoot.innerHTML = `
@@ -10824,41 +10824,52 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (customPageLinksBar) {
       let restoringCustomLinks = false;
 
-      const armReset = (restart = true) => {
+      const resetAfterTenSeconds = () => {
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
         this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
-        if (this._customLinksScrollLeft <= 1) {
-          this._customLinksResetAt = 0;
-          return;
-        }
-        if (restart || !this._customLinksResetAt) this._customLinksResetAt = Date.now() + 10000;
-        const delay = Math.max(0, this._customLinksResetAt - Date.now());
+        if (this._customLinksScrollLeft <= 1) return;
+        this._customLinksResetAt = Date.now() + 10000;
         this._customLinksScrollTimer = window.setTimeout(() => {
           this._customLinksScrollLeft = 0;
           this._customLinksResetAt = 0;
           customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
           this._customLinksScrollTimer = null;
-        }, delay);
+        }, 10000);
       };
 
-      if (this._customLinksScrollLeft > 1 && this._customLinksResetAt > Date.now()) {
+      if (this._customLinksScrollLeft > 1) {
         restoringCustomLinks = true;
         customPageLinksBar.scrollLeft = this._customLinksScrollLeft;
         requestAnimationFrame(() => { restoringCustomLinks = false; });
-        armReset(false);
+        if (this._customLinksResetAt > Date.now()) {
+          if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
+          const remaining = this._customLinksResetAt - Date.now();
+          this._customLinksScrollTimer = window.setTimeout(() => {
+            this._customLinksScrollLeft = 0;
+            this._customLinksResetAt = 0;
+            customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
+            this._customLinksScrollTimer = null;
+          }, remaining);
+        }
       }
 
       customPageLinksBar.addEventListener("scroll", () => {
-        if (restoringCustomLinks) return;
-        armReset(true);
+        if (!restoringCustomLinks) this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
       }, { passive: true });
       customPageLinksBar.addEventListener("touchstart", () => {
         this._interactionActive = true;
+        this._customLinksUserScrolling = true;
+        this._customLinksResetAt = 0;
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
       }, { passive: true });
       customPageLinksBar.addEventListener("touchend", () => {
         this._interactionActive = false;
-        armReset(true);
+        this._customLinksUserScrolling = false;
+        resetAfterTenSeconds();
+      }, { passive: true });
+      customPageLinksBar.addEventListener("wheel", () => {
+        window.clearTimeout(this._customLinksWheelTimer);
+        this._customLinksWheelTimer = window.setTimeout(resetAfterTenSeconds, 150);
       }, { passive: true });
     }
 
