@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.314.0
+- Grundfarbe der sechs transparenten Status-Buttons leicht aufgehellt und auf einen ausgewogenen dunklen Glass-Look abgestimmt.
+- Transparenz und 8-px-Blur bleiben erhalten; Texte und Icons bleiben vollständig deckend.
+
 ## v0.313.0
 - Glass-Effekt der sechs Status-Buttons nochmals verstärkt: Hintergrunddeckkraft auf 0,25 reduziert.
 - Blur auf 8 px reduziert, damit das Hero-Bild deutlicher durch die Buttons sichtbar bleibt.
