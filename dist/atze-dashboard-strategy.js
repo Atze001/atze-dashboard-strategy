@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.314.0";
+const ATZE_VERSION = "0.315.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9734,9 +9734,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .control-center .custom-page-link,
         .control-center .favorite-card {
-          background: rgba(27,29,33,0.88);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
         }
 
         .custom-page-links {
@@ -9755,7 +9755,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 8px;
           border: 1px solid var(--home-card-border);
           border-radius: 999px;
-          background: var(--home-card-bg);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           font-size: 14px;
@@ -9815,7 +9817,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 11px;
           border: 1px solid var(--home-card-border);
           border-radius: 23px;
-          background: var(--home-card-bg);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           text-align: left;
@@ -10175,7 +10179,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 11px;
           border: 1px solid var(--home-card-border);
           border-radius: 26px;
-          background: var(--home-card-bg);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           font-size: 15px;
@@ -11386,7 +11392,9 @@ class AtzeSecurityOverviewCard extends HTMLElement {
           margin-bottom: 30px;
           border-radius: 28px;
           border: 1px solid rgba(255,255,255,0.11);
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
         }
 
         .summary-icon {
@@ -11463,7 +11471,9 @@ class AtzeSecurityOverviewCard extends HTMLElement {
           gap: 12px;
           border: 1px solid rgba(255,255,255,0.11);
           border-radius: 22px;
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           text-align: left;
@@ -11554,7 +11564,9 @@ class AtzeSecurityOverviewCard extends HTMLElement {
           padding: 28px 20px;
           border: 1px solid rgba(255,255,255,0.11);
           border-radius: 24px;
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: rgba(235,235,245,0.68);
           text-align: center;
         }
@@ -12157,7 +12169,9 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           gap: 12px;
           border: 1px solid rgba(255,255,255,0.11);
           border-radius: 22px;
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           text-align: left;
@@ -12241,7 +12255,9 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
           padding: 30px 20px;
           border: 1px solid rgba(255,255,255,0.11);
           border-radius: 24px;
-          background: rgba(27,29,33,0.84);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: rgba(235,235,245,0.68);
           text-align: center;
         }
@@ -12897,7 +12913,7 @@ class AtzeWarningBadgeV2 extends HTMLElement {
           background:
             ${active
               ? "rgba(255, 69, 58, 0.90)"
-              : "var(--ha-card-background, var(--card-background-color, rgba(44,44,46,0.92)))"};
+              : "rgba(48, 50, 54, 0.30)"};
           border:
             var(--ha-card-border-width, 1px)
             solid
@@ -12909,7 +12925,8 @@ class AtzeWarningBadgeV2 extends HTMLElement {
               ? "white"
               : "var(--primary-text-color)"};
           box-shadow: var(--ha-card-box-shadow, none);
-          backdrop-filter: var(--ha-card-backdrop-filter, none);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
         }
 
         ha-state-icon {

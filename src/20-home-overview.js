@@ -1924,9 +1924,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .control-center .custom-page-link,
         .control-center .favorite-card {
-          background: rgba(27,29,33,0.88);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
         }
 
         .custom-page-links {
@@ -1945,7 +1945,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 8px;
           border: 1px solid var(--home-card-border);
           border-radius: 999px;
-          background: var(--home-card-bg);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           font-size: 14px;
@@ -2005,7 +2007,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 11px;
           border: 1px solid var(--home-card-border);
           border-radius: 23px;
-          background: var(--home-card-bg);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           text-align: left;
@@ -2365,7 +2369,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 11px;
           border: 1px solid var(--home-card-border);
           border-radius: 26px;
-          background: var(--home-card-bg);
+          background: rgba(48, 50, 54, 0.30);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           font: inherit;
           font-size: 15px;
