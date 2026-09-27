@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.312.0
+- Transparenz der sechs Status-Buttons deutlich erhöht, damit der Glass-Effekt klar sichtbar wird.
+- Blur von 20 px auf 12 px reduziert; Icons und Texte bleiben vollständig deckend.
+
 ## v0.311.0
 - Die sechs Status-Buttons im oberen Bereich der Hauptseite erhalten einen dezenten transparenten Glass-Effekt.
 - Hintergrundtransparenz und Blur wurden angepasst, während Icons und Texte vollständig deckend bleiben.
