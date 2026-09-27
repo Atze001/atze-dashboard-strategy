@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.312.0";
+const ATZE_VERSION = "0.313.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9583,9 +9583,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 7px;
           border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 28px;
-          background: rgba(27, 29, 33, 0.42);
-          backdrop-filter: blur(12px) saturate(1.12);
-          -webkit-backdrop-filter: blur(12px) saturate(1.12);
+          background: rgba(27, 29, 33, 0.25);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           overflow: hidden;
         }
