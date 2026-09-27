@@ -7098,6 +7098,7 @@ function buildAreaView(
           type: "custom:atze-room-nav-header",
           icon: "mdi:home",
           area_name: areaName,
+          area_id: area.area_id,
           navigation_path: roomHomePath,
           hide_home_icon: hasRoomHeaderImage,
           ...(hasRoomHeaderImage ? { image_height: 235 } : {}),
