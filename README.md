@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.315.0**
+Version **0.316.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.316.0
+- Den neuen Glass-Look auf Bubble Cards erweitert.
+- Inaktive Button-, Climate-, Media-Player-, Select- und Cover-Flächen verwenden nun denselben transparenten Grundton mit 8-px-Blur.
+- Aktive Zustände und ihre bisherigen Statusfarben bleiben erhalten.
+
 ## v0.315.0
 - Den neuen Glass-Look auf die übrigen Button- und Kachel-Elemente des Dashboards ausgerollt.
 - Quick Actions, Favoriten, eigene Seiten, Sicherheits-/Batteriekarten und Raum-Badges verwenden nun denselben transparenten Grundstil.
@@ -249,10 +254,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## v0.314.0
 - Grundfarbe der sechs transparenten Status-Buttons leicht aufgehellt und auf einen ausgewogenen dunklen Glass-Look abgestimmt.
 - Transparenz und 8-px-Blur bleiben erhalten; Texte und Icons bleiben vollständig deckend.
-
-## v0.313.0
-- Glass-Effekt der sechs Status-Buttons nochmals verstärkt: Hintergrunddeckkraft auf 0,25 reduziert.
-- Blur auf 8 px reduziert, damit das Hero-Bild deutlicher durch die Buttons sichtbar bleibt.
 <!-- latest-changes:end -->
 
 ## Lizenz
