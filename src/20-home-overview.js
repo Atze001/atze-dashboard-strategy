@@ -1403,6 +1403,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ? this._formatted(this._config.lock_entity)
       : "";
 
+    const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
+    if (customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1) {
+      this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
+      if (!this._customLinksResetAt) this._customLinksResetAt = Date.now() + 10000;
+    }
+
     this.shadowRoot.innerHTML = `
       <style>
         .room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:99999; display:flex; align-items:center; gap:8px; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); } .room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; } .room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
@@ -3020,34 +3026,43 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const customPageLinksBar = this.shadowRoot.querySelector(".custom-page-links");
     if (customPageLinksBar) {
-      if (this._customLinksScrollLeft > 1) {
-        customPageLinksBar.scrollLeft = this._customLinksScrollLeft;
-      }
+      let restoringCustomLinks = false;
 
-      const scheduleScrollReset = () => {
-        this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
+      const armReset = (restart = true) => {
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
+        this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
         if (this._customLinksScrollLeft <= 1) {
           this._customLinksResetAt = 0;
           return;
         }
-        this._customLinksResetAt = Date.now() + 10000;
+        if (restart || !this._customLinksResetAt) this._customLinksResetAt = Date.now() + 10000;
+        const delay = Math.max(0, this._customLinksResetAt - Date.now());
         this._customLinksScrollTimer = window.setTimeout(() => {
           this._customLinksScrollLeft = 0;
           this._customLinksResetAt = 0;
           customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
           this._customLinksScrollTimer = null;
-        }, 10000);
+        }, delay);
       };
 
-      customPageLinksBar.addEventListener("scroll", scheduleScrollReset, { passive: true });
+      if (this._customLinksScrollLeft > 1 && this._customLinksResetAt > Date.now()) {
+        restoringCustomLinks = true;
+        customPageLinksBar.scrollLeft = this._customLinksScrollLeft;
+        requestAnimationFrame(() => { restoringCustomLinks = false; });
+        armReset(false);
+      }
+
+      customPageLinksBar.addEventListener("scroll", () => {
+        if (restoringCustomLinks) return;
+        armReset(true);
+      }, { passive: true });
       customPageLinksBar.addEventListener("touchstart", () => {
         this._interactionActive = true;
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
       }, { passive: true });
       customPageLinksBar.addEventListener("touchend", () => {
         this._interactionActive = false;
-        scheduleScrollReset();
+        armReset(true);
       }, { passive: true });
     }
 
