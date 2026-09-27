@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.324.0
+- Speichern von Navigations-Einträgen im Editor korrigiert.
+- Navigations-Einträge werden jetzt an die Startseite übergeben und dort als Button angezeigt.
+- `navigation_path` bleibt ein direkter interner Home-Assistant-Link ohne zusätzliche Dashboard-Ansicht.
+
 ## v0.323.0
 - Unter „Eigene Seiten“ können jetzt reine Navigations-Buttons angelegt werden.
 - Neue Navigation startet testweise mit „Geräte“ und `/config/devices/dashboard`.
