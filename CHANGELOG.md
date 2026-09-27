@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.333.0
+- Die horizontal gescrollte Navigationsleiste wird während der 10-Sekunden-Frist nicht mehr neu erzeugt, sondern als bestehendes DOM-Element durch Home-Assistant-Re-Renders hindurch übernommen.
+- Alle übrigen Bereiche der Startseite werden weiterhin normal aktualisiert.
+- Dadurch kann ein HA-Re-Render die native Scrollposition der Leiste nicht mehr auf 0 setzen.
+
 ## v0.332.0
 - Auto-Rücklauf der horizontalen Navigation ohne Blockieren von Home-Assistant-Updates umgesetzt.
 - Scrollposition und 10-Sekunden-Zielzeit werden unabhängig vom neu aufgebauten DOM gespeichert und nach Re-Renders wiederhergestellt.
