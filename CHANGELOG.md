@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.310.0
+- README-/Changelog-Synchronisierung korrigiert, sodass die letzten drei Versionen wieder inklusive ihrer Änderungspunkte angezeigt werden.
+- Parser für die automatische Übernahme der Changelog-Abschnitte im Build-Prozess korrigiert.
+
 ## v0.309.0
 - Repository-Qualität verbessert: automatische Asset- und Alias-Prüfungen ergänzt.
 - GitHub-Validierung erweitert und doppelte Release-Erstellung entfernt.
