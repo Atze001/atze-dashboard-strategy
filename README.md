@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.313.0**
+Version **0.314.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.314.0
+- Grundfarbe der sechs transparenten Status-Buttons leicht aufgehellt und auf einen ausgewogenen dunklen Glass-Look abgestimmt.
+- Transparenz und 8-px-Blur bleiben erhalten; Texte und Icons bleiben vollständig deckend.
+
 ## v0.313.0
 - Glass-Effekt der sechs Status-Buttons nochmals verstärkt: Hintergrunddeckkraft auf 0,25 reduziert.
 - Blur auf 8 px reduziert, damit das Hero-Bild deutlicher durch die Buttons sichtbar bleibt.
@@ -248,10 +252,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## v0.312.0
 - Transparenz der sechs Status-Buttons deutlich erhöht, damit der Glass-Effekt klar sichtbar wird.
 - Blur von 20 px auf 12 px reduziert; Icons und Texte bleiben vollständig deckend.
-
-## v0.311.0
-- Die sechs Status-Buttons im oberen Bereich der Hauptseite erhalten einen dezenten transparenten Glass-Effekt.
-- Hintergrundtransparenz und Blur wurden angepasst, während Icons und Texte vollständig deckend bleiben.
 <!-- latest-changes:end -->
 
 ## Lizenz
