@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.326.0**
+Version **0.327.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.327.0
+- Fokusproblem der nativen Icon- und Navigationsauswahl behoben.
+- `setConfig()` baut den Editor während einer geöffneten Navigationsauswahl nicht mehr neu auf.
+- Die Auswahl bleibt auch dann aktiv, wenn Home Assistant den Selector-Dialog außerhalb des Strategy-Shadow-DOM rendert.
+- Nach einer Auswahl wird die Ansicht kontrolliert aktualisiert.
+
 ## v0.326.0
 - Fokusverlust der Tastatur beim Bearbeiten von Navigations-Einträgen behoben.
 - Icon-Auswahl auf den nativen Home-Assistant Icon-Selector umgestellt.
@@ -251,11 +257,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Navigations-Einträge erhalten eine kompakte, mobile Eingabemaske statt des YAML-Editors.
 - Name, Icon und Ziel können direkt über drei Eingabefelder geändert werden.
 - Normale eigene Seiten behalten weiterhin den YAML-Editor.
-
-## v0.324.0
-- Speichern von Navigations-Einträgen im Editor korrigiert.
-- Navigations-Einträge werden jetzt an die Startseite übergeben und dort als Button angezeigt.
-- `navigation_path` bleibt ein direkter interner Home-Assistant-Link ohne zusätzliche Dashboard-Ansicht.
 <!-- latest-changes:end -->
 
 ## Lizenz

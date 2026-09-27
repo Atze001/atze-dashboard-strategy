@@ -40,6 +40,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...(config || {}) };
+    if (this._navigationEditActive) {
+      this._pendingHassRender = true;
+      return;
+    }
     this._render();
   }
 
@@ -2302,9 +2306,20 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       selector.hass = this._hass;
       selector.selector = key === "icon" ? { icon: {} } : { navigation: {} };
       selector.value = page[key] || "";
+      selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
       selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
-      selector.addEventListener("value-changed", (event) => { event.stopPropagation(); saveNavigationValue(index, key, event.detail?.value || ""); });
-      selector.addEventListener("focusout", () => { window.setTimeout(() => { if (!selector.matches(":focus-within")) this._navigationEditActive = false; }, 100); });
+      selector.addEventListener("value-changed", (event) => {
+        event.stopPropagation();
+        saveNavigationValue(index, key, event.detail?.value || "");
+        window.setTimeout(() => {
+          this._navigationEditActive = false;
+          if (this._pendingHassRender) {
+            this._pendingHassRender = false;
+            this._render();
+          }
+        }, 250);
+      });
+      selector.addEventListener("focusout", () => {});
     }
 
     for (const button of this.shadowRoot.querySelectorAll(".custom-page-remove")) {
