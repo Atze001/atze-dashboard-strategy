@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.319.0
+- Native Home-Assistant-Entity-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
+- Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und aggregierte Status-Badges erhalten dadurch denselben Glass-Look.
+- Bestehende Iconfarben und More-Info-Verhalten bleiben erhalten.
+
 ## v0.318.0
 - Glass-Effekt der normalen Raum-Status-Badges korrigiert.
 - Eine nachgelagerte `backdrop-filter`-Regel entfernte den 8-px-Blur bei Temperatur, Luftfeuchtigkeit, Leistung und Anwesenheit; diese Überschreibung wurde entfernt.
