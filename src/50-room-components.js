@@ -142,10 +142,13 @@ class AtzeRoomNavHeader extends HTMLElement {
     const hour = new Date().getHours();
     const period = hour >= 7 && hour < 20 ? "day" : "night";
     const timedStateKey = `${period}_${stateKey}`;
+    const simpleDayNightRoom = ["buro", "arbeitszimmer", "3d_drucker", "3d-drucker", "zentrale"].includes(String(this._config.area_id || ""));
     const reactiveImage =
       stateImages[timedStateKey] ||
       stateImages[stateKey] ||
-      (lightsOn ? this._config.light_image : this._config.dark_image);
+      (simpleDayNightRoom
+        ? (period === "day" ? this._config.light_image : this._config.dark_image)
+        : (lightsOn ? this._config.light_image : this._config.dark_image));
     const backgroundImage =
       reactiveImage || this._config.background_image || "";
     const imageHeight = Math.max(170, Number(this._config.image_height) || 170);
