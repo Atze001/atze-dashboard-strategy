@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.306.0";
+const ATZE_VERSION = "0.307.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5004,7 +5004,7 @@ const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   arbeitszimmer: "buero/buro.jpg",
   kinderzimmer: "kinderzimmer/kinderzimmer.webp",
   hausflur: "hausflur/hausflur.webp",
-  balkon: "balkon/balkon.jpg",
+  balkon: "balkon/01-tag-tuer-zu-rollladen-unten.webp",
   "3d_drucker": "3d-drucker/3d-drucker.webp",
   "3d-drucker": "3d-drucker/3d-drucker.webp",
   zentrale: "zentrale/zentrale.webp",
@@ -5029,7 +5029,7 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   arbeitszimmer: "buero/buro-light.webp",
   kinderzimmer: "kinderzimmer/kinderzimmer-light.webp",
   hausflur: "hausflur/hausflur-light.webp",
-  balkon: "balkon/balkon-light.webp",
+  balkon: "balkon/03-tag-tuer-zu-rollladen-oben.webp",
   "3d_drucker": "3d-drucker/3d-drucker-light.webp",
   "3d-drucker": "3d-drucker/3d-drucker-light.webp",
   zentrale: "zentrale/zentrale-light.webp",
@@ -5114,14 +5114,22 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     night_light_off_window_closed_cover_open: "bad/15-nacht-licht-aus-fenster-zu-rollladen-oben.webp",
     night_light_off_window_open_cover_open: "bad/16-nacht-licht-aus-fenster-offen-rollladen-oben.webp",
   },  balkon: {
-    light_off_window_closed_cover_closed: "balkon/balkon-licht-aus-fenster-zu-rollladen-unten.webp",
-    light_off_window_open_cover_closed: "balkon/balkon-licht-aus-fenster-offen-rollladen-unten.webp",
-    light_off_window_open_cover_open: "balkon/balkon-licht-aus-fenster-offen-rollladen-oben.webp",
-    light_off_window_closed_cover_open: "balkon/balkon-licht-aus-fenster-zu-rollladen-oben.webp",
-    light_on_window_closed_cover_closed: "balkon/balkon-licht-an-fenster-zu-rollladen-unten.webp",
-    light_on_window_open_cover_closed: "balkon/balkon-licht-an-fenster-offen-rollladen-unten.webp",
-    light_on_window_open_cover_open: "balkon/balkon-licht-an-fenster-offen-rollladen-oben.webp",
-    light_on_window_closed_cover_open: "balkon/balkon-licht-an-fenster-zu-rollladen-oben.webp",
+    day_light_on_window_closed_cover_closed: "balkon/01-tag-tuer-zu-rollladen-unten.webp",
+    day_light_on_window_open_cover_closed: "balkon/02-tag-tuer-offen-rollladen-unten.webp",
+    day_light_on_window_closed_cover_open: "balkon/03-tag-tuer-zu-rollladen-oben.webp",
+    day_light_on_window_open_cover_open: "balkon/04-tag-tuer-offen-rollladen-oben.webp",
+    day_light_off_window_closed_cover_closed: "balkon/01-tag-tuer-zu-rollladen-unten.webp",
+    day_light_off_window_open_cover_closed: "balkon/02-tag-tuer-offen-rollladen-unten.webp",
+    day_light_off_window_closed_cover_open: "balkon/03-tag-tuer-zu-rollladen-oben.webp",
+    day_light_off_window_open_cover_open: "balkon/04-tag-tuer-offen-rollladen-oben.webp",
+    night_light_on_window_closed_cover_closed: "balkon/05-nacht-tuer-zu-rollladen-unten.webp",
+    night_light_on_window_open_cover_closed: "balkon/06-nacht-tuer-offen-rollladen-unten.webp",
+    night_light_on_window_closed_cover_open: "balkon/07-nacht-tuer-zu-rollladen-oben.webp",
+    night_light_on_window_open_cover_open: "balkon/08-nacht-tuer-offen-rollladen-oben.webp",
+    night_light_off_window_closed_cover_closed: "balkon/05-nacht-tuer-zu-rollladen-unten.webp",
+    night_light_off_window_open_cover_closed: "balkon/06-nacht-tuer-offen-rollladen-unten.webp",
+    night_light_off_window_closed_cover_open: "balkon/07-nacht-tuer-zu-rollladen-oben.webp",
+    night_light_off_window_open_cover_open: "balkon/08-nacht-tuer-offen-rollladen-oben.webp",
   },
   flur: {
     day_light_on_door_closed_unlocked: "flur/01-tag-licht-an-tuer-zu.webp",
