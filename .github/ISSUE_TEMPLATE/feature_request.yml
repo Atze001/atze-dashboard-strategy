@@ -1,0 +1,24 @@
+name: Funktionswunsch
+description: Eine Idee oder Erweiterung für die Strategy vorschlagen
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Wunsch / Problem
+      description: Welche Funktion fehlt oder welches Problem soll gelöst werden?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Gewünschte Lösung
+      description: Wie sollte sich die Strategy idealerweise verhalten?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Zusätzliche Informationen
+      description: Screenshots, YAML oder weitere Hinweise.
