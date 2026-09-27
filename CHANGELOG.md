@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.321.0
+- Automatische Fenster-/Rollladen-Warn-Badges aus den Bereichsbildern entfernt.
+- Die Zustände werden bereits über die dynamischen Raum-/Statusbilder dargestellt und bleiben zusätzlich auf der Sicherheitsseite verfügbar.
+- Manuell konfigurierte Badges bleiben unverändert möglich.
+
 ## v0.320.0
 - Verbleibende binäre Status-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
 - Damit nutzt insbesondere das Anwesenheits-/Belegungs-Badge denselben Glass-Look wie Temperatur, Luftfeuchtigkeit, Leistung und Rauchmelder.

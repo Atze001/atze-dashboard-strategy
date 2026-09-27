@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.320.0**
+Version **0.321.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.321.0
+- Automatische Fenster-/Rollladen-Warn-Badges aus den Bereichsbildern entfernt.
+- Die Zustände werden bereits über die dynamischen Raum-/Statusbilder dargestellt und bleiben zusätzlich auf der Sicherheitsseite verfügbar.
+- Manuell konfigurierte Badges bleiben unverändert möglich.
+
 ## v0.320.0
 - Verbleibende binäre Status-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
 - Damit nutzt insbesondere das Anwesenheits-/Belegungs-Badge denselben Glass-Look wie Temperatur, Luftfeuchtigkeit, Leistung und Rauchmelder.
@@ -250,10 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Native Home-Assistant-Entity-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
 - Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und aggregierte Status-Badges erhalten dadurch denselben Glass-Look.
 - Bestehende Iconfarben und More-Info-Verhalten bleiben erhalten.
-
-## v0.318.0
-- Glass-Effekt der normalen Raum-Status-Badges korrigiert.
-- Eine nachgelagerte `backdrop-filter`-Regel entfernte den 8-px-Blur bei Temperatur, Luftfeuchtigkeit, Leistung und Anwesenheit; diese Überschreibung wurde entfernt.
 <!-- latest-changes:end -->
 
 ## Lizenz
