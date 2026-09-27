@@ -242,19 +242,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 <!-- latest-changes:start -->
 ## v0.309.0
-- Repository-Qualität verbessert: automatische Asset- und Alias-Prüfungen ergänzt.
-- GitHub-Validierung erweitert und doppelte Release-Erstellung entfernt.
-- Issue- und Pull-Request-Templates sowie eine `.gitignore` ergänzt.
-- README-Struktur überarbeitet; die letzten drei Änderungen werden künftig automatisch aus diesem Changelog synchronisiert.
-
-## v0.308.0
-- Empfohlene Raumbenennungen und Asset-Zuordnungen in der README dokumentiert.
-- Aliase ergänzt: Arbeitszimmer → Büro, Spielzimmer → Kinderzimmer und Veranda → Balkon.
-- Bestehende Zuordnung Treppenhaus/Treppenflur → Hausflur dokumentiert.
-
-## v0.307.0
-- Balkon auf acht neue WebP-Statusbilder für Tag/Nacht, Tür offen/geschlossen und Rollladen oben/unten umgestellt.
-- Alte Balkonbilder entfernt; Haupt- und Bereichsseite verwenden dieselbe Statuslogik.
 <!-- latest-changes:end -->
 
 ## Lizenz
