@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.318.0";
+const ATZE_VERSION = "0.319.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3820,23 +3820,25 @@ function selectEnvironmentBadges(
     const entityId = selected.entity_id;
 
     const badge = {
-      type: "entity",
+      type: "custom:atze-status-badge-v1",
       entity: entityId,
-      color:
+      inactive_icon_color:
         deviceClass === "temperature"
-          ? "red"
+          ? "#FF453A"
           : deviceClass === "humidity"
-            ? "blue"
-            : deviceClass === "illuminance"
-              ? "yellow"
-              : deviceClass === "power"
-                ? "yellow"
-                : undefined,
+            ? "#0A84FF"
+            : deviceClass === "illuminance" || deviceClass === "power"
+              ? "#FFD60A"
+              : "var(--secondary-text-color)",
+      active_icon_color:
+        deviceClass === "temperature"
+          ? "#FF453A"
+          : deviceClass === "humidity"
+            ? "#0A84FF"
+            : deviceClass === "illuminance" || deviceClass === "power"
+              ? "#FFD60A"
+              : "var(--secondary-text-color)",
     };
-
-    if (badge.color === undefined) {
-      delete badge.color;
-    }
 
     const override = getOverride(config.entity_overrides, entityId);
     if (override.badge_name) badge.name = override.badge_name;
@@ -3896,10 +3898,11 @@ function selectEnvironmentBadges(
       badges.push({ ...manualAggregateBadge });
     } else {
       badges.push({
-        type: "entity",
+        type: "custom:atze-status-badge-v1",
         entity: entity.entity_id,
         icon: aggregate.badge_icon || aggregate.icon,
-        color: aggregate.badge_color || "green",
+        inactive_icon_color: aggregate.badge_color || "#30D158",
+        active_icon_color: aggregate.badge_color || "#30D158",
       });
     }
 
