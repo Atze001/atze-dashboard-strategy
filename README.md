@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.318.0**
+Version **0.319.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.319.0
+- Native Home-Assistant-Entity-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
+- Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und aggregierte Status-Badges erhalten dadurch denselben Glass-Look.
+- Bestehende Iconfarben und More-Info-Verhalten bleiben erhalten.
+
 ## v0.318.0
 - Glass-Effekt der normalen Raum-Status-Badges korrigiert.
 - Eine nachgelagerte `backdrop-filter`-Regel entfernte den 8-px-Blur bei Temperatur, Luftfeuchtigkeit, Leistung und Anwesenheit; diese Überschreibung wurde entfernt.
@@ -250,11 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und weitere neutrale Badges nutzen nun denselben transparenten Grundton mit 8-px-Blur.
 - Warn- und aktive Statusfarben bleiben unverändert erhalten.
 - Tag-/Nacht-Umschaltung der Bereichsbilder für 3D-Drucker, Büro und Zentrale repariert.
-
-## v0.316.0
-- Den neuen Glass-Look auf Bubble Cards erweitert.
-- Inaktive Button-, Climate-, Media-Player-, Select- und Cover-Flächen verwenden nun denselben transparenten Grundton mit 8-px-Blur.
-- Aktive Zustände und ihre bisherigen Statusfarben bleiben erhalten.
 <!-- latest-changes:end -->
 
 ## Lizenz
