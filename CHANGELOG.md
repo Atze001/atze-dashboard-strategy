@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.327.0
+- Fokusproblem der nativen Icon- und Navigationsauswahl behoben.
+- `setConfig()` baut den Editor während einer geöffneten Navigationsauswahl nicht mehr neu auf.
+- Die Auswahl bleibt auch dann aktiv, wenn Home Assistant den Selector-Dialog außerhalb des Strategy-Shadow-DOM rendert.
+- Nach einer Auswahl wird die Ansicht kontrolliert aktualisiert.
+
 ## v0.326.0
 - Fokusverlust der Tastatur beim Bearbeiten von Navigations-Einträgen behoben.
 - Icon-Auswahl auf den nativen Home-Assistant Icon-Selector umgestellt.
