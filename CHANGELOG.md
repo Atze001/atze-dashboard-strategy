@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.323.0
+- Unter „Eigene Seiten“ können jetzt reine Navigations-Buttons angelegt werden.
+- Neue Navigation startet testweise mit „Geräte“ und `/config/devices/dashboard`.
+- Titel, Icon und `navigation_path` können anschließend im YAML-Editor geändert werden.
+- Navigations-Einträge erzeugen keine zusätzliche Dashboard-Ansicht.
+
 ## v0.322.0
 - Flur-Statusbild auf der Hauptseite korrigiert.
 - Die Hauptseite berücksichtigt beim Flur nun wie die Bereichsseite den Tag-/Nacht-Präfix bei Tür-, Licht- und Verriegelungszuständen.
