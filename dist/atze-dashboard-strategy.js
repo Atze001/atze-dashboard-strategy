@@ -13126,7 +13126,6 @@ class AtzeStatusBadgeV1 extends HTMLElement {
             );
           color: var(--primary-text-color);
           box-shadow: var(--ha-card-box-shadow, none);
-          backdrop-filter: var(--ha-card-backdrop-filter, none);
         }
 
         ha-state-icon {
