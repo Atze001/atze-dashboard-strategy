@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.324.0";
+const ATZE_VERSION = "0.325.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -14554,24 +14554,39 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   _customPageHtml(page, index) {
     const view = this._customPageView(page, index);
-    const editorValue = page.navigation_path
-      ? { title: page.title || "Geräte", icon: page.icon || "mdi:devices", navigation_path: page.navigation_path }
-      : view;
+
+    if (page.navigation_path) {
+      return `
+        <div class="custom-page" data-custom-page="${index}">
+          <div class="custom-page-heading">
+            <strong>${this._escape(page.title || "Navigation")}</strong>
+            <button class="custom-page-remove" type="button" data-index="${index}">Entfernen</button>
+          </div>
+          <div class="navigation-fields">
+            <label class="custom-page-field">
+              <span>Name</span>
+              <input class="navigation-field" data-index="${index}" data-key="title" type="text" value="${this._escape(page.title || "")}" placeholder="Geräte" />
+            </label>
+            <label class="custom-page-field">
+              <span>Icon</span>
+              <input class="navigation-field" data-index="${index}" data-key="icon" type="text" value="${this._escape(page.icon || "")}" placeholder="mdi:devices" />
+            </label>
+            <label class="custom-page-field">
+              <span>Ziel</span>
+              <input class="navigation-field" data-index="${index}" data-key="navigation_path" type="text" value="${this._escape(page.navigation_path || "")}" placeholder="/config/devices/dashboard" />
+            </label>
+          </div>
+        </div>
+      `;
+    }
 
     return `
       <div class="custom-page" data-custom-page="${index}">
         <div class="custom-page-heading">
           <strong>${this._escape(page.title || `Eigene Seite ${index + 1}`)}</strong>
-          <button class="custom-page-remove" type="button" data-index="${index}">
-            Entfernen
-          </button>
+          <button class="custom-page-remove" type="button" data-index="${index}">Entfernen</button>
         </div>
-        <ha-yaml-editor
-          class="custom-page-yaml"
-          data-page-key="view"
-          data-index="${index}"
-          aria-label="YAML für ${this._escape(view.title || `Eigene Seite ${index + 1}`)}"
-        ></ha-yaml-editor>
+        <ha-yaml-editor class="custom-page-yaml" data-page-key="view" data-index="${index}" aria-label="YAML für ${this._escape(view.title || `Eigene Seite ${index + 1}`)}"></ha-yaml-editor>
       </div>
     `;
   }
@@ -15014,6 +15029,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         .custom-page-error {
           color: var(--error-color, #db4437);
           font-size: 12px;
+        }
+        .navigation-fields {
+          display: grid;
+          gap: 12px;
+        }
+        .navigation-fields .custom-page-field input {
+          min-width: 0;
         }
         .custom-page-yaml {
           display: block;
@@ -15727,6 +15749,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       ?.addEventListener("click", () =>
         this._addCustomPage("empty")
       );
+
+    for (const input of this.shadowRoot.querySelectorAll(".navigation-field")) {
+      input.addEventListener("change", () => {
+        const index = Number(input.dataset.index);
+        const key = input.dataset.key;
+        const pages = this._customPages().map((page) => ({ ...page }));
+        if (!pages[index] || !key) return;
+        pages[index][key] = input.value.trim();
+        this._fireConfigChanged({ ...this._config, custom_pages: pages });
+      });
+    }
 
     for (const button of this.shadowRoot.querySelectorAll(".custom-page-remove")) {
       button.addEventListener("click", () => {
