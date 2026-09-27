@@ -1100,7 +1100,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const customPageLinks = asArray(this._config.custom_pages)
       .filter(
         (page) =>
-          page?.title && (page?.path || page?.popup_hash)
+          page?.title && (page?.path || page?.popup_hash || page?.navigation_path)
       );
 
     const customPageLinksHtml = customPageLinks.length
@@ -1111,9 +1111,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <button
                   type="button"
                   class="custom-page-link"
-                  ${page.path
-                    ? `data-path="${this._escapeHtml(page.path)}"`
-                    : ""}
+                  ${page.navigation_path
+                    ? `data-navigation-path="${this._escapeHtml(page.navigation_path)}"`
+                    : page.path
+                      ? `data-path="${this._escapeHtml(page.path)}"`
+                      : ""}
                   ${page.popup_hash
                     ? `data-popup-hash="${this._escapeHtml(page.popup_hash)}"`
                     : ""}
@@ -3002,6 +3004,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
       (element) => element.dataset.entityId,
       "atze-dashboard:favorite-order"
     );
+
+    this.shadowRoot
+      .querySelectorAll(".custom-page-link[data-navigation-path]")
+      .forEach((element) => {
+        element.addEventListener("click", () => {
+          const target = element.dataset.navigationPath;
+          if (!target) return;
+          window.history.pushState(null, "", target);
+          window.dispatchEvent(new Event("location-changed"));
+        });
+      });
 
     this.shadowRoot
       .querySelectorAll(".custom-page-link[data-path]")
