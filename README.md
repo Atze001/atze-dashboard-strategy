@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.324.0**
+Version **0.325.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.325.0
+- Navigations-Einträge erhalten eine kompakte, mobile Eingabemaske statt des YAML-Editors.
+- Name, Icon und Ziel können direkt über drei Eingabefelder geändert werden.
+- Normale eigene Seiten behalten weiterhin den YAML-Editor.
+
 ## v0.324.0
 - Speichern von Navigations-Einträgen im Editor korrigiert.
 - Navigations-Einträge werden jetzt an die Startseite übergeben und dort als Button angezeigt.
@@ -251,11 +256,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Neue Navigation startet testweise mit „Geräte“ und `/config/devices/dashboard`.
 - Titel, Icon und `navigation_path` können anschließend im YAML-Editor geändert werden.
 - Navigations-Einträge erzeugen keine zusätzliche Dashboard-Ansicht.
-
-## v0.322.0
-- Flur-Statusbild auf der Hauptseite korrigiert.
-- Die Hauptseite berücksichtigt beim Flur nun wie die Bereichsseite den Tag-/Nacht-Präfix bei Tür-, Licht- und Verriegelungszuständen.
-- Dadurch wird das passende Verriegelt-Bild wieder zuverlässig ausgewählt.
 <!-- latest-changes:end -->
 
 ## Lizenz
