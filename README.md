@@ -242,6 +242,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 <!-- latest-changes:start -->
 ## v0.309.0
+
+## v0.308.0
+
+## v0.307.0
 <!-- latest-changes:end -->
 
 ## Lizenz
