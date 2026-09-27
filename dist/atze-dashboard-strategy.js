@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.332.0";
+const ATZE_VERSION = "0.333.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9202,7 +9202,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       : "";
 
     const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
-    if (customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1) {
+    const preserveCustomLinksNode = Boolean(
+      customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1
+    );
+    if (preserveCustomLinksNode) {
       this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
       try {
         sessionStorage.setItem(this._customLinksScrollKey, JSON.stringify({
@@ -10712,6 +10715,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ${this._weatherPopupHtml(weather)}
       </ha-card>
     `;
+
+    if (preserveCustomLinksNode && customLinksBeforeRender) {
+      const rebuiltCustomLinks = this.shadowRoot.querySelector(".custom-page-links");
+      rebuiltCustomLinks?.replaceWith(customLinksBeforeRender);
+    }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];

@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.332.0**
+Version **0.333.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.333.0
+- Die horizontal gescrollte Navigationsleiste wird während der 10-Sekunden-Frist nicht mehr neu erzeugt, sondern als bestehendes DOM-Element durch Home-Assistant-Re-Renders hindurch übernommen.
+- Alle übrigen Bereiche der Startseite werden weiterhin normal aktualisiert.
+- Dadurch kann ein HA-Re-Render die native Scrollposition der Leiste nicht mehr auf 0 setzen.
+
 ## v0.332.0
 - Auto-Rücklauf der horizontalen Navigation ohne Blockieren von Home-Assistant-Updates umgesetzt.
 - Scrollposition und 10-Sekunden-Zielzeit werden unabhängig vom neu aufgebauten DOM gespeichert und nach Re-Renders wiederhergestellt.
@@ -250,11 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Die 10 Sekunden beginnen jetzt erst nach dem Ende der Benutzerinteraktion (`touchend`).
 - Reine Scroll-Events und DOM-Wiederherstellungen verändern den Countdown nicht mehr.
 - Home-Assistant-Re-Renders übernehmen nur die verbleibende Zeit eines bereits gestarteten Countdowns.
-
-## v0.330.0
-- Scrollposition wird jetzt unmittelbar vor jedem DOM-Neuaufbau gesichert und danach wiederhergestellt.
-- Der 10-Sekunden-Zeitpunkt bleibt auch über Home-Assistant-Re-Renders hinweg erhalten.
-- Programmgesteuertes Wiederherstellen der Position startet den Timer nicht versehentlich neu.
 <!-- latest-changes:end -->
 
 ## Lizenz
