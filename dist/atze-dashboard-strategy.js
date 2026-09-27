@@ -9583,9 +9583,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
           gap: 7px;
           border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 28px;
-          background: rgba(27, 29, 33, 0.68);
-          backdrop-filter: blur(20px) saturate(1.12);
-          -webkit-backdrop-filter: blur(20px) saturate(1.12);
+          background: rgba(27, 29, 33, 0.42);
+          backdrop-filter: blur(12px) saturate(1.12);
+          -webkit-backdrop-filter: blur(12px) saturate(1.12);
           color: var(--primary-text-color);
           overflow: hidden;
         }
