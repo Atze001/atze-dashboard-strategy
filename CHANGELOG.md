@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.332.0
+- Startseite bleibt nach dem Wischen der Navigationsleiste für die vollen 10 Sekunden gegen DOM-Neuaufbau gesperrt.
+- Auch `setConfig()` respektiert diese Interaktionssperre; zuvor konnte dieser Pfad die Leiste trotz der Scroll-Sicherung vorzeitig ersetzen.
+- Nach dem automatischen Rücklauf wird die normale Aktualisierung wieder freigegeben.
+
 ## v0.331.0
 - Die 10 Sekunden beginnen jetzt erst nach dem Ende der Benutzerinteraktion (`touchend`).
 - Reine Scroll-Events und DOM-Wiederherstellungen verändern den Countdown nicht mehr.
