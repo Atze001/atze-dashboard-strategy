@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.329.0**
+Version **0.330.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.330.0
+- Scrollposition wird jetzt unmittelbar vor jedem DOM-Neuaufbau gesichert und danach wiederhergestellt.
+- Der 10-Sekunden-Zeitpunkt bleibt auch über Home-Assistant-Re-Renders hinweg erhalten.
+- Programmgesteuertes Wiederherstellen der Position startet den Timer nicht versehentlich neu.
+
 ## v0.329.0
 - Scrollposition der Navigationsleiste bleibt bei Home-Assistant-State-Updates erhalten.
 - Während der Touch-Geste wird ein Neuaufbau der Startseite verhindert.
@@ -249,12 +254,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## v0.328.0
 - Die horizontal scrollbare Leiste der eigenen Seiten springt nach 10 Sekunden ohne weitere Interaktion weich zum ersten Eintrag zurück.
 - Weiteres Scrollen oder Berühren startet die 10 Sekunden erneut.
-
-## v0.327.0
-- Fokusproblem der nativen Icon- und Navigationsauswahl behoben.
-- `setConfig()` baut den Editor während einer geöffneten Navigationsauswahl nicht mehr neu auf.
-- Die Auswahl bleibt auch dann aktiv, wenn Home Assistant den Selector-Dialog außerhalb des Strategy-Shadow-DOM rendert.
-- Nach einer Auswahl wird die Ansicht kontrolliert aktualisiert.
 <!-- latest-changes:end -->
 
 ## Lizenz
