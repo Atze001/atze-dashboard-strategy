@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.310.0**
+Version **0.311.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.311.0
+- Die sechs Status-Buttons im oberen Bereich der Hauptseite erhalten einen dezenten transparenten Glass-Effekt.
+- Hintergrundtransparenz und Blur wurden angepasst, während Icons und Texte vollständig deckend bleiben.
+
 ## v0.310.0
 - README-/Changelog-Synchronisierung korrigiert, sodass die letzten drei Versionen wieder inklusive ihrer Änderungspunkte angezeigt werden.
 - Parser für die automatische Übernahme der Changelog-Abschnitte im Build-Prozess korrigiert.
@@ -250,11 +254,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - GitHub-Validierung erweitert und doppelte Release-Erstellung entfernt.
 - Issue- und Pull-Request-Templates sowie eine `.gitignore` ergänzt.
 - README-Struktur überarbeitet; die letzten drei Änderungen werden künftig automatisch aus diesem Changelog synchronisiert.
-
-## v0.308.0
-- Empfohlene Raumbenennungen und Asset-Zuordnungen in der README dokumentiert.
-- Aliase ergänzt: Arbeitszimmer → Büro, Spielzimmer → Kinderzimmer und Veranda → Balkon.
-- Bestehende Zuordnung Treppenhaus/Treppenflur → Hausflur dokumentiert.
 <!-- latest-changes:end -->
 
 ## Lizenz
