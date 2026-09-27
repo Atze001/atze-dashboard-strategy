@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.331.0";
+const ATZE_VERSION = "0.332.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -7817,7 +7817,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...config };
-    this._render();
+    if (!this._interactionActive) this._render();
   }
 
   set hass(value) {
@@ -10834,6 +10834,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           this._customLinksResetAt = 0;
           customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
           this._customLinksScrollTimer = null;
+          this._interactionActive = false;
         }, 10000);
       };
 
@@ -10863,9 +10864,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
       }, { passive: true });
       customPageLinksBar.addEventListener("touchend", () => {
-        this._interactionActive = false;
         this._customLinksUserScrolling = false;
         resetAfterTenSeconds();
+        window.setTimeout(() => {
+          if (this._customLinksResetAt && Date.now() >= this._customLinksResetAt) {
+            this._interactionActive = false;
+          }
+        }, 10050);
       }, { passive: true });
       customPageLinksBar.addEventListener("wheel", () => {
         window.clearTimeout(this._customLinksWheelTimer);
