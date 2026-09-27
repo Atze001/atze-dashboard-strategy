@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.319.0";
+const ATZE_VERSION = "0.320.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3758,9 +3758,10 @@ function selectBinaryBadge(
     };
   } else {
     badge = {
-      type: "entity",
+      type: "custom:atze-status-badge-v1",
       entity: selected.entity_id,
-      color: "state",
+      inactive_icon_color: "#30D158",
+      active_icon_color: "#FF453A",
     };
   }
 
