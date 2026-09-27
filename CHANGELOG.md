@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.311.0
+- Die sechs Status-Buttons im oberen Bereich der Hauptseite erhalten einen dezenten transparenten Glass-Effekt.
+- Hintergrundtransparenz und Blur wurden angepasst, während Icons und Texte vollständig deckend bleiben.
+
 ## v0.310.0
 - README-/Changelog-Synchronisierung korrigiert, sodass die letzten drei Versionen wieder inklusive ihrer Änderungspunkte angezeigt werden.
 - Parser für die automatische Übernahme der Changelog-Abschnitte im Build-Prozess korrigiert.
