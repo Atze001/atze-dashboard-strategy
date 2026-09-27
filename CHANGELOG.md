@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.316.0
+- Den neuen Glass-Look auf Bubble Cards erweitert.
+- Inaktive Button-, Climate-, Media-Player-, Select- und Cover-Flächen verwenden nun denselben transparenten Grundton mit 8-px-Blur.
+- Aktive Zustände und ihre bisherigen Statusfarben bleiben erhalten.
+
 ## v0.315.0
 - Den neuen Glass-Look auf die übrigen Button- und Kachel-Elemente des Dashboards ausgerollt.
 - Quick Actions, Favoriten, eigene Seiten, Sicherheits-/Batteriekarten und Raum-Badges verwenden nun denselben transparenten Grundstil.
