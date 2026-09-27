@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.329.0
+- Scrollposition der Navigationsleiste bleibt bei Home-Assistant-State-Updates erhalten.
+- Während der Touch-Geste wird ein Neuaufbau der Startseite verhindert.
+- Erst nach 10 Sekunden ohne weitere Interaktion scrollt die Leiste weich zum ersten Eintrag zurück.
+
 ## v0.328.0
 - Die horizontal scrollbare Leiste der eigenen Seiten springt nach 10 Sekunden ohne weitere Interaktion weich zum ersten Eintrag zurück.
 - Weiteres Scrollen oder Berühren startet die 10 Sekunden erneut.
