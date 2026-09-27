@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.309.0**
+Version **0.310.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.310.0
+- README-/Changelog-Synchronisierung korrigiert, sodass die letzten drei Versionen wieder inklusive ihrer Änderungspunkte angezeigt werden.
+- Parser für die automatische Übernahme der Changelog-Abschnitte im Build-Prozess korrigiert.
+
 ## v0.309.0
 - Repository-Qualität verbessert: automatische Asset- und Alias-Prüfungen ergänzt.
 - GitHub-Validierung erweitert und doppelte Release-Erstellung entfernt.
@@ -251,10 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Empfohlene Raumbenennungen und Asset-Zuordnungen in der README dokumentiert.
 - Aliase ergänzt: Arbeitszimmer → Büro, Spielzimmer → Kinderzimmer und Veranda → Balkon.
 - Bestehende Zuordnung Treppenhaus/Treppenflur → Hausflur dokumentiert.
-
-## v0.307.0
-- Balkon auf acht neue WebP-Statusbilder für Tag/Nacht, Tür offen/geschlossen und Rollladen oben/unten umgestellt.
-- Alte Balkonbilder entfernt; Haupt- und Bereichsseite verwenden dieselbe Statuslogik.
 <!-- latest-changes:end -->
 
 ## Lizenz
