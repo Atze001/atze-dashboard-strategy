@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.315.0
+- Den neuen Glass-Look auf die übrigen Button- und Kachel-Elemente des Dashboards ausgerollt.
+- Quick Actions, Favoriten, eigene Seiten, Sicherheits-/Batteriekarten und Raum-Badges verwenden nun denselben transparenten Grundstil.
+- Bildkarten, große Container und Popups bleiben bewusst unverändert.
+
 ## v0.314.0
 - Grundfarbe der sechs transparenten Status-Buttons leicht aufgehellt und auf einen ausgewogenen dunklen Glass-Look abgestimmt.
 - Transparenz und 8-px-Blur bleiben erhalten; Texte und Icons bleiben vollständig deckend.
