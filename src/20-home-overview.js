@@ -1406,7 +1406,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       : "";
 
     const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
-    if (customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1) {
+    const preserveCustomLinksNode = Boolean(
+      customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1
+    );
+    if (preserveCustomLinksNode) {
       this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
       try {
         sessionStorage.setItem(this._customLinksScrollKey, JSON.stringify({
@@ -2916,6 +2919,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ${this._weatherPopupHtml(weather)}
       </ha-card>
     `;
+
+    if (preserveCustomLinksNode && customLinksBeforeRender) {
+      const rebuiltCustomLinks = this.shadowRoot.querySelector(".custom-page-links");
+      rebuiltCustomLinks?.replaceWith(customLinksBeforeRender);
+    }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
