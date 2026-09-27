@@ -4,6 +4,9 @@
   "version": "0.309.0",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "check": "node --check dist/atze-dashboard-strategy.js"
+    "check": "node --check dist/atze-dashboard-strategy.js",
+    "check:assets": "node scripts/check-assets.mjs",
+    "test:rooms": "node scripts/test-room-aliases.mjs",
+    "validate": "npm run build && npm run check && npm run check:assets && npm run test:rooms"
   }
 }
