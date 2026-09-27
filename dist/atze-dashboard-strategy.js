@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.328.0";
+const ATZE_VERSION = "0.329.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -7810,6 +7810,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._roomDrag = null;
     this._hiddenRoomIds = [];
     this._customLinksScrollTimer = null;
+    this._customLinksScrollLeft = 0;
+    this._customLinksResetAt = 0;
   }
 
   setConfig(config) {
@@ -8685,6 +8687,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
+
+    const existingCustomLinks = this.shadowRoot.querySelector(".custom-page-links");
+    if (existingCustomLinks && existingCustomLinks.scrollLeft > 1) {
+      this._customLinksScrollLeft = existingCustomLinks.scrollLeft;
+    }
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -10809,19 +10816,35 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const customPageLinksBar = this.shadowRoot.querySelector(".custom-page-links");
     if (customPageLinksBar) {
+      if (this._customLinksScrollLeft > 1) {
+        customPageLinksBar.scrollLeft = this._customLinksScrollLeft;
+      }
+
       const scheduleScrollReset = () => {
+        this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
-        if (customPageLinksBar.scrollLeft <= 1) return;
+        if (this._customLinksScrollLeft <= 1) {
+          this._customLinksResetAt = 0;
+          return;
+        }
+        this._customLinksResetAt = Date.now() + 10000;
         this._customLinksScrollTimer = window.setTimeout(() => {
+          this._customLinksScrollLeft = 0;
+          this._customLinksResetAt = 0;
           customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
           this._customLinksScrollTimer = null;
         }, 10000);
       };
+
       customPageLinksBar.addEventListener("scroll", scheduleScrollReset, { passive: true });
       customPageLinksBar.addEventListener("touchstart", () => {
+        this._interactionActive = true;
         if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
       }, { passive: true });
-      customPageLinksBar.addEventListener("touchend", scheduleScrollReset, { passive: true });
+      customPageLinksBar.addEventListener("touchend", () => {
+        this._interactionActive = false;
+        scheduleScrollReset();
+      }, { passive: true });
     }
 
     this.shadowRoot
