@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "src/**"
-      - "scripts/build.mjs"
+      - "scripts/**"\n      - "CHANGELOG.md"\n      - "package.json"
       - ".github/workflows/build-dashboard.yml"
   workflow_dispatch:
 
