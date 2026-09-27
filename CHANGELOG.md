@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.328.0
+- Die horizontal scrollbare Leiste der eigenen Seiten springt nach 10 Sekunden ohne weitere Interaktion weich zum ersten Eintrag zurück.
+- Weiteres Scrollen oder Berühren startet die 10 Sekunden erneut.
+
 ## v0.327.0
 - Fokusproblem der nativen Icon- und Navigationsauswahl behoben.
 - `setConfig()` baut den Editor während einer geöffneten Navigationsauswahl nicht mehr neu auf.
