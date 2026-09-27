@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.304.0";
+const ATZE_VERSION = "0.305.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4998,7 +4998,7 @@ const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   kuche: "kueche/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   schlafzimmer: "schlafzimmer/schlafzimmer.jpg",
   bad: "bad/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
-  flur: "flur/flur.jpg",
+  flur: "flur/04-tag-licht-aus-tuer-geschlossen.webp",
   wohnzimmer: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   buro: "buero/buro.jpg",
   arbeitszimmer: "buero/buro.jpg",
@@ -5023,7 +5023,7 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   kuche: "kueche/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   schlafzimmer: "schlafzimmer/schlafzimmer-light.webp",
   bad: "bad/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
-  flur: "flur/flur-light.webp",
+  flur: "flur/01-tag-licht-an-tuer-geschlossen.webp",
   wohnzimmer: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   buro: "buero/buro-light.webp",
   arbeitszimmer: "buero/buro-light.webp",
@@ -5124,12 +5124,18 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     light_on_window_closed_cover_open: "balkon/balkon-licht-an-fenster-zu-rollladen-oben.webp",
   },
   flur: {
-    light_off_door_open: "flur/flur-licht-aus-tuer-offen.webp",
-    light_off_door_closed_unlocked: "flur/flur-licht-aus-tuer-zu-entriegelt.webp",
-    light_off_door_closed_locked: "flur/flur-licht-aus-tuer-zu-verriegelt.webp",
-    light_on_door_open: "flur/flur-licht-an-tuer-offen.webp",
-    light_on_door_closed_unlocked: "flur/flur-licht-an-tuer-zu-entriegelt.webp",
-    light_on_door_closed_locked: "flur/flur-licht-an-tuer-zu-verriegelt.webp",
+    day_light_on_door_closed_unlocked: "flur/01-tag-licht-an-tuer-geschlossen.webp",
+    day_light_on_door_open: "flur/02-tag-licht-an-tuer-offen.webp",
+    day_light_on_door_closed_locked: "flur/03-tag-licht-an-tuer-verriegelt.webp",
+    day_light_off_door_closed_unlocked: "flur/04-tag-licht-aus-tuer-geschlossen.webp",
+    day_light_off_door_open: "flur/05-tag-licht-aus-tuer-offen.webp",
+    day_light_off_door_closed_locked: "flur/06-tag-licht-aus-tuer-verriegelt.webp",
+    night_light_on_door_closed_unlocked: "flur/07-nacht-licht-an-tuer-geschlossen.webp",
+    night_light_on_door_open: "flur/08-nacht-licht-an-tuer-offen.webp",
+    night_light_on_door_closed_locked: "flur/09-nacht-licht-an-tuer-verriegelt.webp",
+    night_light_off_door_closed_unlocked: "flur/10-nacht-licht-aus-tuer-geschlossen.webp",
+    night_light_off_door_open: "flur/11-nacht-licht-aus-tuer-offen.webp",
+    night_light_off_door_closed_locked: "flur/12-nacht-licht-aus-tuer-verriegelt.webp",
   },
 };
 
