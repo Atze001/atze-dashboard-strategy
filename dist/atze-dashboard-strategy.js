@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.307.0";
+const ATZE_VERSION = "0.308.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -5162,6 +5162,9 @@ const DEFAULT_HOME_ROOM_STATE_IMAGES = Object.fromEntries(
 const DEFAULT_HOME_ROOM_IMAGE_ALIASES = {
   treppenhaus: "hausflur",
   treppenflur: "hausflur",
+  arbeitszimmer: "buro",
+  spielzimmer: "kinderzimmer",
+  veranda: "balkon",
 };
 
 function defaultHomeRoomImageKey(area, imageMap) {

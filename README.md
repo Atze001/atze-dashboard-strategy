@@ -11,7 +11,7 @@ Aktuell ist es ein work-in-progress. Bedeutet das die Version noch nicht Final i
 
 ## Aktueller Stand
 
-Version **0.307.0**
+Version **0.308.0**
 
 Enthalten sind unter anderem:
 
@@ -190,8 +190,35 @@ bei Bedarf mit `npm run build` ausführen.
 ## Raum-Bilder
 
 Die mitgelieferten Bilder liegen unter `dist/assets/` und werden automatisch
-den Bereichen Küche, Schlafzimmer, Bad, Flur, Hausflur, Wohnzimmer, Büro,
-Arbeitszimmer, Kinderzimmer, Balkon, 3D-Drucker und Zentrale zugeordnet.
+den passenden Home-Assistant-Bereichen zugeordnet. Für eine zuverlässige
+Erkennung empfiehlt es sich, die folgenden Standardnamen zu verwenden.
+Die fett geschriebenen Namen sind die empfohlenen Bezeichnungen; die darunter
+aufgeführten Namen werden von der Strategy als Alias demselben Bereich
+zugeordnet.
+
+| Bereich in Home Assistant | Zuordnung der Strategy | Asset-Ordner |
+| --- | --- | --- |
+| **Wohnzimmer** | `wohnzimmer` | `dist/assets/wohnzimmer/` |
+| **Schlafzimmer** | `schlafzimmer` | `dist/assets/schlafzimmer/` |
+| **Küche** | `kuche` | `dist/assets/kueche/` |
+| **Bad** | `bad` | `dist/assets/bad/` |
+| **Flur** | `flur` | `dist/assets/flur/` |
+| **Hausflur** | `hausflur` | `dist/assets/hausflur/` |
+| Treppenhaus | `hausflur` | `dist/assets/hausflur/` |
+| Treppenflur | `hausflur` | `dist/assets/hausflur/` |
+| **Büro** | `buro` | `dist/assets/buro/` |
+| Arbeitszimmer | `buro` | `dist/assets/buro/` |
+| **Kinderzimmer** | `kinderzimmer` | `dist/assets/kinderzimmer/` |
+| Spielzimmer | `kinderzimmer` | `dist/assets/kinderzimmer/` |
+| **Balkon** | `balkon` | `dist/assets/balkon/` |
+| Veranda | `balkon` | `dist/assets/balkon/` |
+| **3D-Drucker** | `3d_drucker` | `dist/assets/3d-drucker/` |
+| **Zentrale** | `zentrale` | `dist/assets/zentrale/` |
+
+Beispiel: Ein Home-Assistant-Bereich mit dem Namen **Arbeitszimmer** wird wie
+**Büro** behandelt und verwendet die Bilder aus `dist/assets/buro/`.
+Entsprechend werden **Spielzimmer** als **Kinderzimmer** sowie **Veranda** als
+**Balkon** behandelt.
 
 ## Sicherheit
 
