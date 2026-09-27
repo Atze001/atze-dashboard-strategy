@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.320.0
+- Verbleibende binäre Status-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
+- Damit nutzt insbesondere das Anwesenheits-/Belegungs-Badge denselben Glass-Look wie Temperatur, Luftfeuchtigkeit, Leistung und Rauchmelder.
+- Warn-Badges für Fenster/Rollladen behalten ihre separate Warn-Darstellung.
+
 ## v0.319.0
 - Native Home-Assistant-Entity-Badges in den Bereichsbildern auf die eigene Glass-Badge-Komponente umgestellt.
 - Temperatur, Luftfeuchtigkeit, Leistung, Anwesenheit und aggregierte Status-Badges erhalten dadurch denselben Glass-Look.
