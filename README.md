@@ -1,7 +1,7 @@
 # Atze Dashboard Strategy
 <sub>KI-Generiert: ChatGPT</sub>
 
-![Atze Dashboard Strategy](dist/assets/wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.png)
+![Atze Dashboard Strategy](dist/assets/wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp)
 
 Eine automatische Home-Assistant-Dashboard-Strategy im Apple-Home-inspirierten
 Stil. Räume und Entities werden automatisch aus Home Assistant erzeugt und über
