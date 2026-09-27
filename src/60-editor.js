@@ -2308,7 +2308,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           typeof value === "object" &&
           !Array.isArray(value)
         ) {
-          this._pendingCustomPageValues.set(index, value);
+          if (value.navigation_path) {
+            this._updateCustomPage(index, value);
+          } else {
+            this._pendingCustomPageValues.set(index, value);
+          }
         }
       });
 

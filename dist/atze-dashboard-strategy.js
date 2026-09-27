@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.323.0";
+const ATZE_VERSION = "0.324.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6399,13 +6399,20 @@ function buildHomeOverviewView(
     )?.entity_id || null;
 
   const showSchedulerPopup = schedulerPopupEnabled(config);
-  const customPageLinks = buildCustomPageViews(config).map(
-    (view) => ({
+  const customPageLinks = [
+    ...buildCustomPageViews(config).map((view) => ({
       title: view.title,
       path: view.path,
       icon: view.icon || "mdi:view-dashboard-outline",
-    })
-  );
+    })),
+    ...asArray(config.custom_pages)
+      .filter((page) => page?.navigation_path && page?.title)
+      .map((page) => ({
+        title: String(page.title),
+        navigation_path: String(page.navigation_path),
+        icon: page.icon || "mdi:open-in-new",
+      })),
+  ];
 
   const homeCard = {
     type: "custom:atze-home-overview-card",
@@ -15759,7 +15766,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           typeof value === "object" &&
           !Array.isArray(value)
         ) {
-          this._pendingCustomPageValues.set(index, value);
+          if (value.navigation_path) {
+            this._updateCustomPage(index, value);
+          } else {
+            this._pendingCustomPageValues.set(index, value);
+          }
         }
       });
 

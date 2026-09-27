@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.323.0**
+Version **0.324.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.324.0
+- Speichern von Navigations-Einträgen im Editor korrigiert.
+- Navigations-Einträge werden jetzt an die Startseite übergeben und dort als Button angezeigt.
+- `navigation_path` bleibt ein direkter interner Home-Assistant-Link ohne zusätzliche Dashboard-Ansicht.
+
 ## v0.323.0
 - Unter „Eigene Seiten“ können jetzt reine Navigations-Buttons angelegt werden.
 - Neue Navigation startet testweise mit „Geräte“ und `/config/devices/dashboard`.
@@ -251,11 +256,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Flur-Statusbild auf der Hauptseite korrigiert.
 - Die Hauptseite berücksichtigt beim Flur nun wie die Bereichsseite den Tag-/Nacht-Präfix bei Tür-, Licht- und Verriegelungszuständen.
 - Dadurch wird das passende Verriegelt-Bild wieder zuverlässig ausgewählt.
-
-## v0.321.0
-- Automatische Fenster-/Rollladen-Warn-Badges aus den Bereichsbildern entfernt.
-- Die Zustände werden bereits über die dynamischen Raum-/Statusbilder dargestellt und bleiben zusätzlich auf der Sicherheitsseite verfügbar.
-- Manuell konfigurierte Badges bleiben unverändert möglich.
 <!-- latest-changes:end -->
 
 ## Lizenz
