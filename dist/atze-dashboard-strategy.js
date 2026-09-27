@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.333.0";
+const ATZE_VERSION = "0.334.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9203,7 +9203,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
     const preserveCustomLinksNode = Boolean(
-      customLinksBeforeRender && customLinksBeforeRender.scrollLeft > 1
+      customLinksBeforeRender && (customLinksBeforeRender.scrollLeft > 1 || this._customLinksResetAt > Date.now())
     );
     if (preserveCustomLinksNode) {
       this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
@@ -10836,64 +10836,26 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
 
     const customPageLinksBar = this.shadowRoot.querySelector(".custom-page-links");
-    if (customPageLinksBar) {
-      const saveCustomLinksState = () => {
-        try {
-          sessionStorage.setItem(this._customLinksScrollKey, JSON.stringify({
-            left: this._customLinksScrollLeft,
-            resetAt: this._customLinksResetAt,
-          }));
-        } catch (_e) {}
-      };
+    if (customPageLinksBar && !customPageLinksBar.dataset.atzeScrollResetBound) {
+      customPageLinksBar.dataset.atzeScrollResetBound = "1";
+      let scrollIdleTimer = null;
 
-      const finishCustomLinksReset = () => {
-        this._customLinksScrollLeft = 0;
-        this._customLinksResetAt = 0;
-        try { sessionStorage.removeItem(this._customLinksScrollKey); } catch (_e) {}
-        customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
-        this._customLinksScrollTimer = null;
-      };
-
-      const armCustomLinksReset = () => {
-        if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
-        this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
-        if (this._customLinksScrollLeft <= 1) return;
+      const startTenSecondReset = () => {
+        if (customPageLinksBar._atzeResetTimer) clearTimeout(customPageLinksBar._atzeResetTimer);
+        if (customPageLinksBar.scrollLeft <= 1) return;
         this._customLinksResetAt = Date.now() + 10000;
-        saveCustomLinksState();
-        this._customLinksScrollTimer = window.setTimeout(finishCustomLinksReset, 10000);
+        customPageLinksBar._atzeResetTimer = window.setTimeout(() => {
+          this._customLinksResetAt = 0;
+          customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
+          customPageLinksBar._atzeResetTimer = null;
+        }, 10000);
       };
-
-      try {
-        const saved = JSON.parse(sessionStorage.getItem(this._customLinksScrollKey) || "null");
-        if (saved?.left > 1) {
-          this._customLinksScrollLeft = Number(saved.left) || 0;
-          this._customLinksResetAt = Number(saved.resetAt) || 0;
-        }
-      } catch (_e) {}
-
-      if (this._customLinksScrollLeft > 1) {
-        customPageLinksBar.scrollLeft = this._customLinksScrollLeft;
-        if (this._customLinksResetAt > Date.now()) {
-          if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
-          this._customLinksScrollTimer = window.setTimeout(
-            finishCustomLinksReset,
-            this._customLinksResetAt - Date.now()
-          );
-        }
-      }
 
       customPageLinksBar.addEventListener("scroll", () => {
-        this._customLinksScrollLeft = customPageLinksBar.scrollLeft;
-        if (this._customLinksScrollLeft > 1) saveCustomLinksState();
-      }, { passive: true });
-      customPageLinksBar.addEventListener("touchstart", () => {
-        if (this._customLinksScrollTimer) clearTimeout(this._customLinksScrollTimer);
-        this._customLinksResetAt = 0;
-      }, { passive: true });
-      customPageLinksBar.addEventListener("touchend", armCustomLinksReset, { passive: true });
-      customPageLinksBar.addEventListener("wheel", () => {
-        window.clearTimeout(this._customLinksWheelTimer);
-        this._customLinksWheelTimer = window.setTimeout(armCustomLinksReset, 150);
+        if (customPageLinksBar._atzeResetTimer) clearTimeout(customPageLinksBar._atzeResetTimer);
+        this._customLinksResetAt = Date.now() + 10000;
+        window.clearTimeout(scrollIdleTimer);
+        scrollIdleTimer = window.setTimeout(startTenSecondReset, 250);
       }, { passive: true });
     }
 
