@@ -410,11 +410,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
   _roomImageCandidates(room, lightsOn = false) {
     const stateKey = this._roomImageState(room, lightsOn);
     const stateImage = room.state_images?.[stateKey];
-    const useLightImage = Boolean(!stateImage && lightsOn && room.light_image);
-    const cacheKey = `${room.area_id}:${stateImage ? stateKey : (useLightImage ? "light" : "dark")}`;
+    const simpleDayNightRoom = ["buro", "arbeitszimmer", "3d_drucker", "3d-drucker", "zentrale"].includes(room.area_id);
+    const hour = new Date().getHours();
+    const useDayImage = simpleDayNightRoom && hour >= 7 && hour < 20 && room.light_image;
+    const useLightImage = Boolean(!stateImage && !simpleDayNightRoom && lightsOn && room.light_image);
+    const fallbackImage = useDayImage ? room.light_image : room.image;
+    const cacheKey = `${room.area_id}:${stateImage ? stateKey : (useDayImage ? "day" : (useLightImage ? "light" : "dark"))}`;
     const fileName = stateImage
       ? String(stateImage).split("/").pop()
-      : useLightImage
+      : (useDayImage || useLightImage)
         ? room.light_image_file
         : (room.image_file || `${room.area_id}.jpg`);
     const candidates = [];
@@ -428,7 +432,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     };
 
     add(ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey));
-    add(stateImage || (useLightImage ? room.light_image : room.image));
+    add(stateImage || (useLightImage ? room.light_image : fallbackImage));
 
     if (this._config.asset_base && fileName) {
       try {

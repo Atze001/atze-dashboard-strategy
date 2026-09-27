@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.305.0";
+const ATZE_VERSION = "0.306.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -8209,11 +8209,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
   _roomImageCandidates(room, lightsOn = false) {
     const stateKey = this._roomImageState(room, lightsOn);
     const stateImage = room.state_images?.[stateKey];
-    const useLightImage = Boolean(!stateImage && lightsOn && room.light_image);
-    const cacheKey = `${room.area_id}:${stateImage ? stateKey : (useLightImage ? "light" : "dark")}`;
+    const simpleDayNightRoom = ["buro", "arbeitszimmer", "3d_drucker", "3d-drucker", "zentrale"].includes(room.area_id);
+    const hour = new Date().getHours();
+    const useDayImage = simpleDayNightRoom && hour >= 7 && hour < 20 && room.light_image;
+    const useLightImage = Boolean(!stateImage && !simpleDayNightRoom && lightsOn && room.light_image);
+    const fallbackImage = useDayImage ? room.light_image : room.image;
+    const cacheKey = `${room.area_id}:${stateImage ? stateKey : (useDayImage ? "day" : (useLightImage ? "light" : "dark"))}`;
     const fileName = stateImage
       ? String(stateImage).split("/").pop()
-      : useLightImage
+      : (useDayImage || useLightImage)
         ? room.light_image_file
         : (room.image_file || `${room.area_id}.jpg`);
     const candidates = [];
@@ -8227,7 +8231,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     };
 
     add(ATZE_HOME_ROOM_IMAGE_CACHE.get(cacheKey));
-    add(stateImage || (useLightImage ? room.light_image : room.image));
+    add(stateImage || (useLightImage ? room.light_image : fallbackImage));
 
     if (this._config.asset_base && fileName) {
       try {
@@ -12515,10 +12519,13 @@ class AtzeRoomNavHeader extends HTMLElement {
     const hour = new Date().getHours();
     const period = hour >= 7 && hour < 20 ? "day" : "night";
     const timedStateKey = `${period}_${stateKey}`;
+    const simpleDayNightRoom = ["buro", "arbeitszimmer", "3d_drucker", "3d-drucker", "zentrale"].includes(String(this._config.area_id || ""));
     const reactiveImage =
       stateImages[timedStateKey] ||
       stateImages[stateKey] ||
-      (lightsOn ? this._config.light_image : this._config.dark_image);
+      (simpleDayNightRoom
+        ? (period === "day" ? this._config.light_image : this._config.dark_image)
+        : (lightsOn ? this._config.light_image : this._config.dark_image));
     const backgroundImage =
       reactiveImage || this._config.background_image || "";
     const imageHeight = Math.max(170, Number(this._config.image_height) || 170);
