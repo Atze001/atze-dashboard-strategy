@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.335.0
+- Rauchmelder-Badges aus den Bereichskarten entfernt.
+- Rauchmelderstatus stattdessen auf der passenden Raumkarte der Hauptseite oben rechts als kompaktes Icon dargestellt.
+- Normalzustand grün, Alarmzustand rot; ohne zusätzlichen Text.
+
 ## v0.334.0
 - Letzter Neuansatz für den Navigations-Rücklauf: Die 10-Sekunden-Frist hängt direkt am erhaltenen Navigationselement.
 - Das Element bleibt während der gesamten aktiven Frist erhalten, selbst wenn iOS kurzzeitig `scrollLeft = 0` meldet.
