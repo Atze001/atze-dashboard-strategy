@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.335.0";
+const ATZE_VERSION = "0.336.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9096,7 +9096,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                     title="Rauchmelder: ${this._formatted(room.smoke_entity)}"
                     aria-label="Rauchmelder: ${this._formatted(room.smoke_entity)}"
                   >
-                    <ha-icon icon="mdi:smoke-detector"></ha-icon>
+                    <ha-icon icon="mdi:smoke-detector-variant"></ha-icon>
                   </div>
                 `
                 : ""
