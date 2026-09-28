@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.335.0**
+Version **0.336.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,9 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.336.0
+- Rauchmelder auf der Hauptseite verwenden jetzt das rundere `mdi:smoke-detector-variant` Symbol passend zur gewählten Darstellung.
+
 ## v0.335.0
 - Rauchmelder-Badges aus den Bereichskarten entfernt.
 - Rauchmelderstatus stattdessen auf der passenden Raumkarte der Hauptseite oben rechts als kompaktes Icon dargestellt.
@@ -250,11 +253,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Letzter Neuansatz für den Navigations-Rücklauf: Die 10-Sekunden-Frist hängt direkt am erhaltenen Navigationselement.
 - Das Element bleibt während der gesamten aktiven Frist erhalten, selbst wenn iOS kurzzeitig `scrollLeft = 0` meldet.
 - Der Countdown beginnt erst 250 ms nach dem letzten nativen Scroll-Event und läuft danach 10 Sekunden.
-
-## v0.333.0
-- Die horizontal gescrollte Navigationsleiste wird während der 10-Sekunden-Frist nicht mehr neu erzeugt, sondern als bestehendes DOM-Element durch Home-Assistant-Re-Renders hindurch übernommen.
-- Alle übrigen Bereiche der Startseite werden weiterhin normal aktualisiert.
-- Dadurch kann ein HA-Re-Render die native Scrollposition der Leiste nicht mehr auf 0 setzen.
 <!-- latest-changes:end -->
 
 ## Lizenz
