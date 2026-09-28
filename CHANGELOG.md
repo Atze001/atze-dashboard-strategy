@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.336.0
+- Rauchmelder auf der Hauptseite verwenden jetzt das rundere `mdi:smoke-detector-variant` Symbol passend zur gewählten Darstellung.
+
 ## v0.335.0
 - Rauchmelder-Badges aus den Bereichskarten entfernt.
 - Rauchmelderstatus stattdessen auf der passenden Raumkarte der Hauptseite oben rechts als kompaktes Icon dargestellt.
