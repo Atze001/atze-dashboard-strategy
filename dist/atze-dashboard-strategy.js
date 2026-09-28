@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.336.0";
+const ATZE_VERSION = "0.337.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -10012,6 +10012,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .room-smoke ha-icon {
           --mdc-icon-size: 20px;
+          transform: translateY(-1px);
         }
 
         .room-power {
