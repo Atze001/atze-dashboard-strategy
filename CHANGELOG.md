@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.337.0
+- Rauchmelder-Icon innerhalb des Kreises auf der Hauptseite um 1 px nach oben ausgerichtet.
+
 ## v0.336.0
 - Rauchmelder auf der Hauptseite verwenden jetzt das rundere `mdi:smoke-detector-variant` Symbol passend zur gewählten Darstellung.
 

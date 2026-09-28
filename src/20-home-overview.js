@@ -2234,6 +2234,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .room-smoke ha-icon {
           --mdc-icon-size: 20px;
+          transform: translateY(-1px);
         }
 
         .room-power {
