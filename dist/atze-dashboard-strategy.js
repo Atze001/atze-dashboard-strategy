@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.334.0";
+const ATZE_VERSION = "0.335.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3910,25 +3910,6 @@ function selectEnvironmentBadges(
     entityIds.add(entity.entity_id);
   }
 
-  if (
-    config.smoke_badge !== false &&
-    areaOverride.smoke_badge !== false
-  ) {
-    const smokeState = selectBinaryBadge(
-      hass,
-      entities,
-      config,
-      area,
-      popupMap,
-      "smoke"
-    );
-
-    if (smokeState) {
-      badges.push(smokeState.badge);
-      entityIds.add(smokeState.entityId);
-    }
-  }
-
   // Optional manually authored badges per area.
   if (Array.isArray(areaOverride.badges)) {
     for (const manualBadge of areaOverride.badges) {
@@ -6370,6 +6351,7 @@ function buildHomeOverviewView(
       motion_interrupter: motionInterrupter,
       window_entity: windowEntity,
       roller_sensor_entity: rollerEntity,
+      smoke_entity: smokeEntity,
       cover_entity: coverEntity,
       lock_entity: lockEntity,
       light_entities: roomLightEntities,
@@ -9107,6 +9089,20 @@ class AtzeHomeOverviewCard extends HTMLElement {
             <div class="room-shade"></div>
 
             ${
+              room.smoke_entity
+                ? `
+                  <div
+                    class="room-smoke ${["on", "smoke", "detected", "alarm", "triggered"].includes(String(this._state(room.smoke_entity)?.state || "").toLowerCase()) ? "active" : ""}"
+                    title="Rauchmelder: ${this._formatted(room.smoke_entity)}"
+                    aria-label="Rauchmelder: ${this._formatted(room.smoke_entity)}"
+                  >
+                    <ha-icon icon="mdi:smoke-detector"></ha-icon>
+                  </div>
+                `
+                : ""
+            }
+
+            ${
               roomPrimaryMetric
                 ? `
                   <div
@@ -9986,6 +9982,36 @@ class AtzeHomeOverviewCard extends HTMLElement {
           position: absolute;
           top: 55px;
           left: 20px;
+        }
+
+        .room-smoke {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 3;
+          width: 34px;
+          height: 34px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          border: 1px solid rgba(48, 209, 88, 0.65);
+          background: rgba(48, 209, 88, 0.20);
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
+          color: #30D158;
+          pointer-events: none;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+        }
+
+        .room-smoke.active {
+          border-color: rgba(255, 69, 58, 0.72);
+          background: rgba(255, 69, 58, 0.22);
+          color: #FF453A;
+        }
+
+        .room-smoke ha-icon {
+          --mdc-icon-size: 20px;
         }
 
         .room-power {

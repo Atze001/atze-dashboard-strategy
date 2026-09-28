@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.334.0";
+const ATZE_VERSION = "0.335.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3910,25 +3910,6 @@ function selectEnvironmentBadges(
     entityIds.add(entity.entity_id);
   }
 
-  if (
-    config.smoke_badge !== false &&
-    areaOverride.smoke_badge !== false
-  ) {
-    const smokeState = selectBinaryBadge(
-      hass,
-      entities,
-      config,
-      area,
-      popupMap,
-      "smoke"
-    );
-
-    if (smokeState) {
-      badges.push(smokeState.badge);
-      entityIds.add(smokeState.entityId);
-    }
-  }
-
   // Optional manually authored badges per area.
   if (Array.isArray(areaOverride.badges)) {
     for (const manualBadge of areaOverride.badges) {
@@ -6370,6 +6351,7 @@ function buildHomeOverviewView(
       motion_interrupter: motionInterrupter,
       window_entity: windowEntity,
       roller_sensor_entity: rollerEntity,
+      smoke_entity: smokeEntity,
       cover_entity: coverEntity,
       lock_entity: lockEntity,
       light_entities: roomLightEntities,
