@@ -9731,6 +9731,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin: 0 0 20px;
           display: flex;
           flex-wrap: wrap;
+          justify-content: center;
           gap: 9px;
         }
 
