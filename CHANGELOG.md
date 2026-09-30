@@ -1,3 +1,8 @@
+## v0.338.0
+
+- Eigene Seiten auf der Hauptseite brechen auf kleinen Displays jetzt in mehrere Zeilen um statt horizontal zu scrollen.
+- Die bisherige Scroll-Position-/10-Sekunden-Reset-Logik für diese Badges wurde entfernt.
+
 # Changelog
 
 ## v0.337.0
