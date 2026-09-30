@@ -7791,11 +7791,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecastLoading = false;
     this._roomDrag = null;
     this._hiddenRoomIds = [];
-    this._customLinksScrollTimer = null;
-    this._customLinksScrollLeft = 0;
-    this._customLinksResetAt = 0;
-    this._customLinksUserScrolling = false;
-    this._customLinksScrollKey = "atze-dashboard:custom-links-scroll";
   }
 
   setConfig(config) {
@@ -7846,11 +7841,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
-
-    if (this._customLinksScrollTimer) {
-      clearTimeout(this._customLinksScrollTimer);
-      this._customLinksScrollTimer = null;
-    }
   }
 
   _startClock() {
@@ -8672,11 +8662,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
 
-    const existingCustomLinks = this.shadowRoot.querySelector(".custom-page-links");
-    if (existingCustomLinks && existingCustomLinks.scrollLeft > 1) {
-      this._customLinksScrollLeft = existingCustomLinks.scrollLeft;
-    }
-
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
     const heroImage = heroIsDay
@@ -9196,20 +9181,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const lockText = lockState
       ? this._formatted(this._config.lock_entity)
       : "";
-
-    const customLinksBeforeRender = this.shadowRoot.querySelector(".custom-page-links");
-    const preserveCustomLinksNode = Boolean(
-      customLinksBeforeRender && (customLinksBeforeRender.scrollLeft > 1 || this._customLinksResetAt > Date.now())
-    );
-    if (preserveCustomLinksNode) {
-      this._customLinksScrollLeft = customLinksBeforeRender.scrollLeft;
-      try {
-        sessionStorage.setItem(this._customLinksScrollKey, JSON.stringify({
-          left: this._customLinksScrollLeft,
-          resetAt: this._customLinksResetAt || 0,
-        }));
-      } catch (_e) {}
-    }
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -10383,13 +10354,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .custom-page-links {
             margin-bottom: 18px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            scrollbar-width: none;
-          }
-
-          .custom-page-links::-webkit-scrollbar {
-            display: none;
+            flex-wrap: wrap;
+            overflow-x: visible;
           }
 
           .custom-page-link {
@@ -10743,11 +10709,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </ha-card>
     `;
 
-    if (preserveCustomLinksNode && customLinksBeforeRender) {
-      const rebuiltCustomLinks = this.shadowRoot.querySelector(".custom-page-links");
-      rebuiltCustomLinks?.replaceWith(customLinksBeforeRender);
-    }
-
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
     hiddenRoomIds = atzeLayoutValue(this._config, "hidden_home_rooms", []);
@@ -10861,30 +10822,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       (element) => element.dataset.entityId,
       "atze-dashboard:favorite-order"
     );
-
-    const customPageLinksBar = this.shadowRoot.querySelector(".custom-page-links");
-    if (customPageLinksBar && !customPageLinksBar.dataset.atzeScrollResetBound) {
-      customPageLinksBar.dataset.atzeScrollResetBound = "1";
-      let scrollIdleTimer = null;
-
-      const startTenSecondReset = () => {
-        if (customPageLinksBar._atzeResetTimer) clearTimeout(customPageLinksBar._atzeResetTimer);
-        if (customPageLinksBar.scrollLeft <= 1) return;
-        this._customLinksResetAt = Date.now() + 10000;
-        customPageLinksBar._atzeResetTimer = window.setTimeout(() => {
-          this._customLinksResetAt = 0;
-          customPageLinksBar.scrollTo({ left: 0, behavior: "smooth" });
-          customPageLinksBar._atzeResetTimer = null;
-        }, 10000);
-      };
-
-      customPageLinksBar.addEventListener("scroll", () => {
-        if (customPageLinksBar._atzeResetTimer) clearTimeout(customPageLinksBar._atzeResetTimer);
-        this._customLinksResetAt = Date.now() + 10000;
-        window.clearTimeout(scrollIdleTimer);
-        scrollIdleTimer = window.setTimeout(startTenSecondReset, 250);
-      }, { passive: true });
-    }
 
     this.shadowRoot
       .querySelectorAll(".custom-page-link[data-navigation-path]")
