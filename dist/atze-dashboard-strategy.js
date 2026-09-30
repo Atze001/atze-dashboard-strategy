@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.338.0";
+const ATZE_VERSION = "0.339.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -9731,6 +9731,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin: 0 0 20px;
           display: flex;
           flex-wrap: wrap;
+          justify-content: center;
           gap: 9px;
         }
 
