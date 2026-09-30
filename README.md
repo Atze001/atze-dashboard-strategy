@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.337.0**
+Version **0.338.0**
 
 Enthalten sind unter anderem:
 
@@ -241,16 +241,18 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.338.0
+
+- Eigene Seiten auf der Hauptseite brechen auf kleinen Displays jetzt in mehrere Zeilen um statt horizontal zu scrollen.
+- Die bisherige Scroll-Position-/10-Sekunden-Reset-Logik für diese Badges wurde entfernt.
+
+# Changelog
+
 ## v0.337.0
 - Rauchmelder-Icon innerhalb des Kreises auf der Hauptseite um 1 px nach oben ausgerichtet.
 
 ## v0.336.0
 - Rauchmelder auf der Hauptseite verwenden jetzt das rundere `mdi:smoke-detector-variant` Symbol passend zur gewählten Darstellung.
-
-## v0.335.0
-- Rauchmelder-Badges aus den Bereichskarten entfernt.
-- Rauchmelderstatus stattdessen auf der passenden Raumkarte der Hauptseite oben rechts als kompaktes Icon dargestellt.
-- Normalzustand grün, Alarmzustand rot; ohne zusätzlichen Text.
 <!-- latest-changes:end -->
 
 ## Lizenz
