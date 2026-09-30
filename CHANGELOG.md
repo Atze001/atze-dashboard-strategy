@@ -1,3 +1,7 @@
+## v0.339.0
+
+- Die Badges der eigenen Seiten auf der Hauptseite werden auch bei mehrzeiligem Umbruch mittig angeordnet.
+
 ## v0.338.0
 
 - Eigene Seiten auf der Hauptseite brechen auf kleinen Displays jetzt in mehrere Zeilen um statt horizontal zu scrollen.
