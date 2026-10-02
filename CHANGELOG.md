@@ -1,3 +1,8 @@
+## v0.342.0
+
+- Leistungs-Sensoren dürfen auch dann als Raum-Leistungswert auf der Hauptseite verwendet werden, wenn sie als Unterentität eines Geräte-Popups gruppiert sind.
+- Dadurch wird z. B. die Leistung eines Smart Plugs weiterhin oben links auf der zugehörigen Raumkachel angezeigt.
+
 ## v0.341.0
 
 - Favoriten können in den Dashboard-Einstellungen pro Entität optional eine Bestätigung vor der Aktion verlangen.
