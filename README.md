@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.340.0**
+Version **0.341.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.341.0
+
+- Favoriten können in den Dashboard-Einstellungen pro Entität optional eine Bestätigung vor der Aktion verlangen.
+- Die Bestätigung ist standardmäßig deaktiviert; bestehende Favoriten verhalten sich unverändert.
+
 ## v0.340.0
 
 - Zeitpläne im Scheduler-Popup werden nach Status und relativer Zeit sortiert, sodass der als Nächstes anstehende aktive Zeitplan oben erscheint.
@@ -248,13 +253,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## v0.339.0
 
 - Die Badges der eigenen Seiten auf der Hauptseite werden auch bei mehrzeiligem Umbruch mittig angeordnet.
-
-## v0.338.0
-
-- Eigene Seiten auf der Hauptseite brechen auf kleinen Displays jetzt in mehrere Zeilen um statt horizontal zu scrollen.
-- Die bisherige Scroll-Position-/10-Sekunden-Reset-Logik für diese Badges wurde entfernt.
-
-# Changelog
 <!-- latest-changes:end -->
 
 ## Lizenz

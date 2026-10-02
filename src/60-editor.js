@@ -526,6 +526,26 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _setFavoriteConfirmation(entityId, checked) {
+    const confirmations = asArray(
+      this._config.favorite_confirm_entities
+    ).map(String);
+
+    const nextConfirmations = checked
+      ? [...new Set([...confirmations, entityId])]
+      : confirmations.filter((id) => id !== entityId);
+
+    const next = { ...this._config };
+
+    if (nextConfirmations.length > 0) {
+      next.favorite_confirm_entities = nextConfirmations;
+    } else {
+      delete next.favorite_confirm_entities;
+    }
+
+    this._fireConfigChanged(next);
+  }
+
   _favoriteEntityRows(area) {
     return this._favoriteEntityRowsForEntities(
       this._entitiesForArea(area.area_id)
@@ -535,6 +555,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   _favoriteEntityRowsForEntities(entities) {
     const favorites = new Set(
       asArray(this._config.favorite_entities).map(String)
+    );
+    const confirmations = new Set(
+      asArray(this._config.favorite_confirm_entities).map(String)
     );
 
     if (!entities.length) {
@@ -566,12 +589,24 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               ${this._escape(entityId)}
             </span>
           </span>
-          <input
-            class="favorite-toggle"
-            type="checkbox"
-            data-entity-id="${this._escape(entityId)}"
-            ${favorites.has(entityId) ? "checked" : ""}
-          />
+          <span class="favorite-controls">
+            <label class="favorite-confirm-option" title="Vor dem Ausführen bestätigen">
+              <span>Bestätigen</span>
+              <input
+                class="favorite-confirm-toggle"
+                type="checkbox"
+                data-entity-id="${this._escape(entityId)}"
+                ${confirmations.has(entityId) ? "checked" : ""}
+                ${favorites.has(entityId) ? "" : "disabled"}
+              />
+            </label>
+            <input
+              class="favorite-toggle"
+              type="checkbox"
+              data-entity-id="${this._escape(entityId)}"
+              ${favorites.has(entityId) ? "checked" : ""}
+            />
+          </span>
         </label>
       `;
     }).join("");
@@ -1779,6 +1814,22 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           border-bottom: 0;
         }
 
+        .favorite-controls {
+          flex: 0 0 auto;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .favorite-confirm-option {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          color: var(--secondary-text-color);
+          font-size: 12px;
+          white-space: nowrap;
+        }
+
         .entity-copy {
           min-width: 0;
           display: flex;
@@ -2564,6 +2615,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       input.addEventListener("change", (event) => {
         const target = event.currentTarget;
         this._setFavoriteEntity(
+          target.dataset.entityId,
+          target.checked
+        );
+      });
+    }
+
+    for (
+      const input of
+        this.shadowRoot.querySelectorAll(".favorite-confirm-toggle")
+    ) {
+      input.addEventListener("change", (event) => {
+        const target = event.currentTarget;
+        this._setFavoriteConfirmation(
           target.dataset.entityId,
           target.checked
         );

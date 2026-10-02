@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.340.0";
+const ATZE_VERSION = "0.341.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6449,6 +6449,13 @@ function buildHomeOverviewView(
     battery_entities: uniqueEntityIds(batteryEntityIds),
     maintenance_path: config.maintenance_path || "wartung",
     favorite_entities: asArray(config.favorite_entities)
+      .map(String)
+      .filter((entityId) =>
+        usableEntities.some(
+          (entity) => entity.entity_id === entityId
+        )
+      ),
+    favorite_confirm_entities: asArray(config.favorite_confirm_entities)
       .map(String)
       .filter((entityId) =>
         usableEntities.some(

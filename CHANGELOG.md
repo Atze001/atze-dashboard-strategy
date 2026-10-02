@@ -1,3 +1,8 @@
+## v0.341.0
+
+- Favoriten können in den Dashboard-Einstellungen pro Entität optional eine Bestätigung vor der Aktion verlangen.
+- Die Bestätigung ist standardmäßig deaktiviert; bestehende Favoriten verhalten sich unverändert.
+
 ## v0.340.0
 
 - Zeitpläne im Scheduler-Popup werden nach Status und relativer Zeit sortiert, sodass der als Nächstes anstehende aktive Zeitplan oben erscheint.
