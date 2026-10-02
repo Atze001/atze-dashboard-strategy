@@ -241,6 +241,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.340.0
+
+- Zeitpläne im Scheduler-Popup werden nach Status und relativer Zeit sortiert, sodass der als Nächstes anstehende aktive Zeitplan oben erscheint.
+
 ## v0.339.0
 
 - Die Badges der eigenen Seiten auf der Hauptseite werden auch bei mehrzeiligem Umbruch mittig angeordnet.
@@ -251,9 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Die bisherige Scroll-Position-/10-Sekunden-Reset-Logik für diese Badges wurde entfernt.
 
 # Changelog
-
-## v0.337.0
-- Rauchmelder-Icon innerhalb des Kreises auf der Hauptseite um 1 px nach oben ausgerichtet.
 <!-- latest-changes:end -->
 
 ## Lizenz
