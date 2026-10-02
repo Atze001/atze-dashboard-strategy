@@ -1,3 +1,7 @@
+## v0.340.0
+
+- Zeitpläne im Scheduler-Popup werden nach Status und relativer Zeit sortiert, sodass der als Nächstes anstehende aktive Zeitplan oben erscheint.
+
 ## v0.339.0
 
 - Die Badges der eigenen Seiten auf der Hauptseite werden auch bei mehrzeiligem Umbruch mittig angeordnet.
