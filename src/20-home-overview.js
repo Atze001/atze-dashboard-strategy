@@ -569,6 +569,30 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (!stateObj) return;
 
     const domain = domainOf(entityId);
+    const confirmEntities = new Set(
+      asArray(this._config.favorite_confirm_entities).map(String)
+    );
+
+    if (confirmEntities.has(entityId)) {
+      const name = stateObj.attributes?.friendly_name || entityId;
+      const state = String(stateObj.state || "").toLowerCase();
+      let action = "ausführen";
+
+      if (["light", "switch", "input_boolean", "fan", "media_player"].includes(domain)) {
+        action = state === "on" ? "ausschalten" : "einschalten";
+      } else if (domain === "cover") {
+        const position = this._coverPosition(entityId);
+        action = position != null ? (position > 0 ? "schließen" : "öffnen") : (state === "closed" ? "öffnen" : "schließen");
+      } else if (["button", "input_button"].includes(domain)) {
+        action = "betätigen";
+      } else if (["scene", "script"].includes(domain)) {
+        action = "ausführen";
+      }
+
+      if (!window.confirm(`${name} ${action}?`)) {
+        return;
+      }
+    }
 
     if (
       [
