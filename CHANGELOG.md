@@ -1,3 +1,8 @@
+## v0.343.0
+
+- Behebt den Dashboard-Startfehler `Cannot access 'deviceClass' before initialization` aus v0.342.0.
+- Die Ausnahme für Power-Sensoren sitzt jetzt korrekt in der Raum-Metrik-Auswahl, sodass Smart-Plug-Leistung trotz Geräte-Popup als Raum-Leistung verwendet werden kann.
+
 ## v0.342.0
 
 - Leistungs-Sensoren dürfen auch dann als Raum-Leistungswert auf der Hauptseite verwendet werden, wenn sie als Unterentität eines Geräte-Popups gruppiert sind.
