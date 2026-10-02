@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.341.0";
+const ATZE_VERSION = "0.342.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -3653,7 +3653,15 @@ function selectBinaryBadge(
     .filter((entity) => {
       if (shouldHideExactEntity(config, entity.entity_id)) return false;
       if (domainOf(entity.entity_id) !== "binary_sensor") return false;
-      if (popupMap.childToParent.has(entity.entity_id)) return false;
+      // A power sensor may be grouped behind its device's popup (for
+      // example a smart plug), but it is still the correct source for the
+      // room's power metric on the home tile.
+      if (
+        deviceClass !== "power" &&
+        popupMap.childToParent.has(entity.entity_id)
+      ) {
+        return false;
+      }
       if (!validBadgeState(hass, entity.entity_id)) return false;
       if (entity.entity_category === "diagnostic") return false;
       if (entity.entity_category === "config") return false;
