@@ -3653,15 +3653,7 @@ function selectBinaryBadge(
     .filter((entity) => {
       if (shouldHideExactEntity(config, entity.entity_id)) return false;
       if (domainOf(entity.entity_id) !== "binary_sensor") return false;
-      // A power sensor may be grouped behind its device's popup (for
-      // example a smart plug), but it is still the correct source for the
-      // room's power metric on the home tile.
-      if (
-        deviceClass !== "power" &&
-        popupMap.childToParent.has(entity.entity_id)
-      ) {
-        return false;
-      }
+      if (popupMap.childToParent.has(entity.entity_id)) return false;
       if (!validBadgeState(hass, entity.entity_id)) return false;
       if (entity.entity_category === "diagnostic") return false;
       if (entity.entity_category === "config") return false;
@@ -5211,7 +5203,14 @@ function bestEnvironmentEntity(
     .filter((entity) => {
       if (shouldHideExactEntity(config, entity.entity_id)) return false;
       if (domainOf(entity.entity_id) !== "sensor") return false;
-      if (popupMap.childToParent.has(entity.entity_id)) return false;
+      // Power sensors can also be popup children of their smart plug,
+      // while still serving as the room power metric.
+      if (
+        deviceClass !== "power" &&
+        popupMap.childToParent.has(entity.entity_id)
+      ) {
+        return false;
+      }
       if (!validBadgeState(hass, entity.entity_id)) return false;
       if (entity.entity_category === "diagnostic") return false;
       if (entity.entity_category === "config") return false;
