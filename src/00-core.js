@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.339.0";
+const ATZE_VERSION = "0.340.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -6510,6 +6510,7 @@ function buildHomeOverviewView(
                     cards: [
                       {
                         type: "custom:scheduler-card",
+                        sort_by: ["state", "relative-time"],
                       },
                     ],
                   }]
