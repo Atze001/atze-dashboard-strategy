@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.342.0**
+Version **0.343.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.343.0
+
+- Behebt den Dashboard-Startfehler `Cannot access 'deviceClass' before initialization` aus v0.342.0.
+- Die Ausnahme für Power-Sensoren sitzt jetzt korrekt in der Raum-Metrik-Auswahl, sodass Smart-Plug-Leistung trotz Geräte-Popup als Raum-Leistung verwendet werden kann.
+
 ## v0.342.0
 
 - Leistungs-Sensoren dürfen auch dann als Raum-Leistungswert auf der Hauptseite verwendet werden, wenn sie als Unterentität eines Geräte-Popups gruppiert sind.
@@ -250,10 +255,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Favoriten können in den Dashboard-Einstellungen pro Entität optional eine Bestätigung vor der Aktion verlangen.
 - Die Bestätigung ist standardmäßig deaktiviert; bestehende Favoriten verhalten sich unverändert.
-
-## v0.340.0
-
-- Zeitpläne im Scheduler-Popup werden nach Status und relativer Zeit sortiert, sodass der als Nächstes anstehende aktive Zeitplan oben erscheint.
 <!-- latest-changes:end -->
 
 ## Lizenz
