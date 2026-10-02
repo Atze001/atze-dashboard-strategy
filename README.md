@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.341.0**
+Version **0.342.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.342.0
+
+- Leistungs-Sensoren dürfen auch dann als Raum-Leistungswert auf der Hauptseite verwendet werden, wenn sie als Unterentität eines Geräte-Popups gruppiert sind.
+- Dadurch wird z. B. die Leistung eines Smart Plugs weiterhin oben links auf der zugehörigen Raumkachel angezeigt.
+
 ## v0.341.0
 
 - Favoriten können in den Dashboard-Einstellungen pro Entität optional eine Bestätigung vor der Aktion verlangen.
@@ -249,10 +254,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## v0.340.0
 
 - Zeitpläne im Scheduler-Popup werden nach Status und relativer Zeit sortiert, sodass der als Nächstes anstehende aktive Zeitplan oben erscheint.
-
-## v0.339.0
-
-- Die Badges der eigenen Seiten auf der Hauptseite werden auch bei mehrzeiligem Umbruch mittig angeordnet.
 <!-- latest-changes:end -->
 
 ## Lizenz
