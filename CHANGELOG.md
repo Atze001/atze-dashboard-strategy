@@ -1,3 +1,9 @@
+## v0.349.0
+
+- „Seitenweises Scrollen“ ist jetzt ausschließlich auf der Hauptseite aktiv.
+- Raumansichten und eigene Unterseiten verwenden wieder das normale freie Scrollverhalten.
+- Die funktionierende Kombination aus seitenweitem Sprung und Karten-Snap auf der Hauptseite bleibt unverändert.
+
 ## v0.348.0
 
 - Seitenweises Scrollen kombiniert jetzt die sichtbare Bildschirmhöhe mit den exakten Karten-Snap-Punkten.
