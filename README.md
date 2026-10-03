@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.344.0**
+Version **0.345.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.345.0
+
+- Option „Seitenweises Scrollen“ unter „Darstellung“ ergänzt; standardmäßig deaktiviert.
+- Bei aktivierter Option springt eine vertikale Wischgeste ungefähr eine sichtbare Bildschirmhöhe weiter und rastet weich auf der nächsten bzw. vorherigen Seite ein.
+- Die Funktion gilt für die Startseite, Raumseiten und eigene Seiten mit Atze-Navigationskopf.
+
 ## v0.344.0
 
 - Neue Statusbild-Strategy für den Raum Kino mit 8 Varianten für Tag/Nacht, Licht an/aus und Kino an/aus.
@@ -251,11 +257,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Behebt den Dashboard-Startfehler `Cannot access 'deviceClass' before initialization` aus v0.342.0.
 - Die Ausnahme für Power-Sensoren sitzt jetzt korrekt in der Raum-Metrik-Auswahl, sodass Smart-Plug-Leistung trotz Geräte-Popup als Raum-Leistung verwendet werden kann.
-
-## v0.342.0
-
-- Leistungs-Sensoren dürfen auch dann als Raum-Leistungswert auf der Hauptseite verwendet werden, wenn sie als Unterentität eines Geräte-Popups gruppiert sind.
-- Dadurch wird z. B. die Leistung eines Smart Plugs weiterhin oben links auf der zugehörigen Raumkachel angezeigt.
 <!-- latest-changes:end -->
 
 ## Lizenz
