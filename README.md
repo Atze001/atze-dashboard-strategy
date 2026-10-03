@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.345.0**
+Version **0.346.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.346.0
+
+- Seitenweises Scrollen richtet sich jetzt an den tatsächlichen Dashboard-Karten statt an festen Bildschirmhöhen aus.
+- Beim Wischen wird die nächste bzw. vorherige passende Karte sauber an der Oberkante positioniert.
+- Unterschiedlich hohe Raumkarten erzeugen dadurch keinen zunehmenden Versatz mehr.
+
 ## v0.345.0
 
 - Option „Seitenweises Scrollen“ unter „Darstellung“ ergänzt; standardmäßig deaktiviert.
@@ -252,11 +258,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Neue Statusbild-Strategy für den Raum Kino mit 8 Varianten für Tag/Nacht, Licht an/aus und Kino an/aus.
 - Kino-Statusbilder werden sowohl auf der Hauptseite als auch im Kopf der Kino-Bereichsseite verwendet.
 - Der Kino-Status wird automatisch aus Media-Playern sowie passenden Beamer-, Projektor-, Receiver-, Leinwand- oder Kino-Schaltern des Raums ermittelt.
-
-## v0.343.0
-
-- Behebt den Dashboard-Startfehler `Cannot access 'deviceClass' before initialization` aus v0.342.0.
-- Die Ausnahme für Power-Sensoren sitzt jetzt korrekt in der Raum-Metrik-Auswahl, sodass Smart-Plug-Leistung trotz Geräte-Popup als Raum-Leistung verwendet werden kann.
 <!-- latest-changes:end -->
 
 ## Lizenz
