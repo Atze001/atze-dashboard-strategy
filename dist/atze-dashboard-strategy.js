@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.345.0";
+const ATZE_VERSION = "0.346.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -580,34 +580,24 @@ function setupAtzePageScroll(anchor, enabled = false) {
   let wheelTimer = null;
   let retryTimers = [];
 
-  const scrollTopOf = (target) =>
+  const isDocumentTarget = (target) =>
     target === document.scrollingElement ||
     target === document.documentElement ||
-    target === document.body
+    target === document.body;
+
+  const scrollTopOf = (target) =>
+    isDocumentTarget(target)
       ? window.scrollY || document.documentElement.scrollTop || 0
       : target.scrollTop;
 
-  const viewportOf = (target) =>
-    target === document.scrollingElement ||
-    target === document.documentElement ||
-    target === document.body
-      ? window.innerHeight
-      : target.clientHeight;
-
   const maxScrollOf = (target) =>
-    target === document.scrollingElement ||
-    target === document.documentElement ||
-    target === document.body
+    isDocumentTarget(target)
       ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
       : Math.max(0, target.scrollHeight - target.clientHeight);
 
   const scrollToTop = (target, top) => {
     const nextTop = Math.max(0, Math.min(maxScrollOf(target), top));
-    if (
-      target === document.scrollingElement ||
-      target === document.documentElement ||
-      target === document.body
-    ) {
+    if (isDocumentTarget(target)) {
       window.scrollTo({ top: nextTop, behavior: "smooth" });
     } else if (typeof target.scrollTo === "function") {
       target.scrollTo({ top: nextTop, behavior: "smooth" });
@@ -616,13 +606,90 @@ function setupAtzePageScroll(anchor, enabled = false) {
     }
   };
 
+  const composedChildren = (root) => {
+    const result = [];
+    const visit = (node) => {
+      if (!node) return;
+      if (node instanceof HTMLElement) result.push(node);
+      const shadow = node.shadowRoot;
+      if (shadow) {
+        for (const child of shadow.children) visit(child);
+      }
+      for (const child of node.children || []) visit(child);
+    };
+    visit(anchor);
+    return result;
+  };
+
+  const snapPoints = () => {
+    if (!scrollTarget) return [0];
+
+    const targetRect = isDocumentTarget(scrollTarget)
+      ? { top: 0 }
+      : scrollTarget.getBoundingClientRect();
+    const currentTop = scrollTopOf(scrollTarget);
+    const maxTop = maxScrollOf(scrollTarget);
+    const points = [0];
+
+    for (const element of composedChildren(anchor)) {
+      const name = element.localName || "";
+      const isSnapCard =
+        name === "atze-home-hero-card" ||
+        name === "atze-control-center-card" ||
+        name === "atze-room-tile" ||
+        name === "atze-quick-actions-card" ||
+        name === "atze-room-nav-header" ||
+        element.classList?.contains("room-tile") ||
+        element.classList?.contains("quick-actions") ||
+        element.classList?.contains("favorites");
+
+      if (!isSnapCard) continue;
+
+      const rect = element.getBoundingClientRect();
+      if (rect.height < 80) continue;
+
+      const top = currentTop + rect.top - targetRect.top;
+      if (top >= 0 && top <= maxTop + 2) points.push(top);
+    }
+
+    points.push(maxTop);
+    return [...new Set(points.map((value) => Math.round(value)))]
+      .sort((a, b) => a - b);
+  };
+
+  const nearestPoint = (top) => {
+    const points = snapPoints();
+    return points.reduce(
+      (best, point) =>
+        Math.abs(point - top) < Math.abs(best - top)
+          ? point
+          : best,
+      points[0] || 0
+    );
+  };
+
+  const directionalPoint = (top, direction) => {
+    const points = snapPoints();
+    const tolerance = 12;
+
+    if (direction > 0) {
+      return (
+        points.find((point) => point > top + tolerance) ??
+        points[points.length - 1] ??
+        top
+      );
+    }
+
+    return (
+      [...points].reverse().find((point) => point < top - tolerance) ??
+      points[0] ??
+      top
+    );
+  };
+
   const snapNearest = () => {
     if (!scrollTarget) return;
-    const page = Math.max(1, viewportOf(scrollTarget));
-    scrollToTop(
-      scrollTarget,
-      Math.round(scrollTopOf(scrollTarget) / page) * page
-    );
+    scrollToTop(scrollTarget, nearestPoint(scrollTopOf(scrollTarget)));
   };
 
   const onTouchStart = (event) => {
@@ -635,12 +702,11 @@ function setupAtzePageScroll(anchor, enabled = false) {
     if (touchStartY == null || !scrollTarget) return;
     const endY = event.changedTouches?.[0]?.clientY ?? touchStartY;
     const delta = touchStartY - endY;
-    const page = Math.max(1, viewportOf(scrollTarget));
 
     if (Math.abs(delta) >= 40) {
       scrollToTop(
         scrollTarget,
-        touchStartTop + (delta > 0 ? page : -page)
+        directionalPoint(touchStartTop, delta > 0 ? 1 : -1)
       );
     } else {
       snapNearest();
@@ -669,12 +735,7 @@ function setupAtzePageScroll(anchor, enabled = false) {
 
     unbind();
     scrollTarget = nextTarget;
-    eventTarget =
-      nextTarget === document.scrollingElement ||
-      nextTarget === document.documentElement ||
-      nextTarget === document.body
-        ? window
-        : nextTarget;
+    eventTarget = isDocumentTarget(nextTarget) ? window : nextTarget;
 
     eventTarget.addEventListener("touchstart", onTouchStart, { passive: true });
     eventTarget.addEventListener("touchend", onTouchEnd, { passive: true });
