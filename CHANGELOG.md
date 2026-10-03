@@ -1,3 +1,9 @@
+## v0.345.0
+
+- Option „Seitenweises Scrollen“ unter „Darstellung“ ergänzt; standardmäßig deaktiviert.
+- Bei aktivierter Option springt eine vertikale Wischgeste ungefähr eine sichtbare Bildschirmhöhe weiter und rastet weich auf der nächsten bzw. vorherigen Seite ein.
+- Die Funktion gilt für die Startseite, Raumseiten und eigene Seiten mit Atze-Navigationskopf.
+
 ## v0.344.0
 
 - Neue Statusbild-Strategy für den Raum Kino mit 8 Varianten für Tag/Nacht, Licht an/aus und Kino an/aus.
