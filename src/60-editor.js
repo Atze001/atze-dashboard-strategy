@@ -1997,6 +1997,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "Scrollen bleibt möglich.",
                 true
               )}
+              ${this._toggleHtml(
+                "page_scroll",
+                "Seitenweises Scrollen",
+                "Wischt ungefähr eine Bildschirmhöhe weiter und rastet seitenweise ein.",
+                false
+              )}
             </div>
           </div>
         </details>
