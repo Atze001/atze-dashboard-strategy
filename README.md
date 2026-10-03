@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.347.0**
+Version **0.348.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.348.0
+
+- Seitenweises Scrollen kombiniert jetzt die sichtbare Bildschirmhöhe mit den exakten Karten-Snap-Punkten.
+- Ein Wisch springt ungefähr eine Bildschirmseite weiter und wählt dort die nächstgelegene markierte Kartenoberkante.
+- Dadurch werden mehrere Raumkarten pro Wisch übersprungen, ohne mitten in einer Karte zu stoppen.
+
 ## v0.347.0
 
 - Raumkarten werden jetzt beim Rendern explizit als Scroll-Snap-Ziele markiert.
@@ -252,12 +258,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Seitenweises Scrollen richtet sich jetzt an den tatsächlichen Dashboard-Karten statt an festen Bildschirmhöhen aus.
 - Beim Wischen wird die nächste bzw. vorherige passende Karte sauber an der Oberkante positioniert.
 - Unterschiedlich hohe Raumkarten erzeugen dadurch keinen zunehmenden Versatz mehr.
-
-## v0.345.0
-
-- Option „Seitenweises Scrollen“ unter „Darstellung“ ergänzt; standardmäßig deaktiviert.
-- Bei aktivierter Option springt eine vertikale Wischgeste ungefähr eine sichtbare Bildschirmhöhe weiter und rastet weich auf der nächsten bzw. vorherigen Seite ein.
-- Die Funktion gilt für die Startseite, Raumseiten und eigene Seiten mit Atze-Navigationskopf.
 <!-- latest-changes:end -->
 
 ## Lizenz
