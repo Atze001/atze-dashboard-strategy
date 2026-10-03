@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.346.0";
+const ATZE_VERSION = "0.347.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -634,14 +634,7 @@ function setupAtzePageScroll(anchor, enabled = false) {
     for (const element of composedChildren(anchor)) {
       const name = element.localName || "";
       const isSnapCard =
-        name === "atze-home-hero-card" ||
-        name === "atze-control-center-card" ||
-        name === "atze-room-tile" ||
-        name === "atze-quick-actions-card" ||
-        name === "atze-room-nav-header" ||
-        element.classList?.contains("room-tile") ||
-        element.classList?.contains("quick-actions") ||
-        element.classList?.contains("favorites");
+        element.hasAttribute?.("data-atze-scroll-snap");
 
       if (!isSnapCard) continue;
 
@@ -9336,6 +9329,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="room ${roomPrimaryMetric ? "has-power" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
+            data-atze-scroll-snap="room"
             data-lights-on="${roomLightsOn ? "true" : "false"}"
             role="button"
             tabindex="0"
@@ -10940,7 +10934,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ${roomHtml}
           </div>
 
-          <div class="quick">
+          <div class="quick" data-atze-scroll-snap="quick-actions">
             <button class="lights" id="all-lights">
               <ha-icon icon="mdi:lightbulb-outline"></ha-icon>
               <span>Lichter aus</span>

@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.346.0**
+Version **0.347.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.347.0
+
+- Raumkarten werden jetzt beim Rendern explizit als Scroll-Snap-Ziele markiert.
+- Die Scroll-Logik verwendet nur noch diese eindeutigen Marker statt DOM-Heuristiken.
+- Der Quick-Actions-Bereich am Ende der Startseite ist ebenfalls ein explizites Snap-Ziel.
+
 ## v0.346.0
 
 - Seitenweises Scrollen richtet sich jetzt an den tatsächlichen Dashboard-Karten statt an festen Bildschirmhöhen aus.
@@ -252,12 +258,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Option „Seitenweises Scrollen“ unter „Darstellung“ ergänzt; standardmäßig deaktiviert.
 - Bei aktivierter Option springt eine vertikale Wischgeste ungefähr eine sichtbare Bildschirmhöhe weiter und rastet weich auf der nächsten bzw. vorherigen Seite ein.
 - Die Funktion gilt für die Startseite, Raumseiten und eigene Seiten mit Atze-Navigationskopf.
-
-## v0.344.0
-
-- Neue Statusbild-Strategy für den Raum Kino mit 8 Varianten für Tag/Nacht, Licht an/aus und Kino an/aus.
-- Kino-Statusbilder werden sowohl auf der Hauptseite als auch im Kopf der Kino-Bereichsseite verwendet.
-- Der Kino-Status wird automatisch aus Media-Playern sowie passenden Beamer-, Projektor-, Receiver-, Leinwand- oder Kino-Schaltern des Raums ermittelt.
 <!-- latest-changes:end -->
 
 ## Lizenz
