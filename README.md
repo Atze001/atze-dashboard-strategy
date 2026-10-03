@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.348.0**
+Version **0.349.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.349.0
+
+- „Seitenweises Scrollen“ ist jetzt ausschließlich auf der Hauptseite aktiv.
+- Raumansichten und eigene Unterseiten verwenden wieder das normale freie Scrollverhalten.
+- Die funktionierende Kombination aus seitenweitem Sprung und Karten-Snap auf der Hauptseite bleibt unverändert.
+
 ## v0.348.0
 
 - Seitenweises Scrollen kombiniert jetzt die sichtbare Bildschirmhöhe mit den exakten Karten-Snap-Punkten.
@@ -252,12 +258,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Raumkarten werden jetzt beim Rendern explizit als Scroll-Snap-Ziele markiert.
 - Die Scroll-Logik verwendet nur noch diese eindeutigen Marker statt DOM-Heuristiken.
 - Der Quick-Actions-Bereich am Ende der Startseite ist ebenfalls ein explizites Snap-Ziel.
-
-## v0.346.0
-
-- Seitenweises Scrollen richtet sich jetzt an den tatsächlichen Dashboard-Karten statt an festen Bildschirmhöhen aus.
-- Beim Wischen wird die nächste bzw. vorherige passende Karte sauber an der Oberkante positioniert.
-- Unterschiedlich hohe Raumkarten erzeugen dadurch keinen zunehmenden Versatz mehr.
 <!-- latest-changes:end -->
 
 ## Lizenz
