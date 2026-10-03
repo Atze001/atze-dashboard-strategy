@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.348.0";
+const ATZE_VERSION = "0.349.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -12720,7 +12720,6 @@ class AtzeRoomNavHeader extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._scrollTopCleanup = null;
-    this._pageScrollCleanup = null;
     this._homeSwipeCleanup = null;
   }
 
@@ -12749,14 +12748,6 @@ class AtzeRoomNavHeader extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
-    if (!this._pageScrollCleanup) {
-      this._pageScrollCleanup =
-        setupAtzePageScroll(
-          this,
-          this._config?.page_scroll === true
-        );
-    }
-
     if (!this._homeSwipeCleanup) {
       this._homeSwipeCleanup =
         setupAtzeHomeSwipe(
@@ -12773,9 +12764,6 @@ class AtzeRoomNavHeader extends HTMLElement {
   disconnectedCallback() {
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
-
-    this._pageScrollCleanup?.();
-    this._pageScrollCleanup = null;
 
     this._homeSwipeCleanup?.();
     this._homeSwipeCleanup = null;
