@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.343.0";
+const ATZE_VERSION = "0.344.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4959,6 +4959,7 @@ const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   bad: "bad/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   flur: "flur/04-tag-licht-aus-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
+  kino: "kino/01-tag-kino-aus-licht-aus_1800x1000.webp",
   buro: "buero/buro.jpg",
   arbeitszimmer: "buero/buro.jpg",
   kinderzimmer: "kinderzimmer/kinderzimmer.webp",
@@ -4984,6 +4985,7 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   bad: "bad/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   flur: "flur/01-tag-licht-an-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
+  kino: "kino/03-tag-kino-aus-licht-an_1800x1000.webp",
   buro: "buero/buro-light.webp",
   arbeitszimmer: "buero/buro-light.webp",
   kinderzimmer: "kinderzimmer/kinderzimmer-light.webp",
@@ -5089,6 +5091,16 @@ const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
     night_light_off_window_open_cover_closed: "balkon/06-nacht-tuer-offen-rollladen-unten.webp",
     night_light_off_window_closed_cover_open: "balkon/07-nacht-tuer-zu-rollladen-oben.webp",
     night_light_off_window_open_cover_open: "balkon/08-nacht-tuer-offen-rollladen-oben.webp",
+  },
+  kino: {
+    day_light_off_cinema_off: "kino/01-tag-kino-aus-licht-aus_1800x1000.webp",
+    day_light_off_cinema_on: "kino/02-tag-kino-an-licht-aus_1800x1000.webp",
+    day_light_on_cinema_off: "kino/03-tag-kino-aus-licht-an_1800x1000.webp",
+    day_light_on_cinema_on: "kino/04-tag-kino-an-licht-an_1800x1000.webp",
+    night_light_off_cinema_off: "kino/05-nacht-kino-aus-licht-aus_1800x1000.webp",
+    night_light_off_cinema_on: "kino/06-nacht-kino-an-licht-aus_1800x1000.webp",
+    night_light_on_cinema_off: "kino/07-nacht-kino-aus-licht-an_1800x1000.webp",
+    night_light_on_cinema_on: "kino/08-nacht-kino-an-licht-an_1800x1000.webp",
   },
   flur: {
     day_light_on_door_closed_unlocked: "flur/01-tag-licht-an-tuer-zu.webp",
@@ -6362,6 +6374,16 @@ function buildHomeOverviewView(
       cover_entity: coverEntity,
       lock_entity: lockEntity,
       light_entities: roomLightEntities,
+      cinema_entities: areaEntities
+        .filter((entity) => {
+          const domain = domainOf(entity.entity_id);
+          if (!["media_player", "switch"].includes(domain)) return false;
+          if (!hass.states[entity.entity_id]) return false;
+          const text = normalizedText(`${entity.entity_id} ${normalizedFriendlyName(hass, entity)}`);
+          return domain === "media_player" || ["beamer", "projektor", "projector", "receiver", "leinwand", "cinema", "kino"].some((term) => text.includes(term));
+        })
+        .map((entity) => entity.entity_id),
+      state_mode: stateImageKey === "kino" ? "cinema" : (stateImageKey === "flur" ? "door_lock" : "window_cover"),
     });
 
     for (const entity of areaEntities) {
@@ -7049,6 +7071,15 @@ function buildAreaView(
     areaOverride.state_images ||
     config.room_state_images?.[area.area_id] ||
     (roomStateImageKey ? DEFAULT_HOME_ROOM_STATE_IMAGES[roomStateImageKey] : undefined);
+  const roomCinemaEntities = entities
+    .filter((entity) => {
+      const domain = domainOf(entity.entity_id);
+      if (!["media_player", "switch"].includes(domain)) return false;
+      if (!hass.states[entity.entity_id]) return false;
+      const text = normalizedText(`${entity.entity_id} ${normalizedFriendlyName(hass, entity)}`);
+      return domain === "media_player" || ["beamer", "projektor", "projector", "receiver", "leinwand", "cinema", "kino"].some((term) => text.includes(term));
+    })
+    .map((entity) => entity.entity_id);
   const roomLightsOn = roomLightEntities.some(
     (entityId) => hass.states?.[entityId]?.state === "on"
   );
@@ -7079,7 +7110,8 @@ function buildAreaView(
                 window_entities: roomWindowEntities,
                 cover_entities: roomCoverEntities,
                 lock_entities: entities.filter((entity) => domainOf(entity.entity_id) === "lock").map((entity) => entity.entity_id),
-                state_mode: roomStateImageKey === "flur" ? "door_lock" : "window_cover",
+                cinema_entities: roomCinemaEntities,
+                state_mode: roomStateImageKey === "kino" ? "cinema" : (roomStateImageKey === "flur" ? "door_lock" : "window_cover"),
                 ...(dynamicRoomImages ? { state_images: dynamicRoomImages } : {}),
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
                 light_image:
