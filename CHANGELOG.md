@@ -1,3 +1,9 @@
+## v0.346.0
+
+- Seitenweises Scrollen richtet sich jetzt an den tatsächlichen Dashboard-Karten statt an festen Bildschirmhöhen aus.
+- Beim Wischen wird die nächste bzw. vorherige passende Karte sauber an der Oberkante positioniert.
+- Unterschiedlich hohe Raumkarten erzeugen dadurch keinen zunehmenden Versatz mehr.
+
 ## v0.345.0
 
 - Option „Seitenweises Scrollen“ unter „Darstellung“ ergänzt; standardmäßig deaktiviert.
