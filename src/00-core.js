@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.347.0";
+const ATZE_VERSION = "0.348.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -663,20 +663,29 @@ function setupAtzePageScroll(anchor, enabled = false) {
 
   const directionalPoint = (top, direction) => {
     const points = snapPoints();
-    const tolerance = 12;
+    const viewport =
+      isDocumentTarget(scrollTarget)
+        ? window.innerHeight
+        : Math.max(1, scrollTarget?.clientHeight || window.innerHeight);
+    const targetTop = top + direction * viewport;
 
-    if (direction > 0) {
-      return (
-        points.find((point) => point > top + tolerance) ??
-        points[points.length - 1] ??
-        top
-      );
+    const directionalPoints =
+      direction > 0
+        ? points.filter((point) => point > top + 12)
+        : points.filter((point) => point < top - 12);
+
+    if (!directionalPoints.length) {
+      return direction > 0
+        ? points[points.length - 1] ?? top
+        : points[0] ?? top;
     }
 
-    return (
-      [...points].reverse().find((point) => point < top - tolerance) ??
-      points[0] ??
-      top
+    return directionalPoints.reduce(
+      (best, point) =>
+        Math.abs(point - targetTop) < Math.abs(best - targetTop)
+          ? point
+          : best,
+      directionalPoints[0]
     );
   };
 
