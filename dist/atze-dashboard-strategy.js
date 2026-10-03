@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.344.0";
+const ATZE_VERSION = "0.345.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -569,6 +569,131 @@ function atzeFindScrollContainer(anchor) {
     document.documentElement
   );
 }
+
+function setupAtzePageScroll(anchor, enabled = false) {
+  if (!anchor || !enabled) return () => {};
+
+  let scrollTarget = null;
+  let eventTarget = null;
+  let touchStartY = null;
+  let touchStartTop = 0;
+  let wheelTimer = null;
+  let retryTimers = [];
+
+  const scrollTopOf = (target) =>
+    target === document.scrollingElement ||
+    target === document.documentElement ||
+    target === document.body
+      ? window.scrollY || document.documentElement.scrollTop || 0
+      : target.scrollTop;
+
+  const viewportOf = (target) =>
+    target === document.scrollingElement ||
+    target === document.documentElement ||
+    target === document.body
+      ? window.innerHeight
+      : target.clientHeight;
+
+  const maxScrollOf = (target) =>
+    target === document.scrollingElement ||
+    target === document.documentElement ||
+    target === document.body
+      ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+      : Math.max(0, target.scrollHeight - target.clientHeight);
+
+  const scrollToTop = (target, top) => {
+    const nextTop = Math.max(0, Math.min(maxScrollOf(target), top));
+    if (
+      target === document.scrollingElement ||
+      target === document.documentElement ||
+      target === document.body
+    ) {
+      window.scrollTo({ top: nextTop, behavior: "smooth" });
+    } else if (typeof target.scrollTo === "function") {
+      target.scrollTo({ top: nextTop, behavior: "smooth" });
+    } else {
+      target.scrollTop = nextTop;
+    }
+  };
+
+  const snapNearest = () => {
+    if (!scrollTarget) return;
+    const page = Math.max(1, viewportOf(scrollTarget));
+    scrollToTop(
+      scrollTarget,
+      Math.round(scrollTopOf(scrollTarget) / page) * page
+    );
+  };
+
+  const onTouchStart = (event) => {
+    if (!event.touches?.length || !scrollTarget) return;
+    touchStartY = event.touches[0].clientY;
+    touchStartTop = scrollTopOf(scrollTarget);
+  };
+
+  const onTouchEnd = (event) => {
+    if (touchStartY == null || !scrollTarget) return;
+    const endY = event.changedTouches?.[0]?.clientY ?? touchStartY;
+    const delta = touchStartY - endY;
+    const page = Math.max(1, viewportOf(scrollTarget));
+
+    if (Math.abs(delta) >= 40) {
+      scrollToTop(
+        scrollTarget,
+        touchStartTop + (delta > 0 ? page : -page)
+      );
+    } else {
+      snapNearest();
+    }
+
+    touchStartY = null;
+  };
+
+  const onWheel = () => {
+    window.clearTimeout(wheelTimer);
+    wheelTimer = window.setTimeout(snapNearest, 140);
+  };
+
+  const unbind = () => {
+    if (!eventTarget) return;
+    eventTarget.removeEventListener("touchstart", onTouchStart);
+    eventTarget.removeEventListener("touchend", onTouchEnd);
+    eventTarget.removeEventListener("wheel", onWheel);
+    eventTarget = null;
+    scrollTarget = null;
+  };
+
+  const bind = () => {
+    const nextTarget = atzeFindScrollContainer(anchor);
+    if (!nextTarget || nextTarget === scrollTarget) return;
+
+    unbind();
+    scrollTarget = nextTarget;
+    eventTarget =
+      nextTarget === document.scrollingElement ||
+      nextTarget === document.documentElement ||
+      nextTarget === document.body
+        ? window
+        : nextTarget;
+
+    eventTarget.addEventListener("touchstart", onTouchStart, { passive: true });
+    eventTarget.addEventListener("touchend", onTouchEnd, { passive: true });
+    eventTarget.addEventListener("wheel", onWheel, { passive: true });
+  };
+
+  bind();
+  for (const delay of [100, 300, 800, 1600]) {
+    retryTimers.push(window.setTimeout(bind, delay));
+  }
+
+  return () => {
+    retryTimers.forEach((timer) => window.clearTimeout(timer));
+    retryTimers = [];
+    window.clearTimeout(wheelTimer);
+    unbind();
+  };
+}
+
 
 function setupAtzeScrollTopButton(anchor) {
   if (!anchor) return () => {};
@@ -6517,6 +6642,7 @@ function buildHomeOverviewView(
     cover_entities: uniqueEntityIds(coverEntities),
     lock_entity: lockEntity,
     night_entity: config.home_night_entity || null,
+    page_scroll: config.page_scroll === true,
     force_kiosk: config.force_kiosk === true,
     clock_kiosk_toggle:
       config.clock_kiosk_toggle !== false,
@@ -6638,6 +6764,7 @@ function buildCustomPageViews(config) {
         icon: "mdi:home",
         area_name: title,
         navigation_path: config.home_path || "home",
+        page_scroll: config.page_scroll === true,
       };
 
       if (Array.isArray(generatedView.sections)) {
@@ -7102,6 +7229,7 @@ function buildAreaView(
           area_name: areaName,
           area_id: area.area_id,
           navigation_path: roomHomePath,
+          page_scroll: config.page_scroll === true,
           hide_home_icon: hasRoomHeaderImage,
           ...(hasRoomHeaderImage ? { image_height: 235 } : {}),
           ...(hasRoomHeaderImage
@@ -7833,6 +7961,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._clockTimer = null;
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
+    this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
@@ -7877,6 +8006,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._pageScrollCleanup) {
+      this._pageScrollCleanup =
+        setupAtzePageScroll(
+          this,
+          this._config?.page_scroll === true
+        );
+    }
+
     this._render();
   }
 
@@ -7888,6 +8025,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._pageScrollCleanup?.();
+    this._pageScrollCleanup = null;
   }
 
   _startClock() {
@@ -12516,6 +12656,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._scrollTopCleanup = null;
+    this._pageScrollCleanup = null;
     this._homeSwipeCleanup = null;
   }
 
@@ -12544,6 +12685,14 @@ class AtzeRoomNavHeader extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._pageScrollCleanup) {
+      this._pageScrollCleanup =
+        setupAtzePageScroll(
+          this,
+          this._config?.page_scroll === true
+        );
+    }
+
     if (!this._homeSwipeCleanup) {
       this._homeSwipeCleanup =
         setupAtzeHomeSwipe(
@@ -12560,6 +12709,9 @@ class AtzeRoomNavHeader extends HTMLElement {
   disconnectedCallback() {
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._pageScrollCleanup?.();
+    this._pageScrollCleanup = null;
 
     this._homeSwipeCleanup?.();
     this._homeSwipeCleanup = null;
@@ -15566,6 +15718,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "Scrollbalken ausblenden",
                 "Scrollen bleibt möglich.",
                 true
+              )}
+              ${this._toggleHtml(
+                "page_scroll",
+                "Seitenweises Scrollen",
+                "Wischt ungefähr eine Bildschirmhöhe weiter und rastet seitenweise ein.",
+                false
               )}
             </div>
           </div>

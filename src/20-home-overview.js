@@ -8,6 +8,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._clockTimer = null;
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
+    this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
@@ -52,6 +53,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         setupAtzeScrollTopButton(this);
     }
 
+    if (!this._pageScrollCleanup) {
+      this._pageScrollCleanup =
+        setupAtzePageScroll(
+          this,
+          this._config?.page_scroll === true
+        );
+    }
+
     this._render();
   }
 
@@ -63,6 +72,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
+
+    this._pageScrollCleanup?.();
+    this._pageScrollCleanup = null;
   }
 
   _startClock() {
