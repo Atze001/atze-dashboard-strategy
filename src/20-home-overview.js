@@ -1322,6 +1322,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="room ${roomPrimaryMetric ? "has-power" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
+            data-atze-scroll-snap="room"
             data-lights-on="${roomLightsOn ? "true" : "false"}"
             role="button"
             tabindex="0"
@@ -2926,7 +2927,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ${roomHtml}
           </div>
 
-          <div class="quick">
+          <div class="quick" data-atze-scroll-snap="quick-actions">
             <button class="lights" id="all-lights">
               <ha-icon icon="mdi:lightbulb-outline"></ha-icon>
               <span>Lichter aus</span>
