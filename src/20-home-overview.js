@@ -382,6 +382,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
 
   _roomImageState(room, lightsOn = false) {
+    if (room.state_mode === "cinema" && room.state_images) {
+      const cinemaOn = (room.cinema_entities || []).some((entityId) => {
+        const state = String(this._state(entityId)?.state || "").toLowerCase();
+        return !["", "off", "idle", "standby", "unavailable", "unknown"].includes(state);
+      });
+      const hour = new Date().getHours();
+      const period = hour >= 7 && hour < 20 ? "day" : "night";
+      return `${period}_light_${lightsOn ? "on" : "off"}_cinema_${cinemaOn ? "on" : "off"}`;
+    }
     const windowState = room.window_entity ? this._state(room.window_entity) : null;
     const windowOpen = Boolean(windowState && ["on", "open"].includes(String(windowState.state || "").toLowerCase()));
     if (room.area_id === "flur" && room.state_images) {

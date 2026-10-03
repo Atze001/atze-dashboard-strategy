@@ -129,12 +129,21 @@ class AtzeRoomNavHeader extends HTMLElement {
       return stateObj?.state === "open" || (Number.isFinite(pos) && pos > 0);
     });
     const lockState = lockEntities.map((entityId) => String(this._hass?.states?.[entityId]?.state || "").toLowerCase()).find(Boolean) || "";
+    const cinemaEntities = Array.isArray(this._config.cinema_entities)
+      ? this._config.cinema_entities
+      : [];
+    const cinemaOn = cinemaEntities.some((entityId) => {
+      const state = String(this._hass?.states?.[entityId]?.state || "").toLowerCase();
+      return !["", "off", "idle", "standby", "unavailable", "unknown"].includes(state);
+    });
     const stateKey =
-      this._config.state_mode === "door_lock"
-        ? (windowOpen
-            ? `${lightsOn ? "light_on" : "light_off"}_door_open`
-            : `${lightsOn ? "light_on" : "light_off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`)
-        : `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
+      this._config.state_mode === "cinema"
+        ? `${lightsOn ? "light_on" : "light_off"}_cinema_${cinemaOn ? "on" : "off"}`
+        : this._config.state_mode === "door_lock"
+          ? (windowOpen
+              ? `${lightsOn ? "light_on" : "light_off"}_door_open`
+              : `${lightsOn ? "light_on" : "light_off"}_door_closed_${lockState === "locked" ? "locked" : "unlocked"}`)
+          : `${lightsOn ? "light_on" : "light_off"}_${windowOpen ? "window_open" : "window_closed"}_${coverOpen ? "cover_open" : "cover_closed"}`;
     const stateImages =
       this._config.state_images && typeof this._config.state_images === "object"
         ? this._config.state_images

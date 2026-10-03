@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.343.0**
+Version **0.344.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.344.0
+
+- Neue Statusbild-Strategy für den Raum Kino mit 8 Varianten für Tag/Nacht, Licht an/aus und Kino an/aus.
+- Kino-Statusbilder werden sowohl auf der Hauptseite als auch im Kopf der Kino-Bereichsseite verwendet.
+- Der Kino-Status wird automatisch aus Media-Playern sowie passenden Beamer-, Projektor-, Receiver-, Leinwand- oder Kino-Schaltern des Raums ermittelt.
+
 ## v0.343.0
 
 - Behebt den Dashboard-Startfehler `Cannot access 'deviceClass' before initialization` aus v0.342.0.
@@ -250,11 +256,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Leistungs-Sensoren dürfen auch dann als Raum-Leistungswert auf der Hauptseite verwendet werden, wenn sie als Unterentität eines Geräte-Popups gruppiert sind.
 - Dadurch wird z. B. die Leistung eines Smart Plugs weiterhin oben links auf der zugehörigen Raumkachel angezeigt.
-
-## v0.341.0
-
-- Favoriten können in den Dashboard-Einstellungen pro Entität optional eine Bestätigung vor der Aktion verlangen.
-- Die Bestätigung ist standardmäßig deaktiviert; bestehende Favoriten verhalten sich unverändert.
 <!-- latest-changes:end -->
 
 ## Lizenz

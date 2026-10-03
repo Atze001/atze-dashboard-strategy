@@ -1,3 +1,9 @@
+## v0.344.0
+
+- Neue Statusbild-Strategy für den Raum Kino mit 8 Varianten für Tag/Nacht, Licht an/aus und Kino an/aus.
+- Kino-Statusbilder werden sowohl auf der Hauptseite als auch im Kopf der Kino-Bereichsseite verwendet.
+- Der Kino-Status wird automatisch aus Media-Playern sowie passenden Beamer-, Projektor-, Receiver-, Leinwand- oder Kino-Schaltern des Raums ermittelt.
+
 ## v0.343.0
 
 - Behebt den Dashboard-Startfehler `Cannot access 'deviceClass' before initialization` aus v0.342.0.
