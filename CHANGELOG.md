@@ -1,3 +1,9 @@
+## v0.347.0
+
+- Raumkarten werden jetzt beim Rendern explizit als Scroll-Snap-Ziele markiert.
+- Die Scroll-Logik verwendet nur noch diese eindeutigen Marker statt DOM-Heuristiken.
+- Der Quick-Actions-Bereich am Ende der Startseite ist ebenfalls ein explizites Snap-Ziel.
+
 ## v0.346.0
 
 - Seitenweises Scrollen richtet sich jetzt an den tatsächlichen Dashboard-Karten statt an festen Bildschirmhöhen aus.
