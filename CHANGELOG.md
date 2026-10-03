@@ -1,3 +1,9 @@
+## v0.348.0
+
+- Seitenweises Scrollen kombiniert jetzt die sichtbare Bildschirmhöhe mit den exakten Karten-Snap-Punkten.
+- Ein Wisch springt ungefähr eine Bildschirmseite weiter und wählt dort die nächstgelegene markierte Kartenoberkante.
+- Dadurch werden mehrere Raumkarten pro Wisch übersprungen, ohne mitten in einer Karte zu stoppen.
+
 ## v0.347.0
 
 - Raumkarten werden jetzt beim Rendern explizit als Scroll-Snap-Ziele markiert.
