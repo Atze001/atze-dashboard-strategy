@@ -1052,6 +1052,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     );
   }
 
+  _dashboardPages() {
+    return this._customPages()
+      .map((page, index) => ({ page, index }))
+      .filter(({ page }) => !page.navigation_path);
+  }
+
+  _navigationPages() {
+    return this._customPages()
+      .map((page, index) => ({ page, index }))
+      .filter(({ page }) => Boolean(page.navigation_path));
+  }
+
+
   _schedulerPopupEnabled() {
     return schedulerPopupEnabled(this._config || {});
   }
@@ -1166,8 +1179,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
-    const customPagesHtml = this._customPages()
-      .map((page, index) => this._customPageHtml(page, index))
+    const customPagesHtml = this._dashboardPages()
+      .map(({ page, index }) => this._customPageHtml(page, index))
+      .join("");
+    const navigationPagesHtml = this._navigationPages()
+      .map(({ page, index }) => this._customPageHtml(page, index))
       .join("");
 
     const entityAreaPanels =
@@ -2141,17 +2157,41 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Lege zusätzliche Dashboard-Seiten oder reine Navigations-Buttons an.
-              Ein Navigations-Button kann direkt auf interne Home-Assistant-Seiten
-              wie Geräte, Entitäten oder Automationen führen. Eigene Seiten und
-              Navigationen erscheinen auf der Startseite.
+              Lege zusätzliche Dashboard-Seiten an oder bearbeite bestehende Seiten als YAML.
+              Eigene Seiten erscheinen als Button auf der Startseite und öffnen eine Dashboard-Ansicht.
             </div>
             <div class="toolbar">
               <button id="add-custom-page" type="button">Leere Seite</button>
-              <button id="add-navigation-link" type="button">Navigation</button>
             </div>
             <div class="custom-pages-list">
               ${customPagesHtml || '<div class="loading">Noch keine eigene Seite angelegt.</div>'}
+            </div>
+          </div>
+        </details>
+
+        <details
+          class="panel editor-section"
+          data-editor-section="navigation"
+          ${this._openEditorSections.has("navigation") ? "open" : ""}
+        >
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:navigation-variant-outline"></ha-icon>
+              <span class="editor-section-summary-title">Navigation</span>
+            </span>
+            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
+          </summary>
+
+          <div class="editor-section-body">
+            <div class="editor-section-help">
+              Lege direkte Navigations-Buttons zu Home-Assistant-Seiten wie Geräte,
+              Entitäten, Automationen oder HACS an.
+            </div>
+            <div class="toolbar">
+              <button id="add-navigation-link" type="button">Navigation hinzufügen</button>
+            </div>
+            <div class="custom-pages-list">
+              ${navigationPagesHtml || '<div class="loading">Noch keine Navigation angelegt.</div>'}
             </div>
           </div>
         </details>

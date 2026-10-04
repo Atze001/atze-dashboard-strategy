@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.353.0**
+Version **0.354.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,13 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.354.0
+
+- Dashboard-Einstellungen trennen „Eigene Seiten“ und „Navigation“ in zwei eigenständige Kategorien.
+- Bestehende eigene Dashboard-Seiten erscheinen wieder ausschließlich unter „Eigene Seiten“.
+- Direkte Home-Assistant-Ziele wie Geräte, Entitäten, Automationen oder HACS werden separat unter „Navigation“ verwaltet.
+- Bestehende Konfigurationen bleiben kompatibel; die gespeicherten `custom_pages` werden nicht migriert.
+
 ## v0.353.0
 
 - Temperatur- und Luftfeuchtigkeits-Popup öffnet zuverlässig direkt aus den Raumkarten, ohne zur Raumansicht weiterzunavigieren.
@@ -253,12 +260,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Zeiträume 8 h, 24 h, 7 d und 30 d sind direkt im Popup auswählbar.
 - Verlaufsdaten werden ohne zusätzliche Chart-Abhängigkeit direkt aus der Home-Assistant-Historie geladen und als Liniendiagramm dargestellt.
 - Das Popup zeigt aktuellen Wert, Raum, Messart und verwendeten Sensor.
-
-## v0.351.0
-
-- Die Gesamtstrom-Kachel auf der Hauptseite öffnet jetzt ein Stromverbrauch-Popup im Stil des Wetter-Popups.
-- Das Popup zeigt den aktuellen Gesamtverbrauch und darunter die automatisch erkannten Haupt-/Raum-Leistungssensoren.
-- Raumzähler werden nach aktuellem Verbrauch absteigend sortiert; nicht verfügbare Werte werden ausgeblendet.
 <!-- latest-changes:end -->
 
 ## Lizenz
