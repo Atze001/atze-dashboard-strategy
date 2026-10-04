@@ -2645,7 +2645,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: rgba(255,255,255,0.82);
         }
 
-        .room-history-trigger { cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
+        .room-history-trigger { pointer-events:auto; cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
         .room-meta .room-temperature ha-icon {
           width: 17px;
           height: 17px;
