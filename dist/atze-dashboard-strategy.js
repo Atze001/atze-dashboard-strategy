@@ -8506,9 +8506,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const start = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
     try {
+      const endTime = new Date().toISOString();
       const response = await this._hass.callApi(
         "GET",
-        `history/period/${encodeURIComponent(start)}?filter_entity_id=${encodeURIComponent(entityId)}&minimal_response&no_attributes`
+        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(endTime)}&filter_entity_id=${encodeURIComponent(entityId)}&minimal_response&no_attributes`
       );
       const states = Array.isArray(response?.[0]) ? response[0] : [];
       this._climateHistory = states
@@ -8542,7 +8543,35 @@ class AtzeHomeOverviewCard extends HTMLElement {
       return '<div class="history-empty">Für diesen Zeitraum sind keine Verlaufsdaten verfügbar.</div>';
     }
 
-    const values = points.map((point) => point.value);
+    const sortedPoints = [...points].sort((a, b) => a.time - b.time);
+    const range = this._climateHistoryPopup?.range || "24h";
+    const rangeHours = { "8h": 8, "24h": 24, "7d": 168, "30d": 720 }[range] || 24;
+    const bucketMinutes = { "8h": 5, "24h": 15, "7d": 120, "30d": 720 }[range] || 15;
+    const bucketMs = bucketMinutes * 60 * 1000;
+    const end = Date.now();
+    const start = end - rangeHours * 60 * 60 * 1000;
+
+    const buckets = new Map();
+    sortedPoints.forEach((point) => {
+      if (point.time < start || point.time > end) return;
+      const bucket = Math.floor((point.time - start) / bucketMs);
+      const current = buckets.get(bucket) || { total: 0, count: 0 };
+      current.total += point.value;
+      current.count += 1;
+      buckets.set(bucket, current);
+    });
+    const chartPoints = [...buckets.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([bucket, sample]) => ({
+        time: start + (bucket + 0.5) * bucketMs,
+        value: sample.total / sample.count,
+      }));
+
+    if (chartPoints.length < 2) {
+      return '<div class="history-empty">Für diesen Zeitraum sind keine ausreichenden Verlaufsdaten verfügbar.</div>';
+    }
+
+    const values = chartPoints.map((point) => point.value);
     let min = Math.min(...values);
     let max = Math.max(...values);
     if (min === max) {
@@ -8553,10 +8582,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     min -= pad;
     max += pad;
 
-    const start = points[0].time;
-    const end = points[points.length - 1].time;
     const span = Math.max(1, end - start);
-    const coords = points.map((point) => {
+    const coords = chartPoints.map((point) => {
       const x = 12 + ((point.time - start) / span) * 276;
       const y = 138 - ((point.value - min) / (max - min)) * 116;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
@@ -10649,8 +10676,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: rgba(255,255,255,0.82);
         }
 
-        .room-meta .room-temperature ha-icon,
-        .room-history-trigger { cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
+        .room-history-trigger { pointer-events:auto; cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
+        .room-meta .room-temperature ha-icon {
+          width: 17px;
+          height: 17px;
+          --mdc-icon-size: 17px;
+        }
         .room-history-trigger:active { background:rgba(255,255,255,.12); }
         .history-range { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:20px 0 14px; }
         .history-range button { border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:9px 4px; background:rgba(118,118,128,.14); color:var(--primary-text-color); font:inherit; font-size:13px; cursor:pointer; }
@@ -11263,8 +11294,22 @@ class AtzeHomeOverviewCard extends HTMLElement {
           );
         }
 
+        element.addEventListener("click", (event) => {
+          const historyTrigger = event.target?.closest?.(".room-history-trigger");
+          if (!historyTrigger) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          this._openClimateHistory(
+            historyTrigger.dataset.historyEntity,
+            historyTrigger.dataset.historyKind,
+            historyTrigger.dataset.historyRoom,
+            "24h"
+          );
+        }, true);
+
         element.querySelectorAll(".room-history-trigger").forEach((trigger) => {
-          const openHistory = (event) => {
+          trigger.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
             event.preventDefault();
             event.stopPropagation();
             this._openClimateHistory(
@@ -11273,14 +11318,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
               trigger.dataset.historyRoom,
               "24h"
             );
-          };
-          trigger.addEventListener("click", openHistory);
-          trigger.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") openHistory(event);
           });
         });
 
-        element.addEventListener("click", () => this._navigate(element.dataset.path));
+        element.addEventListener("click", (event) => {
+          if (event.target?.closest?.(".room-history-trigger")) return;
+          this._navigate(element.dataset.path);
+        });
 
         element.addEventListener("keydown", (event) => {
           if (event.target !== element) return;
