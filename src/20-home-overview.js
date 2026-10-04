@@ -10,6 +10,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._scrollTopCleanup = null;
     this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
+    this._powerPopupOpen = false;
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
@@ -391,6 +392,82 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return `<div class="weather-popup-backdrop" id="weather-popup-backdrop"><section class="weather-popup" role="dialog" aria-modal="true" aria-label="Wetterinformationen"><button class="weather-popup-close" id="weather-popup-close" type="button" aria-label="Schließen"><ha-icon icon="mdi:close"></ha-icon></button><div class="weather-popup-current"><ha-icon class="weather-popup-icon" icon="${this._weatherIcon(weather.state)}"></ha-icon><div><div class="weather-popup-temp">${attrs.temperature != null ? Math.round(Number(attrs.temperature)) + " °C" : "—"}</div><div class="weather-popup-condition">${this._weatherText(weather.state)}</div></div></div><div class="weather-metrics">${metric("mdi:water-percent", "Luftfeuchtigkeit", attrs.humidity, " %")}${metric("mdi:weather-windy", "Wind", attrs.wind_speed, attrs.wind_speed_unit ? " " + attrs.wind_speed_unit : "")}${metric("mdi:gauge", "Luftdruck", attrs.pressure, attrs.pressure_unit ? " " + attrs.pressure_unit : "")}${metric("mdi:weather-rainy", "Niederschlag", attrs.precipitation, attrs.precipitation_unit ? " " + attrs.precipitation_unit : "")}</div><div class="weather-forecast"><h3>Vorhersage</h3>${this._weatherForecastLoading ? '<div class="weather-loading">Wird geladen …</div>' : (forecast ? `<div class="weather-forecast-grid">${forecast}</div>` : '<div class="weather-loading">Keine Tagesvorhersage verfügbar.</div>')}</div></section></div>`;
   }
 
+
+
+  _openPowerPopup() {
+    this._powerPopupOpen = true;
+    this._render();
+  }
+
+  _closePowerPopup() {
+    this._powerPopupOpen = false;
+    this._render();
+  }
+
+  _powerPopupHtml() {
+    if (!this._powerPopupOpen) return "";
+
+    const rows = (this._config.room_tiles || [])
+      .map((room) => {
+        const entityId =
+          typeof room.power === "string"
+            ? room.power
+            : room.power?.entity_id;
+        const state = this._state(entityId);
+        const value = Number.parseFloat(state?.state);
+        if (
+          !entityId ||
+          !Number.isFinite(value) ||
+          ["unknown", "unavailable"].includes(String(state?.state || "").toLowerCase())
+        ) return null;
+
+        const unit = state?.attributes?.unit_of_measurement || "W";
+        const formatted = unit === "W"
+          ? `${Math.round(value)} W`
+          : `${Math.round(value * 10) / 10} ${unit}`;
+
+        return {
+          name: room.name || room.area_id || "Raum",
+          value,
+          formatted,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.value - a.value);
+
+    const rowHtml = rows.length
+      ? rows.map((row) => `
+          <div class="power-popup-row">
+            <div class="power-popup-room">
+              <ha-icon icon="mdi:home-outline"></ha-icon>
+              <span>${row.name}</span>
+            </div>
+            <strong>${row.formatted}</strong>
+          </div>
+        `).join("")
+      : '<div class="power-popup-empty">Keine Raumzähler verfügbar.</div>';
+
+    return `
+      <div class="weather-popup-backdrop" id="power-popup-backdrop">
+        <section class="weather-popup power-popup" role="dialog" aria-modal="true" aria-label="Gesamtverbrauch">
+          <button class="weather-popup-close" id="power-popup-close" type="button" aria-label="Schließen">
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+          <div class="weather-popup-current">
+            <ha-icon class="weather-popup-icon" icon="mdi:flash"></ha-icon>
+            <div>
+              <div class="weather-popup-temp">${this._formatPower()}</div>
+              <div class="weather-popup-condition">Gesamtverbrauch</div>
+            </div>
+          </div>
+          <div class="power-popup-list">
+            <h3>Raumzähler</h3>
+            ${rowHtml}
+          </div>
+        </section>
+      </div>
+    `;
+  }
 
 
   _roomImageState(room, lightsOn = false) {
@@ -1892,6 +1969,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         #weather-status,
+        #power-status,
         #security-status,
         #battery-status,
         #alarm-status,
@@ -1912,6 +1990,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .weather-metric div { min-width:0; display:flex; flex-direction:column; }
         .weather-metric span { color:var(--home-muted); font-size:12px; }
         .weather-metric strong { font-size:15px; }
+        .power-popup-list { margin-top:22px; }
+        .power-popup-list h3 { margin:0 0 10px; font-size:16px; }
+        .power-popup-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 14px; border-radius:16px; background:rgba(118,118,128,.14); }
+        .power-popup-row + .power-popup-row { margin-top:8px; }
+        .power-popup-room { min-width:0; display:flex; align-items:center; gap:10px; }
+        .power-popup-room ha-icon { color:var(--home-yellow); }
+        .power-popup-room span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .power-popup-row strong { flex:0 0 auto; font-size:16px; }
+        .power-popup-empty { padding:14px; border-radius:16px; color:var(--home-muted); background:rgba(118,118,128,.14); }
         .weather-forecast h3 { margin:22px 0 10px; font-size:16px; }
         .weather-forecast-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
         .weather-forecast-day { min-width:0; padding:10px 6px; border-radius:14px; background:rgba(118,118,128,.12); text-align:center; display:grid; justify-items:center; gap:6px; }
@@ -2856,7 +2943,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
 
             ${powerAvailable ? `
-              <div class="status power">
+              <div class="status power" id="power-status" role="button" tabindex="0">
                 <ha-icon icon="mdi:flash"></ha-icon>
                 <div>
                   <div class="status-main">${this._formatPower()}</div>
@@ -2975,6 +3062,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           </div>
         </div>
         ${this._weatherPopupHtml(weather)}
+          ${this._powerPopupHtml()}
       </ha-card>
     `;
 
@@ -3226,6 +3314,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot.querySelector("#weather-popup-close")?.addEventListener("click", () => this._closeWeatherPopup());
     this.shadowRoot.querySelector("#weather-popup-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "weather-popup-backdrop") this._closeWeatherPopup();
+    });
+
+    const powerStatus = this.shadowRoot.querySelector("#power-status");
+    powerStatus?.addEventListener("click", () => this._openPowerPopup());
+    powerStatus?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        this._openPowerPopup();
+      }
+    });
+    this.shadowRoot.querySelector("#power-popup-close")?.addEventListener("click", () => this._closePowerPopup());
+    this.shadowRoot.querySelector("#power-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "power-popup-backdrop") this._closePowerPopup();
     });
 
     this.shadowRoot
