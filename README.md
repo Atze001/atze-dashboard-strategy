@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.351.0
+
+- Die Gesamtstrom-Kachel auf der Hauptseite öffnet jetzt ein Stromverbrauch-Popup im Stil des Wetter-Popups.
+- Das Popup zeigt den aktuellen Gesamtverbrauch und darunter die automatisch erkannten Haupt-/Raum-Leistungssensoren.
+- Raumzähler werden nach aktuellem Verbrauch absteigend sortiert; nicht verfügbare Werte werden ausgeblendet.
+
 ## v0.350.0
 
 - Namensbasierte Gruppierung respektiert jetzt die tatsächliche Entity-Domain.
@@ -252,12 +258,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - „Seitenweises Scrollen“ ist jetzt ausschließlich auf der Hauptseite aktiv.
 - Raumansichten und eigene Unterseiten verwenden wieder das normale freie Scrollverhalten.
 - Die funktionierende Kombination aus seitenweitem Sprung und Karten-Snap auf der Hauptseite bleibt unverändert.
-
-## v0.348.0
-
-- Seitenweises Scrollen kombiniert jetzt die sichtbare Bildschirmhöhe mit den exakten Karten-Snap-Punkten.
-- Ein Wisch springt ungefähr eine Bildschirmseite weiter und wählt dort die nächstgelegene markierte Kartenoberkante.
-- Dadurch werden mehrere Raumkarten pro Wisch übersprungen, ohne mitten in einer Karte zu stoppen.
 <!-- latest-changes:end -->
 
 ## Lizenz
