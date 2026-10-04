@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.352.0**
+Version **0.355.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.355.0
+
+- Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
+- Zeitpläne-Dialog auf ein zentriertes natives Popup umgestellt.
+- Testing-Build-Workflow mit Source-Revision, Loader und lokaler Synchronisationsprüfung verbessert.
+
 ## v0.354.0
 
 - Dashboard-Einstellungen trennen „Eigene Seiten“ und „Navigation“ in zwei eigenständige Kategorien.
@@ -253,13 +259,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Temperatur- und Luftfeuchtigkeits-Popup öffnet zuverlässig direkt aus den Raumkarten, ohne zur Raumansicht weiterzunavigieren.
 - Verlaufsdiagramme verwenden für 8 h, 24 h, 7 d und 30 d jetzt den vollständigen angeforderten Zeitraum und eine passende zeitliche Verdichtung.
 - Temperatur-Icon und Touch-Fläche wurden korrigiert.
-
-## v0.352.0
-
-- Temperatur- und Luftfeuchtigkeitswerte auf den Raumkarten öffnen jetzt ein Verlaufs-Popup.
-- Zeiträume 8 h, 24 h, 7 d und 30 d sind direkt im Popup auswählbar.
-- Verlaufsdaten werden ohne zusätzliche Chart-Abhängigkeit direkt aus der Home-Assistant-Historie geladen und als Liniendiagramm dargestellt.
-- Das Popup zeigt aktuellen Wert, Raum, Messart und verwendeten Sensor.
 <!-- latest-changes:end -->
 
 ## Lizenz
