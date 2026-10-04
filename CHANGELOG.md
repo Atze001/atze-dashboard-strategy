@@ -1,3 +1,16 @@
+## v0.354.0
+
+- Dashboard-Einstellungen trennen „Eigene Seiten“ und „Navigation“ in zwei eigenständige Kategorien.
+- Bestehende eigene Dashboard-Seiten erscheinen wieder ausschließlich unter „Eigene Seiten“.
+- Direkte Home-Assistant-Ziele wie Geräte, Entitäten, Automationen oder HACS werden separat unter „Navigation“ verwaltet.
+- Bestehende Konfigurationen bleiben kompatibel; die gespeicherten `custom_pages` werden nicht migriert.
+
+## v0.353.0
+
+- Temperatur- und Luftfeuchtigkeits-Popup öffnet zuverlässig direkt aus den Raumkarten, ohne zur Raumansicht weiterzunavigieren.
+- Verlaufsdiagramme verwenden für 8 h, 24 h, 7 d und 30 d jetzt den vollständigen angeforderten Zeitraum und eine passende zeitliche Verdichtung.
+- Temperatur-Icon und Touch-Fläche wurden korrigiert.
+
 ## v0.352.0
 
 - Temperatur- und Luftfeuchtigkeitswerte auf den Raumkarten öffnen jetzt ein Verlaufs-Popup.
