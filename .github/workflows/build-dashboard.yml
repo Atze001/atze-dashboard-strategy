@@ -29,6 +29,8 @@ jobs:
           node-version: 22
 
       - name: Build, validate assets and aliases
+        env:
+          ATZE_TESTING_REVISION: ${{ github.sha }}
         run: npm run validate
 
       - name: Commit generated files
