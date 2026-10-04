@@ -10665,8 +10665,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: rgba(255,255,255,0.82);
         }
 
-        .room-meta .room-temperature ha-icon,
         .room-history-trigger { cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
+        .room-meta .room-temperature ha-icon {
+          width: 17px;
+          height: 17px;
+          --mdc-icon-size: 17px;
+        }
         .room-history-trigger:active { background:rgba(255,255,255,.12); }
         .history-range { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:20px 0 14px; }
         .history-range button { border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:9px 4px; background:rgba(118,118,128,.14); color:var(--primary-text-color); font:inherit; font-size:13px; cursor:pointer; }
@@ -11301,7 +11305,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           });
         });
 
-        element.addEventListener("click", () => this._navigate(element.dataset.path));
+        element.addEventListener("click", (event) => {
+          if (event.target?.closest?.(".room-history-trigger")) return;
+          this._navigate(element.dataset.path);
+        });
 
         element.addEventListener("keydown", (event) => {
           if (event.target !== element) return;
