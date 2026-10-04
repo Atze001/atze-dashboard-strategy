@@ -1,5 +1,5 @@
 
-// Testing builds are refreshed through the Home Assistant push flow.
+// Testing builds are refreshed through the Home Assistant notification flow.
 class AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
