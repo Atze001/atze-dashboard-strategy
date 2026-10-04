@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9ABA164";
+const ATZE_TESTING_REVISION = "D0474AA";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -5408,14 +5408,10 @@ function bestEnvironmentEntity(
     .filter((entity) => {
       if (shouldHideExactEntity(config, entity.entity_id)) return false;
       if (domainOf(entity.entity_id) !== "sensor") return false;
-      // Power sensors can also be popup children of their smart plug,
-      // while still serving as the room power metric.
-      if (
-        deviceClass !== "power" &&
-        popupMap.childToParent.has(entity.entity_id)
-      ) {
-        return false;
-      }
+      // Keep the home room metric aligned with the area-view badge logic:
+      // popup children belong to their parent device and must not become the
+      // room-level temperature/humidity/illuminance/power metric.
+      if (popupMap.childToParent.has(entity.entity_id)) return false;
       if (!validBadgeState(hass, entity.entity_id)) return false;
       if (entity.entity_category === "diagnostic") return false;
       if (entity.entity_category === "config") return false;

@@ -5411,14 +5411,10 @@ function bestEnvironmentEntity(
     .filter((entity) => {
       if (shouldHideExactEntity(config, entity.entity_id)) return false;
       if (domainOf(entity.entity_id) !== "sensor") return false;
-      // Power sensors can also be popup children of their smart plug,
-      // while still serving as the room power metric.
-      if (
-        deviceClass !== "power" &&
-        popupMap.childToParent.has(entity.entity_id)
-      ) {
-        return false;
-      }
+      // Keep the home room metric aligned with the area-view badge logic:
+      // popup children belong to their parent device and must not become the
+      // room-level temperature/humidity/illuminance/power metric.
+      if (popupMap.childToParent.has(entity.entity_id)) return false;
       if (!validBadgeState(hass, entity.entity_id)) return false;
       if (entity.entity_category === "diagnostic") return false;
       if (entity.entity_category === "config") return false;
