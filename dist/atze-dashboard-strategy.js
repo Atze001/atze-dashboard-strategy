@@ -8,8 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.354.0";
+const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard";
+const ATZE_TESTING_BUILD = false;
+const ATZE_TESTING_REVISION = "";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6736,8 +6738,10 @@ function buildHomeOverviewView(
                     hash: "#zeitplaene",
                     name: "Zeitpläne",
                     icon: "mdi:calendar-clock",
-                    popup_mode: "adaptive-dialog",
+                    popup_mode: "centered",
                     width_desktop: "900px",
+                    show_header: false,
+                    close_by_clicking_outside: true,
                     cards: [
                       {
                         type: "custom:scheduler-card",
@@ -8020,7 +8024,6 @@ class AtzeDashboardStrategy extends HTMLElement {
 }
 
 
-
 class AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
@@ -8095,7 +8098,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
     }
-
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
 
@@ -8414,7 +8416,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const precipitation = day.precipitation_probability != null ? `${Math.round(Number(day.precipitation_probability))}%` : "";
       return `<div class="weather-forecast-day"><span>${date}</span><ha-icon icon="${this._weatherIcon(day.condition)}"></ha-icon><strong>${high}${low ? ` / ${low}` : ""}</strong>${precipitation ? `<small><ha-icon icon="mdi:water-percent"></ha-icon>${precipitation}</small>` : ""}</div>`;
     }).join("");
-    return `<div class="weather-popup-backdrop" id="weather-popup-backdrop"><section class="weather-popup" role="dialog" aria-modal="true" aria-label="Wetterinformationen"><button class="weather-popup-close" id="weather-popup-close" type="button" aria-label="Schließen"><ha-icon icon="mdi:close"></ha-icon></button><div class="weather-popup-current"><ha-icon class="weather-popup-icon" icon="${this._weatherIcon(weather.state)}"></ha-icon><div><div class="weather-popup-temp">${attrs.temperature != null ? Math.round(Number(attrs.temperature)) + " °C" : "—"}</div><div class="weather-popup-condition">${this._weatherText(weather.state)}</div></div></div><div class="weather-metrics">${metric("mdi:water-percent", "Luftfeuchtigkeit", attrs.humidity, " %")}${metric("mdi:weather-windy", "Wind", attrs.wind_speed, attrs.wind_speed_unit ? " " + attrs.wind_speed_unit : "")}${metric("mdi:gauge", "Luftdruck", attrs.pressure, attrs.pressure_unit ? " " + attrs.pressure_unit : "")}${metric("mdi:weather-rainy", "Niederschlag", attrs.precipitation, attrs.precipitation_unit ? " " + attrs.precipitation_unit : "")}</div><div class="weather-forecast"><h3>Vorhersage</h3>${this._weatherForecastLoading ? '<div class="weather-loading">Wird geladen …</div>' : (forecast ? `<div class="weather-forecast-grid">${forecast}</div>` : '<div class="weather-loading">Keine Tagesvorhersage verfügbar.</div>')}</div></section></div>`;
+    return `<div class="weather-popup-backdrop" id="weather-popup-backdrop"><section class="weather-popup" role="dialog" aria-modal="true" aria-label="Wetterinformationen"><div class="weather-popup-current"><ha-icon class="weather-popup-icon" icon="${this._weatherIcon(weather.state)}"></ha-icon><div><div class="weather-popup-temp">${attrs.temperature != null ? Math.round(Number(attrs.temperature)) + " °C" : "—"}</div><div class="weather-popup-condition">${this._weatherText(weather.state)}</div></div></div><div class="weather-metrics">${metric("mdi:water-percent", "Luftfeuchtigkeit", attrs.humidity, " %")}${metric("mdi:weather-windy", "Wind", attrs.wind_speed, attrs.wind_speed_unit ? " " + attrs.wind_speed_unit : "")}${metric("mdi:gauge", "Luftdruck", attrs.pressure, attrs.pressure_unit ? " " + attrs.pressure_unit : "")}${metric("mdi:weather-rainy", "Niederschlag", attrs.precipitation, attrs.precipitation_unit ? " " + attrs.precipitation_unit : "")}</div><div class="weather-forecast"><h3>Vorhersage</h3>${this._weatherForecastLoading ? '<div class="weather-loading">Wird geladen …</div>' : (forecast ? `<div class="weather-forecast-grid">${forecast}</div>` : '<div class="weather-loading">Keine Tagesvorhersage verfügbar.</div>')}</div></section></div>`;
   }
 
 
@@ -8475,10 +8477,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return `
       <div class="weather-popup-backdrop" id="power-popup-backdrop">
         <section class="weather-popup power-popup" role="dialog" aria-modal="true" aria-label="Gesamtverbrauch">
-          <button class="weather-popup-close" id="power-popup-close" type="button" aria-label="Schließen">
-            <ha-icon icon="mdi:close"></ha-icon>
-          </button>
-          <div class="weather-popup-current">
+<div class="weather-popup-current">
             <ha-icon class="weather-popup-icon" icon="mdi:flash"></ha-icon>
             <div>
               <div class="weather-popup-temp">${this._formatPower()}</div>
@@ -8616,10 +8615,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return `
       <div class="weather-popup-backdrop" id="history-popup-backdrop">
         <section class="weather-popup history-popup" role="dialog" aria-modal="true" aria-label="${label} Verlauf">
-          <button class="weather-popup-close" id="history-popup-close" type="button" aria-label="Schließen">
-            <ha-icon icon="mdi:close"></ha-icon>
-          </button>
-          <div class="weather-popup-current">
+<div class="weather-popup-current">
             <ha-icon class="weather-popup-icon" icon="${icon}"></ha-icon>
             <div>
               <div class="weather-popup-temp">${value}</div>
@@ -9844,6 +9840,29 @@ class AtzeHomeOverviewCard extends HTMLElement {
             );
         }
 
+        .testing-build-badge {
+          position: absolute;
+          top: 14px;
+          right: 18px;
+          z-index: 2;
+          padding: 4px 9px;
+          border: 1px solid rgba(255,255,255,0.28);
+          border-radius: 999px;
+          background: rgba(0,0,0,0.48);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          line-height: 1.2;
+          pointer-events: none;
+          backdrop-filter: blur(8px);
+        }
+
+        .testing-build-badge.update-available {
+          pointer-events: auto;
+          cursor: pointer;
+        }
+
         .hero {
           display: flex;
           justify-content: space-between;
@@ -10146,7 +10165,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .weather-popup-backdrop { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
         .weather-popup { position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:rgba(20,22,27,.98); box-shadow:0 24px 70px rgba(0,0,0,.48); }
-        .weather-popup-close { position:absolute; top:16px; right:16px; width:38px; height:38px; border:0; border-radius:50%; display:grid; place-items:center; cursor:pointer; color:var(--primary-text-color); background:rgba(118,118,128,.24); }
         .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
         .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
         .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
@@ -11044,9 +11062,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           <section
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
-            style="--home-hero-image: url('${this._escapeHtml(heroImage || "")}')"
             aria-label="Hausstatus"
           >
+            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
@@ -11249,6 +11267,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ${this._climateHistoryPopupHtml()}
       </ha-card>
     `;
+
+    const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
+    if (homeStatusPanel && heroImage) {
+      homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
+    }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
@@ -11496,6 +11519,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         () => this._openHomeAssistantUpdate()
       );
 
+
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
 
@@ -11525,12 +11549,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         this._openWeatherPopup();
       }
     });
-    this.shadowRoot.querySelector("#weather-popup-close")?.addEventListener("click", () => this._closeWeatherPopup());
     this.shadowRoot.querySelector("#weather-popup-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "weather-popup-backdrop") this._closeWeatherPopup();
     });
-
-    this.shadowRoot.querySelector("#history-popup-close")?.addEventListener("click", () => this._closeClimateHistory());
     this.shadowRoot.querySelector("#history-popup-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "history-popup-backdrop") this._closeClimateHistory();
     });
@@ -11550,7 +11571,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
         this._openPowerPopup();
       }
     });
-    this.shadowRoot.querySelector("#power-popup-close")?.addEventListener("click", () => this._closePowerPopup());
     this.shadowRoot.querySelector("#power-popup-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "power-popup-backdrop") this._closePowerPopup();
     });
@@ -13344,7 +13364,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
       </style>
 
-      <ha-card class="${backgroundImage ? "has-background" : ""}" style="${backgroundImage ? `--atze-room-header-image: url('${backgroundImage}')` : ""}">
+      <ha-card class="${backgroundImage ? "has-background" : ""}">
         <div
           class="nav-row"
           role="button"
@@ -13364,6 +13384,11 @@ class AtzeRoomNavHeader extends HTMLElement {
         ` : ""}
       </ha-card>
     `;
+
+    const card = this.shadowRoot.querySelector("ha-card");
+    if (card && backgroundImage) {
+      card.style.setProperty("--atze-room-header-image", `url("${String(backgroundImage).replace(/"/g, "%22")}")`);
+    }
 
     const overlayBadges = this.shadowRoot.querySelector("#overlay-badges");
     if (overlayBadges) {
@@ -15148,7 +15173,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .map((page, index) => ({ page, index }))
       .filter(({ page }) => Boolean(page.navigation_path));
   }
-
 
   _schedulerPopupEnabled() {
     return schedulerPopupEnabled(this._config || {});

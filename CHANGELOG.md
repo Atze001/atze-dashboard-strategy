@@ -1,3 +1,9 @@
+## v0.355.0
+
+- Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
+- Zeitpläne-Dialog auf ein zentriertes natives Popup umgestellt.
+- Testing-Build-Workflow mit Source-Revision, Loader und lokaler Synchronisationsprüfung verbessert.
+
 ## v0.354.0
 
 - Dashboard-Einstellungen trennen „Eigene Seiten“ und „Navigation“ in zwei eigenständige Kategorien.

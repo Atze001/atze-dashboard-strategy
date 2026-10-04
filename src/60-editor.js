@@ -1064,7 +1064,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .filter(({ page }) => Boolean(page.navigation_path));
   }
 
-
   _schedulerPopupEnabled() {
     return schedulerPopupEnabled(this._config || {});
   }
