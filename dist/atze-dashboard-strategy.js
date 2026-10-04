@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.349.0";
+const ATZE_VERSION = "0.350.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -4175,8 +4175,14 @@ function nameFilterGroup(hass, entity, config) {
     filters.switch = DEFAULT_NAME_GROUP_FILTERS.switch;
   }
 
+  const entityDomain = domainOf(entity.entity_id);
   const text = normalizedText(`${entity.entity_id} ${rawFriendlyName(hass, entity.entity_id, entity)}`);
   for (const [group, keywords] of Object.entries(filters)) {
+    // Native domain groups must never absorb entities from another domain
+    // just because their entity ID or friendly name contains a matching word.
+    // Special groups (e.g. "steckdose" for switch entities) remain available.
+    if (DOMAIN_META[group] && group !== entityDomain) continue;
+
     if (asArray(keywords).some((keyword) => {
       const needle = normalizedText(String(keyword || "").trim());
       return needle && text.includes(needle);
