@@ -8024,7 +8024,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 }
 
 
-class AtzeHomeOverviewCard extends HTMLElement {
+// End-to-end testing build verification.\nclass AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
