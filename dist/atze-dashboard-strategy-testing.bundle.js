@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "A7A1FBF";
+const ATZE_TESTING_REVISION = "DF5E012";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8022,6 +8022,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 
 
 
+// Testing builds are refreshed through the Home Assistant push flow.
 class AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
