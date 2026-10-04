@@ -1,7 +1,6 @@
 {
   "name": "atze-dashboard-strategy",
   "private": true,
-  "_testing_trigger": "push-notification-check",
   "version": "0.355.0",
   "scripts": {
     "build": "node scripts/build.mjs",
