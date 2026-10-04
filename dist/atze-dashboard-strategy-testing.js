@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "638389F";
+const ATZE_TESTING_REVISION = "ABB63B8";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10666,7 +10666,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: rgba(255,255,255,0.82);
         }
 
-        .room-history-trigger { cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
+        .room-history-trigger { pointer-events:auto; cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
         .room-meta .room-temperature ha-icon {
           width: 17px;
           height: 17px;
