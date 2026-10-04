@@ -8544,7 +8544,35 @@ class AtzeHomeOverviewCard extends HTMLElement {
       return '<div class="history-empty">Für diesen Zeitraum sind keine Verlaufsdaten verfügbar.</div>';
     }
 
-    const values = points.map((point) => point.value);
+    const sortedPoints = [...points].sort((a, b) => a.time - b.time);
+    const range = this._climateHistoryPopup?.range || "24h";
+    const rangeHours = { "8h": 8, "24h": 24, "7d": 168, "30d": 720 }[range] || 24;
+    const bucketMinutes = { "8h": 5, "24h": 15, "7d": 120, "30d": 720 }[range] || 15;
+    const bucketMs = bucketMinutes * 60 * 1000;
+    const end = Date.now();
+    const start = end - rangeHours * 60 * 60 * 1000;
+
+    const buckets = new Map();
+    sortedPoints.forEach((point) => {
+      if (point.time < start || point.time > end) return;
+      const bucket = Math.floor((point.time - start) / bucketMs);
+      const current = buckets.get(bucket) || { total: 0, count: 0 };
+      current.total += point.value;
+      current.count += 1;
+      buckets.set(bucket, current);
+    });
+    const chartPoints = [...buckets.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([bucket, sample]) => ({
+        time: start + (bucket + 0.5) * bucketMs,
+        value: sample.total / sample.count,
+      }));
+
+    if (chartPoints.length < 2) {
+      return '<div class="history-empty">Für diesen Zeitraum sind keine ausreichenden Verlaufsdaten verfügbar.</div>';
+    }
+
+    const values = chartPoints.map((point) => point.value);
     let min = Math.min(...values);
     let max = Math.max(...values);
     if (min === max) {
@@ -8555,10 +8583,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     min -= pad;
     max += pad;
 
-    const start = points[0].time;
-    const end = points[points.length - 1].time;
     const span = Math.max(1, end - start);
-    const coords = points.map((point) => {
+    const coords = chartPoints.map((point) => {
       const x = 12 + ((point.time - start) / span) * 276;
       const y = 138 - ((point.value - min) / (max - min)) * 116;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
