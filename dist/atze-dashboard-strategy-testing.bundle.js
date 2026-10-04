@@ -9,7 +9,7 @@
  */
 
 const ATZE_VERSION = "0.354.0";
-const STRATEGY_TYPE = "atze-dashboard";
+const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3930,7 +3930,7 @@ function selectBinaryBadge(
     kind === "roller_shutter"
   ) {
     badge = {
-      type: "custom:atze-warning-badge-v2",
+      type: "custom:atze-testing-warning-badge-v2",
       entity: selected.entity_id,
       hide_inactive: true,
       ...(kind === "roller_shutter"
@@ -3939,14 +3939,14 @@ function selectBinaryBadge(
     };
   } else if (kind === "smoke") {
     badge = {
-      type: "custom:atze-status-badge-v1",
+      type: "custom:atze-testing-status-badge-v1",
       entity: selected.entity_id,
       inactive_icon_color: "#30D158",
       active_icon_color: "#FF453A",
     };
   } else {
     badge = {
-      type: "custom:atze-status-badge-v1",
+      type: "custom:atze-testing-status-badge-v1",
       entity: selected.entity_id,
       inactive_icon_color: "#30D158",
       active_icon_color: "#FF453A",
@@ -4009,7 +4009,7 @@ function selectEnvironmentBadges(
     const entityId = selected.entity_id;
 
     const badge = {
-      type: "custom:atze-status-badge-v1",
+      type: "custom:atze-testing-status-badge-v1",
       entity: entityId,
       inactive_icon_color:
         deviceClass === "temperature"
@@ -4087,7 +4087,7 @@ function selectEnvironmentBadges(
       badges.push({ ...manualAggregateBadge });
     } else {
       badges.push({
-        type: "custom:atze-status-badge-v1",
+        type: "custom:atze-testing-status-badge-v1",
         entity: entity.entity_id,
         icon: aggregate.badge_icon || aggregate.icon,
         inactive_icon_color: aggregate.badge_color || "#30D158",
@@ -4939,7 +4939,7 @@ function buildGroupSection(
     );
 
     return {
-      type: "custom:atze-room-group",
+      type: "custom:atze-testing-room-group",
       heading: meta.title,
       icon: meta.icon,
       area_id: area.area_id,
@@ -5136,10 +5136,7 @@ function shouldHideSensorFromRoom(hass, entity, config) {
 }
 
 
-const ATZE_ASSET_BASE_URL = new URL(
-  "./assets/",
-  import.meta.url
-).href;
+const ATZE_ASSET_BASE_URL = new URL("/hacsfiles/atze-dashboard-strategy/assets/", window.location.origin).href;
 
 window.__atzeHomeRoomImageCache =
   window.__atzeHomeRoomImageCache || new Map();
@@ -6078,7 +6075,7 @@ function buildSecurityView(
     panel: true,
     cards: [
       {
-        type: "custom:atze-security-overview-card",
+        type: "custom:atze-testing-security-overview-card",
         title: config.security_title || "Sicherheit",
         home_path: config.home_path || "home",
         groups: securityGroups,
@@ -6333,7 +6330,7 @@ function buildMaintenanceView(
     panel: true,
     cards: [
       {
-        type: "custom:atze-maintenance-overview-card",
+        type: "custom:atze-testing-maintenance-overview-card",
         title: config.maintenance_title || "Batterie",
         home_path: config.home_path || "home",
         groups: maintenanceGroups,
@@ -6620,7 +6617,7 @@ function buildHomeOverviewView(
   ];
 
   const homeCard = {
-    type: "custom:atze-home-overview-card",
+    type: "custom:atze-testing-home-overview-card",
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
@@ -6829,7 +6826,7 @@ function buildCustomPageViews(config) {
       };
 
       const homeButton = {
-        type: "custom:atze-room-nav-header",
+        type: "custom:atze-testing-room-nav-header",
         icon: "mdi:home",
         area_name: title,
         navigation_path: config.home_path || "home",
@@ -7121,7 +7118,7 @@ function buildAreaView(
     .filter(Boolean)
     .filter((section) => {
       const sortable = section?.cards?.find(
-        (card) => card?.type === "custom:atze-sortable-switch-grid"
+        (card) => card?.type === "custom:atze-testing-sortable-switch-grid"
       );
       if (!sortable) return true;
 
@@ -7293,7 +7290,7 @@ function buildAreaView(
     config.room_home_button === false
       ? undefined
       : {
-          type: "custom:atze-room-nav-header",
+          type: "custom:atze-testing-room-nav-header",
           icon: "mdi:home",
           area_name: areaName,
           area_id: area.area_id,
@@ -7662,11 +7659,11 @@ class AtzeDashboardStrategy extends HTMLElement {
 
   static async getConfigElement() {
     await customElements.whenDefined(
-      "atze-dashboard-strategy-editor"
+      "atze-dashboard-strategy-editor-testing"
     );
 
     return document.createElement(
-      "atze-dashboard-strategy-editor"
+      "atze-dashboard-strategy-editor-testing"
     );
   }
 
@@ -11616,9 +11613,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-home-overview-card")) {
+if (!customElements.get("atze-testing-home-overview-card")) {
   customElements.define(
-    "atze-home-overview-card",
+    "atze-testing-home-overview-card",
     AtzeHomeOverviewCard
   );
 }
@@ -11627,11 +11624,11 @@ window.customCards = window.customCards || [];
 
 if (
   !window.customCards.some(
-    (card) => card.type === "atze-home-overview-card"
+    (card) => card.type === "atze-testing-home-overview-card"
   )
 ) {
   window.customCards.push({
-    type: "atze-home-overview-card",
+    type: "atze-testing-home-overview-card",
     name: "Atze Home Overview",
     description: "Apple-Home-inspirierte Atze Dashboard Startseite",
   });
@@ -12338,9 +12335,9 @@ class AtzeSecurityOverviewCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-security-overview-card")) {
+if (!customElements.get("atze-testing-security-overview-card")) {
   customElements.define(
-    "atze-security-overview-card",
+    "atze-testing-security-overview-card",
     AtzeSecurityOverviewCard
   );
 }
@@ -12350,11 +12347,11 @@ window.customCards = window.customCards || [];
 if (
   !window.customCards.some(
     (card) =>
-      card.type === "atze-security-overview-card"
+      card.type === "atze-testing-security-overview-card"
   )
 ) {
   window.customCards.push({
-    type: "atze-security-overview-card",
+    type: "atze-testing-security-overview-card",
     name: "Atze Sicherheit",
     description:
       "Label-basierte Sicherheitsübersicht nach Bereichen",
@@ -12997,11 +12994,11 @@ class AtzeMaintenanceOverviewCard extends HTMLElement {
 
 if (
   !customElements.get(
-    "atze-maintenance-overview-card"
+    "atze-testing-maintenance-overview-card"
   )
 ) {
   customElements.define(
-    "atze-maintenance-overview-card",
+    "atze-testing-maintenance-overview-card",
     AtzeMaintenanceOverviewCard
   );
 }
@@ -13012,11 +13009,11 @@ if (
   !window.customCards.some(
     (card) =>
       card.type ===
-      "atze-maintenance-overview-card"
+      "atze-testing-maintenance-overview-card"
   )
 ) {
   window.customCards.push({
-    type: "atze-maintenance-overview-card",
+    type: "atze-testing-maintenance-overview-card",
     name: "Atze Wartung",
     description:
       "Apple-Home-inspirierte Batterieübersicht nach Bereichen",
@@ -13410,9 +13407,9 @@ class AtzeRoomNavHeader extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-room-nav-header")) {
+if (!customElements.get("atze-testing-room-nav-header")) {
   customElements.define(
-    "atze-room-nav-header",
+    "atze-testing-room-nav-header",
     AtzeRoomNavHeader
   );
 }
@@ -13612,9 +13609,9 @@ class AtzeWarningBadgeV2 extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-warning-badge-v2")) {
+if (!customElements.get("atze-testing-warning-badge-v2")) {
   customElements.define(
-    "atze-warning-badge-v2",
+    "atze-testing-warning-badge-v2",
     AtzeWarningBadgeV2
   );
 }
@@ -13796,9 +13793,9 @@ class AtzeStatusBadgeV1 extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-status-badge-v1")) {
+if (!customElements.get("atze-testing-status-badge-v1")) {
   customElements.define(
-    "atze-status-badge-v1",
+    "atze-testing-status-badge-v1",
     AtzeStatusBadgeV1
   );
 }
@@ -13877,7 +13874,7 @@ class AtzeRoomGroup extends HTMLElement {
     const sortable = this.shadowRoot.querySelector(".sortable");
     sortable.hass = this._hass;
     sortable.config = {
-      type: "custom:atze-sortable-switch-grid",
+      type: "custom:atze-testing-sortable-switch-grid",
       area_id: this._config.area_id,
       group_key: this._config.group_key,
       strategy_config: this._config.strategy_config,
@@ -13895,8 +13892,8 @@ class AtzeRoomGroup extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-room-group")) {
-  customElements.define("atze-room-group", AtzeRoomGroup);
+if (!customElements.get("atze-testing-room-group")) {
+  customElements.define("atze-testing-room-group", AtzeRoomGroup);
 }
 
 
@@ -14080,8 +14077,8 @@ class AtzeSortableSwitchGrid extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-sortable-switch-grid")) {
-  customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
+if (!customElements.get("atze-testing-sortable-switch-grid")) {
+  customElements.define("atze-testing-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
@@ -16812,9 +16809,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-dashboard-strategy-editor")) {
+if (!customElements.get("atze-dashboard-strategy-editor-testing")) {
   customElements.define(
-    "atze-dashboard-strategy-editor",
+    "atze-dashboard-strategy-editor-testing",
     AtzeDashboardStrategyEditor
   );
 }
