@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.352.0**
+Version **0.353.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.353.0
+
+- Temperatur- und Luftfeuchtigkeits-Popup öffnet zuverlässig direkt aus den Raumkarten, ohne zur Raumansicht weiterzunavigieren.
+- Verlaufsdiagramme verwenden für 8 h, 24 h, 7 d und 30 d jetzt den vollständigen angeforderten Zeitraum und eine passende zeitliche Verdichtung.
+- Temperatur-Icon und Touch-Fläche wurden korrigiert.
+
 ## v0.352.0
 
 - Temperatur- und Luftfeuchtigkeitswerte auf den Raumkarten öffnen jetzt ein Verlaufs-Popup.
@@ -253,12 +259,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Die Gesamtstrom-Kachel auf der Hauptseite öffnet jetzt ein Stromverbrauch-Popup im Stil des Wetter-Popups.
 - Das Popup zeigt den aktuellen Gesamtverbrauch und darunter die automatisch erkannten Haupt-/Raum-Leistungssensoren.
 - Raumzähler werden nach aktuellem Verbrauch absteigend sortiert; nicht verfügbare Werte werden ausgeblendet.
-
-## v0.350.0
-
-- Namensbasierte Gruppierung respektiert jetzt die tatsächliche Entity-Domain.
-- Ein `switch.*` mit „Rollladen“, „Rollo“, „Jalousie“, „Shutter“ oder „Blind“ im Namen wird nicht mehr fälschlich der Gruppe „Rollläden“ zugeordnet.
-- Sondergruppen wie „Steckdosen“ für passende `switch.*`-Entitäten bleiben unverändert erhalten.
 <!-- latest-changes:end -->
 
 ## Lizenz
