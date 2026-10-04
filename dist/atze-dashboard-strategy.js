@@ -8508,32 +8508,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const start = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
     try {
-      if (range === "7d" || range === "30d") {
-        const period = range === "7d" ? "hour" : "day";
-        const response = await this._hass.callApi(
-          "GET",
-          `history/statistics_during_period?start_time=${encodeURIComponent(start)}&statistic_ids=${encodeURIComponent(entityId)}&period=${period}&types=mean,min,max,state`
-        );
-        const statistics = Array.isArray(response?.[entityId]) ? response[entityId] : [];
-        this._climateHistory = statistics
-          .map((entry) => ({
-            time: Number(entry.start) * 1000 || new Date(entry.start).getTime(),
-            value: Number.parseFloat(entry.mean ?? entry.state ?? entry.max ?? entry.min),
-          }))
-          .filter((entry) => Number.isFinite(entry.time) && Number.isFinite(entry.value));
-      } else {
-        const response = await this._hass.callApi(
-          "GET",
-          `history/period/${encodeURIComponent(start)}?filter_entity_id=${encodeURIComponent(entityId)}&minimal_response&no_attributes`
-        );
-        const states = Array.isArray(response?.[0]) ? response[0] : [];
-        this._climateHistory = states
-          .map((entry) => ({
-            time: new Date(entry.last_changed || entry.last_updated).getTime(),
-            value: Number.parseFloat(entry.state),
-          }))
-          .filter((entry) => Number.isFinite(entry.time) && Number.isFinite(entry.value));
-      }
+      const endTime = new Date().toISOString();
+      const response = await this._hass.callApi(
+        "GET",
+        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(endTime)}&filter_entity_id=${encodeURIComponent(entityId)}&minimal_response&no_attributes`
+      );
+      const states = Array.isArray(response?.[0]) ? response[0] : [];
+      this._climateHistory = states
+        .map((entry) => ({
+          time: new Date(entry.last_changed || entry.last_updated).getTime(),
+          value: Number.parseFloat(entry.state),
+        }))
+        .filter((entry) => Number.isFinite(entry.time) && Number.isFinite(entry.value));
     } catch (error) {
       console.warn("Atze Dashboard: Verlauf konnte nicht geladen werden.", error);
       this._climateHistory = [];
