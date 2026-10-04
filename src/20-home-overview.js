@@ -409,10 +409,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     const rows = (this._config.room_tiles || [])
       .map((room) => {
-        const entityId = room.power;
+        const entityId =
+          typeof room.power === "string"
+            ? room.power
+            : room.power?.entity_id;
         const state = this._state(entityId);
         const value = Number.parseFloat(state?.state);
-        if (!entityId || !Number.isFinite(value)) return null;
+        if (
+          !entityId ||
+          !Number.isFinite(value) ||
+          ["unknown", "unavailable"].includes(String(state?.state || "").toLowerCase())
+        ) return null;
 
         const unit = state?.attributes?.unit_of_measurement || "W";
         const formatted = unit === "W"
