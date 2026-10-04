@@ -3268,8 +3268,22 @@ class AtzeHomeOverviewCard extends HTMLElement {
           );
         }
 
+        element.addEventListener("click", (event) => {
+          const historyTrigger = event.target?.closest?.(".room-history-trigger");
+          if (!historyTrigger) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          this._openClimateHistory(
+            historyTrigger.dataset.historyEntity,
+            historyTrigger.dataset.historyKind,
+            historyTrigger.dataset.historyRoom,
+            "24h"
+          );
+        }, true);
+
         element.querySelectorAll(".room-history-trigger").forEach((trigger) => {
-          const openHistory = (event) => {
+          trigger.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
             event.preventDefault();
             event.stopPropagation();
             this._openClimateHistory(
@@ -3278,10 +3292,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
               trigger.dataset.historyRoom,
               "24h"
             );
-          };
-          trigger.addEventListener("click", openHistory);
-          trigger.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") openHistory(event);
           });
         });
 
