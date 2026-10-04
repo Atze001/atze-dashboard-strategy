@@ -45,6 +45,23 @@ jobs:
           git commit -m "build: sync generated files"
           git push
 
+      - name: Notify Home Assistant when testing build is ready
+        if: github.ref == 'refs/heads/testing'
+        env:
+          HA_TESTING_WEBHOOK_URL: ${{ secrets.HA_TESTING_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          if [ -z "$HA_TESTING_WEBHOOK_URL" ]; then
+            echo "HA_TESTING_WEBHOOK_URL is not configured; skipping Home Assistant notification."
+            exit 0
+          fi
+          REVISION="$(git rev-parse --short=7 HEAD | tr '[:lower:]' '[:upper:]')"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data "{\"status\":\"ready\",\"revision\":\"$REVISION\",\"branch\":\"testing\",\"repository\":\"${GITHUB_REPOSITORY}\",\"run_url\":\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" \
+            "$HA_TESTING_WEBHOOK_URL"
+
       - name: Create GitHub release after successful build
         if: github.ref == 'refs/heads/main'
         env:
