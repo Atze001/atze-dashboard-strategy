@@ -6738,9 +6738,10 @@ function buildHomeOverviewView(
                     hash: "#zeitplaene",
                     name: "Zeitpläne",
                     icon: "mdi:calendar-clock",
-                    popup_mode: "adaptive-dialog",
+                    popup_mode: "centered",
                     width_desktop: "900px",
-                    styles: ".bubble-pop-up-container{top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;max-height:min(82vh,760px)!important;border-radius:24px!important}.bubble-pop-up-header-container{display:none!important}",
+                    show_header: false,
+                    close_by_clicking_outside: true,
                     cards: [
                       {
                         type: "custom:scheduler-card",
