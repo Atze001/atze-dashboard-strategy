@@ -11,6 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
+const ATZE_TESTING_REVISION = "";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11035,7 +11036,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? '<div class="testing-build-badge">TESTING</div>' : ""}
+            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge">TESTING${ATZE_TESTING_REVISION ? ` · ${ATZE_TESTING_REVISION}` : ""}</div>` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
