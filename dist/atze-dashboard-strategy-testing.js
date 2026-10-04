@@ -11010,7 +11010,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           <section
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
-            style="--home-hero-image: url('${this._escapeHtml(heroImage || "")}')"
             aria-label="Hausstatus"
           >
             <div class="hero">
@@ -11215,6 +11214,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ${this._climateHistoryPopupHtml()}
       </ha-card>
     `;
+
+    const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
+    if (homeStatusPanel && heroImage) {
+      homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
+    }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
@@ -13297,7 +13301,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         }
       </style>
 
-      <ha-card class="${backgroundImage ? "has-background" : ""}" style="${backgroundImage ? `--atze-room-header-image: url('${backgroundImage}')` : ""}">
+      <ha-card class="${backgroundImage ? "has-background" : ""}">
         <div
           class="nav-row"
           role="button"
@@ -13317,6 +13321,11 @@ class AtzeRoomNavHeader extends HTMLElement {
         ` : ""}
       </ha-card>
     `;
+
+    const card = this.shadowRoot.querySelector("ha-card");
+    if (card && backgroundImage) {
+      card.style.setProperty("--atze-room-header-image", `url("${String(backgroundImage).replace(/"/g, "%22")}")`);
+    }
 
     const overlayBadges = this.shadowRoot.querySelector("#overlay-badges");
     if (overlayBadges) {
