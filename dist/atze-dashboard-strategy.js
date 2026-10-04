@@ -8024,7 +8024,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 }
 
 
-// End-to-end local-sync notification verification.\nclass AtzeHomeOverviewCard extends HTMLElement {
+class AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });

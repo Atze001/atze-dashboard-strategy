@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "3A9BE1E";
+const ATZE_TESTING_REVISION = "07466F1";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8021,7 +8021,7 @@ class AtzeDashboardStrategy extends HTMLElement {
 }
 
 
-// End-to-end local-sync notification verification.\nclass AtzeHomeOverviewCard extends HTMLElement {
+class AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
