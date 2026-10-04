@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "17555CD";
+const ATZE_TESTING_REVISION = "56FA895";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8120,6 +8120,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   // Testing builds check for a newer locally synced revision while this card is open.
     // Update-badge reload flow verified via the testing branch.
+    // Cache-safe loader update flow test.
   _startTestingVersionCheck() {
     if (!ATZE_TESTING_BUILD || this._testingVersionTimer) return;
 
