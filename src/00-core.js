@@ -10,6 +10,7 @@
 
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard";
+const ATZE_TESTING_BUILD = false;
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
