@@ -1,3 +1,9 @@
+## v0.350.0
+
+- Namensbasierte Gruppierung respektiert jetzt die tatsächliche Entity-Domain.
+- Ein `switch.*` mit „Rollladen“, „Rollo“, „Jalousie“, „Shutter“ oder „Blind“ im Namen wird nicht mehr fälschlich der Gruppe „Rollläden“ zugeordnet.
+- Sondergruppen wie „Steckdosen“ für passende `switch.*`-Entitäten bleiben unverändert erhalten.
+
 ## v0.349.0
 
 - „Seitenweises Scrollen“ ist jetzt ausschließlich auf der Hauptseite aktiv.
