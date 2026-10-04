@@ -29,6 +29,7 @@ const version = versionMatch[1];
 const bundle = sourceContents.join("");
 const testingReplacements = new Map([
   ['const STRATEGY_TYPE = "atze-dashboard";', 'const STRATEGY_TYPE = "atze-dashboard-testing";'],
+  ['const ATZE_TESTING_BUILD = false;', 'const ATZE_TESTING_BUILD = true;'],
   ['"custom:atze-home-overview-card"', '"custom:atze-testing-home-overview-card"'],
   ['"custom:atze-security-overview-card"', '"custom:atze-testing-security-overview-card"'],
   ['"custom:atze-maintenance-overview-card"', '"custom:atze-testing-maintenance-overview-card"'],
