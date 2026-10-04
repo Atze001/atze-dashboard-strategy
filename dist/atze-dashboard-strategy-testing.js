@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "63AB076";
+const ATZE_TESTING_REVISION = "638389F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11289,8 +11289,22 @@ class AtzeHomeOverviewCard extends HTMLElement {
           );
         }
 
+        element.addEventListener("click", (event) => {
+          const historyTrigger = event.target?.closest?.(".room-history-trigger");
+          if (!historyTrigger) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          this._openClimateHistory(
+            historyTrigger.dataset.historyEntity,
+            historyTrigger.dataset.historyKind,
+            historyTrigger.dataset.historyRoom,
+            "24h"
+          );
+        }, true);
+
         element.querySelectorAll(".room-history-trigger").forEach((trigger) => {
-          const openHistory = (event) => {
+          trigger.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
             event.preventDefault();
             event.stopPropagation();
             this._openClimateHistory(
@@ -11299,10 +11313,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
               trigger.dataset.historyRoom,
               "24h"
             );
-          };
-          trigger.addEventListener("click", openHistory);
-          trigger.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") openHistory(event);
           });
         });
 
