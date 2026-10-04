@@ -3015,7 +3015,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? '<div class="testing-build-badge">TESTING</div>' : ""}
+            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge">TESTING${ATZE_TESTING_REVISION ? ` · ${ATZE_TESTING_REVISION}` : ""}</div>` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
