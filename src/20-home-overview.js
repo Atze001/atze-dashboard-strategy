@@ -2991,7 +2991,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           <section
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
-            style="--home-hero-image: url('${this._escapeHtml(heroImage || "")}')"
             aria-label="Hausstatus"
           >
             <div class="hero">
@@ -3196,6 +3195,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ${this._climateHistoryPopupHtml()}
       </ha-card>
     `;
+
+    const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
+    if (homeStatusPanel && heroImage) {
+      homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
+    }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
     let hiddenRoomIds = [];
