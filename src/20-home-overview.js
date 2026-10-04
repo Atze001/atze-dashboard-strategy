@@ -1,4 +1,5 @@
 
+// Testing builds are refreshed through the Home Assistant push flow.
 class AtzeHomeOverviewCard extends HTMLElement {
   constructor() {
     super();
