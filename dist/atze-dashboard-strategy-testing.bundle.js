@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "14C90B7";
+const ATZE_TESTING_REVISION = "D01619E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6735,9 +6735,10 @@ function buildHomeOverviewView(
                     hash: "#zeitplaene",
                     name: "Zeitpläne",
                     icon: "mdi:calendar-clock",
-                    popup_mode: "adaptive-dialog",
+                    popup_mode: "centered",
                     width_desktop: "900px",
-                    styles: ".bubble-pop-up-container{top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;max-height:min(82vh,760px)!important;border-radius:24px!important}.bubble-pop-up-header-container{display:none!important}",
+                    show_header: false,
+                    close_by_clicking_outside: true,
                     cards: [
                       {
                         type: "custom:scheduler-card",
