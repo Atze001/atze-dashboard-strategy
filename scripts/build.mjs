@@ -95,6 +95,7 @@ const syncedReadme = readme
 await Promise.all([
   writeFile(resolve(root, "dist/atze-dashboard-strategy.js"), bundle, "utf8"),
   writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.js"), testingBundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.version"), `${testingRevision}\n`, "utf8"),
   writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8"),
   writeFile(readmePath, syncedReadme, "utf8"),
 ]);
