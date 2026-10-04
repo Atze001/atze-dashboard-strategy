@@ -8030,6 +8030,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
+    this._testingVersionTimer = null;
+    this._testingUpdateAvailable = false;
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
     this._pageScrollCleanup = null;
@@ -8075,6 +8077,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   connectedCallback() {
     this._startClock();
+    this._startTestingVersionCheck();
 
     if (!this._scrollTopCleanup) {
       this._scrollTopCleanup =
@@ -8097,6 +8100,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
     }
+    if (this._testingVersionTimer) {
+      clearInterval(this._testingVersionTimer);
+      this._testingVersionTimer = null;
+    }
 
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
@@ -8112,6 +8119,26 @@ class AtzeHomeOverviewCard extends HTMLElement {
       () => this._render(),
       30000
     );
+  }
+
+  _startTestingVersionCheck() {
+    if (!ATZE_TESTING_BUILD || this._testingVersionTimer) return;
+
+    const check = async () => {
+      try {
+        const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) return;
+        const revision = (await response.text()).trim().toUpperCase();
+        const updateAvailable = Boolean(revision) && Boolean(ATZE_TESTING_REVISION) && revision !== ATZE_TESTING_REVISION.toUpperCase();
+        if (updateAvailable !== this._testingUpdateAvailable) {
+          this._testingUpdateAvailable = updateAvailable;
+          this._render();
+        }
+      } catch (_) {}
+    };
+
+    check();
+    this._testingVersionTimer = setInterval(check, 30000);
   }
 
   _toggleKioskMode() {
@@ -11066,7 +11093,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge">TESTING${ATZE_TESTING_REVISION ? ` · ${ATZE_TESTING_REVISION}` : ""}</div>` : ""}
+            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge">TESTING · ${this._testingUpdateAvailable ? "UPDATE VERFÜGBAR" : (ATZE_TESTING_REVISION || "DEV")}</div>` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
