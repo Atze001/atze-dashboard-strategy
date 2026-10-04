@@ -95,6 +95,8 @@ const syncedReadme = readme
 await Promise.all([
   writeFile(resolve(root, "dist/atze-dashboard-strategy.js"), bundle, "utf8"),
   writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.js"), testingBundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.bundle.js"), testingBundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.loader.js"), `const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });\nconst revision = response.ok ? (await response.text()).trim().toUpperCase() : String(Date.now());\nawait import("/local/atze-dashboard-strategy-testing.bundle.js?v=" + encodeURIComponent(revision));\n`, "utf8"),
   writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.version"), `${testingRevision}\n`, "utf8"),
   writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8"),
   writeFile(readmePath, syncedReadme, "utf8"),
