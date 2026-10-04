@@ -42,7 +42,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add dist/atze-dashboard-strategy.js dist/atze-dashboard-strategy-testing.js dist/atze-dashboard-strategy-testing.bundle.js dist/atze-dashboard-strategy-testing.loader.js dist/atze-dashboard-strategy-testing.version package.json README.md
-          git commit -m "build: sync generated files"
+          SOURCE_REVISION="$(printf '%s' \"${GITHUB_SHA}\" | cut -c1-7 | tr '[:lower:]' '[:upper:]')"
+          git commit -m "build: sync generated files for ${SOURCE_REVISION}"
           git push
 
       - name: Create GitHub release after successful build
