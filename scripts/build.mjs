@@ -27,6 +27,24 @@ if (!versionMatch) {
 
 const version = versionMatch[1];
 const bundle = sourceContents.join("");
+const testingReplacements = new Map([
+  ['const STRATEGY_TYPE = "atze-dashboard";', 'const STRATEGY_TYPE = "atze-dashboard-testing";'],
+  ["atze-dashboard-strategy-editor", "atze-dashboard-strategy-editor-testing"],
+  ["atze-home-overview-card", "atze-testing-home-overview-card"],
+  ["atze-security-overview-card", "atze-testing-security-overview-card"],
+  ["atze-maintenance-overview-card", "atze-testing-maintenance-overview-card"],
+  ["atze-room-nav-header", "atze-testing-room-nav-header"],
+  ["atze-warning-badge-v2", "atze-testing-warning-badge-v2"],
+  ["atze-status-badge-v1", "atze-testing-status-badge-v1"],
+  ["atze-room-group", "atze-testing-room-group"],
+  ["atze-sortable-switch-grid", "atze-testing-sortable-switch-grid"],
+]);
+
+let testingBundle = bundle;
+for (const [stableName, testingName] of testingReplacements) {
+  testingBundle = testingBundle.split(stableName).join(testingName);
+}
+
 
 const packagePath = resolve(root, "package.json");
 const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
@@ -64,10 +82,11 @@ const syncedReadme = readme
 
 await Promise.all([
   writeFile(resolve(root, "dist/atze-dashboard-strategy.js"), bundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.js"), testingBundle, "utf8"),
   writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8"),
   writeFile(readmePath, syncedReadme, "utf8"),
 ]);
 
 console.log(
-  `Built dashboard bundle and synchronized version ${version} to package.json and README.md.`
+  `Built stable + testing dashboard bundles and synchronized version ${version} to package.json and README.md.`
 );
