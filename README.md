@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.350.0**
+Version **0.351.0**
 
 Enthalten sind unter anderem:
 
