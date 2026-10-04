@@ -1,3 +1,9 @@
+## v0.351.0
+
+- Die Gesamtstrom-Kachel auf der Hauptseite öffnet jetzt ein Stromverbrauch-Popup im Stil des Wetter-Popups.
+- Das Popup zeigt den aktuellen Gesamtverbrauch und darunter die automatisch erkannten Haupt-/Raum-Leistungssensoren.
+- Raumzähler werden nach aktuellem Verbrauch absteigend sortiert; nicht verfügbare Werte werden ausgeblendet.
+
 ## v0.350.0
 
 - Namensbasierte Gruppierung respektiert jetzt die tatsächliche Entity-Domain.
