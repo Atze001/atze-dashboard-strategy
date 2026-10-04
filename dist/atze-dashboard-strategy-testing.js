@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "424430C";
+const ATZE_TESTING_REVISION = "9DC1D9F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9889,6 +9889,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           backdrop-filter: blur(8px);
         }
 
+        .testing-build-badge.update-available {
+          pointer-events: auto;
+          cursor: pointer;
+        }
+
         .hero {
           display: flex;
           justify-content: space-between;
@@ -11091,7 +11096,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge">TESTING · ${this._testingUpdateAvailable ? "UPDATE VERFÜGBAR" : (ATZE_TESTING_REVISION || "DEV")}</div>` : ""}
+            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge${this._testingUpdateAvailable ? " update-available" : ""}" id="testing-build-badge" role="${this._testingUpdateAvailable ? "button" : "status"}" ${this._testingUpdateAvailable ? 'tabindex="0"' : ""}>TESTING · ${this._testingUpdateAvailable ? "UPDATE VERFÜGBAR" : (ATZE_TESTING_REVISION || "DEV")}</div>` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
@@ -11545,6 +11550,29 @@ class AtzeHomeOverviewCard extends HTMLElement {
         "click",
         () => this._openHomeAssistantUpdate()
       );
+
+    const testingBuildBadge = this.shadowRoot.querySelector("#testing-build-badge");
+    if (testingBuildBadge && this._testingUpdateAvailable) {
+      const reloadTestingBuild = async (event) => {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        try {
+          const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
+          const revision = response.ok ? (await response.text()).trim().toUpperCase() : "";
+          const url = new URL(window.location.href);
+          url.searchParams.set("atze_testing", revision || String(Date.now()));
+          window.location.replace(url.toString());
+        } catch (_) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("atze_testing", String(Date.now()));
+          window.location.replace(url.toString());
+        }
+      };
+      testingBuildBadge.addEventListener("click", reloadTestingBuild);
+      testingBuildBadge.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") reloadTestingBuild(event);
+      });
+    }
 
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
