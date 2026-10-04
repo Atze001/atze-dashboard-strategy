@@ -97,6 +97,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
+  // Testing builds check for a newer locally synced revision while this card is open.
   _startTestingVersionCheck() {
     if (!ATZE_TESTING_BUILD || this._testingVersionTimer) return;
 
