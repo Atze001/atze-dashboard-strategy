@@ -26,10 +26,12 @@ if (!versionMatch) {
 }
 
 const version = versionMatch[1];
+const testingRevision = (process.env.ATZE_TESTING_REVISION || "").slice(0, 7).toUpperCase();
 const bundle = sourceContents.join("");
 const testingReplacements = new Map([
   ['const STRATEGY_TYPE = "atze-dashboard";', 'const STRATEGY_TYPE = "atze-dashboard-testing";'],
   ['const ATZE_TESTING_BUILD = false;', 'const ATZE_TESTING_BUILD = true;'],
+  ['const ATZE_TESTING_REVISION = "";', `const ATZE_TESTING_REVISION = "${testingRevision}";`],
   ['"custom:atze-home-overview-card"', '"custom:atze-testing-home-overview-card"'],
   ['"custom:atze-security-overview-card"', '"custom:atze-testing-security-overview-card"'],
   ['"custom:atze-maintenance-overview-card"', '"custom:atze-testing-maintenance-overview-card"'],
