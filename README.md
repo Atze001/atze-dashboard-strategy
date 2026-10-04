@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.351.0**
+Version **0.352.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,13 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.352.0
+
+- Temperatur- und Luftfeuchtigkeitswerte auf den Raumkarten öffnen jetzt ein Verlaufs-Popup.
+- Zeiträume 8 h, 24 h, 7 d und 30 d sind direkt im Popup auswählbar.
+- Verlaufsdaten werden ohne zusätzliche Chart-Abhängigkeit direkt aus der Home-Assistant-Historie geladen und als Liniendiagramm dargestellt.
+- Das Popup zeigt aktuellen Wert, Raum, Messart und verwendeten Sensor.
+
 ## v0.351.0
 
 - Die Gesamtstrom-Kachel auf der Hauptseite öffnet jetzt ein Stromverbrauch-Popup im Stil des Wetter-Popups.
@@ -252,12 +259,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Namensbasierte Gruppierung respektiert jetzt die tatsächliche Entity-Domain.
 - Ein `switch.*` mit „Rollladen“, „Rollo“, „Jalousie“, „Shutter“ oder „Blind“ im Namen wird nicht mehr fälschlich der Gruppe „Rollläden“ zugeordnet.
 - Sondergruppen wie „Steckdosen“ für passende `switch.*`-Entitäten bleiben unverändert erhalten.
-
-## v0.349.0
-
-- „Seitenweises Scrollen“ ist jetzt ausschließlich auf der Hauptseite aktiv.
-- Raumansichten und eigene Unterseiten verwenden wieder das normale freie Scrollverhalten.
-- Die funktionierende Kombination aus seitenweitem Sprung und Karten-Snap auf der Hauptseite bleibt unverändert.
 <!-- latest-changes:end -->
 
 ## Lizenz
