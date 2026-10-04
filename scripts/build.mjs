@@ -26,7 +26,37 @@ if (!versionMatch) {
 }
 
 const version = versionMatch[1];
+const testingRevision = (process.env.ATZE_TESTING_REVISION || "").slice(0, 7).toUpperCase();
 const bundle = sourceContents.join("");
+const testingReplacements = new Map([
+  ['const STRATEGY_TYPE = "atze-dashboard";', 'const STRATEGY_TYPE = "atze-dashboard-testing";'],
+  ['const ATZE_TESTING_BUILD = false;', 'const ATZE_TESTING_BUILD = true;'],
+  ['const ATZE_TESTING_REVISION = "";', `const ATZE_TESTING_REVISION = "${testingRevision}";`],
+  ['"custom:atze-home-overview-card"', '"custom:atze-testing-home-overview-card"'],
+  ['"custom:atze-security-overview-card"', '"custom:atze-testing-security-overview-card"'],
+  ['"custom:atze-maintenance-overview-card"', '"custom:atze-testing-maintenance-overview-card"'],
+  ['"custom:atze-room-nav-header"', '"custom:atze-testing-room-nav-header"'],
+  ['"custom:atze-warning-badge-v2"', '"custom:atze-testing-warning-badge-v2"'],
+  ['"custom:atze-status-badge-v1"', '"custom:atze-testing-status-badge-v1"'],
+  ['"custom:atze-room-group"', '"custom:atze-testing-room-group"'],
+  ['"custom:atze-sortable-switch-grid"', '"custom:atze-testing-sortable-switch-grid"'],
+  ['"atze-dashboard-strategy-editor"', '"atze-dashboard-strategy-editor-testing"'],
+  ['"atze-home-overview-card"', '"atze-testing-home-overview-card"'],
+  ['"atze-security-overview-card"', '"atze-testing-security-overview-card"'],
+  ['"atze-maintenance-overview-card"', '"atze-testing-maintenance-overview-card"'],
+  ['"atze-room-nav-header"', '"atze-testing-room-nav-header"'],
+  ['"atze-warning-badge-v2"', '"atze-testing-warning-badge-v2"'],
+  ['"atze-status-badge-v1"', '"atze-testing-status-badge-v1"'],
+  ['"atze-room-group"', '"atze-testing-room-group"'],
+  ['"atze-sortable-switch-grid"', '"atze-testing-sortable-switch-grid"'],
+  ['const ATZE_ASSET_BASE_URL = new URL(\n  "./assets/",\n  import.meta.url\n).href;', 'const ATZE_ASSET_BASE_URL = new URL("/hacsfiles/atze-dashboard-strategy/assets/", window.location.origin).href;'],
+]);
+
+let testingBundle = bundle;
+for (const [stableName, testingName] of testingReplacements) {
+  testingBundle = testingBundle.split(stableName).join(testingName);
+}
+
 
 const packagePath = resolve(root, "package.json");
 const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
@@ -64,10 +94,14 @@ const syncedReadme = readme
 
 await Promise.all([
   writeFile(resolve(root, "dist/atze-dashboard-strategy.js"), bundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.js"), testingBundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.bundle.js"), testingBundle, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.loader.js"), `const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });\nconst revision = response.ok ? (await response.text()).trim().toUpperCase() : String(Date.now());\nawait import("/local/atze-dashboard-strategy-testing.bundle.js?v=" + encodeURIComponent(revision));\n`, "utf8"),
+  writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.version"), `${testingRevision}\n`, "utf8"),
   writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8"),
   writeFile(readmePath, syncedReadme, "utf8"),
 ]);
 
 console.log(
-  `Built dashboard bundle and synchronized version ${version} to package.json and README.md.`
+  `Built stable + testing dashboard bundles and synchronized version ${version} to package.json and README.md.`
 );
