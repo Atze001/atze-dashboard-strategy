@@ -1,3 +1,10 @@
+## v0.352.0
+
+- Temperatur- und Luftfeuchtigkeitswerte auf den Raumkarten öffnen jetzt ein Verlaufs-Popup.
+- Zeiträume 8 h, 24 h, 7 d und 30 d sind direkt im Popup auswählbar.
+- Verlaufsdaten werden ohne zusätzliche Chart-Abhängigkeit direkt aus der Home-Assistant-Historie geladen und als Liniendiagramm dargestellt.
+- Das Popup zeigt aktuellen Wert, Raum, Messart und verwendeten Sensor.
+
 ## v0.351.0
 
 - Die Gesamtstrom-Kachel auf der Hauptseite öffnet jetzt ein Stromverbrauch-Popup im Stil des Wetter-Popups.

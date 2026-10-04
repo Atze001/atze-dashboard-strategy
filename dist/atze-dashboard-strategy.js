@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.351.0";
+const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
@@ -8033,6 +8033,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
     this._powerPopupOpen = false;
+    this._climateHistoryPopup = null;
+    this._climateHistory = [];
+    this._climateHistoryLoading = false;
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
@@ -8486,6 +8489,121 @@ class AtzeHomeOverviewCard extends HTMLElement {
             <h3>Raumzähler</h3>
             ${rowHtml}
           </div>
+        </section>
+      </div>
+    `;
+  }
+
+
+  async _openClimateHistory(entityId, kind, roomName, range = "24h") {
+    if (!entityId || !this._hass) return;
+    this._climateHistoryPopup = { entityId, kind, roomName, range };
+    this._climateHistory = [];
+    this._climateHistoryLoading = true;
+    this._render();
+
+    const hours = { "8h": 8, "24h": 24, "7d": 168, "30d": 720 }[range] || 24;
+    const start = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+    try {
+      const response = await this._hass.callApi(
+        "GET",
+        `history/period/${encodeURIComponent(start)}?filter_entity_id=${encodeURIComponent(entityId)}&minimal_response&no_attributes`
+      );
+      const states = Array.isArray(response?.[0]) ? response[0] : [];
+      this._climateHistory = states
+        .map((entry) => ({
+          time: new Date(entry.last_changed || entry.last_updated).getTime(),
+          value: Number.parseFloat(entry.state),
+        }))
+        .filter((entry) => Number.isFinite(entry.time) && Number.isFinite(entry.value));
+    } catch (error) {
+      console.warn("Atze Dashboard: Verlauf konnte nicht geladen werden.", error);
+      this._climateHistory = [];
+    } finally {
+      this._climateHistoryLoading = false;
+      if (this._climateHistoryPopup?.entityId === entityId) this._render();
+    }
+  }
+
+  _closeClimateHistory() {
+    this._climateHistoryPopup = null;
+    this._climateHistory = [];
+    this._climateHistoryLoading = false;
+    this._render();
+  }
+
+  _climateHistoryChartHtml() {
+    const points = this._climateHistory || [];
+    if (this._climateHistoryLoading) {
+      return '<div class="history-empty">Verlauf wird geladen …</div>';
+    }
+    if (points.length < 2) {
+      return '<div class="history-empty">Für diesen Zeitraum sind keine Verlaufsdaten verfügbar.</div>';
+    }
+
+    const values = points.map((point) => point.value);
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    if (min === max) {
+      min -= 0.5;
+      max += 0.5;
+    }
+    const pad = Math.max((max - min) * 0.12, 0.25);
+    min -= pad;
+    max += pad;
+
+    const start = points[0].time;
+    const end = points[points.length - 1].time;
+    const span = Math.max(1, end - start);
+    const coords = points.map((point) => {
+      const x = 12 + ((point.time - start) / span) * 276;
+      const y = 138 - ((point.value - min) / (max - min)) * 116;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+
+    return `
+      <div class="history-chart-wrap">
+        <div class="history-scale"><span>${max.toFixed(1)}</span><span>${min.toFixed(1)}</span></div>
+        <svg class="history-chart" viewBox="0 0 300 150" preserveAspectRatio="none" aria-label="Verlaufsdiagramm">
+          <line x1="12" y1="22" x2="288" y2="22"></line>
+          <line x1="12" y1="80" x2="288" y2="80"></line>
+          <line x1="12" y1="138" x2="288" y2="138"></line>
+          <polyline points="${coords}"></polyline>
+        </svg>
+      </div>
+    `;
+  }
+
+  _climateHistoryPopupHtml() {
+    const popup = this._climateHistoryPopup;
+    if (!popup) return "";
+
+    const state = this._state(popup.entityId);
+    const value = this._formatted(popup.entityId) || "—";
+    const temperature = popup.kind === "temperature";
+    const icon = temperature ? "mdi:thermometer" : "mdi:water-percent";
+    const label = temperature ? "Temperatur" : "Luftfeuchtigkeit";
+    const ranges = ["8h", "24h", "7d", "30d"];
+
+    return `
+      <div class="weather-popup-backdrop" id="history-popup-backdrop">
+        <section class="weather-popup history-popup" role="dialog" aria-modal="true" aria-label="${label} Verlauf">
+          <button class="weather-popup-close" id="history-popup-close" type="button" aria-label="Schließen">
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+          <div class="weather-popup-current">
+            <ha-icon class="weather-popup-icon" icon="${icon}"></ha-icon>
+            <div>
+              <div class="weather-popup-temp">${value}</div>
+              <div class="weather-popup-condition">${popup.roomName} · ${label}</div>
+            </div>
+          </div>
+          <div class="history-range">
+            ${ranges.map((range) => `<button type="button" data-history-range="${range}" class="${popup.range === range ? "active" : ""}">${range}</button>`).join("")}
+          </div>
+          ${this._climateHistoryChartHtml()}
+          <div class="history-sensor">${state?.attributes?.friendly_name || popup.entityId}</div>
         </section>
       </div>
     `;
@@ -9481,7 +9599,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 ${
                   temp
                     ? `
-                      <span class="room-temperature">
+                      <span class="room-temperature room-history-trigger" data-history-entity="${room.temperature}" data-history-kind="temperature" data-history-room="${this._escapeHtml(room.name)}" role="button" tabindex="0">
                         <ha-icon icon="mdi:thermometer"></ha-icon>
                         <span class="room-meta-value">${temp}</span>
                       </span>
@@ -9492,7 +9610,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 ${
                   humidity
                     ? `
-                      <span class="room-humidity">
+                      <span class="room-humidity room-history-trigger" data-history-entity="${room.humidity}" data-history-kind="humidity" data-history-room="${this._escapeHtml(room.name)}" role="button" tabindex="0">
                         <ha-icon icon="mdi:water-percent"></ha-icon>
                         <span class="room-meta-value">${humidity}</span>
                       </span>
@@ -10532,6 +10650,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .room-meta .room-temperature ha-icon,
+        .room-history-trigger { cursor:pointer; border-radius:10px; padding:3px 5px; margin:-3px -5px; }
+        .room-history-trigger:active { background:rgba(255,255,255,.12); }
+        .history-range { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:20px 0 14px; }
+        .history-range button { border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:9px 4px; background:rgba(118,118,128,.14); color:var(--primary-text-color); font:inherit; font-size:13px; cursor:pointer; }
+        .history-range button.active { background:rgba(10,132,255,.34); border-color:rgba(10,132,255,.7); }
+        .history-chart-wrap { position:relative; min-height:170px; padding:8px 0 0 34px; }
+        .history-chart { display:block; width:100%; height:160px; overflow:visible; }
+        .history-chart line { stroke:rgba(255,255,255,.10); stroke-width:1; vector-effect:non-scaling-stroke; }
+        .history-chart polyline { fill:none; stroke:var(--home-blue,#0a84ff); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+        .history-scale { position:absolute; inset:12px auto 17px 0; display:flex; flex-direction:column; justify-content:space-between; color:var(--home-muted); font-size:11px; }
+        .history-empty { min-height:150px; display:grid; place-items:center; text-align:center; color:var(--home-muted); padding:20px; }
+        .history-sensor { margin-top:8px; color:var(--home-muted); font-size:11px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .room-meta .room-humidity ha-icon {
           width: 17px;
           height: 17px;
@@ -11085,6 +11215,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         </div>
         ${this._weatherPopupHtml(weather)}
           ${this._powerPopupHtml()}
+          ${this._climateHistoryPopupHtml()}
       </ha-card>
     `;
 
@@ -11131,6 +11262,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
             element.dataset.lightsOn === "true"
           );
         }
+
+        element.querySelectorAll(".room-history-trigger").forEach((trigger) => {
+          const openHistory = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this._openClimateHistory(
+              trigger.dataset.historyEntity,
+              trigger.dataset.historyKind,
+              trigger.dataset.historyRoom,
+              "24h"
+            );
+          };
+          trigger.addEventListener("click", openHistory);
+          trigger.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") openHistory(event);
+          });
+        });
 
         element.addEventListener("click", () => this._navigate(element.dataset.path));
 
@@ -11336,6 +11484,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot.querySelector("#weather-popup-close")?.addEventListener("click", () => this._closeWeatherPopup());
     this.shadowRoot.querySelector("#weather-popup-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "weather-popup-backdrop") this._closeWeatherPopup();
+    });
+
+    this.shadowRoot.querySelector("#history-popup-close")?.addEventListener("click", () => this._closeClimateHistory());
+    this.shadowRoot.querySelector("#history-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "history-popup-backdrop") this._closeClimateHistory();
+    });
+    this.shadowRoot.querySelectorAll("[data-history-range]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const popup = this._climateHistoryPopup;
+        if (!popup) return;
+        this._openClimateHistory(popup.entityId, popup.kind, popup.roomName, button.dataset.historyRange);
+      });
     });
 
     const powerStatus = this.shadowRoot.querySelector("#power-status");
