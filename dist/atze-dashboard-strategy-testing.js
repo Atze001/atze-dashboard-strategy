@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.352.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "92AE583";
+const ATZE_TESTING_REVISION = "45C4EBC";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8029,8 +8029,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
-    this._testingVersionTimer = null;
-    this._testingUpdateAvailable = false;
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
     this._pageScrollCleanup = null;
@@ -8076,7 +8074,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   connectedCallback() {
     this._startClock();
-    this._startTestingVersionCheck();
 
     if (!this._scrollTopCleanup) {
       this._scrollTopCleanup =
@@ -8099,11 +8096,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
     }
-    if (this._testingVersionTimer) {
-      clearInterval(this._testingVersionTimer);
-      this._testingVersionTimer = null;
-    }
-
     this._scrollTopCleanup?.();
     this._scrollTopCleanup = null;
 
@@ -8118,29 +8110,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       () => this._render(),
       30000
     );
-  }
-
-  // Testing builds check for a newer locally synced revision while this card is open.
-    // Update-badge reload flow verified via the testing branch.
-    // Cache-safe loader update flow test.
-  _startTestingVersionCheck() {
-    if (!ATZE_TESTING_BUILD || this._testingVersionTimer) return;
-
-    const check = async () => {
-      try {
-        const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
-        if (!response.ok) return;
-        const revision = (await response.text()).trim().toUpperCase();
-        const updateAvailable = Boolean(revision) && Boolean(ATZE_TESTING_REVISION) && revision !== ATZE_TESTING_REVISION.toUpperCase();
-        if (updateAvailable !== this._testingUpdateAvailable) {
-          this._testingUpdateAvailable = updateAvailable;
-          this._render();
-        }
-      } catch (_) {}
-    };
-
-    check();
-    this._testingVersionTimer = setInterval(check, 30000);
   }
 
   _toggleKioskMode() {
@@ -11093,7 +11062,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge${this._testingUpdateAvailable ? " update-available" : ""}" id="testing-build-badge" role="${this._testingUpdateAvailable ? "button" : "status"}" ${this._testingUpdateAvailable ? 'tabindex="0"' : ""}>TESTING · ${this._testingUpdateAvailable ? "UPDATE VERFÜGBAR" : (ATZE_TESTING_REVISION || "DEV")}</div>` : ""}
+            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
@@ -11548,28 +11517,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
         () => this._openHomeAssistantUpdate()
       );
 
-    const testingBuildBadge = this.shadowRoot.querySelector("#testing-build-badge");
-    if (testingBuildBadge && this._testingUpdateAvailable) {
-      const reloadTestingBuild = async (event) => {
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-        try {
-          const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
-          const revision = response.ok ? (await response.text()).trim().toUpperCase() : "";
-          const url = new URL(window.location.href);
-          url.searchParams.set("atze_testing", revision || String(Date.now()));
-          window.location.replace(url.toString());
-        } catch (_) {
-          const url = new URL(window.location.href);
-          url.searchParams.set("atze_testing", String(Date.now()));
-          window.location.replace(url.toString());
-        }
-      };
-      testingBuildBadge.addEventListener("click", reloadTestingBuild);
-      testingBuildBadge.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") reloadTestingBuild(event);
-      });
-    }
 
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
