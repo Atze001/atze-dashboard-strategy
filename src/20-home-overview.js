@@ -1795,6 +1795,24 @@ class AtzeHomeOverviewCard extends HTMLElement {
             );
         }
 
+        .testing-build-badge {
+          position: absolute;
+          top: 14px;
+          right: 18px;
+          z-index: 2;
+          padding: 4px 9px;
+          border: 1px solid rgba(255,255,255,0.28);
+          border-radius: 999px;
+          background: rgba(0,0,0,0.48);
+          color: #fff;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          line-height: 1.2;
+          pointer-events: none;
+          backdrop-filter: blur(8px);
+        }
+
         .hero {
           display: flex;
           justify-content: space-between;
@@ -2993,6 +3011,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"}"
             aria-label="Hausstatus"
           >
+            ${ATZE_TESTING_BUILD ? '<div class="testing-build-badge">TESTING</div>' : ""}
             <div class="hero">
             <div class="person-stack">
             ${
