@@ -8,8 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.354.0";
+const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard";
+const ATZE_TESTING_BUILD = false;
+const ATZE_TESTING_REVISION = "";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6736,8 +6738,10 @@ function buildHomeOverviewView(
                     hash: "#zeitplaene",
                     name: "Zeitpläne",
                     icon: "mdi:calendar-clock",
-                    popup_mode: "adaptive-dialog",
+                    popup_mode: "centered",
                     width_desktop: "900px",
+                    show_header: false,
+                    close_by_clicking_outside: true,
                     cards: [
                       {
                         type: "custom:scheduler-card",
