@@ -5136,7 +5136,7 @@ function shouldHideSensorFromRoom(hass, entity, config) {
 }
 
 
-const ATZE_ASSET_BASE_URL = "/hacsfiles/atze-dashboard-strategy/assets/";
+const ATZE_ASSET_BASE_URL = new URL("/hacsfiles/atze-dashboard-strategy/assets/", window.location.origin).href;
 
 window.__atzeHomeRoomImageCache =
   window.__atzeHomeRoomImageCache || new Map();
