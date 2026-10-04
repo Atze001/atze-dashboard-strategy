@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.349.0**
+Version **0.350.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.350.0
+
+- Namensbasierte Gruppierung respektiert jetzt die tatsächliche Entity-Domain.
+- Ein `switch.*` mit „Rollladen“, „Rollo“, „Jalousie“, „Shutter“ oder „Blind“ im Namen wird nicht mehr fälschlich der Gruppe „Rollläden“ zugeordnet.
+- Sondergruppen wie „Steckdosen“ für passende `switch.*`-Entitäten bleiben unverändert erhalten.
+
 ## v0.349.0
 
 - „Seitenweises Scrollen“ ist jetzt ausschließlich auf der Hauptseite aktiv.
@@ -252,12 +258,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Seitenweises Scrollen kombiniert jetzt die sichtbare Bildschirmhöhe mit den exakten Karten-Snap-Punkten.
 - Ein Wisch springt ungefähr eine Bildschirmseite weiter und wählt dort die nächstgelegene markierte Kartenoberkante.
 - Dadurch werden mehrere Raumkarten pro Wisch übersprungen, ohne mitten in einer Karte zu stoppen.
-
-## v0.347.0
-
-- Raumkarten werden jetzt beim Rendern explizit als Scroll-Snap-Ziele markiert.
-- Die Scroll-Logik verwendet nur noch diese eindeutigen Marker statt DOM-Heuristiken.
-- Der Quick-Actions-Bereich am Ende der Startseite ist ebenfalls ein explizites Snap-Ziel.
 <!-- latest-changes:end -->
 
 ## Lizenz
