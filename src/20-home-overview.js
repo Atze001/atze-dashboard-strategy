@@ -98,6 +98,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   // Testing builds check for a newer locally synced revision while this card is open.
+    // Update-badge reload flow verified via the testing branch.
   _startTestingVersionCheck() {
     if (!ATZE_TESTING_BUILD || this._testingVersionTimer) return;
 
