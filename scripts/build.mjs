@@ -38,6 +38,7 @@ const testingReplacements = new Map([
   ["atze-status-badge-v1", "atze-testing-status-badge-v1"],
   ["atze-room-group", "atze-testing-room-group"],
   ["atze-sortable-switch-grid", "atze-testing-sortable-switch-grid"],
+  ['const ATZE_ASSET_BASE_URL = new URL(\n  "./assets/",\n  import.meta.url\n).href;', 'const ATZE_ASSET_BASE_URL = "/hacsfiles/atze-dashboard-strategy/assets/";'],
 ]);
 
 let testingBundle = bundle;
