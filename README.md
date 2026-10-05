@@ -241,11 +241,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
-## v0.356.0
-
-- Stromanzeige der Büro-Kachel auf der Startseite an die Raumlogik angeglichen.
-- Untergeordnete Leistungs-Sensoren von Geräten werden nicht mehr fälschlich als Raum-Gesamtleistung verwendet.
-
 ## v0.355.0
 
 - Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
@@ -258,6 +253,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Bestehende eigene Dashboard-Seiten erscheinen wieder ausschließlich unter „Eigene Seiten“.
 - Direkte Home-Assistant-Ziele wie Geräte, Entitäten, Automationen oder HACS werden separat unter „Navigation“ verwaltet.
 - Bestehende Konfigurationen bleiben kompatibel; die gespeicherten `custom_pages` werden nicht migriert.
+
+## v0.353.0
+
+- Temperatur- und Luftfeuchtigkeits-Popup öffnet zuverlässig direkt aus den Raumkarten, ohne zur Raumansicht weiterzunavigieren.
+- Verlaufsdiagramme verwenden für 8 h, 24 h, 7 d und 30 d jetzt den vollständigen angeforderten Zeitraum und eine passende zeitliche Verdichtung.
+- Temperatur-Icon und Touch-Fläche wurden korrigiert.
 <!-- latest-changes:end -->
 
 ## Lizenz
