@@ -6647,6 +6647,11 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    outdoor_illuminance_entity:
+      config.home_outdoor_illuminance_entity &&
+      hass.states[config.home_outdoor_illuminance_entity]
+        ? config.home_outdoor_illuminance_entity
+        : null,
     power_entities: uniqueEntityIds(roomPowerEntities),
     alarm_entity: selectHomeAlarmEntity(
       hass,
