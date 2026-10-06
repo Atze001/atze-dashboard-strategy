@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "2B49D01";
+const ATZE_TESTING_REVISION = "228441C";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -5138,7 +5138,7 @@ function shouldHideSensorFromRoom(hass, entity, config) {
 }
 
 
-const ATZE_ASSET_BASE_URL = new URL("/hacsfiles/atze-dashboard-strategy/assets/", window.location.origin).href;
+const ATZE_ASSET_BASE_URL = new URL("https://raw.githubusercontent.com/Atze001/atze-dashboard-strategy/testing/dist/assets/").href;
 
 window.__atzeHomeRoomImageCache =
   window.__atzeHomeRoomImageCache || new Map();
