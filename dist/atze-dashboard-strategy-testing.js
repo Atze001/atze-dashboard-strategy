@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "60F88C5";
+const ATZE_TESTING_REVISION = "3A3BA25";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9917,7 +9917,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .home-status-panel.has-outdoor-illuminance .person-stack,
         .home-status-panel.has-outdoor-illuminance .clock {
-          transform: translateY(10px);
+          transform: translateY(20px);
         }
 
 
