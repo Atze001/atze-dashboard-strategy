@@ -2217,6 +2217,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             <div class="rows">
               ${this._powerSensorSelectHtml()}
               ${this._outdoorIlluminanceSensorSelectHtml()}
+              ${this._hofMotionSensorSelectHtml()}
             </div>
           </div>
         </details>
