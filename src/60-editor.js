@@ -1787,7 +1787,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
         .person-entity-select,
         .power-sensor-select,
-        .outdoor-illuminance-sensor-select {
+        .outdoor-illuminance-sensor-select,
+        .hof-motion-sensor-select {
           width: min(260px, 46%);
           min-width: 150px;
           min-height: 38px;
