@@ -5204,6 +5204,12 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
 );
 
 const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
+  hof: {
+    day_light_off: "hof/01-tag-licht-aus_1800x1000.webp",
+    day_light_on: "hof/02-tag-licht-an_1800x1000.webp",
+    night_light_off: "hof/03-nacht-licht-aus_1800x1000.webp",
+    night_light_on: "hof/04-nacht-licht-an_1800x1000.webp",
+  },
   schlafzimmer: {
     day_light_on_window_closed_cover_closed: "schlafzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
     day_light_on_window_open_cover_closed: "schlafzimmer/02-tag-licht-an-fenster-offen-rollladen-unten.webp",
