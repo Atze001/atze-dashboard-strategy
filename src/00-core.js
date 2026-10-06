@@ -7325,7 +7325,11 @@ function buildAreaView(
                 cover_entities: roomCoverEntities,
                 lock_entities: entities.filter((entity) => domainOf(entity.entity_id) === "lock").map((entity) => entity.entity_id),
                 cinema_entities: roomCinemaEntities,
-                state_mode: roomStateImageKey === "kino" ? "cinema" : (roomStateImageKey === "flur" ? "door_lock" : "window_cover"),
+                motion_light_entity:
+                  roomStateImageKey === "hof" && config.hof_motion_entity && hass.states[config.hof_motion_entity]
+                    ? config.hof_motion_entity
+                    : null,
+                state_mode: roomStateImageKey === "kino" ? "cinema" : (roomStateImageKey === "flur" ? "door_lock" : (roomStateImageKey === "hof" ? "motion_light" : "window_cover")),
                 ...(dynamicRoomImages ? { state_images: dynamicRoomImages } : {}),
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
                 light_image:
