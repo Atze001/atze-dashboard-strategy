@@ -1262,6 +1262,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const weatherText = this._weatherText(weather?.state);
     const weatherIcon = this._weatherIcon(weather?.state);
 
+    const outdoorIlluminanceEntity =
+      this._config.outdoor_illuminance_entity;
+    const outdoorIlluminanceState =
+      this._state(outdoorIlluminanceEntity);
+    const outdoorIlluminanceAvailable = Boolean(
+      outdoorIlluminanceState &&
+      !["", "unknown", "unavailable"].includes(
+        String(outdoorIlluminanceState.state || "").toLowerCase()
+      )
+    );
+    const outdoorIlluminanceText =
+      outdoorIlluminanceAvailable
+        ? this._formatted(outdoorIlluminanceEntity)
+        : "";
+
     const powerState = this._state(this._config.power_entity);
     const powerAvailable = Boolean(
       powerState &&
@@ -1764,6 +1779,37 @@ class AtzeHomeOverviewCard extends HTMLElement {
           border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
           box-shadow: 0 14px 38px rgba(0,0,0,0.28);
+        }
+
+        .outdoor-illuminance-badge {
+          position: absolute;
+          top: 14px;
+          left: 50%;
+          z-index: 2;
+          transform: translateX(-50%);
+          min-height: 30px;
+          padding: 4px 11px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border: 1px solid rgba(255,255,255,0.28);
+          border-radius: 999px;
+          background: rgba(0,0,0,0.48);
+          color: #fff;
+          font-size: 13px;
+          font-weight: 650;
+          line-height: 1;
+          white-space: nowrap;
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
+        }
+
+        .outdoor-illuminance-badge ha-icon {
+          --mdc-icon-size: 17px;
+          width: 17px;
+          height: 17px;
+          color: var(--home-yellow);
         }
 
         .home-status-panel::before,
@@ -3039,6 +3085,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
             aria-label="Hausstatus"
           >
             ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
+            ${outdoorIlluminanceAvailable ? `
+              <div
+                class="outdoor-illuminance-badge"
+                title="Helligkeit außen: ${this._escapeHtml(outdoorIlluminanceText)}"
+                aria-label="Helligkeit außen: ${this._escapeHtml(outdoorIlluminanceText)}"
+              >
+                <ha-icon icon="mdi:white-balance-sunny"></ha-icon>
+                <span>${this._escapeHtml(outdoorIlluminanceText)}</span>
+              </div>
+            ` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
