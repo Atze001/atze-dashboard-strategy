@@ -5156,6 +5156,7 @@ const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   flur: "flur/04-tag-licht-aus-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   kino: "kino/01-tag-kino-aus-licht-aus_1800x1000.webp",
+  hof: "hof/01-tag-licht-aus_1800x1000.webp",
   buro: "buero/buro.jpg",
   arbeitszimmer: "buero/buro.jpg",
   kinderzimmer: "kinderzimmer/kinderzimmer.webp",
