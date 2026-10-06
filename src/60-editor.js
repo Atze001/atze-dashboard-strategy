@@ -2761,6 +2761,24 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       );
     }
 
+    const hofMotionSensorSelect =
+      this.shadowRoot.querySelector(".hof-motion-sensor-select");
+
+    if (hofMotionSensorSelect) {
+      const beginInteraction = () => this._beginEntityVisibilityInteraction();
+      hofMotionSensorSelect.addEventListener("pointerdown", beginInteraction);
+      hofMotionSensorSelect.addEventListener("focus", beginInteraction);
+      hofMotionSensorSelect.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+      hofMotionSensorSelect.addEventListener("change", (event) => {
+        this._entityVisibilityActive = false;
+        this._pendingHassRender = false;
+        this._setHofMotionEntity(event.currentTarget.value);
+      });
+    }
+
     for (
       const select of
         this.shadowRoot.querySelectorAll(
