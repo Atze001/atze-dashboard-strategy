@@ -1893,7 +1893,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .home-status-panel.has-outdoor-illuminance .person-stack,
         .home-status-panel.has-outdoor-illuminance .clock {
-          transform: translateY(10px);
+          transform: translateY(20px);
         }
 
 
