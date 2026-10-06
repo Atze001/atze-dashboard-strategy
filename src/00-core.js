@@ -5183,6 +5183,7 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   flur: "flur/01-tag-licht-an-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   kino: "kino/03-tag-kino-aus-licht-an_1800x1000.webp",
+  hof: "hof/02-tag-licht-an_1800x1000.webp",
   buro: "buero/buro-light.webp",
   arbeitszimmer: "buero/buro-light.webp",
   kinderzimmer: "kinderzimmer/kinderzimmer-light.webp",
