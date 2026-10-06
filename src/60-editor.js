@@ -444,6 +444,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         activeElement?.classList?.contains("entity-visibility") ||
         activeElement?.classList?.contains("person-entity-select") ||
         activeElement?.classList?.contains("power-sensor-select") ||
+        activeElement?.classList?.contains("outdoor-illuminance-sensor-select") ||
         activeElement?.classList?.contains("entity-filter-input") ||
         activeElement?.classList?.contains("favorite-filter-input") ||
         activeElement?.matches?.("[data-page-key]")
@@ -875,6 +876,85 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         </option>
       `),
     ].join("");
+  }
+
+  _outdoorIlluminanceSensorOptionsHtml(selectedEntityId = "") {
+    const sensors = Object.keys(
+      this._hass?.states || {}
+    )
+      .filter((entityId) => {
+        if (!entityId.startsWith("sensor.")) return false;
+
+        const stateObj = this._hass.states[entityId];
+        const deviceClass = String(
+          stateObj?.attributes?.device_class || ""
+        ).toLowerCase();
+        const unit = String(
+          stateObj?.attributes?.unit_of_measurement || ""
+        ).toLowerCase();
+
+        return (
+          deviceClass === "illuminance" ||
+          ["lx", "lux"].includes(unit)
+        );
+      })
+      .map((entityId) => ({
+        entityId,
+        name:
+          this._hass.states[entityId]?.attributes
+            ?.friendly_name ||
+          entityId,
+      }))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, "de")
+      );
+
+    return [
+      `<option value="">Nicht ausgewählt</option>`,
+      ...sensors.map(({ entityId, name }) => `
+        <option
+          value="${this._escape(entityId)}"
+          ${entityId === selectedEntityId ? "selected" : ""}
+        >
+          ${this._escape(name)}
+        </option>
+      `),
+    ].join("");
+  }
+
+  _outdoorIlluminanceSensorSelectHtml() {
+    const selected =
+      String(this._config.home_outdoor_illuminance_entity || "");
+
+    return `
+      <label class="row outdoor-illuminance-sensor-setting-row">
+        <span class="copy">
+          <span class="name">Helligkeit-Aussensensor</span>
+          <span class="desc">
+            Helligkeitssensor für die mittige Badge auf der obersten Hauptkachel.
+          </span>
+        </span>
+        <select
+          class="outdoor-illuminance-sensor-select"
+          aria-label="Helligkeit-Aussensensor auswählen"
+        >
+          ${this._outdoorIlluminanceSensorOptionsHtml(selected)}
+        </select>
+      </label>
+    `;
+  }
+
+  _setHomeOutdoorIlluminanceEntity(entityId) {
+    const next = { ...this._config };
+    const value = String(entityId || "");
+
+    if (value) {
+      next.home_outdoor_illuminance_entity = value;
+    } else {
+      delete next.home_outdoor_illuminance_entity;
+    }
+
+    this._fireConfigChanged(next);
   }
 
   _powerSensorSelectHtml() {
@@ -1655,7 +1735,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           cursor: default;
         }
         .person-entity-select,
-        .power-sensor-select {
+        .power-sensor-select,
+        .outdoor-illuminance-sensor-select {
           width: min(260px, 46%);
           min-width: 150px;
           min-height: 38px;
@@ -2083,6 +2164,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             </div>
             <div class="rows">
               ${this._powerSensorSelectHtml()}
+              ${this._outdoorIlluminanceSensorSelectHtml()}
             </div>
           </div>
         </details>
@@ -2587,6 +2669,39 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           this._entityVisibilityActive = false;
           this._pendingHassRender = false;
           this._setHomePowerEntity(
+            event.currentTarget.value
+          );
+        }
+      );
+    }
+
+    const outdoorIlluminanceSensorSelect =
+      this.shadowRoot.querySelector(
+        ".outdoor-illuminance-sensor-select"
+      );
+
+    if (outdoorIlluminanceSensorSelect) {
+      const beginInteraction = () =>
+        this._beginEntityVisibilityInteraction();
+
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "pointerdown",
+        beginInteraction
+      );
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "focus",
+        beginInteraction
+      );
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "change",
+        (event) => {
+          this._entityVisibilityActive = false;
+          this._pendingHassRender = false;
+          this._setHomeOutdoorIlluminanceEntity(
             event.currentTarget.value
           );
         }
