@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.356.0";
+const ATZE_VERSION = "0.357.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -6647,6 +6647,11 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    outdoor_illuminance_entity:
+      config.home_outdoor_illuminance_entity &&
+      hass.states[config.home_outdoor_illuminance_entity]
+        ? config.home_outdoor_illuminance_entity
+        : null,
     power_entities: uniqueEntityIds(roomPowerEntities),
     alarm_entity: selectHomeAlarmEntity(
       hass,
