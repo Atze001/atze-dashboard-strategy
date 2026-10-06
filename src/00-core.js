@@ -6573,6 +6573,10 @@ function buildHomeOverviewView(
       smoke_entity: smokeEntity,
       cover_entity: coverEntity,
       lock_entity: lockEntity,
+      motion_light_entity:
+        stateImageKey === "hof" && config.hof_motion_entity && hass.states[config.hof_motion_entity]
+          ? config.hof_motion_entity
+          : null,
       light_entities: roomLightEntities,
       cinema_entities: areaEntities
         .filter((entity) => {
