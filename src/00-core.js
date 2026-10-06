@@ -6587,7 +6587,7 @@ function buildHomeOverviewView(
           return domain === "media_player" || ["beamer", "projektor", "projector", "receiver", "leinwand", "cinema", "kino"].some((term) => text.includes(term));
         })
         .map((entity) => entity.entity_id),
-      state_mode: stateImageKey === "kino" ? "cinema" : (stateImageKey === "flur" ? "door_lock" : "window_cover"),
+      state_mode: stateImageKey === "kino" ? "cinema" : (stateImageKey === "flur" ? "door_lock" : (stateImageKey === "hof" ? "motion_light" : "window_cover")),
     });
 
     for (const entity of areaEntities) {
