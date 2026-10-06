@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D0474AA";
+const ATZE_TESTING_REVISION = "050DA7D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6644,6 +6644,11 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    outdoor_illuminance_entity:
+      config.home_outdoor_illuminance_entity &&
+      hass.states[config.home_outdoor_illuminance_entity]
+        ? config.home_outdoor_illuminance_entity
+        : null,
     power_entities: uniqueEntityIds(roomPowerEntities),
     alarm_entity: selectHomeAlarmEntity(
       hass,
@@ -9281,6 +9286,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const weatherText = this._weatherText(weather?.state);
     const weatherIcon = this._weatherIcon(weather?.state);
 
+    const outdoorIlluminanceEntity =
+      this._config.outdoor_illuminance_entity;
+    const outdoorIlluminanceState =
+      this._state(outdoorIlluminanceEntity);
+    const outdoorIlluminanceAvailable = Boolean(
+      outdoorIlluminanceState &&
+      !["", "unknown", "unavailable"].includes(
+        String(outdoorIlluminanceState.state || "").toLowerCase()
+      )
+    );
+    const outdoorIlluminanceText =
+      outdoorIlluminanceAvailable
+        ? this._formatted(outdoorIlluminanceEntity)
+        : "";
+
     const powerState = this._state(this._config.power_entity);
     const powerAvailable = Boolean(
       powerState &&
@@ -9783,6 +9803,37 @@ class AtzeHomeOverviewCard extends HTMLElement {
           border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
           box-shadow: 0 14px 38px rgba(0,0,0,0.28);
+        }
+
+        .outdoor-illuminance-badge {
+          position: absolute;
+          top: 14px;
+          left: 50%;
+          z-index: 2;
+          transform: translateX(-50%);
+          min-height: 30px;
+          padding: 4px 11px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          border: 1px solid rgba(255,255,255,0.28);
+          border-radius: 999px;
+          background: rgba(0,0,0,0.48);
+          color: #fff;
+          font-size: 13px;
+          font-weight: 650;
+          line-height: 1;
+          white-space: nowrap;
+          backdrop-filter: blur(8px) saturate(1.12);
+          -webkit-backdrop-filter: blur(8px) saturate(1.12);
+        }
+
+        .outdoor-illuminance-badge ha-icon {
+          --mdc-icon-size: 17px;
+          width: 17px;
+          height: 17px;
+          color: var(--home-yellow);
         }
 
         .home-status-panel::before,
@@ -11058,6 +11109,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
             aria-label="Hausstatus"
           >
             ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
+            ${outdoorIlluminanceAvailable ? `
+              <div
+                class="outdoor-illuminance-badge"
+                title="Helligkeit außen: ${this._escapeHtml(outdoorIlluminanceText)}"
+                aria-label="Helligkeit außen: ${this._escapeHtml(outdoorIlluminanceText)}"
+              >
+                <ha-icon icon="mdi:white-balance-sunny"></ha-icon>
+                <span>${this._escapeHtml(outdoorIlluminanceText)}</span>
+              </div>
+            ` : ""}
             <div class="hero">
             <div class="person-stack">
             ${
@@ -14547,6 +14608,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         activeElement?.classList?.contains("entity-visibility") ||
         activeElement?.classList?.contains("person-entity-select") ||
         activeElement?.classList?.contains("power-sensor-select") ||
+        activeElement?.classList?.contains("outdoor-illuminance-sensor-select") ||
         activeElement?.classList?.contains("entity-filter-input") ||
         activeElement?.classList?.contains("favorite-filter-input") ||
         activeElement?.matches?.("[data-page-key]")
@@ -14978,6 +15040,85 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         </option>
       `),
     ].join("");
+  }
+
+  _outdoorIlluminanceSensorOptionsHtml(selectedEntityId = "") {
+    const sensors = Object.keys(
+      this._hass?.states || {}
+    )
+      .filter((entityId) => {
+        if (!entityId.startsWith("sensor.")) return false;
+
+        const stateObj = this._hass.states[entityId];
+        const deviceClass = String(
+          stateObj?.attributes?.device_class || ""
+        ).toLowerCase();
+        const unit = String(
+          stateObj?.attributes?.unit_of_measurement || ""
+        ).toLowerCase();
+
+        return (
+          deviceClass === "illuminance" ||
+          ["lx", "lux"].includes(unit)
+        );
+      })
+      .map((entityId) => ({
+        entityId,
+        name:
+          this._hass.states[entityId]?.attributes
+            ?.friendly_name ||
+          entityId,
+      }))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, "de")
+      );
+
+    return [
+      `<option value="">Nicht ausgewählt</option>`,
+      ...sensors.map(({ entityId, name }) => `
+        <option
+          value="${this._escape(entityId)}"
+          ${entityId === selectedEntityId ? "selected" : ""}
+        >
+          ${this._escape(name)}
+        </option>
+      `),
+    ].join("");
+  }
+
+  _outdoorIlluminanceSensorSelectHtml() {
+    const selected =
+      String(this._config.home_outdoor_illuminance_entity || "");
+
+    return `
+      <label class="row outdoor-illuminance-sensor-setting-row">
+        <span class="copy">
+          <span class="name">Helligkeit-Aussensensor</span>
+          <span class="desc">
+            Helligkeitssensor für die mittige Badge auf der obersten Hauptkachel.
+          </span>
+        </span>
+        <select
+          class="outdoor-illuminance-sensor-select"
+          aria-label="Helligkeit-Aussensensor auswählen"
+        >
+          ${this._outdoorIlluminanceSensorOptionsHtml(selected)}
+        </select>
+      </label>
+    `;
+  }
+
+  _setHomeOutdoorIlluminanceEntity(entityId) {
+    const next = { ...this._config };
+    const value = String(entityId || "");
+
+    if (value) {
+      next.home_outdoor_illuminance_entity = value;
+    } else {
+      delete next.home_outdoor_illuminance_entity;
+    }
+
+    this._fireConfigChanged(next);
   }
 
   _powerSensorSelectHtml() {
@@ -15758,7 +15899,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           cursor: default;
         }
         .person-entity-select,
-        .power-sensor-select {
+        .power-sensor-select,
+        .outdoor-illuminance-sensor-select {
           width: min(260px, 46%);
           min-width: 150px;
           min-height: 38px;
@@ -16186,6 +16328,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             </div>
             <div class="rows">
               ${this._powerSensorSelectHtml()}
+              ${this._outdoorIlluminanceSensorSelectHtml()}
             </div>
           </div>
         </details>
@@ -16690,6 +16833,39 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           this._entityVisibilityActive = false;
           this._pendingHassRender = false;
           this._setHomePowerEntity(
+            event.currentTarget.value
+          );
+        }
+      );
+    }
+
+    const outdoorIlluminanceSensorSelect =
+      this.shadowRoot.querySelector(
+        ".outdoor-illuminance-sensor-select"
+      );
+
+    if (outdoorIlluminanceSensorSelect) {
+      const beginInteraction = () =>
+        this._beginEntityVisibilityInteraction();
+
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "pointerdown",
+        beginInteraction
+      );
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "focus",
+        beginInteraction
+      );
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "blur",
+        () => this._endEntityVisibilityInteraction()
+      );
+      outdoorIlluminanceSensorSelect.addEventListener(
+        "change",
+        (event) => {
+          this._entityVisibilityActive = false;
+          this._pendingHassRender = false;
+          this._setHomeOutdoorIlluminanceEntity(
             event.currentTarget.value
           );
         }
