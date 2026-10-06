@@ -445,6 +445,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         activeElement?.classList?.contains("person-entity-select") ||
         activeElement?.classList?.contains("power-sensor-select") ||
         activeElement?.classList?.contains("outdoor-illuminance-sensor-select") ||
+        activeElement?.classList?.contains("hof-motion-sensor-select") ||
         activeElement?.classList?.contains("entity-filter-input") ||
         activeElement?.classList?.contains("favorite-filter-input") ||
         activeElement?.matches?.("[data-page-key]")
