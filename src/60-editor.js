@@ -958,6 +958,56 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _hofMotionSensorOptionsHtml(selectedEntityId = "") {
+    const sensors = Object.keys(this._hass?.states || {})
+      .filter((entityId) => {
+        if (!entityId.startsWith("binary_sensor.")) return false;
+        const deviceClass = String(
+          this._hass.states[entityId]?.attributes?.device_class || ""
+        ).toLowerCase();
+        return ["motion", "occupancy", "presence"].includes(deviceClass);
+      })
+      .map((entityId) => ({
+        entityId,
+        name: this._hass.states[entityId]?.attributes?.friendly_name || entityId,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+    return [
+      `<option value="">Nicht ausgewählt</option>`,
+      ...sensors.map(({ entityId, name }) => `
+        <option value="${this._escape(entityId)}" ${entityId === selectedEntityId ? "selected" : ""}>
+          ${this._escape(name)}
+        </option>
+      `),
+    ].join("");
+  }
+
+  _hofMotionSensorSelectHtml() {
+    const selected = String(this._config.hof_motion_entity || "");
+    return `
+      <label class="row hof-motion-sensor-setting-row">
+        <span class="copy">
+          <span class="name">Hof-Beleuchtungssensor</span>
+          <span class="desc">
+            Bewegungs-/Präsenzsensor, dessen Status die Beleuchtung im Hof-Bereichsbild steuert.
+          </span>
+        </span>
+        <select class="hof-motion-sensor-select" aria-label="Hof-Beleuchtungssensor auswählen">
+          ${this._hofMotionSensorOptionsHtml(selected)}
+        </select>
+      </label>
+    `;
+  }
+
+  _setHofMotionEntity(entityId) {
+    const next = { ...this._config };
+    const value = String(entityId || "");
+    if (value) next.hof_motion_entity = value;
+    else delete next.hof_motion_entity;
+    this._fireConfigChanged(next);
+  }
+
   _powerSensorSelectHtml() {
     const selected =
       String(this._config.home_power_entity || "");
