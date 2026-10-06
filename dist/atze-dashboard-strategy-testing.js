@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.355.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "050DA7D";
+const ATZE_TESTING_REVISION = "60F88C5";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9915,6 +9915,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 30px;
         }
 
+        .home-status-panel.has-outdoor-illuminance .person-stack,
+        .home-status-panel.has-outdoor-illuminance .clock {
+          transform: translateY(10px);
+        }
+
 
         .person-hero {
           display: flex;
@@ -11105,7 +11110,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ` : ""}
 
           <section
-            class="home-status-panel ${heroIsDay ? "day" : "night"}"
+            class="home-status-panel ${heroIsDay ? "day" : "night"} ${outdoorIlluminanceAvailable ? "has-outdoor-illuminance" : ""}"
             aria-label="Hausstatus"
           >
             ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
