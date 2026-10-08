@@ -136,8 +136,11 @@ class AtzeRoomNavHeader extends HTMLElement {
       const state = String(this._hass?.states?.[entityId]?.state || "").toLowerCase();
       return !["", "off", "idle", "standby", "unavailable", "unknown"].includes(state);
     });
+    const motionLightOn = String(this._hass?.states?.[this._config.motion_light_entity]?.state || "").toLowerCase() === "on";
     const stateKey =
-      this._config.state_mode === "cinema"
+      this._config.state_mode === "motion_light"
+        ? `light_${motionLightOn ? "on" : "off"}`
+        : this._config.state_mode === "cinema"
         ? `${lightsOn ? "light_on" : "light_off"}_cinema_${cinemaOn ? "on" : "off"}`
         : this._config.state_mode === "door_lock"
           ? (windowOpen

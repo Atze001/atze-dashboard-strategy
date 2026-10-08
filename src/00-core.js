@@ -5156,6 +5156,7 @@ const DEFAULT_HOME_ROOM_IMAGE_FILES = {
   flur: "flur/04-tag-licht-aus-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/05-tag-licht-aus-fenster-zu-rollladen-unten.webp",
   kino: "kino/01-tag-kino-aus-licht-aus_1800x1000.webp",
+  hof: "hof/01-tag-licht-aus_1800x1000.webp",
   buro: "buero/buro.jpg",
   arbeitszimmer: "buero/buro.jpg",
   kinderzimmer: "kinderzimmer/kinderzimmer.webp",
@@ -5182,6 +5183,7 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGE_FILES = {
   flur: "flur/01-tag-licht-an-tuer-zu.webp",
   wohnzimmer: "wohnzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
   kino: "kino/03-tag-kino-aus-licht-an_1800x1000.webp",
+  hof: "hof/02-tag-licht-an_1800x1000.webp",
   buro: "buero/buro-light.webp",
   arbeitszimmer: "buero/buro-light.webp",
   kinderzimmer: "kinderzimmer/kinderzimmer-light.webp",
@@ -5202,6 +5204,12 @@ const DEFAULT_HOME_ROOM_LIGHT_IMAGES = Object.fromEntries(
 );
 
 const DEFAULT_HOME_ROOM_STATE_IMAGE_FILES = {
+  hof: {
+    day_light_off: "hof/01-tag-licht-aus_1800x1000.webp",
+    day_light_on: "hof/02-tag-licht-an_1800x1000.webp",
+    night_light_off: "hof/03-nacht-licht-aus_1800x1000.webp",
+    night_light_on: "hof/04-nacht-licht-an_1800x1000.webp",
+  },
   schlafzimmer: {
     day_light_on_window_closed_cover_closed: "schlafzimmer/01-tag-licht-an-fenster-zu-rollladen-unten.webp",
     day_light_on_window_open_cover_closed: "schlafzimmer/02-tag-licht-an-fenster-offen-rollladen-unten.webp",
@@ -6565,6 +6573,10 @@ function buildHomeOverviewView(
       smoke_entity: smokeEntity,
       cover_entity: coverEntity,
       lock_entity: lockEntity,
+      motion_light_entity:
+        stateImageKey === "hof" && config.hof_motion_entity && hass.states[config.hof_motion_entity]
+          ? config.hof_motion_entity
+          : null,
       light_entities: roomLightEntities,
       cinema_entities: areaEntities
         .filter((entity) => {
@@ -6575,7 +6587,7 @@ function buildHomeOverviewView(
           return domain === "media_player" || ["beamer", "projektor", "projector", "receiver", "leinwand", "cinema", "kino"].some((term) => text.includes(term));
         })
         .map((entity) => entity.entity_id),
-      state_mode: stateImageKey === "kino" ? "cinema" : (stateImageKey === "flur" ? "door_lock" : "window_cover"),
+      state_mode: stateImageKey === "kino" ? "cinema" : (stateImageKey === "flur" ? "door_lock" : (stateImageKey === "hof" ? "motion_light" : "window_cover")),
     });
 
     for (const entity of areaEntities) {
@@ -7313,7 +7325,11 @@ function buildAreaView(
                 cover_entities: roomCoverEntities,
                 lock_entities: entities.filter((entity) => domainOf(entity.entity_id) === "lock").map((entity) => entity.entity_id),
                 cinema_entities: roomCinemaEntities,
-                state_mode: roomStateImageKey === "kino" ? "cinema" : (roomStateImageKey === "flur" ? "door_lock" : "window_cover"),
+                motion_light_entity:
+                  roomStateImageKey === "hof" && config.hof_motion_entity && hass.states[config.hof_motion_entity]
+                    ? config.hof_motion_entity
+                    : null,
+                state_mode: roomStateImageKey === "kino" ? "cinema" : (roomStateImageKey === "flur" ? "door_lock" : (roomStateImageKey === "hof" ? "motion_light" : "window_cover")),
                 ...(dynamicRoomImages ? { state_images: dynamicRoomImages } : {}),
                 dark_image: DEFAULT_HOME_ROOM_IMAGES[roomImageKey],
                 light_image:
