@@ -1,0 +1,74 @@
+name: Weekly branch cleanup
+
+on:
+  schedule:
+    - cron: "20 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete stale branches from completed pull requests
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const protectedBranches = new Set(["main", "testing"]);
+            const maxAgeMs = 7 * 24 * 60 * 60 * 1000;
+            const cutoff = Date.now() - maxAgeMs;
+
+            const branches = await github.paginate(
+              github.rest.repos.listBranches,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              }
+            );
+
+            for (const { name } of branches) {
+              if (protectedBranches.has(name)) {
+                core.info(`Keeping protected branch: ${name}`);
+                continue;
+              }
+
+              const pulls = await github.paginate(
+                github.rest.pulls.list,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: "closed",
+                  head: `${context.repo.owner}:${name}`,
+                  sort: "updated",
+                  direction: "desc",
+                  per_page: 100,
+                }
+              );
+
+              if (pulls.length === 0) {
+                core.info(`Keeping ${name}: no completed pull request found`);
+                continue;
+              }
+
+              const latest = pulls[0];
+              const completedAt = latest.merged_at || latest.closed_at;
+              if (!completedAt || new Date(completedAt).getTime() > cutoff) {
+                core.info(`Keeping ${name}: PR #${latest.number} completed less than 7 days ago`);
+                continue;
+              }
+
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${name}`,
+                });
+                core.info(`Deleted ${name} (PR #${latest.number})`);
+              } catch (error) {
+                core.warning(`Could not delete ${name}: ${error.message}`);
+              }
+            }
