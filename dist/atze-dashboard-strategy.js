@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.360.0";
+const ATZE_VERSION = "0.361.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -6738,35 +6738,7 @@ function buildHomeOverviewView(
     icon: config.home_icon || "mdi:home",
     subview: false,
     panel: true,
-    cards: showSchedulerPopup
-      ? [
-          {
-            type: "vertical-stack",
-            cards: [
-              homeCard,
-              ...(showSchedulerPopup
-                ? [{
-                    type: "custom:bubble-card",
-                    card_type: "pop-up",
-                    hash: "#zeitplaene",
-                    name: "Zeitpläne",
-                    icon: "mdi:calendar-clock",
-                    popup_mode: "centered",
-                    width_desktop: "900px",
-                    show_header: false,
-                    close_by_clicking_outside: true,
-                    cards: [
-                      {
-                        type: "custom:scheduler-card",
-                        sort_by: ["state", "relative-time"],
-                      },
-                    ],
-                  }]
-                : []),
-            ],
-          },
-        ]
-      : [homeCard],
+    cards: [homeCard],
   };
 }
 
@@ -8057,6 +8029,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._climateHistoryPopup = null;
     this._climateHistory = [];
     this._climateHistoryLoading = false;
+    this._schedulerPopupOpen = false;
+    this._schedulerCard = null;
+    this._schedulerCardLoading = false;
     this._presenceHistoryPopup = null;
     this._presenceHistory = [];
     this._presenceHistoryLoading = false;
@@ -8089,7 +8064,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     }
 
-    if (!this._interactionActive) this._render();
+    if (this._schedulerCard) this._schedulerCard.hass = value;
+    if (!this._interactionActive) {
+      if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
+      else this._render();
+    }
   }
 
   get hass() {
@@ -8131,7 +8110,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._clockTimer) return;
 
     this._clockTimer = setInterval(
-      () => this._render(),
+      () => { if (!this._hasOpenDashboardPopup()) this._render(); },
       30000
     );
   }
@@ -8659,13 +8638,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
   async _openPresenceHistory(range = "24h", entityId = null) {
     const personId = entityId || this._config?.person_entity || "person.alexander_reimann";
     const trackerId = "device_tracker.atzes_iphone_17_pro_2";
-    const request = { range, personId, trackerId };
+    const request = { personId, trackerId };
     this._presenceHistoryPopup = request;
     this._presenceHistory = [];
     this._presenceHistoryLoading = true;
     this._presenceHistoryError = false;
     this._render();
-    const hours = { "24h": 24, "7d": 168, "30d": 720 }[range] || 24;
+    const hours = 24;
     const start = new Date(Date.now() - hours * 3600000).toISOString();
     const end = new Date().toISOString();
     try {
@@ -8730,9 +8709,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       <div class="weather-popup-backdrop" id="presence-history-backdrop">
         <section class="weather-popup presence-history-popup" role="dialog" aria-modal="true" aria-label="Anwesenheitsverlauf">
           <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Person und iCloud im Vergleich</small></div></div>
-          <div class="history-range">
-            ${["24h", "7d", "30d"].map((range) => `<button type="button" data-presence-range="${range}" class="${popup.range === range ? "active" : ""}">${range === "24h" ? "24 Stunden" : range === "7d" ? "7 Tage" : "30 Tage"}</button>`).join("")}
-          </div>
           <div class="presence-summary">
             <div><span>Person</span><strong>${stateBadge(popup.personId)}</strong></div>
             <div><span>iCloud iPhone</span><strong>${stateBadge(popup.trackerId)}</strong></div>
@@ -8895,7 +8871,49 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
   }
 
+  async _mountSchedulerCard() {
+    const host = this.shadowRoot?.querySelector("#atze-scheduler-card-host");
+    if (!host || !this._schedulerPopupOpen) return;
+    if (this._schedulerCard) {
+      host.appendChild(this._schedulerCard);
+      this._schedulerCard.hass = this._hass;
+      return;
+    }
+    if (this._schedulerCardLoading) return;
+    this._schedulerCardLoading = true;
+    try {
+      const helpers = await window.loadCardHelpers();
+      if (!this._schedulerPopupOpen) return;
+      const card = await helpers.createCardElement({ type: "custom:scheduler-card", title: false, sort_by: ["state", "relative-time"] });
+      if (!this._schedulerPopupOpen) return;
+      this._schedulerCard = card;
+      card.hass = this._hass;
+      this.shadowRoot?.querySelector("#atze-scheduler-card-host")?.appendChild(card);
+    } catch (error) {
+      console.error("Atze Dashboard: Scheduler Card konnte nicht geladen werden", error);
+      const currentHost = this.shadowRoot?.querySelector("#atze-scheduler-card-host");
+      if (currentHost) currentHost.textContent = "Scheduler Card konnte nicht geladen werden.";
+    } finally {
+      this._schedulerCardLoading = false;
+    }
+  }
+
+  _schedulerPopupHtml() {
+    if (!this._schedulerPopupOpen) return "";
+    return `<div class="weather-popup-backdrop" id="scheduler-popup-backdrop">
+      <section class="weather-popup scheduler-popup" role="dialog" aria-modal="true" aria-label="Zeitpläne">
+        <div class="group-control-heading"><ha-icon icon="mdi:calendar-clock"></ha-icon><h2>Zeitpläne</h2></div>
+        <div id="atze-scheduler-card-host"></div>
+      </section>
+    </div>`;
+  }
+
   _openPopup(hash) {
+    if (String(hash || "").replace(/^#/, "") === "zeitplaene" && this._config?.scheduler_popup) {
+      this._schedulerPopupOpen = true;
+      this._render();
+      return;
+    }
     const target = String(hash || "").startsWith("#")
       ? String(hash)
       : `#${String(hash || "")}`;
@@ -9338,8 +9356,64 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return `${Math.round(total)} W`;
   }
 
+  _refreshOpenPopup() {
+    // Update live controls without replacing the dialog or losing its scroll state.
+    const root = this.shadowRoot;
+    if (!root || !this._hass) return;
+    if (this._groupControlPopup) {
+      const kind = this._groupControlPopup;
+      const lights = kind === "lights";
+      root.querySelectorAll("[data-group-entity]").forEach((button) => {
+        const id = button.dataset.groupEntity;
+        const state = this._state(id);
+        const available = Boolean(state && !["unavailable", "unknown"].includes(state.state));
+        const position = !lights && available ? this._coverPosition(id) : null;
+        const active = available && (lights ? state.state === "on" :
+          (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
+        button.disabled = !available;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-label", lights ? (active ? "Ausschalten" : "Einschalten") :
+          (active ? "Schließen" : "Öffnen"));
+        const icon = button.querySelector("ha-icon");
+        if (icon) icon.setAttribute("icon", lights ?
+          (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") :
+          (active ? "mdi:window-shutter-open" : "mdi:window-shutter"));
+        const row = button.closest(".group-control-row");
+        const positionLabel = row?.querySelector(".group-control-position");
+        if (positionLabel && position != null) positionLabel.textContent = `${Math.round(position)} %`;
+        const details = row?.querySelector("[data-group-more-info]");
+        if (details) details.disabled = !available;
+      });
+    }
+    if (this._presenceHistoryPopup) {
+      const popup = this._presenceHistoryPopup;
+      const formatState = (value) => ({
+        home: "Zuhause", not_home: "Abwesend",
+        unavailable: "Nicht verfügbar", unknown: "Unbekannt"
+      }[value] || value);
+      const badges = root.querySelectorAll(".presence-summary strong");
+      if (badges[0]) badges[0].textContent = formatState(this._state(popup.personId)?.state || "unavailable");
+      if (badges[1]) badges[1].textContent = formatState(this._state(popup.trackerId)?.state || "unavailable");
+    }
+  }
+
+  _hasOpenDashboardPopup() {
+    return Boolean(this._weatherPopupOpen || this._powerPopupOpen ||
+      this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
+  }
+
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
+
+    // Preserve scroll positions when HA state updates rebuild the popup DOM.
+    const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
+      .map((element) => ({ selector: element.classList.contains("presence-event-list") ? ".presence-event-list" :
+        element.classList.contains("group-control-list") ? ".group-control-list" :
+        ".weather-popup", scrollTop: element.scrollTop }));
+    const presenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
+    const presenceList = this.shadowRoot.querySelector(".presence-event-list");
+    const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
+    const presenceListScrollTop = presenceList?.scrollTop ?? 0;
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -10386,8 +10460,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           cursor: pointer;
         }
 
-        .weather-popup-backdrop { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-        .weather-popup { position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:rgba(20,22,27,.98); box-shadow:0 24px 70px rgba(0,0,0,.48); }
+        .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+        .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:rgba(20,22,27,.98); box-shadow:0 24px 70px rgba(0,0,0,.48); }
         .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
         .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
         .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
@@ -10932,7 +11006,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .history-chart line { stroke:rgba(255,255,255,.10); stroke-width:1; vector-effect:non-scaling-stroke; }
         .history-chart polyline { fill:none; stroke:var(--home-blue,#0a84ff); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
         .history-scale { position:absolute; inset:12px auto 17px 0; display:flex; flex-direction:column; justify-content:space-between; color:var(--home-muted); font-size:11px; }
-        .presence-history-popup { width:min(580px,calc(100vw - 40px)); }
+        .scheduler-popup { width:min(900px,calc(100vw - 40px)); }
+        .presence-history-popup { width:min(580px,calc(100vw - 40px)); overscroll-behavior:contain; touch-action:pan-y; }
+        #presence-history-backdrop { overscroll-behavior:contain; touch-action:none; }
+        #presence-history-backdrop .presence-history-popup { touch-action:pan-y; }
+        .presence-event-list { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
         .presence-history-title { display:flex; align-items:center; gap:14px; }
         .presence-history-title ha-icon { --mdc-icon-size:34px; color:var(--home-yellow); }
         .presence-history-title div { display:flex; flex-direction:column; gap:4px; }
@@ -11521,8 +11599,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ${this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
           ${this._presenceHistoryPopupHtml()}
+          ${this._schedulerPopupHtml()}
       </ha-card>
     `;
+
+    for (const position of popupScrollPositions) {
+      const element = this.shadowRoot.querySelector(position.selector);
+      if (element) element.scrollTop = position.scrollTop;
+    }
+    if (this._schedulerPopupOpen) this._mountSchedulerCard();
+    const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
+    const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
+    if (newPresenceScroll) newPresenceScroll.scrollTop = presencePopupScrollTop;
+    if (newPresenceList) newPresenceList.scrollTop = presenceListScrollTop;
 
     const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
     if (homeStatusPanel && heroImage) {
@@ -11819,16 +11908,54 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     });
 
-    this.shadowRoot.querySelector("#presence-history-backdrop")?.addEventListener("click", (event) => {
+    // Stop scroll chaining into Home Assistant (including iOS WebKit overscroll).
+    // Keep native scrolling inside the popup and its nested lists.
+    for (const backdrop of this.shadowRoot.querySelectorAll(".weather-popup-backdrop")) {
+      let lastTouchY = null;
+      const canScrollInside = (target, deltaY) => {
+        for (let node = target; node && node !== backdrop; node = node.parentElement) {
+          if (!(node instanceof HTMLElement)) continue;
+          const style = getComputedStyle(node);
+          if (!/(auto|scroll)/.test(style.overflowY)) continue;
+          const remaining = node.scrollHeight - node.clientHeight;
+          if (remaining <= 1) continue;
+          if (deltaY < 0 && node.scrollTop > 0) return true;
+          if (deltaY > 0 && node.scrollTop < remaining - 1) return true;
+        }
+        return false;
+      };
+      backdrop.addEventListener("touchstart", (event) => {
+        lastTouchY = event.touches?.[0]?.clientY ?? null;
+        event.stopPropagation();
+      }, { passive: true });
+      backdrop.addEventListener("touchmove", (event) => {
+        const y = event.touches?.[0]?.clientY;
+        if (y != null && lastTouchY != null) {
+          const deltaY = lastTouchY - y;
+          if (!canScrollInside(event.target, deltaY) && event.cancelable) event.preventDefault();
+          lastTouchY = y;
+        }
+        event.stopPropagation();
+      }, { passive: false });
+      backdrop.addEventListener("touchend", (event) => {
+        lastTouchY = null;
+        event.stopPropagation();
+      }, { passive: true });
+      backdrop.addEventListener("touchcancel", () => { lastTouchY = null; }, { passive: true });
+      backdrop.addEventListener("wheel", (event) => {
+        if (!canScrollInside(event.target, event.deltaY) && event.cancelable) event.preventDefault();
+        event.stopPropagation();
+      }, { passive: false });
+    }
+    this.shadowRoot.querySelector("#scheduler-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id !== "scheduler-popup-backdrop") return;
+      this._schedulerPopupOpen = false;
+      this._render();
+    });
+    const presenceBackdrop = this.shadowRoot.querySelector("#presence-history-backdrop");
+    presenceBackdrop?.addEventListener("click", (event) => {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
-    this.shadowRoot.querySelectorAll("[data-presence-range]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const popup = this._presenceHistoryPopup;
-        if (popup) this._openPresenceHistory(button.dataset.presenceRange, popup.personId);
-      });
-    });
-
     const powerStatus = this.shadowRoot.querySelector("#power-status");
     powerStatus?.addEventListener("click", () => this._openPowerPopup());
     powerStatus?.addEventListener("keydown", (event) => {
