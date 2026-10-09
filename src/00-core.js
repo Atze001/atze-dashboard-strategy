@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.360.0";
+const ATZE_VERSION = "0.361.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -6738,35 +6738,7 @@ function buildHomeOverviewView(
     icon: config.home_icon || "mdi:home",
     subview: false,
     panel: true,
-    cards: showSchedulerPopup
-      ? [
-          {
-            type: "vertical-stack",
-            cards: [
-              homeCard,
-              ...(showSchedulerPopup
-                ? [{
-                    type: "custom:bubble-card",
-                    card_type: "pop-up",
-                    hash: "#zeitplaene",
-                    name: "Zeitpläne",
-                    icon: "mdi:calendar-clock",
-                    popup_mode: "centered",
-                    width_desktop: "900px",
-                    show_header: false,
-                    close_by_clicking_outside: true,
-                    cards: [
-                      {
-                        type: "custom:scheduler-card",
-                        sort_by: ["state", "relative-time"],
-                      },
-                    ],
-                  }]
-                : []),
-            ],
-          },
-        ]
-      : [homeCard],
+    cards: [homeCard],
   };
 }
 
