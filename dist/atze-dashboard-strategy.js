@@ -8659,13 +8659,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
   async _openPresenceHistory(range = "24h", entityId = null) {
     const personId = entityId || this._config?.person_entity || "person.alexander_reimann";
     const trackerId = "device_tracker.atzes_iphone_17_pro_2";
-    const request = { range, personId, trackerId };
+    const request = { personId, trackerId };
     this._presenceHistoryPopup = request;
     this._presenceHistory = [];
     this._presenceHistoryLoading = true;
     this._presenceHistoryError = false;
     this._render();
-    const hours = { "24h": 24, "7d": 168, "30d": 720 }[range] || 24;
+    const hours = 24;
     const start = new Date(Date.now() - hours * 3600000).toISOString();
     const end = new Date().toISOString();
     try {
@@ -8730,9 +8730,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       <div class="weather-popup-backdrop" id="presence-history-backdrop">
         <section class="weather-popup presence-history-popup" role="dialog" aria-modal="true" aria-label="Anwesenheitsverlauf">
           <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Person und iCloud im Vergleich</small></div></div>
-          <div class="history-range">
-            ${["24h", "7d", "30d"].map((range) => `<button type="button" data-presence-range="${range}" class="${popup.range === range ? "active" : ""}">${range === "24h" ? "24 Stunden" : range === "7d" ? "7 Tage" : "30 Tage"}</button>`).join("")}
-          </div>
           <div class="presence-summary">
             <div><span>Person</span><strong>${stateBadge(popup.personId)}</strong></div>
             <div><span>iCloud iPhone</span><strong>${stateBadge(popup.trackerId)}</strong></div>
@@ -9340,6 +9337,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
+
+    // Preserve scroll positions when HA state updates rebuild the popup DOM.
+    const presenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
+    const presenceList = this.shadowRoot.querySelector(".presence-event-list");
+    const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
+    const presenceListScrollTop = presenceList?.scrollTop ?? 0;
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -11524,6 +11527,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </ha-card>
     `;
 
+    const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
+    const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
+    if (newPresenceScroll) newPresenceScroll.scrollTop = presencePopupScrollTop;
+    if (newPresenceList) newPresenceList.scrollTop = presenceListScrollTop;
+
     const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
     if (homeStatusPanel && heroImage) {
       homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
@@ -11822,13 +11830,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot.querySelector("#presence-history-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
-    this.shadowRoot.querySelectorAll("[data-presence-range]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const popup = this._presenceHistoryPopup;
-        if (popup) this._openPresenceHistory(button.dataset.presenceRange, popup.personId);
-      });
-    });
-
     const powerStatus = this.shadowRoot.querySelector("#power-status");
     powerStatus?.addEventListener("click", () => this._openPowerPopup());
     powerStatus?.addEventListener("keydown", (event) => {
