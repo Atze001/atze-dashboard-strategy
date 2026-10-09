@@ -869,7 +869,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     try {
       const helpers = await window.loadCardHelpers();
       if (!this._schedulerPopupOpen) return;
-      const card = await helpers.createCardElement({ type: "custom:scheduler-card", sort_by: ["state", "relative-time"] });
+      const card = await helpers.createCardElement({ type: "custom:scheduler-card", title: false, sort_by: ["state", "relative-time"] });
       if (!this._schedulerPopupOpen) return;
       this._schedulerCard = card;
       card.hass = this._hass;
