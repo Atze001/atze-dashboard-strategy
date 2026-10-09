@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.359.0";
+const ATZE_VERSION = "0.360.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -8057,6 +8057,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._climateHistoryPopup = null;
     this._climateHistory = [];
     this._climateHistoryLoading = false;
+    this._presenceHistoryPopup = null;
+    this._presenceHistory = [];
+    this._presenceHistoryLoading = false;
+    this._presenceHistoryError = false;
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
@@ -8650,6 +8654,97 @@ class AtzeHomeOverviewCard extends HTMLElement {
     `;
   }
 
+
+
+  async _openPresenceHistory(range = "24h", entityId = null) {
+    const personId = entityId || this._config?.person_entity || "person.alexander_reimann";
+    const trackerId = "device_tracker.atzes_iphone_17_pro_2";
+    const request = { range, personId, trackerId };
+    this._presenceHistoryPopup = request;
+    this._presenceHistory = [];
+    this._presenceHistoryLoading = true;
+    this._presenceHistoryError = false;
+    this._render();
+    const hours = { "24h": 24, "7d": 168, "30d": 720 }[range] || 24;
+    const start = new Date(Date.now() - hours * 3600000).toISOString();
+    const end = new Date().toISOString();
+    try {
+      const response = await this._hass.callApi("GET",
+        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(end)}&filter_entity_id=${encodeURIComponent(personId + "," + trackerId)}&no_attributes`);
+      if (this._presenceHistoryPopup !== request) return;
+      const events = [];
+      for (const entries of Array.isArray(response) ? response : []) {
+        if (!Array.isArray(entries)) continue;
+        let previous = null;
+        for (const entry of entries) {
+          const source = entry.entity_id;
+          if (source !== personId && source !== trackerId) continue;
+          const state = String(entry.state ?? "");
+          const timestamp = new Date(entry.last_changed || entry.last_updated).getTime();
+          if (!Number.isFinite(timestamp)) continue;
+          // The first record is the state at the start of the requested window.
+          if (previous === null) { previous = state; continue; }
+          if (previous === state) continue;
+          previous = state;
+          events.push({ source, state, timestamp });
+        }
+      }
+      this._presenceHistory = events.sort((a, b) => b.timestamp - a.timestamp);
+    } catch (error) {
+      console.warn("Atze Dashboard: Anwesenheitsverlauf konnte nicht geladen werden.", error);
+      if (this._presenceHistoryPopup === request) this._presenceHistoryError = true;
+    } finally {
+      if (this._presenceHistoryPopup === request) {
+        this._presenceHistoryLoading = false;
+        this._render();
+      }
+    }
+  }
+
+  _closePresenceHistory() {
+    this._presenceHistoryPopup = null;
+    this._presenceHistory = [];
+    this._presenceHistoryLoading = false;
+    this._render();
+  }
+
+  _presenceHistoryPopupHtml() {
+    const popup = this._presenceHistoryPopup;
+    if (!popup) return "";
+    const formatState = (state) => ({
+      home: "Zuhause", not_home: "Abwesend",
+      unavailable: "Nicht verfügbar", unknown: "Unbekannt"
+    }[state] || state);
+    const formatTime = (timestamp) => new Intl.DateTimeFormat("de-DE", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    }).format(new Date(timestamp));
+    const stateBadge = (id) => this._escapeHtml(formatState(this._state(id)?.state || "unavailable"));
+    const events = this._presenceHistory.map((event) => `
+      <div class="presence-event">
+        <span class="presence-event-time">${formatTime(event.timestamp)}</span>
+        <span class="presence-event-source">${event.source === popup.personId ? "Person" : "iCloud iPhone"}</span>
+        <strong>${this._escapeHtml(formatState(event.state))}</strong>
+      </div>`).join("");
+    return `
+      <div class="weather-popup-backdrop" id="presence-history-backdrop">
+        <section class="weather-popup presence-history-popup" role="dialog" aria-modal="true" aria-label="Anwesenheitsverlauf">
+          <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Person und iCloud im Vergleich</small></div></div>
+          <div class="history-range">
+            ${["24h", "7d", "30d"].map((range) => `<button type="button" data-presence-range="${range}" class="${popup.range === range ? "active" : ""}">${range === "24h" ? "24 Stunden" : range === "7d" ? "7 Tage" : "30 Tage"}</button>`).join("")}
+          </div>
+          <div class="presence-summary">
+            <div><span>Person</span><strong>${stateBadge(popup.personId)}</strong></div>
+            <div><span>iCloud iPhone</span><strong>${stateBadge(popup.trackerId)}</strong></div>
+          </div>
+          <div class="presence-event-list">
+            ${this._presenceHistoryLoading ? '<div class="history-empty">Verlauf wird geladen …</div>' :
+              this._presenceHistoryError ? '<div class="history-empty">Verlauf konnte nicht geladen werden.</div>' :
+              events || '<div class="history-empty">Keine Zustandswechsel im gewählten Zeitraum.</div>'}
+          </div>
+        </section>
+      </div>`;
+  }
 
   _roomImageState(room, lightsOn = false) {
     if (room.state_mode === "motion_light" && room.state_images) {
@@ -10837,6 +10932,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .history-chart line { stroke:rgba(255,255,255,.10); stroke-width:1; vector-effect:non-scaling-stroke; }
         .history-chart polyline { fill:none; stroke:var(--home-blue,#0a84ff); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
         .history-scale { position:absolute; inset:12px auto 17px 0; display:flex; flex-direction:column; justify-content:space-between; color:var(--home-muted); font-size:11px; }
+        .presence-history-popup { width:min(580px,calc(100vw - 40px)); }
+        .presence-history-title { display:flex; align-items:center; gap:14px; }
+        .presence-history-title ha-icon { --mdc-icon-size:34px; color:var(--home-yellow); }
+        .presence-history-title div { display:flex; flex-direction:column; gap:4px; }
+        .presence-history-title strong { font-size:21px; }
+        .presence-history-title small, .presence-summary span { color:var(--home-muted); font-size:12px; }
+        .presence-summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+        .presence-summary > div { display:flex; flex-direction:column; gap:7px; padding:12px; border-radius:14px; background:rgba(118,118,128,.14); }
+        .presence-event-list { max-height:50vh; overflow:auto; }
+        .presence-event { display:grid; grid-template-columns:1fr auto; gap:5px 12px; padding:12px 3px; border-bottom:1px solid rgba(255,255,255,.09); }
+        .presence-event-time { color:var(--home-muted); font-size:12px; }
+        .presence-event-source { font-size:12px; color:var(--home-muted); text-align:right; }
+        .presence-event strong { grid-column:1 / -1; font-size:14px; }
         .history-empty { min-height:150px; display:grid; place-items:center; text-align:center; color:var(--home-muted); padding:20px; }
         .history-sensor { margin-top:8px; color:var(--home-muted); font-size:11px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .room-meta .room-humidity ha-icon {
@@ -11412,6 +11520,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ${this._powerPopupHtml()}
           ${this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
+          ${this._presenceHistoryPopupHtml()}
       </ha-card>
     `;
 
@@ -11624,7 +11733,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#person-hero")
       ?.addEventListener(
         "click",
-        () => this._moreInfo(this._config.person_entity)
+        () => this._openPresenceHistory("24h", this._config.person_entity)
       );
 
     this.shadowRoot
@@ -11632,7 +11741,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ?.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          this._moreInfo(this._config.person_entity);
+          this._openPresenceHistory("24h", this._config.person_entity);
         }
       });
 
@@ -11641,7 +11750,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .forEach((element) => {
         const openPerson = (event) => {
           event?.preventDefault?.();
-          this._moreInfo(element.dataset.entityId);
+          this._openPresenceHistory("24h", element.dataset.entityId);
         };
 
         element.addEventListener("click", openPerson);
@@ -11707,6 +11816,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
         const popup = this._climateHistoryPopup;
         if (!popup) return;
         this._openClimateHistory(popup.entityId, popup.kind, popup.roomName, button.dataset.historyRange);
+      });
+    });
+
+    this.shadowRoot.querySelector("#presence-history-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
+    });
+    this.shadowRoot.querySelectorAll("[data-presence-range]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const popup = this._presenceHistoryPopup;
+        if (popup) this._openPresenceHistory(button.dataset.presenceRange, popup.personId);
       });
     });
 

@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.359.0**
+Version **0.360.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.360.0
+
+- Anwesenheitsverlauf als mittiges Popup beim Antippen des Personenfotos.
+- Personen-Entität und iCloud-iPhone-Tracker mit gemeinsamer chronologischer Ereignisliste und 24h-/7d-/30d-Auswahl.
+- Getestete Testing-Funktion in den aktuellen Main-Stand übernommen.
+
 ## v0.355.0
 
 - Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
@@ -253,12 +259,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Bestehende eigene Dashboard-Seiten erscheinen wieder ausschließlich unter „Eigene Seiten“.
 - Direkte Home-Assistant-Ziele wie Geräte, Entitäten, Automationen oder HACS werden separat unter „Navigation“ verwaltet.
 - Bestehende Konfigurationen bleiben kompatibel; die gespeicherten `custom_pages` werden nicht migriert.
-
-## v0.353.0
-
-- Temperatur- und Luftfeuchtigkeits-Popup öffnet zuverlässig direkt aus den Raumkarten, ohne zur Raumansicht weiterzunavigieren.
-- Verlaufsdiagramme verwenden für 8 h, 24 h, 7 d und 30 d jetzt den vollständigen angeforderten Zeitraum und eine passende zeitliche Verdichtung.
-- Temperatur-Icon und Touch-Fläche wurden korrigiert.
 <!-- latest-changes:end -->
 
 ## Lizenz

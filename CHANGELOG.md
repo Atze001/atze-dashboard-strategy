@@ -1,3 +1,9 @@
+## v0.360.0
+
+- Anwesenheitsverlauf als mittiges Popup beim Antippen des Personenfotos.
+- Personen-Entität und iCloud-iPhone-Tracker mit gemeinsamer chronologischer Ereignisliste und 24h-/7d-/30d-Auswahl.
+- Getestete Testing-Funktion in den aktuellen Main-Stand übernommen.
+
 ## v0.355.0
 
 - Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
