@@ -46,7 +46,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     }
 
-    if (!this._interactionActive) this._render();
+    if (!this._interactionActive && !this._presenceHistoryPopup) this._render();
   }
 
   get hass() {
@@ -88,7 +88,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._clockTimer) return;
 
     this._clockTimer = setInterval(
-      () => this._render(),
+      () => { if (!this._presenceHistoryPopup) this._render(); },
       30000
     );
   }
@@ -2892,7 +2892,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .history-chart line { stroke:rgba(255,255,255,.10); stroke-width:1; vector-effect:non-scaling-stroke; }
         .history-chart polyline { fill:none; stroke:var(--home-blue,#0a84ff); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
         .history-scale { position:absolute; inset:12px auto 17px 0; display:flex; flex-direction:column; justify-content:space-between; color:var(--home-muted); font-size:11px; }
-        .presence-history-popup { width:min(580px,calc(100vw - 40px)); }
+        .presence-history-popup { width:min(580px,calc(100vw - 40px)); overscroll-behavior:contain; touch-action:pan-y; }
+        #presence-history-backdrop { overscroll-behavior:contain; touch-action:none; }
+        #presence-history-backdrop .presence-history-popup { touch-action:pan-y; }
+        .presence-event-list { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; }
         .presence-history-title { display:flex; align-items:center; gap:14px; }
         .presence-history-title ha-icon { --mdc-icon-size:34px; color:var(--home-yellow); }
         .presence-history-title div { display:flex; flex-direction:column; gap:4px; }
@@ -3784,7 +3787,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     });
 
-    this.shadowRoot.querySelector("#presence-history-backdrop")?.addEventListener("click", (event) => {
+    const presenceBackdrop = this.shadowRoot.querySelector("#presence-history-backdrop");
+    // Keep touch/wheel gestures inside the popup, away from dashboard scroll handlers.
+    for (const type of ["touchstart", "touchmove", "touchend", "wheel"]) {
+      presenceBackdrop?.addEventListener(type, (event) => event.stopPropagation(), { passive: true });
+    }
+    presenceBackdrop?.addEventListener("click", (event) => {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
     const powerStatus = this.shadowRoot.querySelector("#power-status");
