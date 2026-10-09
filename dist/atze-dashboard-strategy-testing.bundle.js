@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.357.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "DA1FDF5";
+const ATZE_TESTING_REVISION = "44918AA";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10863,12 +10863,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-red);
         }
 
-        .group-control-launch { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; }
-        .group-control-launch button, .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
-        .group-control-launch button { box-sizing:border-box; width:100%; min-width:0; height:72px; min-height:72px; padding:6px 18px; display:flex; align-items:center; justify-content:flex-start; gap:7px; border:1px solid rgba(210,210,210,.78); border-radius:28px; background:rgba(48,50,54,.30); color:var(--primary-text-color); font:inherit; font-size:15px; font-weight:650; backdrop-filter:blur(8px) saturate(1.12); -webkit-backdrop-filter:blur(8px) saturate(1.12); }
-        .group-control-launch button ha-icon { width:38px; height:38px; flex:0 0 38px; transform:translateY(6px); }
-        .group-control-launch button span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .group-control-launch ha-icon { color:var(--home-yellow); }
+        .group-control-tile { font:inherit; text-align:left; cursor:pointer; }
+        .group-control-tile ha-icon { color:var(--home-yellow); }
+        .group-control-tile .status-main { overflow:hidden; text-overflow:ellipsis; }
+        .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
         .group-control-heading { display:flex; align-items:center; gap:12px; }
         .group-control-heading h2 { margin:0; font-size:23px; }
         .group-control-heading ha-icon { color:var(--home-yellow); --mdc-icon-size:30px; }
@@ -11369,10 +11367,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 </div>
               </div>
             ` : ""}
-            </div>
-            <div class="group-control-launch">
-              <button type="button" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><span>Lichter</span></button>
-              <button type="button" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><span>Rollläden</span></button>
+              <button type="button" class="status group-control-tile" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div></div></button>
+              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div></div></button>
             </div>
           </section>
 
