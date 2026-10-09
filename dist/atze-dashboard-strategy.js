@@ -10868,7 +10868,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .group-control-launch { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; }
         .group-control-launch button, .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
-        .group-control-launch button { display:flex; align-items:center; justify-content:center; gap:9px; min-width:0; min-height:72px; padding:6px 18px; border:1px solid rgba(210,210,210,.78); border-radius:28px; background:rgba(48,50,54,.30); font-size:15px; font-weight:650; backdrop-filter:blur(8px) saturate(1.12); -webkit-backdrop-filter:blur(8px) saturate(1.12); }
+        .group-control-launch button { box-sizing:border-box; width:100%; min-width:0; height:72px; min-height:72px; padding:6px 18px; display:flex; align-items:center; justify-content:flex-start; gap:7px; border:1px solid rgba(210,210,210,.78); border-radius:28px; background:rgba(48,50,54,.30); color:var(--primary-text-color); font:inherit; font-size:15px; font-weight:650; backdrop-filter:blur(8px) saturate(1.12); -webkit-backdrop-filter:blur(8px) saturate(1.12); }
+        .group-control-launch button ha-icon { width:38px; height:38px; flex:0 0 38px; transform:translateY(6px); }
+        .group-control-launch button span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .group-control-launch ha-icon { color:var(--home-yellow); }
         .group-control-heading { display:flex; align-items:center; gap:12px; }
         .group-control-heading h2 { margin:0; font-size:23px; }
