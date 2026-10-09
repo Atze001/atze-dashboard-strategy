@@ -10,6 +10,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
     this._powerPopupOpen = false;
+    this._groupControlPopup = null;
     this._climateHistoryPopup = null;
     this._climateHistory = [];
     this._climateHistoryLoading = false;
@@ -894,7 +895,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   async _allLightsOff() {
-    const entities = this._config.light_entities || [];
+    const entities = this._groupControlEntities("lights");
     if (!entities.length) return;
 
     await this._hass.callService(
@@ -906,7 +907,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   async _allLightsOn() {
-    const entities = this._config.light_entities || [];
+    const entities = this._groupControlEntities("lights");
     if (!entities.length) return;
 
     await this._hass.callService(
@@ -965,6 +966,60 @@ class AtzeHomeOverviewCard extends HTMLElement {
     );
   }
 
+
+  _groupControlEntities(kind) {
+    const domain = kind === "lights" ? "light" : "cover";
+    const configured = kind === "lights"
+      ? (this._config.room_tiles || []).flatMap((room) => room.light_entities || [])
+      : this._config.cover_entities;
+    return [...new Set(Array.isArray(configured) ? configured : [])]
+      .filter((id) => typeof id === "string" && id.startsWith(domain + "."));
+  }
+
+  _groupControlPopupHtml() {
+    const kind = this._groupControlPopup;
+    if (!kind) return "";
+    const lights = kind === "lights";
+    const domain = lights ? "light" : "cover";
+    const entities = this._groupControlEntities(kind);
+    const label = lights ? "Lichter" : "Rollläden";
+    const icon = lights ? "mdi:lightbulb-group" : "mdi:window-shutter";
+    const rows = entities.map((id) => {
+      const state = this._state(id);
+      const name = this._escapeHtml(state?.attributes?.friendly_name || id);
+      const available = state && !["unavailable", "unknown"].includes(state.state);
+      const position = !lights && available ? this._coverPosition(id) : null;
+      const active = available && (lights ? state.state === "on" : (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
+      return `<div class="group-control-row">
+        <div class="group-control-name"><ha-icon icon="${lights ? (active ? "mdi:lightbulb-on" : "mdi:lightbulb-outline") : "mdi:window-shutter"}"></ha-icon><span>${name}</span></div>
+        <div class="group-control-actions">
+          ${!lights && position != null ? `<span class="group-control-position">${Math.round(position)} %</span>` : ""}
+          <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (active ? "Schließen" : "Öffnen")}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")}"></ha-icon></button>
+          <button class="group-control-details" type="button" data-group-more-info="${this._escapeHtml(id)}" ${available ? "" : "disabled"} title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="weather-popup-backdrop" id="group-control-backdrop">
+      <section class="weather-popup group-control-popup" role="dialog" aria-modal="true" aria-label="${label}">
+        <div class="group-control-heading"><ha-icon icon="${icon}"></ha-icon><h2>${label}</h2></div>
+        <div class="group-control-all">
+          <button type="button" data-group-all="on">${lights ? "Alle an" : "Alle öffnen"}</button>
+          <button type="button" data-group-all="off">${lights ? "Alle aus" : "Alle schließen"}</button>
+        </div>
+        <div class="group-control-list">${rows || '<div class="power-popup-empty">Keine Geräte konfiguriert.</div>'}</div>
+      </section>
+    </div>`;
+  }
+
+  async _groupControlAction(entityId) {
+    if (!this._groupControlEntities(this._groupControlPopup).includes(entityId)) return;
+    const state = this._state(entityId);
+    if (!state || ["unavailable", "unknown"].includes(state.state)) return;
+    const lights = this._groupControlPopup === "lights";
+    const open = lights ? state.state === "on" : (this._coverPosition(entityId) != null ? this._coverPosition(entityId) > 0 : state.state !== "closed");
+    await this._hass.callService(lights ? "light" : "cover", lights ? (open ? "turn_off" : "turn_on") : (open ? "close_cover" : "open_cover"), {}, { entity_id: entityId });
+  }
+
   async _toggleNight() {
     const entityId = this._config.night_entity;
     if (!entityId) return;
@@ -996,9 +1051,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const stateObj = this._state(entityId);
     if (!stateObj) return null;
 
-    const position = Number(
-      stateObj.attributes?.current_position
-    );
+    const rawPosition = stateObj.attributes?.current_position;
+    const position = rawPosition == null || rawPosition === "" ? NaN : Number(rawPosition);
 
     if (Number.isFinite(position)) {
       return Math.max(0, Math.min(100, Math.round(position)));
@@ -2768,6 +2822,32 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-red);
         }
 
+        .group-control-tile { font:inherit; text-align:left; cursor:pointer; }
+        .group-control-tile ha-icon { color:var(--home-yellow); }
+        .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
+        .group-control-tile .status-main { overflow:hidden; text-overflow:ellipsis; }
+        .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
+        .group-control-heading { display:flex; align-items:center; gap:12px; }
+        .group-control-heading h2 { margin:0; font-size:23px; }
+        .group-control-heading ha-icon { color:var(--home-yellow); --mdc-icon-size:30px; }
+        .group-control-all { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 16px; }
+        .group-control-all button { font-weight:650; padding:14px 8px; }
+        .group-control-list { display:grid; gap:8px; }
+        .group-control-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-radius:15px; background:rgba(118,118,128,.13); min-width:0; }
+        .group-control-name { display:flex; align-items:center; gap:9px; min-width:0; overflow:hidden; }
+        .group-control-name span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .group-control-name ha-icon { flex-shrink:0; color:var(--home-yellow); }
+        .group-control-actions { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+        .group-control-actions button { padding:7px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:13px; }
+        .group-control-actions button ha-icon { --mdc-icon-size:23px; }
+        .group-control-actions .is-active ha-icon { color:var(--home-green); }
+        .group-control-popup { width:min(720px,calc(100vw - 28px)); padding:20px; }
+        .group-control-name { flex:1 1 auto; }
+        .group-control-position { white-space:nowrap; }
+        .group-control-actions button[disabled] { opacity:.4; cursor:default; }
+        .group-control-position { color:var(--home-muted); font-size:12px; }
+        @media (max-width:550px) { .group-control-popup { padding:14px; } .group-control-row { flex-wrap:nowrap; } .group-control-actions { margin-left:0; } .group-control-position { font-size:11px; } .group-control-actions button { width:34px; height:34px; padding:5px; } }
+
         .quick {
           margin-top: 28px;
           padding-top: 26px;
@@ -3247,6 +3327,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 </div>
               </div>
             ` : ""}
+              <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div></div></button>
+              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div></div></button>
             </div>
           </section>
 
@@ -3257,26 +3339,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           </div>
 
           <div class="quick" data-atze-scroll-snap="quick-actions">
-            <button class="lights" id="all-lights">
-              <ha-icon icon="mdi:lightbulb-outline"></ha-icon>
-              <span>Lichter aus</span>
-            </button>
-
-            <button class="covers" id="all-covers">
-              <ha-icon icon="mdi:window-shutter"></ha-icon>
-              <span>Rollläden zu</span>
-            </button>
-
-            <button class="lights" id="all-lights-on">
-              <ha-icon icon="mdi:lightbulb-on-outline"></ha-icon>
-              <span>Lichter an</span>
-            </button>
-
-            <button class="covers" id="all-covers-open">
-              <ha-icon icon="mdi:window-shutter-open"></ha-icon>
-              <span>Rollläden auf</span>
-            </button>
-
             ${
               this._config.lock_entity
                 ? `
@@ -3305,6 +3367,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         </div>
         ${this._weatherPopupHtml(weather)}
           ${this._powerPopupHtml()}
+          ${this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
       </ha-card>
     `;
@@ -3644,21 +3707,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
         () => this._moreInfo(this._config.homebase_entity)
       );
 
-    this.shadowRoot
-      .querySelector("#all-lights")
-      ?.addEventListener("click", () => this._allLightsOff());
-
-    this.shadowRoot
-      .querySelector("#all-covers")
-      ?.addEventListener("click", () => this._allCoversClose());
-
-    this.shadowRoot
-      .querySelector("#all-lights-on")
-      ?.addEventListener("click", () => this._allLightsOn());
-
-    this.shadowRoot
-      .querySelector("#all-covers-open")
-      ?.addEventListener("click", () => this._allCoversOpen());
+    this.shadowRoot.querySelector("#group-lights")?.addEventListener("click", () => { this._groupControlPopup = "lights"; this._render(); });
+    this.shadowRoot.querySelector("#group-covers")?.addEventListener("click", () => { this._groupControlPopup = "covers"; this._render(); });
+    this.shadowRoot.querySelector("#group-control-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "group-control-backdrop") { this._groupControlPopup = null; this._render(); }
+    });
+    this.shadowRoot.querySelectorAll("[data-group-all]").forEach((button) => button.addEventListener("click", async () => {
+      if (this._groupControlPopup === "lights") await (button.dataset.groupAll === "on" ? this._allLightsOn() : this._allLightsOff());
+      else await (button.dataset.groupAll === "on" ? this._allCoversOpen() : this._allCoversClose());
+    }));
+    this.shadowRoot.querySelectorAll("[data-group-entity]").forEach((button) => button.addEventListener("click", () => this._groupControlAction(button.dataset.groupEntity)));
+    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.groupMoreInfo)));
 
     this.shadowRoot
       .querySelector("#lock-info")
