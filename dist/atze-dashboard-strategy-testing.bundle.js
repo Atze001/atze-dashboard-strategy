@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.357.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "E60378D";
+const ATZE_TESTING_REVISION = "0BA9FAF";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8881,7 +8881,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     try {
       const helpers = await window.loadCardHelpers();
       if (!this._schedulerPopupOpen) return;
-      const card = await helpers.createCardElement({ type: "custom:scheduler-card", sort_by: ["state", "relative-time"] });
+      const card = await helpers.createCardElement({ type: "custom:scheduler-card", title: false, sort_by: ["state", "relative-time"] });
       if (!this._schedulerPopupOpen) return;
       this._schedulerCard = card;
       card.hass = this._hass;
