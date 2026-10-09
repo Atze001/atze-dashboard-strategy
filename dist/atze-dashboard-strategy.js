@@ -8089,7 +8089,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     }
 
-    if (!this._interactionActive && !this._hasOpenDashboardPopup()) this._render();
+    if (!this._interactionActive) {
+      if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
+      else this._render();
+    }
   }
 
   get hass() {
@@ -9333,6 +9336,47 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     if (!count) return "—";
     return `${Math.round(total)} W`;
+  }
+
+  _refreshOpenPopup() {
+    // Update live controls without replacing the dialog or losing its scroll state.
+    const root = this.shadowRoot;
+    if (!root || !this._hass) return;
+    if (this._groupControlPopup) {
+      const kind = this._groupControlPopup;
+      const lights = kind === "lights";
+      root.querySelectorAll("[data-group-entity]").forEach((button) => {
+        const id = button.dataset.groupEntity;
+        const state = this._state(id);
+        const available = Boolean(state && !["unavailable", "unknown"].includes(state.state));
+        const position = !lights && available ? this._coverPosition(id) : null;
+        const active = available && (lights ? state.state === "on" :
+          (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
+        button.disabled = !available;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-label", lights ? (active ? "Ausschalten" : "Einschalten") :
+          (active ? "Schließen" : "Öffnen"));
+        const icon = button.querySelector("ha-icon");
+        if (icon) icon.setAttribute("icon", lights ?
+          (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") :
+          (active ? "mdi:window-shutter-open" : "mdi:window-shutter"));
+        const row = button.closest(".group-control-row");
+        const positionLabel = row?.querySelector(".group-control-position");
+        if (positionLabel && position != null) positionLabel.textContent = `${Math.round(position)} %`;
+        const details = row?.querySelector("[data-group-more-info]");
+        if (details) details.disabled = !available;
+      });
+    }
+    if (this._presenceHistoryPopup) {
+      const popup = this._presenceHistoryPopup;
+      const formatState = (value) => ({
+        home: "Zuhause", not_home: "Abwesend",
+        unavailable: "Nicht verfügbar", unknown: "Unbekannt"
+      }[value] || value);
+      const badges = root.querySelectorAll(".presence-summary strong");
+      if (badges[0]) badges[0].textContent = formatState(this._state(popup.personId)?.state || "unavailable");
+      if (badges[1]) badges[1].textContent = formatState(this._state(popup.trackerId)?.state || "unavailable");
+    }
   }
 
   _hasOpenDashboardPopup() {
