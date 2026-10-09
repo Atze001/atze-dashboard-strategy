@@ -3844,17 +3844,46 @@ class AtzeHomeOverviewCard extends HTMLElement {
       });
     });
 
-    // Isolate all native dashboard dialogs from page scroll/swipe handlers.
+    // Stop scroll chaining into Home Assistant (including iOS WebKit overscroll).
+    // Keep native scrolling inside the popup and its nested lists.
     for (const backdrop of this.shadowRoot.querySelectorAll(".weather-popup-backdrop")) {
-      for (const type of ["touchstart", "touchmove", "touchend", "wheel"]) {
-        backdrop.addEventListener(type, (event) => event.stopPropagation(), { passive: true });
-      }
+      let lastTouchY = null;
+      const canScrollInside = (target, deltaY) => {
+        for (let node = target; node && node !== backdrop; node = node.parentElement) {
+          if (!(node instanceof HTMLElement)) continue;
+          const style = getComputedStyle(node);
+          if (!/(auto|scroll)/.test(style.overflowY)) continue;
+          const remaining = node.scrollHeight - node.clientHeight;
+          if (remaining <= 1) continue;
+          if (deltaY < 0 && node.scrollTop > 0) return true;
+          if (deltaY > 0 && node.scrollTop < remaining - 1) return true;
+        }
+        return false;
+      };
+      backdrop.addEventListener("touchstart", (event) => {
+        lastTouchY = event.touches?.[0]?.clientY ?? null;
+        event.stopPropagation();
+      }, { passive: true });
+      backdrop.addEventListener("touchmove", (event) => {
+        const y = event.touches?.[0]?.clientY;
+        if (y != null && lastTouchY != null) {
+          const deltaY = lastTouchY - y;
+          if (!canScrollInside(event.target, deltaY) && event.cancelable) event.preventDefault();
+          lastTouchY = y;
+        }
+        event.stopPropagation();
+      }, { passive: false });
+      backdrop.addEventListener("touchend", (event) => {
+        lastTouchY = null;
+        event.stopPropagation();
+      }, { passive: true });
+      backdrop.addEventListener("touchcancel", () => { lastTouchY = null; }, { passive: true });
+      backdrop.addEventListener("wheel", (event) => {
+        if (!canScrollInside(event.target, event.deltaY) && event.cancelable) event.preventDefault();
+        event.stopPropagation();
+      }, { passive: false });
     }
     const presenceBackdrop = this.shadowRoot.querySelector("#presence-history-backdrop");
-    // Keep touch/wheel gestures inside the popup, away from dashboard scroll handlers.
-    for (const type of ["touchstart", "touchmove", "touchend", "wheel"]) {
-      presenceBackdrop?.addEventListener(type, (event) => event.stopPropagation(), { passive: true });
-    }
     presenceBackdrop?.addEventListener("click", (event) => {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
