@@ -15037,7 +15037,16 @@ class AtzeFanCard extends HTMLElement {
     details.title = name;
     this.shadowRoot.querySelector(".status").textContent = status;
     this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
-    this.shadowRoot.querySelector(".power")?.addEventListener("click", () => this._togglePower());
+    this.shadowRoot.querySelector(".power")?.addEventListener("click", () => {
+      const powerId = this._powerId();
+      const powerState = powerId && this._hass?.states?.[powerId];
+      if (!powerState || !["on", "off"].includes(powerState.state)) return;
+      const turningOff = powerState.state === "on";
+      const message = turningOff
+        ? "Stromversorgung des Luftfilters wirklich ausschalten?"
+        : "Stromversorgung des Luftfilters wirklich einschalten?";
+      if (window.confirm(message)) this._togglePower();
+    });
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
   }
 }
