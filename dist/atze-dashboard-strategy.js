@@ -14622,6 +14622,7 @@ class AtzeEntityCard extends HTMLElement {
     const icon = cover ? (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")) : (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
     const name = this._config.name || state?.attributes?.friendly_name || id;
     const iconColor = cover ? "#0A84FF" : (active ? "#30D158" : "var(--secondary-text-color, #8e8e93)");
+    const position = cover && state?.attributes?.current_position != null ? Number(state.attributes.current_position) : null;
     // DOM nodes, rather than innerHTML interpolation, prevent entity names from injecting markup.
     this.shadowRoot.innerHTML = `
       <style>
@@ -14635,8 +14636,8 @@ class AtzeEntityCard extends HTMLElement {
          .control { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
           border-radius:13px; background:rgba(118,118,128,.20); }
         .control ha-icon { --mdc-icon-size:23px; color:${iconColor}; }
-        .details { flex:1; min-width:0; height:100%; text-align:left; background:transparent;
-          overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
+        .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
+        .position { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
         .settings { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
           border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
           background:rgba(118,118,128,.20); }
@@ -14645,14 +14646,14 @@ class AtzeEntityCard extends HTMLElement {
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="Steuern" ${unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>
-        <button class="details" type="button"></button>
+        <span class="details"></span>
+        ${cover && position != null && Number.isFinite(position) ? `<span class="position">${Math.round(position)} %</span>` : ""}
         <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>`;
     const details = this.shadowRoot.querySelector(".details");
     details.textContent = name;
     details.title = name;
     this.shadowRoot.querySelector(".control")?.addEventListener("click", () => this._toggle());
-    details.addEventListener("click", () => this._moreInfo());
     this.shadowRoot.querySelector(".settings")?.addEventListener("click", () => this._moreInfo());
   }
 }
