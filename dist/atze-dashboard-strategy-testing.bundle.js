@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.361.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9A48B64";
+const ATZE_TESTING_REVISION = "D7CCD9D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9161,12 +9161,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const name = this._escapeHtml(state?.attributes?.friendly_name || id);
       const available = state && !["unavailable", "unknown"].includes(state.state);
       const position = !lights && available ? this._coverPosition(id) : null;
+      const moving = !lights && available && ["opening", "closing"].includes(state.state);
       const active = available && (lights ? state.state === "on" : (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
       return `<div class="group-control-row">
         <div class="group-control-name"><ha-icon icon="${lights ? (active ? "mdi:lightbulb-on" : "mdi:lightbulb-outline") : "mdi:window-shutter"}"></ha-icon><span>${name}</span></div>
         <div class="group-control-actions">
           ${!lights && position != null ? `<span class="group-control-position">${Math.round(position)} %</span>` : ""}
-          <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (active ? "Schließen" : "Öffnen")}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")}"></ha-icon></button>
+          <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen"))}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter"))}"></ha-icon></button>
           <button class="group-control-details" type="button" data-group-more-info="${this._escapeHtml(id)}" ${available ? "" : "disabled"} title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
         </div>
       </div>`;
@@ -9188,6 +9189,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const state = this._state(entityId);
     if (!state || ["unavailable", "unknown"].includes(state.state)) return;
     const lights = this._groupControlPopup === "lights";
+    if (!lights && ["opening", "closing"].includes(state.state)) {
+      await this._hass.callService("cover", "stop_cover", {}, { entity_id: entityId });
+      return;
+    }
     const open = lights ? state.state === "on" : (this._coverPosition(entityId) != null ? this._coverPosition(entityId) > 0 : state.state !== "closed");
     await this._hass.callService(lights ? "light" : "cover", lights ? (open ? "turn_off" : "turn_on") : (open ? "close_cover" : "open_cover"), {}, { entity_id: entityId });
   }
@@ -9386,14 +9391,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
         const position = !lights && available ? this._coverPosition(id) : null;
         const active = available && (lights ? state.state === "on" :
           (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
+        const moving = !lights && available && ["opening", "closing"].includes(state.state);
         button.disabled = !available;
         button.classList.toggle("is-active", active);
         button.setAttribute("aria-label", lights ? (active ? "Ausschalten" : "Einschalten") :
-          (active ? "Schließen" : "Öffnen"));
+          (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen")));
         const icon = button.querySelector("ha-icon");
         if (icon) icon.setAttribute("icon", lights ?
           (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") :
-          (active ? "mdi:window-shutter-open" : "mdi:window-shutter"));
+          (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")));
         const row = button.closest(".group-control-row");
         const positionLabel = row?.querySelector(".group-control-position");
         if (positionLabel && position != null) positionLabel.textContent = `${Math.round(position)} %`;
