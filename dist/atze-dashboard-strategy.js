@@ -14547,6 +14547,112 @@ if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
 
+
+class AtzeEntityCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._hass = null;
+    this._busy = false;
+  }
+
+  setConfig(config) {
+    if (!config?.entity || !/^(light|cover)\./.test(config.entity)) {
+      throw new Error("Atze Entity Card benötigt eine light- oder cover-Entität");
+    }
+    this._config = config;
+    this._render();
+  }
+
+  set hass(value) {
+    this._hass = value;
+    this._render();
+  }
+
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true, composed: true, detail: { entityId: this._config.entity },
+    }));
+  }
+
+  async _toggle() {
+    if (this._busy || !this._hass) return;
+    const id = this._config.entity;
+    const state = this._hass.states[id];
+    if (!state || ["unknown", "unavailable"].includes(state.state)) return;
+    const domain = id.split(".")[0];
+    let service;
+    if (domain === "light") {
+      service = "toggle";
+    } else if (["opening", "closing"].includes(state.state)) {
+      service = "stop_cover";
+    } else {
+      const pos = Number(state.attributes?.current_position);
+      const open = Number.isFinite(pos) && state.attributes?.current_position != null
+        ? pos > 0 : state.state === "open";
+      service = open ? "close_cover" : "open_cover";
+    }
+    this._busy = true;
+    try {
+      await this._hass.callService(domain, service, { entity_id: id });
+    } catch (error) {
+      console.error("Atze Entity Card: Steuerung fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+
+  _render() {
+    if (!this.shadowRoot || !this._config.entity) return;
+    const id = this._config.entity;
+    const state = this._hass?.states[id];
+    const cover = id.startsWith("cover.");
+    const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
+    const moving = cover && ["opening", "closing"].includes(state?.state);
+    const active = cover
+      ? (state?.attributes?.current_position != null
+          ? Number(state.attributes.current_position) > 0
+          : ["open", "opening"].includes(state?.state))
+      : state?.state === "on";
+    const icon = moving ? "mdi:stop" : (this._config.icon || (cover ? "mdi:window-shutter" : "mdi:lightbulb"));
+    const name = this._config.name || state?.attributes?.friendly_name || id;
+    // DOM nodes, rather than innerHTML interpolation, prevent entity names from injecting markup.
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; min-width:0; }
+        ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center;
+          gap:8px; padding:5px 10px; border-radius:21px;
+          border:1px solid rgba(255,255,255,.11); background:rgba(48,50,54,.30);
+          backdrop-filter:blur(8px) saturate(1.12); color:var(--primary-text-color);
+          overflow:hidden; box-shadow:none; }
+        button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
+        .control { width:36px; height:36px; flex:0 0 36px; display:grid; place-items:center;
+          border-radius:50%; background:rgba(118,118,128,.20); }
+        .control ha-icon { --mdc-icon-size:23px; color:${cover ? "#0A84FF" : "#FFD60A"}; }
+        .details { flex:1; min-width:0; height:100%; text-align:left; background:transparent;
+          overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:650; }
+        button:disabled { opacity:.4; cursor:default; }
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="Steuern" ${unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>
+        <button class="details" type="button"></button>
+      </ha-card>`;
+    const details = this.shadowRoot.querySelector(".details");
+    details.textContent = name;
+    details.title = name;
+    this.shadowRoot.querySelector(".control")?.addEventListener("click", () => this._toggle());
+    details.addEventListener("click", () => this._moreInfo());
+  }
+}
+
+if (!customElements.get("atze-entity-card")) {
+  customElements.define("atze-entity-card", AtzeEntityCard);
+}
+
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
     super();
