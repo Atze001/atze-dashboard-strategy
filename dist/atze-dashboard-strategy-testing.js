@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "F01955C";
+const ATZE_TESTING_REVISION = "94387F9";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11145,6 +11145,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         #group-covers ha-icon { color:var(--home-blue); }
         #group-thermostats ha-icon { color:var(--home-red); }
         .group-control-popup.is-thermostat-popup .group-control-heading ha-icon { color:var(--home-red); }
+        .group-control-toggle.is-thermostat ha-icon { color:rgba(235,235,245,.55); }
         .group-control-toggle.is-thermostat.is-active ha-icon { color:var(--home-red); }
         .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
         .group-control-tile .status-main { overflow:hidden; text-overflow:ellipsis; }
