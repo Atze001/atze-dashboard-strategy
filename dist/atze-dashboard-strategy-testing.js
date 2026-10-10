@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "E54DF8D";
+const ATZE_TESTING_REVISION = "6919880";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15003,7 +15003,7 @@ class AtzeFanCard extends HTMLElement {
     const hasPercent = state?.attributes?.percentage != null && Number.isFinite(percent);
     const mode = state?.attributes?.preset_mode;
     const status = powerOff ? "Stromversorgung aus" : unavailable ? "Nicht verfügbar" : active
-      ? (hasPercent ? Math.round(percent) + " %" : (mode ? String(mode) : "Ein"))
+      ? (mode && !["manual", "normal"].includes(String(mode).trim().toLowerCase()) ? String(mode) : (hasPercent ? Math.round(percent) + " %" : "Ein"))
       : "Aus";
     this.shadowRoot.innerHTML = `
       <style>
