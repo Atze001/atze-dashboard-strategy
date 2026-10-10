@@ -1180,3 +1180,81 @@ class AtzeEntityCard extends HTMLElement {
 if (!customElements.get("atze-entity-card")) {
   customElements.define("atze-entity-card", AtzeEntityCard);
 }
+
+class AtzeThermostatCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+  }
+  setConfig(config) {
+    if (!config?.entity?.startsWith("climate.")) {
+      throw new Error("Atze Thermostat Card benötigt eine climate-Entität");
+    }
+    this._config = config;
+    this._render();
+  }
+  set hass(value) {
+    this._hass = value;
+    this._render();
+  }
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true, composed: true, detail: { entityId: this._config.entity },
+    }));
+  }
+  _render() {
+    if (!this.shadowRoot || !this._config.entity) return;
+    const state = this._hass?.states[this._config.entity];
+    const attributes = state?.attributes || {};
+    const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
+    const heating = state?.attributes?.hvac_action === "heating";
+    const unit = this._hass?.config?.unit_system?.temperature || "°C";
+    const format = value => {
+      const n = Number(value);
+      return value == null || value === "" || !Number.isFinite(n)
+        ? "–" : n.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    };
+    const name = this._config.name || attributes.friendly_name || this._config.entity;
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; min-width:0; }
+        ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center;
+          gap:10px; padding:7px 12px; border-radius:15px;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          background:rgba(118,118,128,.13); color:var(--primary-text-color);
+          overflow:hidden; box-shadow:none; }
+        .thermometer, .settings { width:38px; height:38px; flex:0 0 38px;
+          display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          border-radius:13px; background:rgba(118,118,128,.20); }
+        .thermometer ha-icon { --mdc-icon-size:23px; color:${heating ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
+        .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+        .name { font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .current { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; }
+        .target { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+        .target-value { font-size:16px; font-weight:600; white-space:nowrap; }
+        .target-label { font-size:10px; color:var(--secondary-text-color); }
+        button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
+        .settings ha-icon { --mdc-icon-size:23px; }
+      </style>
+      <ha-card>
+        <div class="thermometer"><ha-icon icon="mdi:thermometer"></ha-icon></div>
+        <div class="info"><span class="name"></span><span class="current"></span></div>
+        <div class="target"><span class="target-value"></span><span class="target-label">Soll</span></div>
+        <button class="settings" type="button" aria-label="Thermostateinstellungen" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    const nameEl = this.shadowRoot.querySelector(".name");
+    nameEl.textContent = name;
+    nameEl.title = name;
+    this.shadowRoot.querySelector(".current").textContent =
+      "Ist " + (unavailable ? "–" : format(attributes.current_temperature)) + " " + unit;
+    this.shadowRoot.querySelector(".target-value").textContent =
+      (unavailable ? "–" : format(attributes.temperature)) + " " + unit;
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+  }
+}
+if (!customElements.get("atze-thermostat-card")) {
+  customElements.define("atze-thermostat-card", AtzeThermostatCard);
+}
