@@ -3081,6 +3081,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-actions { display:flex; align-items:center; gap:7px; flex-shrink:0; }
         .group-control-row > .group-control-toggle { flex:0 0 38px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; padding:7px; border:1px solid var(--home-card-border); border-radius:13px; background:rgba(118,118,128,.20); color:var(--primary-text-color); cursor:pointer; }
         .group-control-row > .group-control-toggle ha-icon { --mdc-icon-size:23px; color:var(--home-yellow); }
+        .group-control-row > .group-control-toggle.is-light:not(.is-active) ha-icon { color:var(--secondary-text-color, #8e8e93); }
         .group-control-row > .group-control-toggle.is-active ha-icon { color:var(--home-green); }
         .group-control-row > .group-control-toggle.is-cover ha-icon,
         .group-control-row > .group-control-toggle.is-cover.is-active ha-icon { color:var(--home-blue, #20A0FF); }
@@ -3576,7 +3577,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             ` : ""}
               <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div><div class="status-sub">${this._groupControlStatus("lights")}</div></div></button>
-              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
+              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="${this._groupControlEntities("covers").some((id) => { const st = this._state(id)?.state; const pos = this._coverPosition(id); return pos != null ? pos > 0 : ["open", "opening"].includes(st); }) ? "mdi:window-shutter-open" : "mdi:window-shutter"}"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
             </div>
           </section>
 
