@@ -11148,6 +11148,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         #group-covers ha-icon { color:var(--home-blue); }
         #group-thermostats ha-icon { color:var(--home-red); }
         .group-control-popup.is-thermostat-popup .group-control-heading ha-icon { color:var(--home-red); }
+        .group-control-popup.is-thermostat-popup .group-control-toggle.is-thermostat ha-icon { color:rgba(235,235,245,.55) !important; }
+        .group-control-popup.is-thermostat-popup .group-control-toggle.is-thermostat.is-active ha-icon { color:var(--home-red) !important; }
         .group-control-toggle.is-thermostat ha-icon { color:rgba(235,235,245,.55); }
         .group-control-toggle.is-thermostat.is-active ha-icon { color:var(--home-red); }
         .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
@@ -14740,7 +14742,7 @@ class AtzeThermostatCard extends HTMLElement {
   }
   set hass(value) {
     this._hass = value;
-    this._render();
+    if (!this._serviceOpen) this._render();
   }
   getCardSize() { return 1; }
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
@@ -14785,7 +14787,16 @@ class AtzeThermostatCard extends HTMLElement {
       if (item.domain === "select") await this._hass.callService("select","select_option",{entity_id:id,option});
     } catch(e) { console.error("Thermostat Service",e); }
   }
-  _openService() { this._serviceOpen = true; this._render(); }
+  _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
+  _lockScroll() {
+    if (this._scrollCleanup) return;
+    const prevent = (event) => { if (this._serviceOpen && !event.target.closest?.(".service-dialog")) event.preventDefault(); };
+    document.addEventListener("touchmove", prevent, { passive:false });
+    document.addEventListener("wheel", prevent, { passive:false });
+    this._scrollCleanup = () => { document.removeEventListener("touchmove", prevent); document.removeEventListener("wheel", prevent); };
+  }
+  _closeService() { this._serviceOpen = false; this._scrollCleanup?.(); this._scrollCleanup = null; this._render(); }
+  disconnectedCallback() { this._scrollCleanup?.(); this._scrollCleanup = null; }
   async _toggle() {
     if (this._busy || !this._hass) return;
     const entityId = this._config.entity;
@@ -14870,7 +14881,7 @@ class AtzeThermostatCard extends HTMLElement {
     this.shadowRoot.querySelector(".target").addEventListener("click", () => this._openService());
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
     this.shadowRoot.querySelector(".service-backdrop")?.addEventListener("click", e => {
-      if (e.target.classList.contains("service-backdrop")) { this._serviceOpen = false; this._render(); }
+      if (e.target.classList.contains("service-backdrop")) { this._closeService(); }
     });
     this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
       const id = el.dataset.service;
