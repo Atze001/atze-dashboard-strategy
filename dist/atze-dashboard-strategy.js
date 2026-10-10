@@ -9167,7 +9167,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const moving = !lights && available && ["opening", "closing"].includes(state.state);
       const active = available && (lights ? state.state === "on" : (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
       return `<div class="group-control-row">
-        <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen"))}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter"))}"></ha-icon></button>
+        <button class="group-control-toggle ${lights ? "is-light" : "is-cover"} ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen"))}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter"))}"></ha-icon></button>
         <div class="group-control-name"><span>${name}</span></div>
         <div class="group-control-actions">
           ${!lights && position != null ? `<span class="group-control-position">${Math.round(position)} %</span>` : ""}
@@ -11095,6 +11095,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-row > .group-control-toggle { flex:0 0 38px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; padding:7px; border:1px solid var(--home-card-border); border-radius:13px; background:rgba(118,118,128,.20); color:var(--primary-text-color); cursor:pointer; }
         .group-control-row > .group-control-toggle ha-icon { --mdc-icon-size:23px; color:var(--home-yellow); }
         .group-control-row > .group-control-toggle.is-active ha-icon { color:var(--home-green); }
+        .group-control-row > .group-control-toggle.is-cover ha-icon,
+        .group-control-row > .group-control-toggle.is-cover.is-active ha-icon { color:var(--home-blue, #20A0FF); }
         .group-control-row > .group-control-toggle[disabled] { opacity:.4; cursor:default; }
         .group-control-actions button { padding:7px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:13px; }
         .group-control-actions button ha-icon { --mdc-icon-size:23px; }
