@@ -1224,7 +1224,7 @@ class AtzeThermostatCard extends HTMLElement {
   }
   _popupHtml() {
     const rows = this._serviceItems().map(({id,domain,label,state}) => {
-      const disabled = ["unavailable","unknown"].includes(state.state);
+      const disabled = state.state === "unavailable" || (domain !== "button" && state.state === "unknown");
       let action = "";
       if (domain === "button" || domain === "switch") {
         const active = domain === "switch" && state.state === "on";
@@ -1244,7 +1244,7 @@ class AtzeThermostatCard extends HTMLElement {
   }
   async _serviceAction(id, option) {
     const item = this._serviceItems().find(x => x.id === id);
-    if (!item || ["unknown","unavailable"].includes(item.state.state)) return;
+    if (!item || item.state.state === "unavailable" || (item.domain !== "button" && item.state.state === "unknown")) return;
     try {
       if (item.domain === "button") await this._hass.callService("button","press",{entity_id:id});
       if (item.domain === "switch") await this._hass.callService("switch",item.state.state === "on" ? "turn_off" : "turn_on",{entity_id:id});
@@ -1256,7 +1256,7 @@ class AtzeThermostatCard extends HTMLElement {
     if (!dialog) return;
     for (const item of this._serviceItems()) {
       const el = [...dialog.querySelectorAll("[data-service]")].find(node => node.dataset.service === item.id);
-      const disabled = ["unknown", "unavailable"].includes(item.state.state);
+      const disabled = item.state.state === "unavailable" || (item.domain !== "button" && item.state.state === "unknown");
       if (el) {
         el.disabled = disabled;
         if (item.domain === "switch") {
