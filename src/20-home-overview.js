@@ -1117,6 +1117,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .filter((id) => typeof id === "string" && id.startsWith(domain + "."));
   }
 
+  _groupControlStatus(kind) {
+    const lights = kind === "lights";
+    const entities = this._groupControlEntities(kind);
+    const available = entities.filter((id) => {
+      const state = this._state(id)?.state;
+      return state && !["unavailable", "unknown"].includes(state);
+    });
+    if (!available.length) return "Keine verfügbar";
+    const active = available.filter((id) => {
+      const state = this._state(id)?.state;
+      if (lights) return state === "on";
+      const position = this._coverPosition(id);
+      return position != null ? position > 0 : ["open", "opening"].includes(state);
+    }).length;
+    if (!active) return lights ? "Alle aus" : "Alle geschlossen";
+    if (active === available.length) return lights ? "Alle an" : "Alle geöffnet";
+    return lights ? `${active} an` : `${active} geöffnet`;
+  }
+
   _groupControlPopupHtml() {
     const kind = this._groupControlPopup;
     if (!kind) return "";
@@ -1130,18 +1149,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const name = this._escapeHtml(state?.attributes?.friendly_name || id);
       const available = state && !["unavailable", "unknown"].includes(state.state);
       const position = !lights && available ? this._coverPosition(id) : null;
+      const moving = !lights && available && ["opening", "closing"].includes(state.state);
       const active = available && (lights ? state.state === "on" : (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
       return `<div class="group-control-row">
-        <div class="group-control-name"><ha-icon icon="${lights ? (active ? "mdi:lightbulb-on" : "mdi:lightbulb-outline") : "mdi:window-shutter"}"></ha-icon><span>${name}</span></div>
+        <button class="group-control-toggle ${lights ? "is-light" : "is-cover"} ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen"))}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter"))}"></ha-icon></button>
+        <div class="group-control-name"><span>${name}</span></div>
         <div class="group-control-actions">
           ${!lights && position != null ? `<span class="group-control-position">${Math.round(position)} %</span>` : ""}
-          <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (active ? "Schließen" : "Öffnen")}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")}"></ha-icon></button>
           <button class="group-control-details" type="button" data-group-more-info="${this._escapeHtml(id)}" ${available ? "" : "disabled"} title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
         </div>
       </div>`;
     }).join("");
     return `<div class="weather-popup-backdrop" id="group-control-backdrop">
-      <section class="weather-popup group-control-popup" role="dialog" aria-modal="true" aria-label="${label}">
+      <section class="weather-popup group-control-popup ${lights ? "is-light-popup" : "is-cover-popup"}" role="dialog" aria-modal="true" aria-label="${label}">
         <div class="group-control-heading"><ha-icon icon="${icon}"></ha-icon><h2>${label}</h2></div>
         <div class="group-control-all">
           <button type="button" data-group-all="on">${lights ? "Alle an" : "Alle öffnen"}</button>
@@ -1157,6 +1177,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const state = this._state(entityId);
     if (!state || ["unavailable", "unknown"].includes(state.state)) return;
     const lights = this._groupControlPopup === "lights";
+    if (!lights && ["opening", "closing"].includes(state.state)) {
+      await this._hass.callService("cover", "stop_cover", {}, { entity_id: entityId });
+      return;
+    }
     const open = lights ? state.state === "on" : (this._coverPosition(entityId) != null ? this._coverPosition(entityId) > 0 : state.state !== "closed");
     await this._hass.callService(lights ? "light" : "cover", lights ? (open ? "turn_off" : "turn_on") : (open ? "close_cover" : "open_cover"), {}, { entity_id: entityId });
   }
@@ -1355,14 +1379,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
         const position = !lights && available ? this._coverPosition(id) : null;
         const active = available && (lights ? state.state === "on" :
           (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
+        const moving = !lights && available && ["opening", "closing"].includes(state.state);
         button.disabled = !available;
         button.classList.toggle("is-active", active);
         button.setAttribute("aria-label", lights ? (active ? "Ausschalten" : "Einschalten") :
-          (active ? "Schließen" : "Öffnen"));
+          (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen")));
         const icon = button.querySelector("ha-icon");
         if (icon) icon.setAttribute("icon", lights ?
           (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") :
-          (active ? "mdi:window-shutter-open" : "mdi:window-shutter"));
+          (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")));
         const row = button.closest(".group-control-row");
         const positionLabel = row?.querySelector(".group-control-position");
         if (positionLabel && position != null) positionLabel.textContent = `${Math.round(position)} %`;
@@ -3038,12 +3063,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .group-control-tile { font:inherit; text-align:left; cursor:pointer; }
         .group-control-tile ha-icon { color:var(--home-yellow); }
+        #group-covers ha-icon { color:var(--home-blue); }
         .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
         .group-control-tile .status-main { overflow:hidden; text-overflow:ellipsis; }
         .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
         .group-control-heading { display:flex; align-items:center; gap:12px; }
         .group-control-heading h2 { margin:0; font-size:23px; }
         .group-control-heading ha-icon { color:var(--home-yellow); --mdc-icon-size:30px; }
+        .group-control-popup.is-cover-popup .group-control-heading ha-icon { color:var(--home-blue); }
         .group-control-all { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 16px; }
         .group-control-all button { font-weight:650; padding:14px 8px; }
         .group-control-list { display:grid; gap:8px; }
@@ -3052,6 +3079,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-name span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .group-control-name ha-icon { flex-shrink:0; color:var(--home-yellow); }
         .group-control-actions { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+        .group-control-row > .group-control-toggle { flex:0 0 38px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; padding:7px; border:1px solid var(--home-card-border); border-radius:13px; background:rgba(118,118,128,.20); color:var(--primary-text-color); cursor:pointer; }
+        .group-control-row > .group-control-toggle ha-icon { --mdc-icon-size:23px; color:var(--home-yellow); }
+        .group-control-row > .group-control-toggle.is-active ha-icon { color:var(--home-green); }
+        .group-control-row > .group-control-toggle.is-cover ha-icon,
+        .group-control-row > .group-control-toggle.is-cover.is-active ha-icon { color:var(--home-blue, #20A0FF); }
+        .group-control-row > .group-control-toggle[disabled] { opacity:.4; cursor:default; }
         .group-control-actions button { padding:7px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:13px; }
         .group-control-actions button ha-icon { --mdc-icon-size:23px; }
         .group-control-actions .is-active ha-icon { color:var(--home-green); }
@@ -3060,7 +3093,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-position { white-space:nowrap; }
         .group-control-actions button[disabled] { opacity:.4; cursor:default; }
         .group-control-position { color:var(--home-muted); font-size:12px; }
-        @media (max-width:550px) { .group-control-popup { padding:14px; } .group-control-row { flex-wrap:nowrap; } .group-control-actions { margin-left:0; } .group-control-position { font-size:11px; } .group-control-actions button { width:34px; height:34px; padding:5px; } }
+        @media (max-width:550px) { .group-control-popup { padding:14px; } .group-control-row { flex-wrap:nowrap; } .group-control-actions { margin-left:0; } .group-control-position { font-size:11px; } .group-control-actions button { width:34px; height:34px; padding:5px; } .group-control-row > .group-control-toggle { flex-basis:34px; width:34px; height:34px; padding:5px; } }
 
         .quick {
           margin-top: 28px;
@@ -3541,8 +3574,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 </div>
               </div>
             ` : ""}
-              <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div></div></button>
-              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div></div></button>
+              <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div><div class="status-sub">${this._groupControlStatus("lights")}</div></div></button>
+              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
             </div>
           </section>
 
