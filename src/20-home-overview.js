@@ -2470,7 +2470,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-        .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:rgba(20,22,27,.98); box-shadow:0 24px 70px rgba(0,0,0,.48); }
+        .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:var(--card-background-color, #1c1c1c); box-shadow:0 24px 70px rgba(0,0,0,.48); }
         .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
         .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
         .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
@@ -3016,7 +3016,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .history-chart line { stroke:rgba(255,255,255,.10); stroke-width:1; vector-effect:non-scaling-stroke; }
         .history-chart polyline { fill:none; stroke:var(--home-blue,#0a84ff); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
         .history-scale { position:absolute; inset:12px auto 17px 0; display:flex; flex-direction:column; justify-content:space-between; color:var(--home-muted); font-size:11px; }
-        .scheduler-popup { width:min(900px,calc(100vw - 40px)); background:var(--card-background-color, #1c1c1c); }
+        .scheduler-popup { width:min(900px,calc(100vw - 40px)); }
         .presence-history-popup { width:min(580px,calc(100vw - 40px)); overscroll-behavior:contain; touch-action:pan-y; }
         #presence-history-backdrop { overscroll-behavior:contain; touch-action:none; }
         #presence-history-backdrop .presence-history-popup { touch-action:pan-y; }
