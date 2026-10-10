@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8E119F4";
+const ATZE_TESTING_REVISION = "100109A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14945,10 +14945,20 @@ class AtzeFanCard extends HTMLElement {
   }
   set hass(value) {
     this._hass = value;
+    if (this.shadowRoot.querySelector(".power-popup")) { this._refreshPowerPopup(); return; }
     this._render();
   }
   getCardSize() { return 1; }
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+  _refreshPowerPopup() {
+    const popup = this.shadowRoot.querySelector(".power-popup");
+    const id = this._powerId();
+    const state = id && this._hass?.states?.[id];
+    const button = popup?.querySelector(".power-switch");
+    if (!button) return;
+    button.textContent = state?.state === "on" ? "Stromversorgung ausschalten" : "Stromversorgung einschalten";
+    button.disabled = !state || !["on", "off"].includes(state.state);
+  }
   _powerId() {
     return this._config.entity === "fan.schlafzimmer_filter" ? "switch.schlafzimmer_luftfilter" : null;
   }
@@ -14971,7 +14981,8 @@ class AtzeFanCard extends HTMLElement {
     if (this._busy || !this._hass) return;
     const id = this._config.entity;
     const state = this._hass.states[id];
-    if (!state || !["on", "off"].includes(state.state)) return;
+    const powerId = this._powerId();
+    if (this._hass.states[powerId]?.state === "off" || !state || !["on", "off"].includes(state.state)) return;
     this._busy = true;
     try {
       await this._hass.callService("fan", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });
@@ -15026,8 +15037,6 @@ class AtzeFanCard extends HTMLElement {
     this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => {
       if (!powerId || !power) { this._moreInfo(); return; }
-      const current = power.state === "on";
-      const label = current ? "Stromversorgung ausschalten" : "Stromversorgung einschalten";
       const popup = this.shadowRoot.querySelector(".power-popup");
       if (popup) { popup.remove(); return; }
       const overlay = document.createElement("div");
@@ -15038,11 +15047,12 @@ class AtzeFanCard extends HTMLElement {
       Object.assign(panel.style, {background:"var(--card-background-color, #242428)",color:"var(--primary-text-color)",padding:"24px",borderRadius:"18px",display:"grid",gap:"14px",minWidth:"240px"});
       overlay.querySelector(".power-title").style.fontWeight = "600";
       const sw = overlay.querySelector(".power-switch");
-      sw.textContent = label;
+      this._refreshPowerPopup();
       sw.addEventListener("click", async () => { await this._togglePower(); overlay.remove(); });
       overlay.querySelector(".fan-settings").addEventListener("click", () => { overlay.remove(); this._moreInfo(); });
       overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
       this.shadowRoot.appendChild(overlay);
+      this._refreshPowerPopup();
     });
   }
 }
