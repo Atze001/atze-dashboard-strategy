@@ -11031,7 +11031,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .history-chart line { stroke:rgba(255,255,255,.10); stroke-width:1; vector-effect:non-scaling-stroke; }
         .history-chart polyline { fill:none; stroke:var(--home-blue,#0a84ff); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
         .history-scale { position:absolute; inset:12px auto 17px 0; display:flex; flex-direction:column; justify-content:space-between; color:var(--home-muted); font-size:11px; }
-        .scheduler-popup { width:min(900px,calc(100vw - 40px)); }
+        .scheduler-popup { width:min(900px,calc(100vw - 40px)); background:var(--card-background-color, #1c1c1c); }
         .presence-history-popup { width:min(580px,calc(100vw - 40px)); overscroll-behavior:contain; touch-action:pan-y; }
         #presence-history-backdrop { overscroll-behavior:contain; touch-action:none; }
         #presence-history-backdrop .presence-history-popup { touch-action:pan-y; }
