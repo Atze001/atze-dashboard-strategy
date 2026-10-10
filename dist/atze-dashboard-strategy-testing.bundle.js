@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FAE8EAF";
+const ATZE_TESTING_REVISION = "3B1B3AD";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14739,7 +14739,8 @@ class AtzeThermostatCard extends HTMLElement {
   }
   set hass(value) {
     this._hass = value;
-    if (!this._serviceOpen) this._render();
+    if (this._serviceOpen) this._refreshServicePopup();
+    else this._render();
   }
   getCardSize() { return 1; }
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
@@ -14783,6 +14784,27 @@ class AtzeThermostatCard extends HTMLElement {
       if (item.domain === "switch") await this._hass.callService("switch",item.state.state === "on" ? "turn_off" : "turn_on",{entity_id:id});
       if (item.domain === "select") await this._hass.callService("select","select_option",{entity_id:id,option});
     } catch(e) { console.error("Thermostat Service",e); }
+  }
+  _refreshServicePopup() {
+    const dialog = this.shadowRoot?.querySelector(".service-dialog");
+    if (!dialog) return;
+    for (const item of this._serviceItems()) {
+      const el = [...dialog.querySelectorAll("[data-service]")].find(node => node.dataset.service === item.id);
+      const disabled = ["unknown", "unavailable"].includes(item.state.state);
+      if (el) {
+        el.disabled = disabled;
+        if (item.domain === "switch") el.textContent = item.state.state === "on" ? "Ein" : "Aus";
+        // Preserve an open native dropdown and the user's current selection.
+        if (item.domain === "select" && document.activeElement !== el && this.shadowRoot.activeElement !== el) {
+          if ([...el.options].some(o => o.value === item.state.state)) el.value = item.state.state;
+        }
+      } else if (item.domain === "binary_sensor") {
+        const rows = [...dialog.querySelectorAll(".service-row")];
+        const row = rows.find(node => node.querySelector("span")?.textContent === item.label);
+        const value = row?.querySelector("span:last-child");
+        if (value) value.textContent = disabled ? "Nicht verfügbar" : item.state.state === "on" ? "Ja" : "Nein";
+      }
+    }
   }
   _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
   _lockScroll() {
