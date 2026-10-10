@@ -1117,6 +1117,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .filter((id) => typeof id === "string" && id.startsWith(domain + "."));
   }
 
+  _groupControlStatus(kind) {
+    const lights = kind === "lights";
+    const entities = this._groupControlEntities(kind);
+    const available = entities.filter((id) => {
+      const state = this._state(id)?.state;
+      return state && !["unavailable", "unknown"].includes(state);
+    });
+    if (!available.length) return "Keine verfügbar";
+    const active = available.filter((id) => {
+      const state = this._state(id)?.state;
+      if (lights) return state === "on";
+      const position = this._coverPosition(id);
+      return position != null ? position > 0 : ["open", "opening"].includes(state);
+    }).length;
+    if (!active) return lights ? "Alle aus" : "Alle geschlossen";
+    if (active === available.length) return lights ? "Alle an" : "Alle geöffnet";
+    return lights ? `${active} an` : `${active} geöffnet`;
+  }
+
   _groupControlPopupHtml() {
     const kind = this._groupControlPopup;
     if (!kind) return "";
@@ -3541,8 +3560,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 </div>
               </div>
             ` : ""}
-              <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div></div></button>
-              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div></div></button>
+              <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div><div class="status-sub">${this._groupControlStatus("lights")}</div></div></button>
+              <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="mdi:window-shutter"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
             </div>
           </section>
 
