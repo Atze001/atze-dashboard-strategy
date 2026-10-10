@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.361.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D7CCD9D";
+const ATZE_TESTING_REVISION = "46298C9";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9164,10 +9164,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const moving = !lights && available && ["opening", "closing"].includes(state.state);
       const active = available && (lights ? state.state === "on" : (position != null ? position > 0 : ["open", "opening"].includes(state.state)));
       return `<div class="group-control-row">
-        <div class="group-control-name"><ha-icon icon="${lights ? (active ? "mdi:lightbulb-on" : "mdi:lightbulb-outline") : "mdi:window-shutter"}"></ha-icon><span>${name}</span></div>
+        <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen"))}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter"))}"></ha-icon></button>
+        <div class="group-control-name"><span>${name}</span></div>
         <div class="group-control-actions">
           ${!lights && position != null ? `<span class="group-control-position">${Math.round(position)} %</span>` : ""}
-          <button class="group-control-toggle ${active ? "is-active" : ""}" type="button" data-group-entity="${this._escapeHtml(id)}" data-group-action="toggle" ${available ? "" : "disabled"} aria-label="${lights ? (active ? "Ausschalten" : "Einschalten") : (moving ? "Stoppen" : (active ? "Schließen" : "Öffnen"))}"><ha-icon icon="${lights ? (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") : (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter"))}"></ha-icon></button>
           <button class="group-control-details" type="button" data-group-more-info="${this._escapeHtml(id)}" ${available ? "" : "disabled"} title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
         </div>
       </div>`;
@@ -11089,6 +11089,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-name span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .group-control-name ha-icon { flex-shrink:0; color:var(--home-yellow); }
         .group-control-actions { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+        .group-control-row > .group-control-toggle { flex:0 0 38px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; padding:7px; border:1px solid var(--home-card-border); border-radius:13px; background:rgba(118,118,128,.20); color:var(--primary-text-color); cursor:pointer; }
+        .group-control-row > .group-control-toggle ha-icon { --mdc-icon-size:23px; color:var(--home-yellow); }
+        .group-control-row > .group-control-toggle.is-active ha-icon { color:var(--home-green); }
+        .group-control-row > .group-control-toggle[disabled] { opacity:.4; cursor:default; }
         .group-control-actions button { padding:7px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:13px; }
         .group-control-actions button ha-icon { --mdc-icon-size:23px; }
         .group-control-actions .is-active ha-icon { color:var(--home-green); }
@@ -11097,7 +11101,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-position { white-space:nowrap; }
         .group-control-actions button[disabled] { opacity:.4; cursor:default; }
         .group-control-position { color:var(--home-muted); font-size:12px; }
-        @media (max-width:550px) { .group-control-popup { padding:14px; } .group-control-row { flex-wrap:nowrap; } .group-control-actions { margin-left:0; } .group-control-position { font-size:11px; } .group-control-actions button { width:34px; height:34px; padding:5px; } }
+        @media (max-width:550px) { .group-control-popup { padding:14px; } .group-control-row { flex-wrap:nowrap; } .group-control-actions { margin-left:0; } .group-control-position { font-size:11px; } .group-control-actions button { width:34px; height:34px; padding:5px; } .group-control-row > .group-control-toggle { flex-basis:34px; width:34px; height:34px; padding:5px; } }
 
         .quick {
           margin-top: 28px;
