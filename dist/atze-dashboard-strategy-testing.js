@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "745AFC3";
+const ATZE_TESTING_REVISION = "ECFE2AD";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3367,10 +3367,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if (["light", "cover", "climate"].includes(domainOf(entityId)) &&
+  if (["light", "cover", "climate", "fan"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : "custom:atze-entity-card",
+      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : domainOf(entityId) === "fan" ? "custom:atze-fan-card" : "custom:atze-entity-card",
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
