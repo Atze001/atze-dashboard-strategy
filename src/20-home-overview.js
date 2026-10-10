@@ -1717,7 +1717,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                       type="button"
                       class="favorite-card ${active ? "active" : ""}"
                       data-entity-id="${entityId}"
-                      title="${name}"
+                      title="${name}: ${state}"
                     >
                       <span class="favorite-icon">
                         <ha-icon
@@ -1726,7 +1726,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
                       </span>
                       <span class="favorite-copy">
                         <span class="favorite-name">${name}</span>
-                        <span class="favorite-state">${state}</span>
                       </span>
                     </button>
                   `;
@@ -2646,8 +2645,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-card {
           min-width: 0;
-          min-height: 74px;
-          padding: 10px 13px;
+          height: 72px;
+          min-height: 72px;
+          padding: 6px 14px;
           display: flex;
           align-items: center;
           gap: 11px;
@@ -2673,9 +2673,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .favorite-icon {
-          width: 42px;
-          height: 42px;
-          flex: 0 0 42px;
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -3288,15 +3288,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .favorite-card {
-            min-height: 66px;
-            padding: 8px 10px;
+            height: 56px;
+            min-height: 56px;
+            padding: 4px 12px;
             border-radius: 21px;
           }
 
           .favorite-icon {
-            width: 38px;
-            height: 38px;
-            flex-basis: 38px;
+            width: 32px;
+            height: 32px;
+            flex-basis: 32px;
           }
 
           .favorite-icon ha-icon {
