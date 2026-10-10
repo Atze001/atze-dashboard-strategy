@@ -3367,10 +3367,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if (["light", "cover", "climate"].includes(domainOf(entityId)) &&
+  if (["light", "cover", "climate", "fan"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : "custom:atze-entity-card",
+      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : domainOf(entityId) === "fan" ? "custom:atze-fan-card" : "custom:atze-entity-card",
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
@@ -14931,6 +14931,127 @@ class AtzeThermostatCard extends HTMLElement {
 }
 if (!customElements.get("atze-thermostat-card")) {
   customElements.define("atze-thermostat-card", AtzeThermostatCard);
+}
+
+
+class AtzeFanCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._busy = false;
+  }
+  setConfig(config) {
+    if (!config?.entity?.startsWith("fan.")) throw new Error("Atze Fan Card benötigt eine fan-Entität");
+    this._config = config;
+    this._render();
+  }
+  set hass(value) {
+    this._hass = value;
+    this._render();
+  }
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+  _powerId() {
+    const stem = this._config.entity?.slice(4);
+    if (!stem?.endsWith("_filter")) return null;
+    const room = stem.slice(0, -"_filter".length);
+    const candidate = "switch." + room + "_luftfilter";
+    return this._hass?.states?.[candidate] ? candidate : null;
+  }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true, composed: true, detail: { entityId: this._config.entity },
+    }));
+  }
+  async _togglePower() {
+    const id = this._powerId();
+    const state = id && this._hass?.states?.[id];
+    if (this._busy || !state || !["on", "off"].includes(state.state)) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("switch", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });
+    } catch (error) {
+      console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+  async _toggle() {
+    if (this._busy || !this._hass) return;
+    const id = this._config.entity;
+    const state = this._hass.states[id];
+    const powerId = this._powerId();
+    if (this._hass.states[powerId]?.state === "off" || !state || !["on", "off"].includes(state.state)) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("fan", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });
+    } catch (error) {
+      console.error("Atze Fan Card: Steuerung fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+  _render() {
+    if (!this._config.entity) return;
+    const id = this._config.entity;
+    const state = this._hass?.states[id];
+    const powerId = this._powerId();
+    const power = powerId && this._hass?.states?.[powerId];
+    const powerOff = power?.state === "off";
+    const unavailable = !state || !["on", "off"].includes(state.state);
+    const active = state?.state === "on";
+    const name = this._config.name || state?.attributes?.friendly_name || id;
+    const percent = Number(state?.attributes?.percentage);
+    const hasPercent = state?.attributes?.percentage != null && Number.isFinite(percent);
+    const mode = state?.attributes?.preset_mode;
+    const status = powerOff ? "Stromversorgung aus" : unavailable ? "Nicht verfügbar" : active
+      ? (mode && !["manual", "normal"].includes(String(mode).trim().toLowerCase()) ? String(mode) : (hasPercent ? Math.round(percent) + " %" : "Ein"))
+      : "Aus";
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; min-width:0; }
+        ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center; gap:10px;
+          padding:10px 12px; border-radius:15px; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          background:rgba(118,118,128,.13); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
+        button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
+        .control,.settings,.power { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
+          background:rgba(118,118,128,.20); }
+        .control ha-icon { --mdc-icon-size:23px; color:${active && !powerOff ? "#64D2FF" : "var(--secondary-text-color, #8e8e93)"}; }
+        .power ha-icon { --mdc-icon-size:23px; color:${power?.state === "on" ? "#30D158" : "var(--secondary-text-color, #8e8e93)"}; }
+        .settings ha-icon { --mdc-icon-size:23px; }
+        .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
+        .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
+        button:disabled { opacity:.4; cursor:default; }
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
+        <span class="details"></span>
+        <span class="status"></span>
+        ${powerId ? `<button class="power" type="button" aria-label="Stromversorgung umschalten" title="Shelly Stromversorgung" ${!["on", "off"].includes(power?.state) ? "disabled" : ""}><ha-icon icon="mdi:power-plug"></ha-icon></button>` : ""}
+        <button class="settings" type="button" aria-label="Luftreiniger-Einstellungen" title="Luftreiniger-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    const details = this.shadowRoot.querySelector(".details");
+    details.textContent = name;
+    details.title = name;
+    this.shadowRoot.querySelector(".status").textContent = status;
+    this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".power")?.addEventListener("click", () => {
+      const powerId = this._powerId();
+      const powerState = powerId && this._hass?.states?.[powerId];
+      if (!powerState || !["on", "off"].includes(powerState.state)) return;
+      const turningOff = powerState.state === "on";
+      const message = turningOff
+        ? "Stromversorgung des Luftfilters wirklich ausschalten?"
+        : "Stromversorgung des Luftfilters wirklich einschalten?";
+      if (window.confirm(message)) this._togglePower();
+    });
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+  }
+}
+if (!customElements.get("atze-fan-card")) {
+  customElements.define("atze-fan-card", AtzeFanCard);
 }
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
