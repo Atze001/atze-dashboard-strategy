@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D2601DB";
+const ATZE_TESTING_REVISION = "40869AB";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3364,6 +3364,18 @@ function buildEntityCard(
     cardMode === "tile"
       ? defaultTileCard(hass, entity, config, area)
       : defaultBubbleCard(hass, entity, config, area);
+
+  // Native Atze controls replace default Bubble Cards for room lights/covers.
+  // Explicit per-entity card overrides still take precedence.
+  if ((domainOf(entityId) === "light" || domainOf(entityId) === "cover") &&
+      cardMode === "bubble" && !override.card) {
+    card = {
+      type: "custom:atze-entity-card",
+      entity: entityId,
+      name: displayName(hass, entity, config, area),
+      icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
+    };
+  }
 
   const aggregateParent =
     aggregateDeviceParentConfig(config, entityId);
