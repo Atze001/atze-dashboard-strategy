@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "3B1B3AD";
+const ATZE_TESTING_REVISION = "88BF77F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14768,8 +14768,16 @@ class AtzeThermostatCard extends HTMLElement {
     const rows = this._serviceItems().map(({id,domain,label,state}) => {
       const disabled = ["unavailable","unknown"].includes(state.state);
       let action = "";
-      if (domain === "button") action = '<button data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>Ausführen</button>';
-      if (domain === "switch") action = '<button data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (state.state === "on" ? "Ein" : "Aus") + '</button>';
+      if (domain === "button" || domain === "switch") {
+        const active = domain === "switch" && state.state === "on";
+        const icon = domain === "button"
+          ? (id.endsWith("_identify") ? "mdi:crosshairs-gps" : "mdi:tune-vertical")
+          : (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
+        action = '<button type="button" class="service-toggle' + (active ? ' is-active' : '') +
+          '" data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") +
+          ' title="' + (domain === "button" ? "Ausführen" : active ? "Ausschalten" : "Einschalten") +
+          '" aria-label="' + this._escape(label) + '"><ha-icon icon="' + icon + '"></ha-icon></button>';
+      }
       if (domain === "select") action = '<select data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (state.attributes.options || []).map(o => '<option value="' + this._escape(o) + '"' + (o === state.state ? " selected" : "") + '>' + this._escape(o) + '</option>').join("") + '</select>';
       if (domain === "binary_sensor") action = '<span>' + (disabled ? "Nicht verfügbar" : state.state === "on" ? "Ja" : "Nein") + '</span>';
       return '<div class="service-row"><span>' + label + '</span>' + action + '</div>';
@@ -14793,7 +14801,12 @@ class AtzeThermostatCard extends HTMLElement {
       const disabled = ["unknown", "unavailable"].includes(item.state.state);
       if (el) {
         el.disabled = disabled;
-        if (item.domain === "switch") el.textContent = item.state.state === "on" ? "Ein" : "Aus";
+        if (item.domain === "switch") {
+          const active = item.state.state === "on";
+          el.classList.toggle("is-active", active);
+          el.title = active ? "Ausschalten" : "Einschalten";
+          el.querySelector("ha-icon")?.setAttribute("icon", active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
+        }
         // Preserve an open native dropdown and the user's current selection.
         if (item.domain === "select" && document.activeElement !== el && this.shadowRoot.activeElement !== el) {
           if ([...el.options].some(o => o.value === item.state.state)) el.value = item.state.state;
@@ -14880,6 +14893,10 @@ class AtzeThermostatCard extends HTMLElement {
         .service-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 8px; border-bottom:1px solid var(--divider-color); }
         .service-row span:first-child { font-size:13px; }
         .service-row button,.service-row select { padding:9px; border-radius:10px; background:rgba(118,118,128,.2); color:var(--primary-text-color); border:1px solid var(--divider-color); }
+        .service-row .service-toggle { flex:0 0 42px; width:42px; height:38px; padding:0; display:grid; place-items:center; border-radius:12px; }
+        .service-toggle ha-icon { --mdc-icon-size:26px; color:var(--secondary-text-color,#8e8e93); }
+        .service-toggle.is-active ha-icon { color:var(--home-green,#30d158); }
+        .service-toggle:disabled { opacity:.4; cursor:default; }
       </style>
       <ha-card>
         <button class="thermometer" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="mdi:thermometer"></ha-icon></button>
