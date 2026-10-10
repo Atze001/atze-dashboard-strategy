@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "ECFE2AD";
+const ATZE_TESTING_REVISION = "6F0C889";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14928,6 +14928,91 @@ class AtzeThermostatCard extends HTMLElement {
 }
 if (!customElements.get("atze-thermostat-card")) {
   customElements.define("atze-thermostat-card", AtzeThermostatCard);
+}
+
+
+class AtzeFanCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._busy = false;
+  }
+  setConfig(config) {
+    if (!config?.entity?.startsWith("fan.")) throw new Error("Atze Fan Card benötigt eine fan-Entität");
+    this._config = config;
+    this._render();
+  }
+  set hass(value) {
+    this._hass = value;
+    this._render();
+  }
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true, composed: true, detail: { entityId: this._config.entity },
+    }));
+  }
+  async _toggle() {
+    if (this._busy || !this._hass) return;
+    const id = this._config.entity;
+    const state = this._hass.states[id];
+    if (!state || !["on", "off"].includes(state.state)) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("fan", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });
+    } catch (error) {
+      console.error("Atze Fan Card: Steuerung fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+  _render() {
+    if (!this._config.entity) return;
+    const id = this._config.entity;
+    const state = this._hass?.states[id];
+    const unavailable = !state || !["on", "off"].includes(state.state);
+    const active = state?.state === "on";
+    const name = this._config.name || state?.attributes?.friendly_name || id;
+    const percent = Number(state?.attributes?.percentage);
+    const hasPercent = state?.attributes?.percentage != null && Number.isFinite(percent);
+    const mode = state?.attributes?.preset_mode;
+    const status = unavailable ? "Nicht verfügbar" : active
+      ? (hasPercent ? Math.round(percent) + " %" : (mode ? String(mode) : "Ein"))
+      : "Aus";
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; min-width:0; }
+        ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center; gap:10px;
+          padding:10px 12px; border-radius:15px; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          background:rgba(118,118,128,.13); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
+        button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
+        .control,.settings { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
+          background:rgba(118,118,128,.20); }
+        .control ha-icon { --mdc-icon-size:23px; color:${active ? "#64D2FF" : "var(--secondary-text-color, #8e8e93)"}; }
+        .settings ha-icon { --mdc-icon-size:23px; }
+        .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
+        .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
+        button:disabled { opacity:.4; cursor:default; }
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
+        <span class="details"></span>
+        <span class="status"></span>
+        <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    const details = this.shadowRoot.querySelector(".details");
+    details.textContent = name;
+    details.title = name;
+    this.shadowRoot.querySelector(".status").textContent = status;
+    this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+  }
+}
+if (!customElements.get("atze-fan-card")) {
+  customElements.define("atze-fan-card", AtzeFanCard);
 }
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
