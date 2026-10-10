@@ -9135,6 +9135,61 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
+  _homeThermostatEntities() {
+    return Object.keys(this._hass?.states || {})
+      .filter((id) => id.startsWith("climate."))
+      .filter((id) => {
+        const state = this._state(id);
+        return state && !["unavailable", "unknown"].includes(state.state);
+      })
+      .sort((a, b) => (this._state(a)?.attributes?.friendly_name || a)
+        .localeCompare(this._state(b)?.attributes?.friendly_name || b, "de"));
+  }
+
+  _homeThermostatStatus() {
+    const ids = this._homeThermostatEntities();
+    if (!ids.length) return "Keine verfügbar";
+    const active = ids.filter((id) => this._state(id)?.state !== "off").length;
+    return active ? `${active} von ${ids.length} an` : "Alle aus";
+  }
+
+  _homeThermostatPopupHtml() {
+    if (this._groupControlPopup !== "thermostats") return "";
+    const ids = this._homeThermostatEntities();
+    const rows = ids.map((id) => {
+      const state = this._state(id);
+      const enabled = state.state !== "off";
+      const modes = state.attributes?.hvac_modes || [];
+      const toggleable = modes.includes("off") && (enabled || modes.includes("heat"));
+      const name = this._escapeHtml(state.attributes?.friendly_name || id);
+      const current = Number(state.attributes?.current_temperature);
+      const target = Number(state.attributes?.temperature);
+      const temp = (v) => Number.isFinite(v) ? v.toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " °C" : "–";
+      return `<div class="group-control-row">
+        <button type="button" class="group-control-toggle is-thermostat ${enabled ? "is-active" : ""}" data-thermostat-toggle="${this._escapeHtml(id)}" ${toggleable ? "" : "disabled"} title="Heizung ${enabled ? "ausschalten" : "einschalten"}"><ha-icon icon="mdi:thermometer"></ha-icon></button>
+        <div class="group-control-name"><span>${name}</span></div>
+        <div class="group-control-actions"><span class="group-control-position">${temp(current)} / ${temp(target)}</span>
+          <button type="button" class="group-control-details" data-group-more-info="${this._escapeHtml(id)}" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="weather-popup-backdrop" id="group-control-backdrop">
+      <section class="weather-popup group-control-popup is-thermostat-popup" role="dialog" aria-modal="true" aria-label="Thermostate">
+        <div class="group-control-heading"><ha-icon icon="mdi:thermometer"></ha-icon><h2>Thermostate</h2></div>
+        <div class="group-control-list">${rows || '<div class="power-popup-empty">Keine Thermostate verfügbar.</div>'}</div>
+      </section>
+    </div>`;
+  }
+
+  async _homeThermostatToggle(id) {
+    if (!this._homeThermostatEntities().includes(id)) return;
+    const state = this._state(id);
+    const modes = state?.attributes?.hvac_modes || [];
+    const next = state.state === "off" ? "heat" : "off";
+    if (!modes.includes(next)) return;
+    await this._hass.callService("climate", "set_hvac_mode", { entity_id: id, hvac_mode: next });
+  }
+
   _groupControlEntities(kind) {
     const domain = kind === "lights" ? "light" : "cover";
     const configured = kind === "lights"
@@ -11091,6 +11146,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .group-control-tile { font:inherit; text-align:left; cursor:pointer; }
         .group-control-tile ha-icon { color:var(--home-yellow); }
         #group-covers ha-icon { color:var(--home-blue); }
+        #group-thermostats ha-icon { color:var(--home-red); }
+        .group-control-popup.is-thermostat-popup .group-control-heading ha-icon { color:var(--home-red); }
+        .group-control-toggle.is-thermostat.is-active ha-icon { color:var(--home-red); }
         .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
         .group-control-tile .status-main { overflow:hidden; text-overflow:ellipsis; }
         .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
@@ -11605,6 +11663,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ` : ""}
               <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div><div class="status-sub">${this._groupControlStatus("lights")}</div></div></button>
               <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="${this._groupControlEntities("covers").some((id) => { const st = this._state(id)?.state; const pos = this._coverPosition(id); return pos != null ? pos > 0 : ["open", "opening"].includes(st); }) ? "mdi:window-shutter-open" : "mdi:window-shutter"}"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
+              <button type="button" class="status group-control-tile" id="group-thermostats"><ha-icon icon="mdi:thermometer"></ha-icon><div><div class="status-main">Thermostate</div><div class="status-sub">${this._homeThermostatStatus()}</div></div></button>
             </div>
           </section>
 
@@ -11643,7 +11702,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         </div>
         ${this._weatherPopupHtml(weather)}
           ${this._powerPopupHtml()}
-          ${this._groupControlPopupHtml()}
+          ${this._groupControlPopup === "thermostats" ? this._homeThermostatPopupHtml() : this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
           ${this._presenceHistoryPopupHtml()}
           ${this._schedulerPopupHtml()}
@@ -12045,6 +12104,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
     this.shadowRoot.querySelector("#group-lights")?.addEventListener("click", () => { this._groupControlPopup = "lights"; this._render(); });
     this.shadowRoot.querySelector("#group-covers")?.addEventListener("click", () => { this._groupControlPopup = "covers"; this._render(); });
+    this.shadowRoot.querySelector("#group-thermostats")?.addEventListener("click", () => { this._groupControlPopup = "thermostats"; this._render(); });
     this.shadowRoot.querySelector("#group-control-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "group-control-backdrop") { this._groupControlPopup = null; this._render(); }
     });
@@ -12052,6 +12112,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (this._groupControlPopup === "lights") await (button.dataset.groupAll === "on" ? this._allLightsOn() : this._allLightsOff());
       else await (button.dataset.groupAll === "on" ? this._allCoversOpen() : this._allCoversClose());
     }));
+    this.shadowRoot.querySelectorAll("[data-thermostat-toggle]").forEach((button) => button.addEventListener("click", () => this._homeThermostatToggle(button.dataset.thermostatToggle)));
     this.shadowRoot.querySelectorAll("[data-group-entity]").forEach((button) => button.addEventListener("click", () => this._groupControlAction(button.dataset.groupEntity)));
     this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.groupMoreInfo)));
 
