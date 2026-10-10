@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.361.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "BA17A38";
+const ATZE_TESTING_REVISION = "CFA4601";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9173,7 +9173,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </div>`;
     }).join("");
     return `<div class="weather-popup-backdrop" id="group-control-backdrop">
-      <section class="weather-popup group-control-popup" role="dialog" aria-modal="true" aria-label="${label}">
+      <section class="weather-popup group-control-popup ${lights ? "is-light-popup" : "is-cover-popup"}" role="dialog" aria-modal="true" aria-label="${label}">
         <div class="group-control-heading"><ha-icon icon="${icon}"></ha-icon><h2>${label}</h2></div>
         <div class="group-control-all">
           <button type="button" data-group-all="on">${lights ? "Alle an" : "Alle öffnen"}</button>
@@ -11075,12 +11075,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .group-control-tile { font:inherit; text-align:left; cursor:pointer; }
         .group-control-tile ha-icon { color:var(--home-yellow); }
+        #group-covers ha-icon { color:var(--home-blue); }
         .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
         .group-control-tile .status-main { overflow:hidden; text-overflow:ellipsis; }
         .group-control-all button, .group-control-actions button { cursor:pointer; font:inherit; color:var(--primary-text-color); border:1px solid var(--home-card-border); background:rgba(118,118,128,.20); border-radius:15px; padding:10px 15px; }
         .group-control-heading { display:flex; align-items:center; gap:12px; }
         .group-control-heading h2 { margin:0; font-size:23px; }
         .group-control-heading ha-icon { color:var(--home-yellow); --mdc-icon-size:30px; }
+        .group-control-popup.is-cover-popup .group-control-heading ha-icon { color:var(--home-blue); }
         .group-control-all { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 16px; }
         .group-control-all button { font-weight:650; padding:14px 8px; }
         .group-control-list { display:grid; gap:8px; }
