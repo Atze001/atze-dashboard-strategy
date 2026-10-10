@@ -1,3 +1,11 @@
+## v0.364.0
+
+- Eigene native Karten für Lichter, Rollläden und Thermostate mit einheitlicher Steuerung und Einstellungen.
+- Thermostat-Service-Popup für Identifizieren, Kindersicherung, Kalibrierung, Sensorwahl, Ventil- und Fenstererkennung sowie Diagnoseanzeigen.
+- Neue Thermostatübersicht auf der Startseite mit Live-Status und Steuerung.
+- Verbesserte Popup-Bedienung: kein Hintergrundscrollen, stabile Sensorauswahl und Live-Aktualisierung.
+- Thermostat-Service-Taster bleiben auch bei unbekanntem Zustand bedienbar.
+
 ## v0.360.0
 
 - Anwesenheitsverlauf als mittiges Popup beim Antippen des Personenfotos.
