@@ -14948,22 +14948,16 @@ class AtzeFanCard extends HTMLElement {
   }
   set hass(value) {
     this._hass = value;
-    if (this.shadowRoot.querySelector(".power-popup")) { this._refreshPowerPopup(); return; }
     this._render();
   }
   getCardSize() { return 1; }
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
-  _refreshPowerPopup() {
-    const popup = this.shadowRoot.querySelector(".power-popup");
-    const id = this._powerId();
-    const state = id && this._hass?.states?.[id];
-    const button = popup?.querySelector(".power-switch");
-    if (!button) return;
-    button.textContent = state?.state === "on" ? "Stromversorgung ausschalten" : "Stromversorgung einschalten";
-    button.disabled = !state || !["on", "off"].includes(state.state);
-  }
   _powerId() {
-    return this._config.entity === "fan.schlafzimmer_filter" ? "switch.schlafzimmer_luftfilter" : null;
+    const stem = this._config.entity?.slice(4);
+    if (!stem?.endsWith("_filter")) return null;
+    const room = stem.slice(0, -"_filter".length);
+    const candidate = "switch." + room + "_luftfilter";
+    return this._hass?.states?.[candidate] ? candidate : null;
   }
   _moreInfo() {
     this.dispatchEvent(new CustomEvent("hass-more-info", {
@@ -14977,8 +14971,11 @@ class AtzeFanCard extends HTMLElement {
     this._busy = true;
     try {
       await this._hass.callService("switch", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });
-    } catch (error) { console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error); }
-    finally { this._busy = false; }
+    } catch (error) {
+      console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
   }
   async _toggle() {
     if (this._busy || !this._hass) return;
@@ -15018,10 +15015,11 @@ class AtzeFanCard extends HTMLElement {
           padding:10px 12px; border-radius:15px; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
           background:rgba(118,118,128,.13); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
         button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
-        .control,.settings { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+        .control,.settings,.power { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
           border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
           background:rgba(118,118,128,.20); }
-        .control ha-icon { --mdc-icon-size:23px; color:${active ? "#64D2FF" : "var(--secondary-text-color, #8e8e93)"}; }
+        .control ha-icon { --mdc-icon-size:23px; color:${active && !powerOff ? "#64D2FF" : "var(--secondary-text-color, #8e8e93)"}; }
+        .power ha-icon { --mdc-icon-size:23px; color:${power?.state === "on" ? "#30D158" : "var(--secondary-text-color, #8e8e93)"}; }
         .settings ha-icon { --mdc-icon-size:23px; }
         .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
         .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
@@ -15031,32 +15029,16 @@ class AtzeFanCard extends HTMLElement {
         <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
         <span class="details"></span>
         <span class="status"></span>
-        <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
+        ${powerId ? `<button class="power" type="button" aria-label="Stromversorgung umschalten" title="Shelly Stromversorgung" ${!["on", "off"].includes(power?.state) ? "disabled" : ""}><ha-icon icon="mdi:power-plug"></ha-icon></button>` : ""}
+        <button class="settings" type="button" aria-label="Luftreiniger-Einstellungen" title="Luftreiniger-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>`;
     const details = this.shadowRoot.querySelector(".details");
     details.textContent = name;
     details.title = name;
     this.shadowRoot.querySelector(".status").textContent = status;
     this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
-    this.shadowRoot.querySelector(".settings").addEventListener("click", () => {
-      if (!powerId || !power) { this._moreInfo(); return; }
-      const popup = this.shadowRoot.querySelector(".power-popup");
-      if (popup) { popup.remove(); return; }
-      const overlay = document.createElement("div");
-      overlay.className = "power-popup";
-      overlay.innerHTML = `<div class="power-panel"><div class="power-title">Stromversorgung</div><button class="power-switch" type="button"></button><button class="fan-settings" type="button">Luftreiniger-Einstellungen</button></div>`;
-      Object.assign(overlay.style, {position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.45)",display:"grid",placeItems:"center"});
-      const panel = overlay.querySelector(".power-panel");
-      Object.assign(panel.style, {background:"var(--card-background-color, #242428)",color:"var(--primary-text-color)",padding:"24px",borderRadius:"18px",display:"grid",gap:"14px",minWidth:"240px"});
-      overlay.querySelector(".power-title").style.fontWeight = "600";
-      const sw = overlay.querySelector(".power-switch");
-      this._refreshPowerPopup();
-      sw.addEventListener("click", async () => { await this._togglePower(); overlay.remove(); });
-      overlay.querySelector(".fan-settings").addEventListener("click", () => { overlay.remove(); this._moreInfo(); });
-      overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
-      this.shadowRoot.appendChild(overlay);
-      this._refreshPowerPopup();
-    });
+    this.shadowRoot.querySelector(".power")?.addEventListener("click", () => this._togglePower());
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
   }
 }
 if (!customElements.get("atze-fan-card")) {
