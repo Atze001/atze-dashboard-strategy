@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.362.0";
+const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -9732,7 +9732,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                       type="button"
                       class="favorite-card ${active ? "active" : ""}"
                       data-entity-id="${entityId}"
-                      title="${name}"
+                      title="${name}: ${state}"
                     >
                       <span class="favorite-icon">
                         <ha-icon
@@ -9741,7 +9741,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
                       </span>
                       <span class="favorite-copy">
                         <span class="favorite-name">${name}</span>
-                        <span class="favorite-state">${state}</span>
                       </span>
                     </button>
                   `;
@@ -10422,7 +10421,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 7px;
-          border: 1px solid rgba(210, 210, 210, 0.78);
+          border: 1px solid var(--home-card-border);
           border-radius: 28px;
           background: rgba(48, 50, 54, 0.30);
           backdrop-filter: blur(8px) saturate(1.12);
@@ -10486,7 +10485,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
-        .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:rgba(20,22,27,.98); box-shadow:0 24px 70px rgba(0,0,0,.48); }
+        .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:var(--card-background-color, #1c1c1c); box-shadow:0 24px 70px rgba(0,0,0,.48); }
         .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
         .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
         .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
@@ -10661,8 +10660,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-card {
           min-width: 0;
-          min-height: 74px;
-          padding: 10px 13px;
+          height: 72px;
+          min-height: 72px;
+          padding: 6px 14px;
           display: flex;
           align-items: center;
           gap: 11px;
@@ -10688,9 +10688,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .favorite-icon {
-          width: 42px;
-          height: 42px;
-          flex: 0 0 42px;
+          width: 38px;
+          height: 38px;
+          flex: 0 0 38px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -11303,15 +11303,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .favorite-card {
-            min-height: 66px;
-            padding: 8px 10px;
+            height: 56px;
+            min-height: 56px;
+            padding: 4px 12px;
             border-radius: 21px;
           }
 
           .favorite-icon {
-            width: 38px;
-            height: 38px;
-            flex-basis: 38px;
+            width: 32px;
+            height: 32px;
+            flex-basis: 32px;
           }
 
           .favorite-icon ha-icon {
