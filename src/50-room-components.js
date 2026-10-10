@@ -1206,23 +1206,43 @@ class AtzeThermostatCard extends HTMLElement {
       bubbles: true, composed: true, detail: { entityId: this._config.entity },
     }));
   }
-  _identifyEntity() {
-    const entityId = this._config.entity;
-    const expected = "button." + entityId.slice("climate.".length) + "_identify";
-    return this._hass?.states?.[expected] ? expected : null;
+  _serviceItems() {
+    const stem = this._config.entity.slice(8);
+    return [
+      ["button","identify","Identifizieren"],["switch","child_lock","Kindersicherung"],
+      ["button","calibrate","Kalibrieren"],["select","sensor","Temperatursensor"],
+      ["switch","valve_detection","Ventilerkennung"],["switch","window_detection","Fenstererkennung"],
+      ["binary_sensor","calibrated","Kalibriert"],["binary_sensor","valve_alarm","Ventilalarm"]
+    ].map(([domain,suffix,label]) => {
+      const id = domain + "." + stem + "_" + suffix;
+      return { id, domain, label, state:this._hass?.states?.[id] };
+    }).filter(x => x.state);
   }
-  async _identify() {
-    const entityId = this._identifyEntity();
-    if (!entityId || this._identifying) return;
-    this._identifying = true;
+  _escape(s) {
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  _popupHtml() {
+    const rows = this._serviceItems().map(({id,domain,label,state}) => {
+      const disabled = ["unavailable","unknown"].includes(state.state);
+      let action = "";
+      if (domain === "button") action = '<button data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>Ausführen</button>';
+      if (domain === "switch") action = '<button data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (state.state === "on" ? "Ein" : "Aus") + '</button>';
+      if (domain === "select") action = '<select data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (state.attributes.options || []).map(o => '<option value="' + this._escape(o) + '"' + (o === state.state ? " selected" : "") + '>' + this._escape(o) + '</option>').join("") + '</select>';
+      if (domain === "binary_sensor") action = '<span>' + (disabled ? "Nicht verfügbar" : state.state === "on" ? "Ja" : "Nein") + '</span>';
+      return '<div class="service-row"><span>' + label + '</span>' + action + '</div>';
+    }).join("");
+    return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true"><h3>Thermostat · Service</h3>' + (rows || "Keine Service-Entitäten vorhanden") + '</section></div>';
+  }
+  async _serviceAction(id, option) {
+    const item = this._serviceItems().find(x => x.id === id);
+    if (!item || ["unknown","unavailable"].includes(item.state.state)) return;
     try {
-      await this._hass.callService("button", "press", { entity_id: entityId });
-    } catch (error) {
-      console.error("Atze Thermostat Card: Identify fehlgeschlagen", error);
-    } finally {
-      this._identifying = false;
-    }
+      if (item.domain === "button") await this._hass.callService("button","press",{entity_id:id});
+      if (item.domain === "switch") await this._hass.callService("switch",item.state.state === "on" ? "turn_off" : "turn_on",{entity_id:id});
+      if (item.domain === "select") await this._hass.callService("select","select_option",{entity_id:id,option});
+    } catch(e) { console.error("Thermostat Service",e); }
   }
+  _openService() { this._serviceOpen = true; this._render(); }
   async _toggle() {
     if (this._busy || !this._hass) return;
     const entityId = this._config.entity;
@@ -1250,7 +1270,6 @@ class AtzeThermostatCard extends HTMLElement {
     const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
     const enabled = !unavailable && state.state !== "off";
     const modes = attributes.hvac_modes || [];
-    const identifyAvailable = !!this._identifyEntity();
     const canToggle = !unavailable && modes.includes("off") && (enabled || modes.includes("heat"));
     const unit = this._hass?.config?.unit_system?.temperature || "°C";
     const format = value => {
@@ -1272,23 +1291,30 @@ class AtzeThermostatCard extends HTMLElement {
           border-radius:13px; background:rgba(118,118,128,.20); }
         .thermometer ha-icon { --mdc-icon-size:23px; color:${enabled ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
         .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; border:0; padding:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
-        .info:disabled { cursor:default; }
+
         .name { font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .current { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; }
         .target { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:2px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; }
-        .target:disabled { cursor:default; }
+
         .target-value { font-size:16px; font-weight:600; white-space:nowrap; }
         .target-label { font-size:10px; color:var(--secondary-text-color); }
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
         .settings ha-icon { --mdc-icon-size:23px; }
         .thermometer:disabled { opacity:.4; cursor:default; }
+        .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
+        .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
+        .service-dialog h3 { margin:0 0 16px; }
+        .service-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 8px; border-bottom:1px solid var(--divider-color); }
+        .service-row span:first-child { font-size:13px; }
+        .service-row button,.service-row select { padding:9px; border-radius:10px; background:rgba(118,118,128,.2); color:var(--primary-text-color); border:1px solid var(--divider-color); }
       </style>
       <ha-card>
         <button class="thermometer" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="mdi:thermometer"></ha-icon></button>
-        <button class="info" type="button" aria-label="Thermostat identifizieren" title="Thermostat identifizieren" ${identifyAvailable ? "" : "disabled"}><span class="name"></span><span class="current"></span></button>
-        <button class="target" type="button" aria-label="Thermostat identifizieren" title="Thermostat identifizieren" ${identifyAvailable ? "" : "disabled"}><span class="target-value"></span><span class="target-label">Soll</span></button>
+        <button class="info" type="button" aria-label="Thermostat Service öffnen" title="Thermostat Service öffnen"><span class="name"></span><span class="current"></span></button>
+        <button class="target" type="button" aria-label="Thermostat Service öffnen" title="Thermostat Service öffnen"><span class="target-value"></span><span class="target-label">Soll</span></button>
         <button class="settings" type="button" aria-label="Thermostateinstellungen" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
-      </ha-card>`;
+      </ha-card>
+      ${this._serviceOpen ? this._popupHtml() : ""}`;
     const nameEl = this.shadowRoot.querySelector(".name");
     nameEl.textContent = name;
     nameEl.title = name;
@@ -1297,9 +1323,17 @@ class AtzeThermostatCard extends HTMLElement {
     this.shadowRoot.querySelector(".target-value").textContent =
       (unavailable ? "–" : format(attributes.temperature)) + " " + unit;
     this.shadowRoot.querySelector(".thermometer").addEventListener("click", () => this._toggle());
-    this.shadowRoot.querySelector(".info").addEventListener("click", () => this._identify());
-    this.shadowRoot.querySelector(".target").addEventListener("click", () => this._identify());
+    this.shadowRoot.querySelector(".info").addEventListener("click", () => this._openService());
+    this.shadowRoot.querySelector(".target").addEventListener("click", () => this._openService());
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+    this.shadowRoot.querySelector(".service-backdrop")?.addEventListener("click", e => {
+      if (e.target.classList.contains("service-backdrop")) { this._serviceOpen = false; this._render(); }
+    });
+    this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
+      const id = el.dataset.service;
+      el.addEventListener(el.tagName === "SELECT" ? "change" : "click", () => this._serviceAction(id, el.value));
+    });
+
   }
 }
 if (!customElements.get("atze-thermostat-card")) {
