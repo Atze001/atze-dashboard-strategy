@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0FF581C";
+const ATZE_TESTING_REVISION = "42B5F5E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14664,6 +14664,7 @@ class AtzeThermostatCard extends HTMLElement {
     super();
     this.attachShadow({ mode: "open" });
     this._config = {};
+    this._busy = false;
   }
   setConfig(config) {
     if (!config?.entity?.startsWith("climate.")) {
@@ -14683,12 +14684,34 @@ class AtzeThermostatCard extends HTMLElement {
       bubbles: true, composed: true, detail: { entityId: this._config.entity },
     }));
   }
+  async _toggle() {
+    if (this._busy || !this._hass) return;
+    const entityId = this._config.entity;
+    const state = this._hass.states[entityId];
+    if (!state || ["unknown", "unavailable"].includes(state.state)) return;
+    const enabled = state.state !== "off";
+    const modes = state.attributes?.hvac_modes || [];
+    const nextMode = enabled ? "off" : (modes.includes("heat") ? "heat" : null);
+    if (!nextMode || !modes.includes(nextMode)) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("climate", "set_hvac_mode", {
+        entity_id: entityId, hvac_mode: nextMode,
+      });
+    } catch (error) {
+      console.error("Atze Thermostat Card: Umschalten fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
   _render() {
     if (!this.shadowRoot || !this._config.entity) return;
     const state = this._hass?.states[this._config.entity];
     const attributes = state?.attributes || {};
     const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
-    const heating = state?.attributes?.hvac_action === "heating";
+    const enabled = !unavailable && state.state !== "off";
+    const modes = attributes.hvac_modes || [];
+    const canToggle = !unavailable && modes.includes("off") && (enabled || modes.includes("heat"));
     const unit = this._hass?.config?.unit_system?.temperature || "°C";
     const format = value => {
       const n = Number(value);
@@ -14707,7 +14730,7 @@ class AtzeThermostatCard extends HTMLElement {
         .thermometer, .settings { width:38px; height:38px; flex:0 0 38px;
           display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
           border-radius:13px; background:rgba(118,118,128,.20); }
-        .thermometer ha-icon { --mdc-icon-size:23px; color:${heating ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
+        .thermometer ha-icon { --mdc-icon-size:23px; color:${enabled ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
         .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
         .name { font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .current { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; }
@@ -14715,13 +14738,14 @@ class AtzeThermostatCard extends HTMLElement {
         .target-value { font-size:16px; font-weight:600; white-space:nowrap; }
         .target-label { font-size:10px; color:var(--secondary-text-color); }
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
-        .settings ha-icon { --mdc-icon-size:23px; }
+        .settings ha-icon { --mdc-icon-size:23px; color:${enabled ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
+        .settings:disabled { opacity:.4; cursor:default; }
       </style>
       <ha-card>
         <div class="thermometer"><ha-icon icon="mdi:thermometer"></ha-icon></div>
         <div class="info"><span class="name"></span><span class="current"></span></div>
         <div class="target"><span class="target-value"></span><span class="target-label">Soll</span></div>
-        <button class="settings" type="button" aria-label="Thermostateinstellungen" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        <button class="settings" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="${enabled ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline"}"></ha-icon></button>
       </ha-card>`;
     const nameEl = this.shadowRoot.querySelector(".name");
     nameEl.textContent = name;
@@ -14730,7 +14754,7 @@ class AtzeThermostatCard extends HTMLElement {
       "Ist " + (unavailable ? "–" : format(attributes.current_temperature)) + " " + unit;
     this.shadowRoot.querySelector(".target-value").textContent =
       (unavailable ? "–" : format(attributes.temperature)) + " " + unit;
-    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._toggle());
   }
 }
 if (!customElements.get("atze-thermostat-card")) {
