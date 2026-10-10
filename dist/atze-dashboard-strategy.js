@@ -14687,6 +14687,23 @@ class AtzeThermostatCard extends HTMLElement {
       bubbles: true, composed: true, detail: { entityId: this._config.entity },
     }));
   }
+  _identifyEntity() {
+    const entityId = this._config.entity;
+    const expected = "button." + entityId.slice("climate.".length) + "_identify";
+    return this._hass?.states?.[expected] ? expected : null;
+  }
+  async _identify() {
+    const entityId = this._identifyEntity();
+    if (!entityId || this._identifying) return;
+    this._identifying = true;
+    try {
+      await this._hass.callService("button", "press", { entity_id: entityId });
+    } catch (error) {
+      console.error("Atze Thermostat Card: Identify fehlgeschlagen", error);
+    } finally {
+      this._identifying = false;
+    }
+  }
   async _toggle() {
     if (this._busy || !this._hass) return;
     const entityId = this._config.entity;
@@ -14714,6 +14731,7 @@ class AtzeThermostatCard extends HTMLElement {
     const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
     const enabled = !unavailable && state.state !== "off";
     const modes = attributes.hvac_modes || [];
+    const identifyAvailable = !!this._identifyEntity();
     const canToggle = !unavailable && modes.includes("off") && (enabled || modes.includes("heat"));
     const unit = this._hass?.config?.unit_system?.temperature || "°C";
     const format = value => {
@@ -14734,10 +14752,12 @@ class AtzeThermostatCard extends HTMLElement {
           display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
           border-radius:13px; background:rgba(118,118,128,.20); }
         .thermometer ha-icon { --mdc-icon-size:23px; color:${enabled ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
-        .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+        .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; border:0; padding:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
+        .info:disabled { cursor:default; }
         .name { font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .current { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; }
-        .target { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+        .target { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:2px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; }
+        .target:disabled { cursor:default; }
         .target-value { font-size:16px; font-weight:600; white-space:nowrap; }
         .target-label { font-size:10px; color:var(--secondary-text-color); }
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
@@ -14746,8 +14766,8 @@ class AtzeThermostatCard extends HTMLElement {
       </style>
       <ha-card>
         <button class="thermometer" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="mdi:thermometer"></ha-icon></button>
-        <div class="info"><span class="name"></span><span class="current"></span></div>
-        <div class="target"><span class="target-value"></span><span class="target-label">Soll</span></div>
+        <button class="info" type="button" aria-label="Thermostat identifizieren" title="Thermostat identifizieren" ${identifyAvailable ? "" : "disabled"}><span class="name"></span><span class="current"></span></button>
+        <button class="target" type="button" aria-label="Thermostat identifizieren" title="Thermostat identifizieren" ${identifyAvailable ? "" : "disabled"}><span class="target-value"></span><span class="target-label">Soll</span></button>
         <button class="settings" type="button" aria-label="Thermostateinstellungen" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>`;
     const nameEl = this.shadowRoot.querySelector(".name");
@@ -14758,6 +14778,8 @@ class AtzeThermostatCard extends HTMLElement {
     this.shadowRoot.querySelector(".target-value").textContent =
       (unavailable ? "–" : format(attributes.temperature)) + " " + unit;
     this.shadowRoot.querySelector(".thermometer").addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".info").addEventListener("click", () => this._identify());
+    this.shadowRoot.querySelector(".target").addEventListener("click", () => this._identify());
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
   }
 }
