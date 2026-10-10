@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.363.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "BBE5804";
+const ATZE_TESTING_REVISION = "70345E6";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14634,17 +14634,23 @@ class AtzeEntityCard extends HTMLElement {
         .control ha-icon { --mdc-icon-size:23px; color:${iconColor}; }
         .details { flex:1; min-width:0; height:100%; text-align:left; background:transparent;
           overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
+        .settings { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
+          background:rgba(118,118,128,.20); }
+        .settings ha-icon { --mdc-icon-size:23px; }
         button:disabled { opacity:.4; cursor:default; }
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="Steuern" ${unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>
         <button class="details" type="button"></button>
+        <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>`;
     const details = this.shadowRoot.querySelector(".details");
     details.textContent = name;
     details.title = name;
     this.shadowRoot.querySelector(".control")?.addEventListener("click", () => this._toggle());
     details.addEventListener("click", () => this._moreInfo());
+    this.shadowRoot.querySelector(".settings")?.addEventListener("click", () => this._moreInfo());
   }
 }
 
