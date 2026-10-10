@@ -3121,6 +3121,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         #group-covers ha-icon { color:var(--home-blue); }
         #group-thermostats ha-icon { color:var(--home-red); }
         .group-control-popup.is-thermostat-popup .group-control-heading ha-icon { color:var(--home-red); }
+        .group-control-popup.is-thermostat-popup .group-control-toggle.is-thermostat ha-icon { color:rgba(235,235,245,.55) !important; }
+        .group-control-popup.is-thermostat-popup .group-control-toggle.is-thermostat.is-active ha-icon { color:var(--home-red) !important; }
         .group-control-toggle.is-thermostat ha-icon { color:rgba(235,235,245,.55); }
         .group-control-toggle.is-thermostat.is-active ha-icon { color:var(--home-red); }
         .group-control-tile.lights-off ha-icon { color:rgba(235,235,245,.55); }
