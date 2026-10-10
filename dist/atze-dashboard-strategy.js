@@ -14741,14 +14741,14 @@ class AtzeThermostatCard extends HTMLElement {
         .target-value { font-size:16px; font-weight:600; white-space:nowrap; }
         .target-label { font-size:10px; color:var(--secondary-text-color); }
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
-        .settings ha-icon { --mdc-icon-size:23px; color:${enabled ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
-        .settings:disabled { opacity:.4; cursor:default; }
+        .settings ha-icon { --mdc-icon-size:23px; }
+        .thermometer:disabled { opacity:.4; cursor:default; }
       </style>
       <ha-card>
-        <div class="thermometer"><ha-icon icon="mdi:thermometer"></ha-icon></div>
+        <button class="thermometer" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="mdi:thermometer"></ha-icon></button>
         <div class="info"><span class="name"></span><span class="current"></span></div>
         <div class="target"><span class="target-value"></span><span class="target-label">Soll</span></div>
-        <button class="settings" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="${enabled ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline"}"></ha-icon></button>
+        <button class="settings" type="button" aria-label="Thermostateinstellungen" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>`;
     const nameEl = this.shadowRoot.querySelector(".name");
     nameEl.textContent = name;
@@ -14757,7 +14757,8 @@ class AtzeThermostatCard extends HTMLElement {
       "Ist " + (unavailable ? "–" : format(attributes.current_temperature)) + " " + unit;
     this.shadowRoot.querySelector(".target-value").textContent =
       (unavailable ? "–" : format(attributes.temperature)) + " " + unit;
-    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".thermometer").addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
   }
 }
 if (!customElements.get("atze-thermostat-card")) {
