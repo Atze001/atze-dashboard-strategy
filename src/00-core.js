@@ -3367,10 +3367,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if ((domainOf(entityId) === "light" || domainOf(entityId) === "cover") &&
+  if (["light", "cover", "climate"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: "custom:atze-entity-card",
+      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : "custom:atze-entity-card",
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
