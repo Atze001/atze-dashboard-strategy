@@ -1066,3 +1066,324 @@ class AtzeSortableSwitchGrid extends HTMLElement {
 if (!customElements.get("atze-sortable-switch-grid")) {
   customElements.define("atze-sortable-switch-grid", AtzeSortableSwitchGrid);
 }
+
+
+class AtzeEntityCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._hass = null;
+    this._busy = false;
+  }
+
+  setConfig(config) {
+    if (!config?.entity || !/^(light|cover)\./.test(config.entity)) {
+      throw new Error("Atze Entity Card benötigt eine light- oder cover-Entität");
+    }
+    this._config = config;
+    this._render();
+  }
+
+  set hass(value) {
+    this._hass = value;
+    this._render();
+  }
+
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true, composed: true, detail: { entityId: this._config.entity },
+    }));
+  }
+
+  async _toggle() {
+    if (this._busy || !this._hass) return;
+    const id = this._config.entity;
+    const state = this._hass.states[id];
+    if (!state || ["unknown", "unavailable"].includes(state.state)) return;
+    const domain = id.split(".")[0];
+    let service;
+    if (domain === "light") {
+      service = "toggle";
+    } else if (["opening", "closing"].includes(state.state)) {
+      service = "stop_cover";
+    } else {
+      const pos = Number(state.attributes?.current_position);
+      const open = Number.isFinite(pos) && state.attributes?.current_position != null
+        ? pos > 0 : state.state === "open";
+      service = open ? "close_cover" : "open_cover";
+    }
+    this._busy = true;
+    try {
+      await this._hass.callService(domain, service, { entity_id: id });
+    } catch (error) {
+      console.error("Atze Entity Card: Steuerung fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+
+  _render() {
+    if (!this.shadowRoot || !this._config.entity) return;
+    const id = this._config.entity;
+    const state = this._hass?.states[id];
+    const cover = id.startsWith("cover.");
+    const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
+    const moving = cover && ["opening", "closing"].includes(state?.state);
+    const active = cover
+      ? (state?.attributes?.current_position != null
+          ? Number(state.attributes.current_position) > 0
+          : ["open", "opening"].includes(state?.state))
+      : state?.state === "on";
+    const icon = cover ? (moving ? "mdi:stop" : (active ? "mdi:window-shutter-open" : "mdi:window-shutter")) : (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
+    const name = this._config.name || state?.attributes?.friendly_name || id;
+    const iconColor = cover ? "#0A84FF" : (active ? "#30D158" : "var(--secondary-text-color, #8e8e93)");
+    const position = cover && state?.attributes?.current_position != null ? Number(state.attributes.current_position) : null;
+    // DOM nodes, rather than innerHTML interpolation, prevent entity names from injecting markup.
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; min-width:0; }
+        ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center;
+          gap:10px; padding:10px 12px; border-radius:15px;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); background:rgba(118,118,128,.13);
+          color:var(--primary-text-color);
+          overflow:hidden; box-shadow:none; }
+        button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
+         .control { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          border-radius:13px; background:rgba(118,118,128,.20); }
+        .control ha-icon { --mdc-icon-size:23px; color:${iconColor}; }
+        .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
+        .position { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
+        .settings { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
+          background:rgba(118,118,128,.20); }
+        .settings ha-icon { --mdc-icon-size:23px; }
+        button:disabled { opacity:.4; cursor:default; }
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="Steuern" ${unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>
+        <span class="details"></span>
+        ${cover && position != null && Number.isFinite(position) ? `<span class="position">${Math.round(position)} %</span>` : ""}
+        <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    const details = this.shadowRoot.querySelector(".details");
+    details.textContent = name;
+    details.title = name;
+    this.shadowRoot.querySelector(".control")?.addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".settings")?.addEventListener("click", () => this._moreInfo());
+  }
+}
+
+if (!customElements.get("atze-entity-card")) {
+  customElements.define("atze-entity-card", AtzeEntityCard);
+}
+
+class AtzeThermostatCard extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+    this._busy = false;
+  }
+  setConfig(config) {
+    if (!config?.entity?.startsWith("climate.")) {
+      throw new Error("Atze Thermostat Card benötigt eine climate-Entität");
+    }
+    this._config = config;
+    this._render();
+  }
+  set hass(value) {
+    this._hass = value;
+    if (this._serviceOpen) this._refreshServicePopup();
+    else this._render();
+  }
+  getCardSize() { return 1; }
+  getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true, composed: true, detail: { entityId: this._config.entity },
+    }));
+  }
+  _serviceItems() {
+    const stem = this._config.entity.slice(8);
+    return [
+      ["button","identify","Identifizieren"],["switch","child_lock","Kindersicherung"],
+      ["button","calibrate","Kalibrieren"],["select","sensor","Temperatursensor"],
+      ["switch","valve_detection","Ventilerkennung"],["switch","window_detection","Fenstererkennung"],
+      ["binary_sensor","calibrated","Kalibriert"],["binary_sensor","valve_alarm","Ventilalarm"]
+    ].map(([domain,suffix,label]) => {
+      const id = domain + "." + stem + "_" + suffix;
+      return { id, domain, label, state:this._hass?.states?.[id] };
+    }).filter(x => x.state);
+  }
+  _escape(s) {
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  _popupHtml() {
+    const rows = this._serviceItems().map(({id,domain,label,state}) => {
+      const disabled = state.state === "unavailable" || (domain !== "button" && state.state === "unknown");
+      let action = "";
+      if (domain === "button" || domain === "switch") {
+        const active = domain === "switch" && state.state === "on";
+        const icon = domain === "button"
+          ? (id.endsWith("_identify") ? "mdi:crosshairs-gps" : "mdi:tune-vertical")
+          : (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
+        action = '<button type="button" class="service-toggle' + (active ? ' is-active' : '') +
+          '" data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") +
+          ' title="' + (domain === "button" ? "Ausführen" : active ? "Ausschalten" : "Einschalten") +
+          '" aria-label="' + this._escape(label) + '"><ha-icon icon="' + icon + '"></ha-icon></button>';
+      }
+      if (domain === "select") action = '<select data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (state.attributes.options || []).map(o => '<option value="' + this._escape(o) + '"' + (o === state.state ? " selected" : "") + '>' + this._escape(o) + '</option>').join("") + '</select>';
+      if (domain === "binary_sensor") action = '<span>' + (disabled ? "Nicht verfügbar" : state.state === "on" ? "Ja" : "Nein") + '</span>';
+      return '<div class="service-row"><span>' + label + '</span>' + action + '</div>';
+    }).join("");
+    return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true"><h3>Thermostat · Service</h3>' + (rows || "Keine Service-Entitäten vorhanden") + '</section></div>';
+  }
+  async _serviceAction(id, option) {
+    const item = this._serviceItems().find(x => x.id === id);
+    if (!item || item.state.state === "unavailable" || (item.domain !== "button" && item.state.state === "unknown")) return;
+    try {
+      if (item.domain === "button") await this._hass.callService("button","press",{entity_id:id});
+      if (item.domain === "switch") await this._hass.callService("switch",item.state.state === "on" ? "turn_off" : "turn_on",{entity_id:id});
+      if (item.domain === "select") await this._hass.callService("select","select_option",{entity_id:id,option});
+    } catch(e) { console.error("Thermostat Service",e); }
+  }
+  _refreshServicePopup() {
+    const dialog = this.shadowRoot?.querySelector(".service-dialog");
+    if (!dialog) return;
+    for (const item of this._serviceItems()) {
+      const el = [...dialog.querySelectorAll("[data-service]")].find(node => node.dataset.service === item.id);
+      const disabled = item.state.state === "unavailable" || (item.domain !== "button" && item.state.state === "unknown");
+      if (el) {
+        el.disabled = disabled;
+        if (item.domain === "switch") {
+          const active = item.state.state === "on";
+          el.classList.toggle("is-active", active);
+          el.title = active ? "Ausschalten" : "Einschalten";
+          el.querySelector("ha-icon")?.setAttribute("icon", active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
+        }
+        // Preserve an open native dropdown and the user's current selection.
+        if (item.domain === "select" && document.activeElement !== el && this.shadowRoot.activeElement !== el) {
+          if ([...el.options].some(o => o.value === item.state.state)) el.value = item.state.state;
+        }
+      } else if (item.domain === "binary_sensor") {
+        const rows = [...dialog.querySelectorAll(".service-row")];
+        const row = rows.find(node => node.querySelector("span")?.textContent === item.label);
+        const value = row?.querySelector("span:last-child");
+        if (value) value.textContent = disabled ? "Nicht verfügbar" : item.state.state === "on" ? "Ja" : "Nein";
+      }
+    }
+  }
+  _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
+  _lockScroll() {
+    if (this._scrollCleanup) return;
+    const prevent = (event) => { if (this._serviceOpen && !event.target.closest?.(".service-dialog")) event.preventDefault(); };
+    document.addEventListener("touchmove", prevent, { passive:false });
+    document.addEventListener("wheel", prevent, { passive:false });
+    this._scrollCleanup = () => { document.removeEventListener("touchmove", prevent); document.removeEventListener("wheel", prevent); };
+  }
+  _closeService() { this._serviceOpen = false; this._scrollCleanup?.(); this._scrollCleanup = null; this._render(); }
+  disconnectedCallback() { this._scrollCleanup?.(); this._scrollCleanup = null; }
+  async _toggle() {
+    if (this._busy || !this._hass) return;
+    const entityId = this._config.entity;
+    const state = this._hass.states[entityId];
+    if (!state || ["unknown", "unavailable"].includes(state.state)) return;
+    const enabled = state.state !== "off";
+    const modes = state.attributes?.hvac_modes || [];
+    const nextMode = enabled ? "off" : (modes.includes("heat") ? "heat" : null);
+    if (!nextMode || !modes.includes(nextMode)) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("climate", "set_hvac_mode", {
+        entity_id: entityId, hvac_mode: nextMode,
+      });
+    } catch (error) {
+      console.error("Atze Thermostat Card: Umschalten fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+  _render() {
+    if (!this.shadowRoot || !this._config.entity) return;
+    const state = this._hass?.states[this._config.entity];
+    const attributes = state?.attributes || {};
+    const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
+    const enabled = !unavailable && state.state !== "off";
+    const modes = attributes.hvac_modes || [];
+    const canToggle = !unavailable && modes.includes("off") && (enabled || modes.includes("heat"));
+    const unit = this._hass?.config?.unit_system?.temperature || "°C";
+    const format = value => {
+      const n = Number(value);
+      return value == null || value === "" || !Number.isFinite(n)
+        ? "–" : n.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    };
+    const name = this._config.name || attributes.friendly_name || this._config.entity;
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display:block; min-width:0; }
+        ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center;
+          gap:10px; padding:7px 12px; border-radius:15px;
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          background:rgba(118,118,128,.13); color:var(--primary-text-color);
+          overflow:hidden; box-shadow:none; }
+        .thermometer, .settings { width:38px; height:38px; flex:0 0 38px;
+          display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
+          border-radius:13px; background:rgba(118,118,128,.20); }
+        .thermometer ha-icon { --mdc-icon-size:23px; color:${enabled ? "#FF453A" : "var(--secondary-text-color, #8e8e93)"}; }
+        .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; border:0; padding:0; background:transparent; color:inherit; text-align:left; cursor:pointer; }
+
+        .name { font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .current { font-size:11px; color:var(--secondary-text-color); white-space:nowrap; }
+        .target { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:2px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; }
+
+        .target-value { font-size:16px; font-weight:600; white-space:nowrap; }
+        .target-label { font-size:10px; color:var(--secondary-text-color); }
+        button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
+        .settings ha-icon { --mdc-icon-size:23px; }
+        .thermometer:disabled { opacity:.4; cursor:default; }
+        .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
+        .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
+        .service-dialog h3 { margin:0 0 16px; }
+        .service-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 8px; border-bottom:1px solid var(--divider-color); }
+        .service-row span:first-child { font-size:13px; }
+        .service-row button,.service-row select { padding:9px; border-radius:10px; background:rgba(118,118,128,.2); color:var(--primary-text-color); border:1px solid var(--divider-color); }
+        .service-row .service-toggle { flex:0 0 42px; width:42px; height:38px; padding:0; display:grid; place-items:center; border-radius:12px; }
+        .service-toggle ha-icon { --mdc-icon-size:26px; color:var(--secondary-text-color,#8e8e93); }
+        .service-toggle.is-active ha-icon { color:var(--home-green,#30d158); }
+        .service-toggle:disabled { opacity:.4; cursor:default; }
+      </style>
+      <ha-card>
+        <button class="thermometer" type="button" aria-label="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" title="${enabled ? "Heizung ausschalten" : "Heizung einschalten"}" ${canToggle ? "" : "disabled"}><ha-icon icon="mdi:thermometer"></ha-icon></button>
+        <button class="info" type="button" aria-label="Thermostat Service öffnen" title="Thermostat Service öffnen"><span class="name"></span><span class="current"></span></button>
+        <button class="target" type="button" aria-label="Thermostat Service öffnen" title="Thermostat Service öffnen"><span class="target-value"></span><span class="target-label">Soll</span></button>
+        <button class="settings" type="button" aria-label="Thermostateinstellungen" title="Thermostateinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>
+      ${this._serviceOpen ? this._popupHtml() : ""}`;
+    const nameEl = this.shadowRoot.querySelector(".name");
+    nameEl.textContent = name;
+    nameEl.title = name;
+    this.shadowRoot.querySelector(".current").textContent =
+      "Ist " + (unavailable ? "–" : format(attributes.current_temperature)) + " " + unit;
+    this.shadowRoot.querySelector(".target-value").textContent =
+      (unavailable ? "–" : format(attributes.temperature)) + " " + unit;
+    this.shadowRoot.querySelector(".thermometer").addEventListener("click", () => this._toggle());
+    this.shadowRoot.querySelector(".info").addEventListener("click", () => this._openService());
+    this.shadowRoot.querySelector(".target").addEventListener("click", () => this._openService());
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+    this.shadowRoot.querySelector(".service-backdrop")?.addEventListener("click", e => {
+      if (e.target.classList.contains("service-backdrop")) { this._closeService(); }
+    });
+    this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
+      const id = el.dataset.service;
+      el.addEventListener(el.tagName === "SELECT" ? "change" : "click", () => this._serviceAction(id, el.value));
+    });
+
+  }
+}
+if (!customElements.get("atze-thermostat-card")) {
+  customElements.define("atze-thermostat-card", AtzeThermostatCard);
+}

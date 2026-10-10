@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.363.0**
+Version **0.364.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,14 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.364.0
+
+- Eigene native Karten für Lichter, Rollläden und Thermostate mit einheitlicher Steuerung und Einstellungen.
+- Thermostat-Service-Popup für Identifizieren, Kindersicherung, Kalibrierung, Sensorwahl, Ventil- und Fenstererkennung sowie Diagnoseanzeigen.
+- Neue Thermostatübersicht auf der Startseite mit Live-Status und Steuerung.
+- Verbesserte Popup-Bedienung: kein Hintergrundscrollen, stabile Sensorauswahl und Live-Aktualisierung.
+- Thermostat-Service-Taster bleiben auch bei unbekanntem Zustand bedienbar.
+
 ## v0.360.0
 
 - Anwesenheitsverlauf als mittiges Popup beim Antippen des Personenfotos.
@@ -252,13 +260,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
 - Zeitpläne-Dialog auf ein zentriertes natives Popup umgestellt.
 - Testing-Build-Workflow mit Source-Revision, Loader und lokaler Synchronisationsprüfung verbessert.
-
-## v0.354.0
-
-- Dashboard-Einstellungen trennen „Eigene Seiten“ und „Navigation“ in zwei eigenständige Kategorien.
-- Bestehende eigene Dashboard-Seiten erscheinen wieder ausschließlich unter „Eigene Seiten“.
-- Direkte Home-Assistant-Ziele wie Geräte, Entitäten, Automationen oder HACS werden separat unter „Navigation“ verwaltet.
-- Bestehende Konfigurationen bleiben kompatibel; die gespeicherten `custom_pages` werden nicht migriert.
 <!-- latest-changes:end -->
 
 ## Lizenz
