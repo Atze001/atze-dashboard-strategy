@@ -1407,12 +1407,25 @@ class AtzeFanCard extends HTMLElement {
   }
   getCardSize() { return 1; }
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
-  _powerId() {\n    return this._config.entity === "fan.schlafzimmer_filter" ? "switch.schlafzimmer_luftfilter" : null;\n  }\n  _moreInfo() {
+  _powerId() {
+    return this._config.entity === "fan.schlafzimmer_filter" ? "switch.schlafzimmer_luftfilter" : null;
+  }
+  _moreInfo() {
     this.dispatchEvent(new CustomEvent("hass-more-info", {
       bubbles: true, composed: true, detail: { entityId: this._config.entity },
     }));
   }
-  async _togglePower() {\n    const id = this._powerId();\n    const state = id && this._hass?.states?.[id];\n    if (this._busy || !state || !["on", "off"].includes(state.state)) return;\n    this._busy = true;\n    try {\n      await this._hass.callService("switch", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });\n    } catch (error) { console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error); }\n    finally { this._busy = false; }\n  }\n  async _toggle() {
+  async _togglePower() {
+    const id = this._powerId();
+    const state = id && this._hass?.states?.[id];
+    if (this._busy || !state || !["on", "off"].includes(state.state)) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("switch", state.state === "on" ? "turn_off" : "turn_on", { entity_id: id });
+    } catch (error) { console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error); }
+    finally { this._busy = false; }
+  }
+  async _toggle() {
     if (this._busy || !this._hass) return;
     const id = this._config.entity;
     const state = this._hass.states[id];
@@ -1430,7 +1443,10 @@ class AtzeFanCard extends HTMLElement {
     if (!this._config.entity) return;
     const id = this._config.entity;
     const state = this._hass?.states[id];
-    const powerId = this._powerId();\n    const power = powerId && this._hass?.states?.[powerId];\n    const powerOff = power?.state === "off";\n    const unavailable = !state || !["on", "off"].includes(state.state);
+    const powerId = this._powerId();
+    const power = powerId && this._hass?.states?.[powerId];
+    const powerOff = power?.state === "off";
+    const unavailable = !state || !["on", "off"].includes(state.state);
     const active = state?.state === "on";
     const name = this._config.name || state?.attributes?.friendly_name || id;
     const percent = Number(state?.attributes?.percentage);
@@ -1466,7 +1482,26 @@ class AtzeFanCard extends HTMLElement {
     details.title = name;
     this.shadowRoot.querySelector(".status").textContent = status;
     this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
-    this.shadowRoot.querySelector(".settings").addEventListener("click", () => {\n      if (!powerId || !power) { this._moreInfo(); return; }\n      const current = power.state === "on";\n      const label = current ? "Stromversorgung ausschalten" : "Stromversorgung einschalten";\n      const popup = this.shadowRoot.querySelector(".power-popup");\n      if (popup) { popup.remove(); return; }\n      const overlay = document.createElement("div");\n      overlay.className = "power-popup";\n      overlay.innerHTML = `<div class="power-panel"><div class="power-title">Stromversorgung</div><button class="power-switch" type="button"></button><button class="fan-settings" type="button">Luftreiniger-Einstellungen</button></div>`;\n      Object.assign(overlay.style, {position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.45)",display:"grid",placeItems:"center"});\n      const panel = overlay.querySelector(".power-panel");\n      Object.assign(panel.style, {background:"var(--card-background-color, #242428)",color:"var(--primary-text-color)",padding:"24px",borderRadius:"18px",display:"grid",gap:"14px",minWidth:"240px"});\n      overlay.querySelector(".power-title").style.fontWeight = "600";\n      const sw = overlay.querySelector(".power-switch");\n      sw.textContent = label;\n      sw.addEventListener("click", async () => { await this._togglePower(); overlay.remove(); });\n      overlay.querySelector(".fan-settings").addEventListener("click", () => { overlay.remove(); this._moreInfo(); });\n      overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });\n      this.shadowRoot.appendChild(overlay);\n    });
+    this.shadowRoot.querySelector(".settings").addEventListener("click", () => {
+      if (!powerId || !power) { this._moreInfo(); return; }
+      const current = power.state === "on";
+      const label = current ? "Stromversorgung ausschalten" : "Stromversorgung einschalten";
+      const popup = this.shadowRoot.querySelector(".power-popup");
+      if (popup) { popup.remove(); return; }
+      const overlay = document.createElement("div");
+      overlay.className = "power-popup";
+      overlay.innerHTML = `<div class="power-panel"><div class="power-title">Stromversorgung</div><button class="power-switch" type="button"></button><button class="fan-settings" type="button">Luftreiniger-Einstellungen</button></div>`;
+      Object.assign(overlay.style, {position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.45)",display:"grid",placeItems:"center"});
+      const panel = overlay.querySelector(".power-panel");
+      Object.assign(panel.style, {background:"var(--card-background-color, #242428)",color:"var(--primary-text-color)",padding:"24px",borderRadius:"18px",display:"grid",gap:"14px",minWidth:"240px"});
+      overlay.querySelector(".power-title").style.fontWeight = "600";
+      const sw = overlay.querySelector(".power-switch");
+      sw.textContent = label;
+      sw.addEventListener("click", async () => { await this._togglePower(); overlay.remove(); });
+      overlay.querySelector(".fan-settings").addEventListener("click", () => { overlay.remove(); this._moreInfo(); });
+      overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+      this.shadowRoot.appendChild(overlay);
+    });
   }
 }
 if (!customElements.get("atze-fan-card")) {
