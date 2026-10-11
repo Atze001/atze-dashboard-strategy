@@ -1108,6 +1108,7 @@ class AtzeEntityCard extends HTMLElement {
     this._lightPopupOpen = false;
     this._coverPopupOpen = false;
     this._brightnessDragging = false;
+    this._coverDragging = false;
   }
 
   setConfig(config) {
@@ -1120,7 +1121,7 @@ class AtzeEntityCard extends HTMLElement {
 
   set hass(value) {
     this._hass = value;
-    if (!this._brightnessDragging) this._render();
+    if (!this._brightnessDragging && !this._coverDragging) this._render();
   }
 
   getCardSize() { return 1; }
@@ -1221,6 +1222,9 @@ class AtzeEntityCard extends HTMLElement {
       <div class="light-divider"></div>
       <div class="light-heading">Position</div>
       <div class="cover-options">${choices}</div>
+      <div class="light-section-divider"></div>
+      <div class="light-brightness-heading"><span>Rollladenposition</span><strong data-cover-value>${hasPosition ? Math.round(position) : "–"} %</strong></div>
+      <input class="light-brightness cover-slider" type="range" min="0" max="100" step="1" value="${hasPosition ? Math.round(position) : 0}" aria-label="Rollladenposition" ${!unavailable && (features & 4) ? "" : "disabled"}>
     </section></div>`;
   }
 
@@ -1284,6 +1288,7 @@ class AtzeEntityCard extends HTMLElement {
       <div class="light-heading">Farbtemperatur</div>
       <div class="light-options">${choices}</div>
       ${supportsTemperature ? "" : '<p class="light-hint">Diese Lampe unterstützt keine Farbtemperatursteuerung.</p>'}
+      <div class="light-section-divider"></div>
       <div class="light-brightness-heading"><span>Helligkeit</span><strong data-brightness-value>${brightnessPercent} %</strong></div>
       <input class="light-brightness" type="range" min="1" max="100" step="1" value="${Math.max(1,brightnessPercent)}" aria-label="Helligkeit" ${brightnessSupported ? "" : "disabled"}>
       ${brightnessSupported ? "" : '<p class="light-hint">Diese Lampe unterstützt keine Helligkeitsregelung.</p>'}
@@ -1347,6 +1352,8 @@ class AtzeEntityCard extends HTMLElement {
         .cover-options .light-choice.is-active ha-icon { color:#64d2ff; }
         .light-choice small { font-size:11px; color:#c6c6cc; }
         .light-hint { font-size:12px; color:#c6c6cc; }
+        .light-section-divider { height:1px; background:rgba(255,255,255,.16); margin-top:22px; }
+        .light-section-divider + .light-brightness-heading { margin-top:16px; }
         .light-brightness-heading { display:flex; justify-content:space-between; align-items:center; margin:22px 0 12px; font-size:14px; font-weight:600; }
         .light-brightness-heading strong { font-size:14px; font-weight:500; color:#64d2ff; }
         .light-brightness { display:block; width:100%; margin:0; accent-color:#64d2ff; cursor:pointer; }
@@ -1381,6 +1388,20 @@ class AtzeEntityCard extends HTMLElement {
         overlay.addEventListener("click", event => {
           if (event.target === overlay) this._closeCoverPopup();
         });
+        const slider = overlay.querySelector(".cover-slider");
+        if (slider) {
+          slider.addEventListener("input", () => {
+            this._coverDragging = true;
+            overlay.querySelector("[data-cover-value]").textContent = slider.value + " %";
+          });
+          slider.addEventListener("change", () => {
+            const position = Number(slider.value);
+            this._coverDragging = false;
+            this._setCoverPosition(position);
+          });
+          slider.addEventListener("pointercancel", () => { this._coverDragging = false; });
+          slider.addEventListener("touchcancel", () => { this._coverDragging = false; }, { passive:true });
+        }
         overlay.querySelectorAll("[data-cover-position]").forEach(button => {
           button.addEventListener("click", () => this._setCoverPosition(Number(button.dataset.coverPosition)));
         });
