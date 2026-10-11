@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "E0FB82F";
+const ATZE_TESTING_REVISION = "0EC5D47";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13832,6 +13832,7 @@ class AtzeEntityCard extends HTMLElement {
     this._hass = null;
     this._busy = false;
     this._lightPopupOpen = false;
+    this._brightnessDragging = false;
   }
 
   setConfig(config) {
@@ -13844,7 +13845,7 @@ class AtzeEntityCard extends HTMLElement {
 
   set hass(value) {
     this._hass = value;
-    this._render();
+    if (!this._brightnessDragging) this._render();
   }
 
   getCardSize() { return 1; }
@@ -13908,6 +13909,19 @@ class AtzeEntityCard extends HTMLElement {
     }
   }
 
+  async _setBrightness(percent) {
+    if (!this._hass) return;
+    const brightness = Math.round(Math.max(1, Math.min(100, percent)) * 255 / 100);
+    try {
+      await this._hass.callService("light", "turn_on", {
+        entity_id: this._config.entity,
+        brightness,
+      });
+    } catch (error) {
+      console.error("Atze Licht-Popup: Helligkeit fehlgeschlagen", error);
+    }
+  }
+
   _lightPopupMarkup(name, state) {
     const registryEntity = this._hass?.entities?.[this._config.entity];
     const device = registryEntity?.device_id ? this._hass?.devices?.[registryEntity.device_id] : null;
@@ -13917,6 +13931,10 @@ class AtzeEntityCard extends HTMLElement {
     const min = Number(state?.attributes?.min_color_temp_kelvin);
     const max = Number(state?.attributes?.max_color_temp_kelvin);
     const current = Number(state?.attributes?.color_temp_kelvin);
+    const brightnessSupported = modes.some(mode => ["brightness", "color_temp", "hs", "xy", "rgb", "rgbw", "rgbww", "white"].includes(mode));
+    const rawBrightness = Number(state?.attributes?.brightness);
+    const brightnessPercent = state?.state === "on" && Number.isFinite(rawBrightness)
+      ? Math.round(rawBrightness / 255 * 100) : 0;
     const presets = [
       [2200, "Kerzenlicht", "#ffad55"],
       [2700, "Warmweiß", "#ffc782"],
@@ -13936,6 +13954,9 @@ class AtzeEntityCard extends HTMLElement {
       <div class="light-heading">Farbtemperatur</div>
       <div class="light-options">${choices}</div>
       ${supportsTemperature ? "" : '<p class="light-hint">Diese Lampe unterstützt keine Farbtemperatursteuerung.</p>'}
+      <div class="light-brightness-heading"><span>Helligkeit</span><strong data-brightness-value>${brightnessPercent} %</strong></div>
+      <input class="light-brightness" type="range" min="1" max="100" step="1" value="${Math.max(1,brightnessPercent)}" aria-label="Helligkeit" ${brightnessSupported ? "" : "disabled"}>
+      ${brightnessSupported ? "" : '<p class="light-hint">Diese Lampe unterstützt keine Helligkeitsregelung.</p>'}
     </section></div>`;
   }
 
@@ -13992,6 +14013,10 @@ class AtzeEntityCard extends HTMLElement {
         .light-choice strong { font-size:12px; }
         .light-choice small { font-size:11px; color:#c6c6cc; }
         .light-hint { font-size:12px; color:#c6c6cc; }
+        .light-brightness-heading { display:flex; justify-content:space-between; align-items:center; margin:22px 0 12px; font-size:14px; font-weight:600; }
+        .light-brightness-heading strong { font-size:14px; font-weight:500; color:#64d2ff; }
+        .light-brightness { display:block; width:100%; margin:0; accent-color:#64d2ff; cursor:pointer; }
+        .light-brightness:disabled { opacity:.35; cursor:default; }
 
       </style>
       <ha-card>
@@ -14024,6 +14049,19 @@ class AtzeEntityCard extends HTMLElement {
         overlay.addEventListener("click", event => {
           if (event.target === overlay) this._closeLightPopup();
         });
+        const slider = overlay.querySelector(".light-brightness");
+        if (slider) {
+          slider.addEventListener("input", () => {
+            this._brightnessDragging = true;
+            overlay.querySelector("[data-brightness-value]").textContent = slider.value + " %";
+          });
+          slider.addEventListener("change", () => {
+            const percent = Number(slider.value);
+            this._brightnessDragging = false;
+            this._setBrightness(percent);
+          });
+          slider.addEventListener("pointercancel", () => { this._brightnessDragging = false; });
+        }
         overlay.querySelectorAll("[data-kelvin]").forEach(button => {
           button.addEventListener("click", () => this._setColorTemperature(Number(button.dataset.kelvin)));
         });
