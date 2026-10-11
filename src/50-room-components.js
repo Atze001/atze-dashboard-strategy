@@ -1916,3 +1916,59 @@ class AtzeActionCard extends HTMLElement {
 }
 const atzeActionCardTag=ATZE_TESTING_BUILD?"atze-action-card-testing":"atze-action-card";
 if(!customElements.get(atzeActionCardTag))customElements.define(atzeActionCardTag,AtzeActionCard);
+
+class AtzeLockCard extends HTMLElement {
+  constructor(){super();this.attachShadow({mode:"open"});this._config={};this._busy=false;}
+  setConfig(config){if(!config?.entity?.startsWith("lock."))throw new Error("Atze Lock Card benötigt eine lock-Entität");this._config=config;this._render();}
+  set hass(value){this._hass=value;this._render();}
+  getCardSize(){return 1;}
+  getGridOptions(){return {columns:12,rows:1,min_columns:6};}
+  _moreInfo(){this.dispatchEvent(new CustomEvent("hass-more-info",{bubbles:true,composed:true,detail:{entityId:this._config.entity}}));}
+  async _toggle(){
+    if(this._busy||!this._hass)return;
+    const id=this._config.entity,state=this._hass.states[id]?.state;
+    if(!["locked","unlocked"].includes(state))return;
+    const unlocking=state==="locked";
+    if(unlocking&&!window.confirm("Tür wirklich entriegeln?"))return;
+    this._busy=true;
+    try{await this._hass.callService("lock",unlocking?"unlock":"lock",{entity_id:id});}
+    catch(e){console.error("Atze Lock Card: Schaltvorgang fehlgeschlagen",e);}
+    finally{this._busy=false;}
+  }
+  _render(){
+    if(!this._config.entity)return;
+    const id=this._config.entity,entity=this._hass?.states[id],state=entity?.state||"unavailable";
+    const name=this._config.name||entity?.attributes?.friendly_name||id;
+    const statuses={locked:"Verriegelt",unlocked:"Entriegelt",locking:"Verriegelt …",unlocking:"Entriegelt …",jammed:"Blockiert",opening:"Öffnet …",open:"Offen",unavailable:"Nicht verfügbar",unknown:"Unbekannt"};
+    const icon=this._config.icon||entity?.attributes?.icon||(state==="locked"?"mdi:lock":"mdi:lock-open-variant");
+    const enabled=["locked","unlocked"].includes(state);
+    const iconColor=state==="locked"?"#30D158":state==="unlocked"?"#FF9F0A":"var(--secondary-text-color)";
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;min-width:0}
+        ha-card{box-sizing:border-box;height:56px;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:15px;border:1px solid var(--home-card-border,rgba(255,255,255,.10));background:rgba(55,58,67,.30);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);color:var(--primary-text-color);overflow:hidden;box-shadow:none}
+        button{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit}
+        .control,.settings{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
+        .control ha-icon{--mdc-icon-size:23px;color:${iconColor}}
+        .settings ha-icon{--mdc-icon-size:23px}
+        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;padding:0;background:transparent}
+        .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        button:disabled{opacity:.5;cursor:default}
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="${state==="locked"?"Tür entriegeln":"Tür verriegeln"}"><ha-icon></ha-icon></button>
+        <button class="details" type="button" aria-label="Schlossdetails"><span class="name"></span><span class="status"></span></button>
+        <button class="settings" type="button" aria-label="Schlosseinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
+    this.shadowRoot.querySelector(".name").textContent=name;
+    this.shadowRoot.querySelector(".status").textContent=statuses[state]||state;
+    const control=this.shadowRoot.querySelector(".control");control.disabled=!enabled;
+    control.addEventListener("click",()=>this._toggle());
+    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
+    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+  }
+}
+const atzeLockCardTag=ATZE_TESTING_BUILD?"atze-lock-card-testing":"atze-lock-card";
+if(!customElements.get(atzeLockCardTag))customElements.define(atzeLockCardTag,AtzeLockCard);
