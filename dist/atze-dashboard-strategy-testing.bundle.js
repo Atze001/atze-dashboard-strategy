@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8C2639A";
+const ATZE_TESTING_REVISION = "1861E57";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -1317,7 +1317,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     // A light popup owns horizontal gestures (brightness slider). Never
     // start the dashboard swipe-back gesture while touching its overlay.
     if ((event.composedPath?.() || []).some(node =>
-      node instanceof HTMLElement && node.classList?.contains("light-overlay")
+      node instanceof HTMLElement && (node.classList?.contains("light-overlay") || node.classList?.contains("service-backdrop"))
     )) {
       return;
     }
@@ -14191,6 +14191,7 @@ class AtzeThermostatCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = {};
     this._busy = false;
+    this._temperatureDragging = false;
   }
   setConfig(config) {
     if (!config?.entity?.startsWith("climate.")) {
@@ -14201,7 +14202,7 @@ class AtzeThermostatCard extends HTMLElement {
   }
   set hass(value) {
     this._hass = value;
-    if (this._serviceOpen) this._refreshServicePopup();
+    if (this._serviceOpen && !this._temperatureDragging) this._refreshServicePopup();
     else this._render();
   }
   getCardSize() { return 1; }
@@ -14212,39 +14213,94 @@ class AtzeThermostatCard extends HTMLElement {
     }));
   }
   _serviceItems() {
-    const stem = this._config.entity.slice(8);
-    return [
-      ["button","identify","Identifizieren"],["switch","child_lock","Kindersicherung"],
-      ["button","calibrate","Kalibrieren"],["select","sensor","Temperatursensor"],
-      ["switch","valve_detection","Ventilerkennung"],["switch","window_detection","Fenstererkennung"],
-      ["binary_sensor","calibrated","Kalibriert"],["binary_sensor","valve_alarm","Ventilalarm"]
-    ].map(([domain,suffix,label]) => {
-      const id = domain + "." + stem + "_" + suffix;
-      return { id, domain, label, state:this._hass?.states?.[id] };
-    }).filter(x => x.state);
+    const registryEntity = this._hass?.entities?.[this._config.entity];
+    const deviceId = registryEntity?.device_id;
+    if (!deviceId) return [];
+    const names = {
+      identify:"Identifizieren", child_lock:"Kindersicherung", calibrate:"Kalibrieren",
+      sensor:"Temperatursensor", valve_detection:"Ventilerkennung",
+      window_detection:"Fenstererkennung", calibrated:"Kalibriert",
+      valve_alarm:"Ventilalarm", battery:"Batterie", valve_position:"Ventilöffnung",
+      temperature_offset:"Temperatur-Offset", external_temperature:"Externe Temperatur",
+    };
+    const domains = new Set(["button","switch","select","binary_sensor","sensor","number"]);
+    return Object.entries(this._hass?.entities || {}).filter(([id, entry]) =>
+      entry?.device_id === deviceId && id !== this._config.entity &&
+      domains.has(id.split(".")[0]) && !entry.disabled_by && !entry.hidden_by &&
+      this._hass?.states?.[id]
+    ).map(([id,entry]) => {
+      const domain = id.split(".")[0];
+      const state = this._hass.states[id];
+      const suffix = id.split(".")[1].split("_").slice(-2).join("_");
+      const label = entry.name || entry.original_name || state.attributes?.friendly_name ||
+        names[suffix] || id;
+      return { id, domain, label, state };
+    }).sort((a,b) => a.label.localeCompare(b.label,"de"));
+  }
+  _deviceTitle() {
+    const entry = this._hass?.entities?.[this._config.entity];
+    const device = entry?.device_id ? this._hass?.devices?.[entry.device_id] : null;
+    return device?.name_by_user || device?.name ||
+      this._config.name || this._hass?.states?.[this._config.entity]?.attributes?.friendly_name ||
+      "Thermostat";
+  }
+  async _setTemperature(value) {
+    const state = this._hass?.states?.[this._config.entity];
+    if (!state || ["unknown","unavailable"].includes(state.state)) return;
+    const min = Number(state.attributes?.min_temp ?? 5);
+    const max = Number(state.attributes?.max_temp ?? 30);
+    const temp = Math.min(max,Math.max(min,Number(value)));
+    if (!Number.isFinite(temp)) return;
+    try {
+      await this._hass.callService("climate","set_temperature",{entity_id:this._config.entity,temperature:temp});
+    } catch(e) { console.error("Thermostat Temperatur",e); }
+  }
+  async _setHvacMode(mode) {
+    const state = this._hass?.states?.[this._config.entity];
+    if (!state?.attributes?.hvac_modes?.includes(mode)) return;
+    try {
+      await this._hass.callService("climate","set_hvac_mode",{entity_id:this._config.entity,hvac_mode:mode});
+    } catch(e) { console.error("Thermostat Betriebsmodus",e); }
   }
   _escape(s) {
     return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
   _popupHtml() {
-    const rows = this._serviceItems().map(({id,domain,label,state}) => {
-      const disabled = state.state === "unavailable" || (domain !== "button" && state.state === "unknown");
+    const state = this._hass?.states?.[this._config.entity];
+    const attrs = state?.attributes || {};
+    const unit = this._hass?.config?.unit_system?.temperature || "°C";
+    const min = Number(attrs.min_temp ?? 5), max = Number(attrs.max_temp ?? 30);
+    const step = Number(attrs.target_temp_step) > 0 ? Number(attrs.target_temp_step) : 0.5;
+    const target = Number(attrs.temperature);
+    const validTarget = attrs.temperature != null && Number.isFinite(target);
+    const current = attrs.current_temperature;
+    const format = n => Number(n).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});
+    const modes = (attrs.hvac_modes || []).map(mode => {
+      const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
+      return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
+    }).join("");
+    const rows = this._serviceItems().map(({id,domain,label,state:other}) => {
+      const disabled = ["unknown","unavailable"].includes(other.state);
       let action = "";
       if (domain === "button" || domain === "switch") {
-        const active = domain === "switch" && state.state === "on";
-        const icon = domain === "button"
-          ? (id.endsWith("_identify") ? "mdi:crosshairs-gps" : "mdi:tune-vertical")
-          : (active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline");
-        action = '<button type="button" class="service-toggle' + (active ? ' is-active' : '') +
-          '" data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") +
-          ' title="' + (domain === "button" ? "Ausführen" : active ? "Ausschalten" : "Einschalten") +
-          '" aria-label="' + this._escape(label) + '"><ha-icon icon="' + icon + '"></ha-icon></button>';
+        const active = domain === "switch" && other.state === "on";
+        action = '<button type="button" class="service-toggle' + (active ? ' is-active' : '') + '" data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '><ha-icon icon="' + (domain === "button" ? "mdi:gesture-tap-button" : active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") + '"></ha-icon></button>';
+      } else if (domain === "select") {
+        action = '<select data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (other.attributes.options || []).map(o => '<option value="' + this._escape(o) + '"' + (o === other.state ? " selected" : "") + '>' + this._escape(o) + '</option>').join("") + '</select>';
+      } else if (domain === "number") {
+        action = '<input type="number" data-service="' + this._escape(id) + '" value="' + this._escape(other.state) + '" min="' + this._escape(other.attributes.min ?? "") + '" max="' + this._escape(other.attributes.max ?? "") + '" step="' + this._escape(other.attributes.step ?? 1) + '"' + (disabled ? " disabled" : "") + '>';
+      } else {
+        action = '<span>' + this._escape(disabled ? "Nicht verfügbar" : other.state === "on" ? "Ja" : other.state === "off" ? "Nein" : other.state + (other.attributes.unit_of_measurement ? " " + other.attributes.unit_of_measurement : "")) + '</span>';
       }
-      if (domain === "select") action = '<select data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (state.attributes.options || []).map(o => '<option value="' + this._escape(o) + '"' + (o === state.state ? " selected" : "") + '>' + this._escape(o) + '</option>').join("") + '</select>';
-      if (domain === "binary_sensor") action = '<span>' + (disabled ? "Nicht verfügbar" : state.state === "on" ? "Ja" : "Nein") + '</span>';
-      return '<div class="service-row"><span>' + label + '</span>' + action + '</div>';
+      return '<div class="service-row"><span>' + this._escape(label) + '</span>' + action + '</div>';
     }).join("");
-    return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true"><h3>Thermostat · Service</h3>' + (rows || "Keine Service-Entitäten vorhanden") + '</section></div>';
+    return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true">' +
+      '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span></header><div class="service-divider"></div>' +
+      '<div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
+      '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div>' +
+      '<input class="temperature-slider" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + (validTarget ? target : min) + '" ' + (!validTarget ? "disabled" : "") + '>' +
+      (modes ? '<div class="service-divider"></div><div class="service-caption">Betriebsmodus</div><div class="mode-options">' + modes + '</div>' : '') +
+      '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
   async _serviceAction(id, option) {
     const item = this._serviceItems().find(x => x.id === id);
@@ -14253,11 +14309,22 @@ class AtzeThermostatCard extends HTMLElement {
       if (item.domain === "button") await this._hass.callService("button","press",{entity_id:id});
       if (item.domain === "switch") await this._hass.callService("switch",item.state.state === "on" ? "turn_off" : "turn_on",{entity_id:id});
       if (item.domain === "select") await this._hass.callService("select","select_option",{entity_id:id,option});
+      if (item.domain === "number" && Number.isFinite(Number(option))) await this._hass.callService("number","set_value",{entity_id:id,value:Number(option)});
     } catch(e) { console.error("Thermostat Service",e); }
   }
   _refreshServicePopup() {
     const dialog = this.shadowRoot?.querySelector(".service-dialog");
     if (!dialog) return;
+    const state = this._hass?.states?.[this._config.entity];
+    const target = Number(state?.attributes?.temperature);
+    const value = dialog.querySelector("[data-target-value]");
+    if (value && state?.attributes?.temperature != null && Number.isFinite(target)) {
+      const unit = this._hass?.config?.unit_system?.temperature || "°C";
+      value.textContent = target.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + unit;
+      const slider = dialog.querySelector(".temperature-slider");
+      if (slider && !this._temperatureDragging) slider.value = String(target);
+    }
+    dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
     for (const item of this._serviceItems()) {
       const el = [...dialog.querySelectorAll("[data-service]")].find(node => node.dataset.service === item.id);
       const disabled = item.state.state === "unavailable" || (item.domain !== "button" && item.state.state === "unknown");
@@ -14351,10 +14418,22 @@ class AtzeThermostatCard extends HTMLElement {
         .thermometer:disabled { opacity:.4; cursor:default; }
         .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
         .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
-        .service-dialog h3 { margin:0 0 16px; }
+        .service-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
+        .service-dialog header ha-icon { color:#64d2ff; }
+        .service-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .service-divider { height:1px; background:rgba(255,255,255,.16); margin:18px 0; }
+        .service-caption { font-size:13px; color:var(--secondary-text-color); margin:10px 0; }
+        .temperature-control { display:flex; align-items:center; justify-content:center; gap:22px; margin:12px 0; }
+        .temperature-control strong { font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; }
+        .temperature-control button { width:44px; height:44px; border-radius:50%; background:rgba(118,118,128,.20); border:1px solid var(--divider-color); font-size:25px; }
+        .temperature-slider { width:100%; accent-color:#64d2ff; touch-action:pan-y; }
+        .mode-options { display:flex; flex-wrap:wrap; gap:8px; }
+        .mode-button { padding:10px 14px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); }
+        .mode-button.is-active { border-color:#64d2ff; color:#64d2ff; }
+        .service-empty { font-size:12px; color:var(--secondary-text-color); }
         .service-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 8px; border-bottom:1px solid var(--divider-color); }
         .service-row span:first-child { font-size:13px; }
-        .service-row button,.service-row select { padding:9px; border-radius:10px; background:rgba(118,118,128,.2); color:var(--primary-text-color); border:1px solid var(--divider-color); }
+        .service-row button,.service-row select,.service-row input { padding:9px; border-radius:10px; background:rgba(118,118,128,.2); color:var(--primary-text-color); border:1px solid var(--divider-color); }
         .service-row .service-toggle { flex:0 0 42px; width:42px; height:38px; padding:0; display:grid; place-items:center; border-radius:12px; }
         .service-toggle ha-icon { --mdc-icon-size:26px; color:var(--secondary-text-color,#8e8e93); }
         .service-toggle.is-active ha-icon { color:var(--home-green,#30d158); }
@@ -14381,9 +14460,33 @@ class AtzeThermostatCard extends HTMLElement {
     this.shadowRoot.querySelector(".service-backdrop")?.addEventListener("click", e => {
       if (e.target.classList.contains("service-backdrop")) { this._closeService(); }
     });
+    const dialog = this.shadowRoot.querySelector(".service-dialog");
+    if (dialog) {
+      dialog.querySelector(".service-title").textContent = this._deviceTitle();
+      const slider = dialog.querySelector(".temperature-slider");
+      const step = Number(this._hass?.states?.[this._config.entity]?.attributes?.target_temp_step) > 0
+        ? Number(this._hass.states[this._config.entity].attributes.target_temp_step) : 0.5;
+      const adjust = direction => {
+        const state = this._hass?.states?.[this._config.entity];
+        const current = Number(state?.attributes?.temperature);
+        if (!Number.isFinite(current)) return;
+        const min = Number(state.attributes.min_temp ?? 5), max = Number(state.attributes.max_temp ?? 30);
+        this._setTemperature(Math.min(max,Math.max(min,Math.round((current + direction*step)/step)*step)));
+      };
+      dialog.querySelectorAll("[data-temp-step]").forEach(button =>
+        button.addEventListener("click",() => adjust(Number(button.dataset.tempStep))));
+      slider?.addEventListener("input",() => {
+        this._temperatureDragging = true;
+        dialog.querySelector("[data-target-value]").textContent = Number(slider.value).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + (this._hass?.config?.unit_system?.temperature || "°C");
+      });
+      slider?.addEventListener("change",() => { this._temperatureDragging = false; this._setTemperature(Number(slider.value)); });
+      slider?.addEventListener("pointercancel",() => { this._temperatureDragging = false; });
+      dialog.querySelectorAll("[data-hvac]").forEach(button =>
+        button.addEventListener("click",() => this._setHvacMode(button.dataset.hvac)));
+    }
     this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
       const id = el.dataset.service;
-      el.addEventListener(el.tagName === "SELECT" ? "change" : "click", () => this._serviceAction(id, el.value));
+      el.addEventListener(["SELECT","INPUT"].includes(el.tagName) ? "change" : "click", () => this._serviceAction(id, el.value));
     });
 
   }
