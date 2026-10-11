@@ -3370,7 +3370,7 @@ function buildEntityCard(
   if (["light", "cover", "climate", "fan"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : domainOf(entityId) === "fan" ? "custom:atze-fan-card" : "custom:atze-entity-card",
+      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : "custom:atze-entity-card",
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
@@ -15185,8 +15185,9 @@ class AtzeFanCard extends HTMLElement {
     this._bindPopup();
   }
 }
-if (!customElements.get("atze-fan-card")) {
-  customElements.define("atze-fan-card", AtzeFanCard);
+const atzeFanCardTag = ATZE_TESTING_BUILD ? "atze-fan-card-testing" : "atze-fan-card";
+if (!customElements.get(atzeFanCardTag)) {
+  customElements.define(atzeFanCardTag, AtzeFanCard);
 }
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
