@@ -1,3 +1,10 @@
+## v0.366.0
+
+- Native Lüfterkarte mit umfangreichem Levoit-Popup für Betriebsmodus, drei Lüfterstufen, Kindersicherung, Display und Timer.
+- Raumunabhängige Zuordnung von Luftfilter-Sensoren, Stromschalter und Timer; Restlaufzeit wird live angezeigt.
+- Stromversorgungsstatus bleibt auf der Lüfterkarte sichtbar, ohne separaten Schalter.
+- Kompaktere Raumabschnitte und aufgeräumtes Lüfter-Popup mit flacheren Buttons und ohne Trennlinien.
+
 ## v0.364.0
 
 - Eigene native Karten für Lichter, Rollläden und Thermostate mit einheitlicher Steuerung und Einstellungen.
