@@ -14282,12 +14282,18 @@ class AtzeThermostatCard extends HTMLElement {
       const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
       return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
     }).join("");
-    const rows = this._serviceItems().map(({id,domain,label,state:other}) => {
+    const items = this._serviceItems();
+    const calibrationButton = items.find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
+    const calibrationState = items.find(item => item.domain === "binary_sensor" && /(?:^|_)calibrated$/.test(item.id));
+    const rows = items.filter(item => !(calibrationButton && calibrationState && item.id === calibrationState.id)).map(({id,domain,label,state:other}) => {
       const disabled = ["unknown","unavailable"].includes(other.state);
       let action = "";
       if (domain === "button" || domain === "switch") {
         const active = domain === "switch" && other.state === "on";
-        action = '<button type="button" class="service-toggle' + (active ? ' is-active' : '') + '" data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '><ha-icon icon="' + (domain === "button" ? "mdi:gesture-tap-button" : active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") + '"></ha-icon></button>';
+        const isCalibration = calibrationButton && calibrationState && id === calibrationButton.id;
+        const calibrated = calibrationState?.state?.state;
+        const calibrationClass = isCalibration ? (calibrated === "on" ? " is-calibrated" : calibrated === "off" ? " is-uncalibrated" : " is-unknown") : "";
+        action = '<button type="button" class="service-toggle' + (active ? ' is-active' : '') + calibrationClass + '" data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '><ha-icon icon="' + (domain === "button" ? "mdi:gesture-tap-button" : active ? "mdi:toggle-switch" : "mdi:toggle-switch-off-outline") + '"></ha-icon></button>';
       } else if (domain === "select") {
         action = '<select data-service="' + this._escape(id) + '"' + (disabled ? " disabled" : "") + '>' + (other.attributes.options || []).map(o => '<option value="' + this._escape(o) + '"' + (o === other.state ? " selected" : "") + '>' + this._escape(o) + '</option>').join("") + '</select>';
       } else if (domain === "number") {
@@ -14328,6 +14334,16 @@ class AtzeThermostatCard extends HTMLElement {
       if (slider && !this._temperatureDragging) slider.value = String(target);
     }
     dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
+    const calibrationButton = this._serviceItems().find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
+    const calibrationState = this._serviceItems().find(item => item.domain === "binary_sensor" && /(?:^|_)calibrated$/.test(item.id));
+    if (calibrationButton && calibrationState) {
+      const button = [...dialog.querySelectorAll("[data-service]")].find(el => el.dataset.service === calibrationButton.id);
+      if (button) {
+        button.classList.toggle("is-calibrated", calibrationState.state.state === "on");
+        button.classList.toggle("is-uncalibrated", calibrationState.state.state === "off");
+        button.classList.toggle("is-unknown", !["on","off"].includes(calibrationState.state.state));
+      }
+    }
     for (const item of this._serviceItems()) {
       const el = [...dialog.querySelectorAll("[data-service]")].find(node => node.dataset.service === item.id);
       const disabled = item.state.state === "unavailable" || (item.domain !== "button" && item.state.state === "unknown");
@@ -14440,6 +14456,9 @@ class AtzeThermostatCard extends HTMLElement {
         .service-row .service-toggle { flex:0 0 42px; width:42px; height:38px; padding:0; display:grid; place-items:center; border-radius:12px; }
         .service-toggle ha-icon { --mdc-icon-size:26px; color:var(--secondary-text-color,#8e8e93); }
         .service-toggle.is-active ha-icon { color:var(--home-green,#30d158); }
+        .service-toggle.is-calibrated ha-icon { color:#30d158; }
+        .service-toggle.is-uncalibrated ha-icon { color:#ff453a; }
+        .service-toggle.is-unknown ha-icon { color:var(--secondary-text-color,#8e8e93); }
         .service-toggle:disabled { opacity:.4; cursor:default; }
       </style>
       <ha-card>
