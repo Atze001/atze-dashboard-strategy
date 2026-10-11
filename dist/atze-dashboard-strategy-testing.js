@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D8B6351";
+const ATZE_TESTING_REVISION = "2F9AD1A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -2749,7 +2749,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
   return `
     ha-card {
       --bubble-border-radius: ${radius} !important;
-      --bubble-main-background-color: rgba(48, 50, 54, 0.30) !important;
+      --bubble-main-background-color: rgba(35, 38, 46, 0.78) !important;
       --bubble-secondary-background-color: rgba(58,58,60,0.72) !important;
       --bubble-accent-color: ${accent} !important;
       --bubble-icon-background-color: rgba(118,118,128,0.18) !important;
@@ -2779,19 +2779,19 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
     .bubble-select-card-container,
     .bubble-cover-card-container,
     .bubble-cover-container {
-      backdrop-filter: blur(8px) saturate(1.12) !important;
-      -webkit-backdrop-filter: blur(8px) saturate(1.12) !important;
+      backdrop-filter: blur(22px) saturate(1.25) !important;
+      -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
     }
 
     .bubble-button-card-container {
       background:
-        \${${active} ? '${activeTint}' : 'rgba(48, 50, 54, 0.30)'} !important;
+        \${${active} ? '${activeTint}' : 'rgba(35, 38, 46, 0.78)'} !important;
     }
 
     .bubble-media-player-container,
     .bubble-climate-container,
     .bubble-select-card-container {
-      background-color: rgba(48, 50, 54, 0.30) !important;
+      background-color: rgba(35, 38, 46, 0.78) !important;
     }
 
     .bubble-cover-card-container,
@@ -2799,7 +2799,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
       background-color:
         \${${domain === "cover" ? active : "false"}
           ? 'rgba(255,255,255,0.96)'
-          : 'rgba(48, 50, 54, 0.30)'} !important;
+          : 'rgba(35, 38, 46, 0.78)'} !important;
     }
 
     .bubble-cover-button {
@@ -6735,6 +6735,7 @@ function buildHomeOverviewView(
     cover_entities: uniqueEntityIds(coverEntities),
     lock_entity: lockEntity,
     night_entity: config.home_night_entity || null,
+    dashboard_background_image: config.dashboard_background_image || null,
     page_scroll: config.page_scroll === true,
     force_kiosk: config.force_kiosk === true,
     clock_kiosk_toggle:
@@ -14087,7 +14088,7 @@ class AtzeWarningBadgeV2 extends HTMLElement {
           background:
             ${active
               ? "rgba(255, 69, 58, 0.90)"
-              : "rgba(48, 50, 54, 0.30)"};
+              : "rgba(35, 38, 46, 0.78)"};
           border:
             var(--ha-card-border-width, 1px)
             solid
@@ -14099,8 +14100,8 @@ class AtzeWarningBadgeV2 extends HTMLElement {
               ? "white"
               : "var(--primary-text-color)"};
           box-shadow: var(--ha-card-box-shadow, none);
-          backdrop-filter: blur(8px) saturate(1.12);
-          -webkit-backdrop-filter: blur(8px) saturate(1.12);
+          backdrop-filter: blur(22px) saturate(1.25);
+          -webkit-backdrop-filter: blur(22px) saturate(1.25);
         }
 
         ha-state-icon {
@@ -14276,9 +14277,9 @@ class AtzeStatusBadgeV1 extends HTMLElement {
             );
           cursor: pointer;
           user-select: none;
-          background: rgba(48, 50, 54, 0.30);
-          backdrop-filter: blur(8px) saturate(1.12);
-          -webkit-backdrop-filter: blur(8px) saturate(1.12);
+          background: rgba(35, 38, 46, 0.78);
+          backdrop-filter: blur(22px) saturate(1.25);
+          -webkit-backdrop-filter: blur(22px) saturate(1.25);
           border:
             var(--ha-card-border-width, 1px)
             solid
