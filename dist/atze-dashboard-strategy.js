@@ -15001,7 +15001,7 @@ class AtzeSwitchCard extends HTMLElement {
     const id=this._config.entity,entity=this._hass?.states[id];
     const active=entity?.state==="on",available=entity&&["on","off"].includes(entity.state);
     const name=this._config.name||entity?.attributes?.friendly_name||id;
-    const icon=this._config.icon||entity?.attributes?.icon||"mdi:toggle-switch";
+    const icon=active?"mdi:toggle-switch":"mdi:toggle-switch-off-outline";
     this.shadowRoot.innerHTML=`
       <style>
         :host{display:block;min-width:0}
