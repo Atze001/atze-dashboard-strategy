@@ -1317,7 +1317,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     // A light popup owns horizontal gestures (brightness slider). Never
     // start the dashboard swipe-back gesture while touching its overlay.
     if ((event.composedPath?.() || []).some(node =>
-      node instanceof HTMLElement && node.classList?.contains("light-overlay")
+      node instanceof HTMLElement && (node.classList?.contains("light-overlay") || node.classList?.contains("service-backdrop"))
     )) {
       return;
     }
