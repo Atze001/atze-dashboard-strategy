@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.400.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "016066F";
+const ATZE_TESTING_REVISION = "219E33B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9662,8 +9662,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .status-grid {
           display: grid;
           grid-template-columns: repeat(6, minmax(0, 1fr));
-          grid-auto-rows: 72px;
-          gap: 14px;
+          grid-auto-rows: 56px;
+          gap: 10px;
           margin-bottom: 0;
         }
 
@@ -9672,29 +9672,29 @@ class AtzeHomeOverviewCard extends HTMLElement {
           width: 100%;
           min-width: 0;
           height: 100%;
-          min-height: 72px;
-          padding: 6px 18px;
+          min-height: 56px;
+          padding: 7px 12px;
           display: flex;
           align-items: center;
-          gap: 7px;
+          gap: 10px;
           border: 1px solid var(--home-card-border);
-          border-radius: 28px;
-          background: rgba(48, 50, 54, 0.30);
+          border-radius: 15px;
+          background: rgba(55, 58, 67, 0.30);
           backdrop-filter: blur(8px) saturate(1.12);
           -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
           overflow: hidden;
         }
 
-        .status > div {
-          margin-left: -15px;
-        }
+        .status > div { min-width:0; flex:1; }
 
         .status ha-icon {
-          width: 38px;
-          height: 38px;
-          flex: 0 0 38px;
-          transform: translateY(6px);
+          --mdc-icon-size: 23px;
+          width: 38px; height: 38px; flex: 0 0 38px;
+          padding: 7px; box-sizing: border-box;
+          border: 1px solid var(--home-card-border);
+          border-radius: 13px; background: rgba(118,118,128,.20);
+          transform: none;
         }
 
         .status.weather ha-icon {
@@ -9725,9 +9725,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .status-main {
           min-width: 0;
-          font-size: 20px;
+          font-size: 14px;
           font-weight: 650;
-          line-height: 1.05;
+          line-height: 1.2;
           white-space: nowrap;
         }
 
@@ -10529,16 +10529,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
           .status {
             height: 100%;
             min-height: 56px;
-            border-radius: 21px;
-            padding: 4px 14px;
+            border-radius: 15px;
+            padding: 7px 10px;
           }
 
           .status-main {
-            font-size: 16px;
+            font-size: 14px;
           }
 
           .status-sub {
-            font-size: 12px;
+            font-size: 11px;
           }
 
           .favorites {
@@ -10785,8 +10785,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
             <div class="status weather" id="weather-status" role="button" tabindex="0">
               <ha-icon icon="${weatherIcon}"></ha-icon>
               <div>
-                <div class="status-main">${weatherTemperature}</div>
-                <div class="status-sub">${weatherText}</div>
+                <div class="status-main">Wetter</div>
+                <div class="status-sub">${weatherTemperature} · ${weatherText}</div>
               </div>
             </div>
 
@@ -10794,8 +10794,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
               <div class="status power" id="power-status" role="button" tabindex="0">
                 <ha-icon icon="mdi:flash"></ha-icon>
                 <div>
-                  <div class="status-main">${this._formatPower()}</div>
-                  <div class="status-sub">Gesamt</div>
+                  <div class="status-main">Strom</div>
+                  <div class="status-sub">${this._formatPower()} · Gesamt</div>
                 </div>
               </div>
             ` : ""}
@@ -10806,8 +10806,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
             >
               <ha-icon icon="${securityActive ? "mdi:shield-alert" : "mdi:shield-check"}"></ha-icon>
               <div>
-                <div class="status-main">${securityText}</div>
-                <div class="status-sub">Sicherheit</div>
+                <div class="status-main">Warnungen</div>
+                <div class="status-sub">${securityText}</div>
               </div>
             </div>
 
@@ -10835,8 +10835,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                   }"
                 ></ha-icon>
                 <div>
-                  <div class="status-main">${alarmText}</div>
-                  <div class="status-sub">Alarmo</div>
+                  <div class="status-main">Alarmo</div>
+                  <div class="status-sub">${alarmText}</div>
                 </div>
               </div>
             ` : ""}
@@ -10848,8 +10848,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
               >
                 <ha-icon icon="${homeBaseIcon}"></ha-icon>
                 <div>
-                  <div class="status-main">${homeBaseText}</div>
-                  <div class="status-sub">AtzeHomeBase</div>
+                  <div class="status-main">AtzeHomeBase</div>
+                  <div class="status-sub">${homeBaseText}</div>
                 </div>
               </div>
             ` : ""}
