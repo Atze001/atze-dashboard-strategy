@@ -2700,15 +2700,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-card {
           min-width: 0;
-          height: 72px;
-          min-height: 72px;
-          padding: 6px 14px;
+          height: 56px;
+          min-height: 56px;
+          padding: 7px 12px;
           display: flex;
           align-items: center;
           gap: 11px;
           border: 1px solid var(--home-card-border);
-          border-radius: 23px;
-          background: rgba(48, 50, 54, 0.30);
+          border-radius: 15px;
+          background: rgba(55, 58, 67, 0.30);
           backdrop-filter: blur(8px) saturate(1.12);
           -webkit-backdrop-filter: blur(8px) saturate(1.12);
           color: var(--primary-text-color);
@@ -2734,15 +2734,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          border-radius: 50%;
+          border-radius: 13px;
           background: rgba(118,118,128,0.20);
+          border: 1px solid var(--home-card-border);
+          box-sizing: border-box;
           color: rgba(235,235,245,0.86);
         }
 
         .favorite-icon ha-icon {
           width: 23px;
           height: 23px;
-          transform: translate(-2px, -1px);
+          transform: none;
         }
 
         .favorite-card.active .favorite-icon {
@@ -3352,19 +3354,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
           .favorite-card {
             height: 56px;
             min-height: 56px;
-            padding: 4px 12px;
-            border-radius: 21px;
+            padding: 7px 10px;
+            border-radius: 15px;
           }
 
-          .favorite-icon {
-            width: 32px;
-            height: 32px;
-            flex-basis: 32px;
-          }
+          .favorite-icon { width: 38px; height: 38px; flex-basis: 38px; }
 
           .favorite-icon ha-icon {
-            width: 21px;
-            height: 21px;
+            width: 23px;
+            height: 23px;
           }
 
           .favorite-name {
