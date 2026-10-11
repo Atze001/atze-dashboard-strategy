@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "CF0EAC3";
+const ATZE_TESTING_REVISION = "6DC2563";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14304,9 +14304,11 @@ class AtzeThermostatCard extends HTMLElement {
     const isWindowDetection = item => item.domain === "switch" && /(?:^|_)window_detection$/.test(item.id);
     const childLock = items.find(isChildLock);
     const windowDetection = items.find(isWindowDetection);
+    const valveDetection = items.find(item => item.domain === "switch" && /(?:^|_)valve_detection$/.test(item.id));
     const rowItems = items.filter(item =>
       !(calibrationButton && calibrationState && item.id === calibrationState.id) &&
       item.id !== batteryItem?.id && !isChildLock(item) && !isWindowDetection(item) &&
+      item.id !== valveDetection?.id && item.id !== calibrationButton?.id &&
       !(item.domain === "sensor" && item.state.attributes?.device_class === "temperature") &&
       !(item.domain === "number" && /(?:^|_)temperature$/.test(item.id.split(".")[1])) &&
       !((item.domain === "sensor" || item.domain === "binary_sensor") &&
@@ -14334,7 +14336,9 @@ class AtzeThermostatCard extends HTMLElement {
     };
     const paired = [childLock,windowDetection].filter(Boolean);
     const pairedHtml = paired.length ? '<div class="service-pair">' + paired.map(renderRow).join("") + '</div>' : "";
-    const rows = pairedHtml + rowItems.map(renderRow).join("");
+    const valvePair = [valveDetection,calibrationButton].filter(Boolean);
+    const valvePairHtml = valvePair.length ? '<div class="service-pair">' + valvePair.map(renderRow).join("") + '</div>' : "";
+    const rows = pairedHtml + valvePairHtml + rowItems.map(renderRow).join("");
     return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true">' +
       '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
       '<div class="thermostat-main">' + (hasPowerToggle ? '<button type="button" class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Heizung umschalten"><ha-icon icon="mdi:power"></ha-icon></button>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
