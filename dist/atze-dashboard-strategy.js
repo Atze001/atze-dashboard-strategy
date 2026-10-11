@@ -14344,7 +14344,9 @@ class AtzeFanCard extends HTMLElement {
   }
   _popupMarkup() {
     const fan = this._hass?.states?.[this._config.entity];
-    const title = fan?.attributes?.friendly_name || this._config.entity || "Luftreiniger";
+    const registryEntity = this._hass?.entities?.[this._config.entity];
+    const device = registryEntity?.device_id ? this._hass?.devices?.[registryEntity.device_id] : null;
+    const title = device?.name_by_user || device?.name || this._config.name || fan?.attributes?.friendly_name || "Luftreiniger";
     const esc = value => String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     const tile = (icon,name,value,key) => `<div class="fan-tile"><ha-icon icon="${icon}"></ha-icon><div><small>${name}</small><strong data-value="${key}">${esc(value)}</strong></div></div>`;
     const mode = this._operatingMode().toLowerCase();
