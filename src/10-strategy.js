@@ -364,7 +364,8 @@ class AtzeDashboardStrategy extends HTMLElement {
     const safeBackground = (
       backgroundValue.startsWith("/local/") ||
       backgroundValue.startsWith("/api/image/serve/") ||
-      /^https?:\/\//i.test(backgroundValue)
+      /^https?:\/\//i.test(backgroundValue) ||
+      /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(backgroundValue)
     ) && !/["'\\\n\r<>]/.test(backgroundValue)
       ? backgroundValue
       : "";
