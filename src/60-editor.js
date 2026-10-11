@@ -2129,7 +2129,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
-                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Bubble-Popup mit Scheduler Card öffnet.</span>
+                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Popup mit Scheduler Card öffnet.</span>
                 </span>
                 <input
                   class="setting-toggle"
@@ -3001,7 +3001,7 @@ const atzeStrategyRegistration = {
   strategyType: "dashboard",
   name: "Atze Dashboard",
   description:
-    "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
+    "Automatisches, flexibel anpassbares Area-Dashboard mit eigenen Atze-Raumkarten und Popups.",
 };
 
 const existingAtzeStrategy = window.customStrategies.find(
