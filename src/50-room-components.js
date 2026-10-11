@@ -1488,7 +1488,7 @@ class AtzeFanCard extends HTMLElement {
     };
     const timer = this._field("number", "timer_min");
     const timerInput = timer ? `<label class="fan-row"><span>Timer (Minuten)</span><input type="number" data-number="timer_min" min="${timer.attributes.min ?? 0}" max="${timer.attributes.max ?? 1440}" step="${timer.attributes.step ?? 1}" value="${esc(timer.state)}"></label>` : "";
-    return `<div class="fan-overlay" role="presentation">
+    return `<dialog class="fan-overlay" aria-label="Luftreiniger">
       <section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
         <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span></header>
         <div class="fan-grid">
@@ -1502,13 +1502,16 @@ class AtzeFanCard extends HTMLElement {
         ${toggle("child_lock", "Kindersicherung")}
         ${toggle("display", "Display")}
         ${timerInput}
-      </section></div>`;
+      </section></dialog>`;
   }
   _bindPopup() {
     const overlay = this.shadowRoot.querySelector(".fan-overlay");
     if (!overlay) return;
+    if (!overlay.open) overlay.showModal();
+    overlay.addEventListener("close", () => { this._popupOpen = false; });
     overlay.addEventListener("click", e => {
-      if (e.target === overlay) { this._popupOpen = false; this._render(); }
+      const bounds = overlay.querySelector(".fan-dialog").getBoundingClientRect();
+      if (e.clientX < bounds.left || e.clientX > bounds.right || e.clientY < bounds.top || e.clientY > bounds.bottom) overlay.close();
     });
     overlay.querySelectorAll("[data-switch]").forEach(el=>el.addEventListener("change",()=>this._set("switch",el.dataset.switch,el.checked)));
     overlay.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>this._set("select",el.dataset.select,el.value)));
@@ -1547,7 +1550,8 @@ class AtzeFanCard extends HTMLElement {
         .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
         button:disabled { opacity:.4; cursor:default; }
         .details,.status { cursor:pointer; }
-        .fan-overlay { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.45); }
+        .fan-overlay { position:fixed; inset:0; margin:auto; padding:0; border:0; max-width:none; max-height:none; background:transparent; color:inherit; overflow:visible; }
+        .fan-overlay::backdrop { background:rgba(0,0,0,.5); backdrop-filter:blur(3px); }
         .fan-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
         .fan-dialog header { display:flex; align-items:center; gap:12px; font-weight:600; font-size:18px; margin-bottom:20px; }
         .fan-dialog header ha-icon { color:#64d2ff; }
@@ -1583,8 +1587,11 @@ class AtzeFanCard extends HTMLElement {
       if (window.confirm(message)) this._togglePower();
     });
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
-    this.shadowRoot.querySelector(".details").addEventListener("click", () => { this._popupOpen = true; this._render(); });
-    this.shadowRoot.querySelector(".status").addEventListener("click", () => { this._popupOpen = true; this._render(); });
+    this.shadowRoot.querySelector("ha-card").addEventListener("click", event => {
+      if (event.target.closest("button")) return;
+      this._popupOpen = true;
+      this._render();
+    });
     this._bindPopup();
   }
 }
