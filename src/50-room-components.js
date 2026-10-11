@@ -1462,7 +1462,7 @@ class AtzeFanCard extends HTMLElement {
   }
   _displayNumber(value) {
     const raw = String(value ?? "").trim();
-    if (!raw || !/^-?\\d+(?:[.,]\\d+)?$/.test(raw)) return raw || "–";
+    if (!raw || !/^-?\d+(?:[.,]\d+)?$/.test(raw)) return raw || "–";
     const number = Number(raw.replace(",", "."));
     return Number.isFinite(number)
       ? number.toLocaleString("de-DE", {maximumFractionDigits: 1})
@@ -1488,8 +1488,6 @@ class AtzeFanCard extends HTMLElement {
     const values = {
       pm25: this._format("sensor", "aq_pm_2_5"),
       filter: this._format("sensor", "filter") + " %",
-      timer: this._format("sensor", "timer_duration"),
-      mode: fan?.attributes?.preset_mode || this._format("select", "fan_operating_mode"),
     };
     for (const [key, value] of Object.entries(values)) {
       const el = dialog.querySelector('[data-value="' + key + '"]');
@@ -1506,8 +1504,6 @@ class AtzeFanCard extends HTMLElement {
         if ([...el.options].some(option => option.value === value)) el.value = value;
       }
     }
-    const timer = dialog.querySelector('[data-number="timer_min"]');
-    if (timer && this.shadowRoot.activeElement !== timer) timer.value = this._format("number", "timer_min", "");
   }
   _lockScroll() {
     if (this._scrollCleanup) return;
@@ -1546,8 +1542,6 @@ class AtzeFanCard extends HTMLElement {
       const entity = this._field("switch", suffix);
       return entity ? `<label class="fan-row"><span>${label}</span><input type="checkbox" data-switch="${suffix}" ${entity.state === "on" ? "checked" : ""}></label>` : "";
     };
-    const timer = this._field("number", "timer_min");
-    const timerInput = timer ? `<label class="fan-row"><span>Timer (Minuten)</span><input type="number" data-number="timer_min" min="${timer.attributes.min ?? 0}" max="${timer.attributes.max ?? 1440}" step="${timer.attributes.step ?? 1}" value="${esc(timer.state)}"></label>` : "";
     return `<div class="fan-overlay">
       <section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
         <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span></header>
@@ -1559,7 +1553,6 @@ class AtzeFanCard extends HTMLElement {
         ${selector("auto_mode", "Auto-Modus")}
         ${toggle("child_lock", "Kindersicherung")}
         ${toggle("display", "Display")}
-        ${timerInput}
       </section></div>`;
   }
   _bindPopup() {
@@ -1570,7 +1563,6 @@ class AtzeFanCard extends HTMLElement {
     });
     overlay.querySelectorAll("[data-switch]").forEach(el=>el.addEventListener("change",()=>this._set("switch",el.dataset.switch,el.checked)));
     overlay.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>this._set("select",el.dataset.select,el.value)));
-    overlay.querySelectorAll("[data-number]").forEach(el=>el.addEventListener("change",()=>this._set("number",el.dataset.number,el.value)));
   }
   _render() {
     if (!this._config.entity) return;
