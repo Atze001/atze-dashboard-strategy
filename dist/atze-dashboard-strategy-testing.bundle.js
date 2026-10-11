@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "F39DCA3";
+const ATZE_TESTING_REVISION = "D481116";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15002,9 +15002,17 @@ class AtzeFanCard extends HTMLElement {
     const id = this._related(domain, suffix);
     return id ? this._hass.states[id] : null;
   }
+  _displayNumber(value) {
+    const raw = String(value ?? "").trim();
+    if (!raw || !/^-?\\d+(?:[.,]\\d+)?$/.test(raw)) return raw || "–";
+    const number = Number(raw.replace(",", "."));
+    return Number.isFinite(number)
+      ? number.toLocaleString("de-DE", {maximumFractionDigits: 1})
+      : raw;
+  }
   _format(domain, suffix, fallback = "–") {
     const state = this._field(domain, suffix);
-    return state && !["unknown", "unavailable"].includes(state.state) ? state.state : fallback;
+    return state && !["unknown", "unavailable"].includes(state.state) ? this._displayNumber(state.state) : fallback;
   }
   async _set(domain, suffix, value) {
     const id = this._related(domain, suffix);
