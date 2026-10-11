@@ -1250,6 +1250,7 @@ class AtzeEntityCard extends HTMLElement {
         .settings ha-icon { --mdc-icon-size:23px; }
         button:disabled { opacity:.4; cursor:default; }
         .details.light-details { cursor:pointer; }
+        ha-card:has(.light-details) { cursor:pointer; }
         .light-overlay { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
         .light-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
         .light-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
@@ -1280,7 +1281,10 @@ class AtzeEntityCard extends HTMLElement {
     this.shadowRoot.querySelector(".settings")?.addEventListener("click", () => this._moreInfo());
     if (!cover) {
       const open = () => this._openLightPopup();
-      details.addEventListener("click", open);
+      this.shadowRoot.querySelector("ha-card").addEventListener("click", event => {
+        if (event.target.closest("button")) return;
+        open();
+      });
       details.addEventListener("keydown", event => {
         if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
       });
