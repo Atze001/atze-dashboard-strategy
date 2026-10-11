@@ -15018,7 +15018,7 @@ class AtzeSwitchCard extends HTMLElement {
       <ha-card>
         <button class="control" type="button" aria-label="Schalter umschalten"><ha-icon></ha-icon></button>
         <button class="details" type="button" aria-label="Schalter-Details"><span class="name"></span><span class="status"></span></button>
-        <button class="settings" type="button" aria-label="Schalter-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
     this.shadowRoot.querySelector(".name").textContent=name;
@@ -15027,7 +15027,7 @@ class AtzeSwitchCard extends HTMLElement {
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());
     this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
-    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+
   }
 }
 const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";

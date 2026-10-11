@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.400.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D902B60";
+const ATZE_TESTING_REVISION = "EE47C39";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15015,7 +15015,7 @@ class AtzeSwitchCard extends HTMLElement {
       <ha-card>
         <button class="control" type="button" aria-label="Schalter umschalten"><ha-icon></ha-icon></button>
         <button class="details" type="button" aria-label="Schalter-Details"><span class="name"></span><span class="status"></span></button>
-        <button class="settings" type="button" aria-label="Schalter-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
     this.shadowRoot.querySelector(".name").textContent=name;
@@ -15024,7 +15024,7 @@ class AtzeSwitchCard extends HTMLElement {
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());
     this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
-    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+
   }
 }
 const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";
