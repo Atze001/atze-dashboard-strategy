@@ -15228,7 +15228,7 @@ class AtzeFanCard extends HTMLElement {
         .fan-choice.is-active ha-icon { color:#64d2ff; }
         .fan-row[hidden] { display:none; }
         .fan-row > span:first-child { display:flex; align-items:center; gap:10px; }
-        .fan-timer-heading { border-top:1px solid rgba(255,255,255,.1); margin-top:0; padding-top:12px; }
+        .fan-timer-heading { margin-top:0; padding-top:0; }
         .fan-remaining strong { font-size:14px; font-weight:500; }
         .fan-dialog header ha-icon { color:#64d2ff; }
         .fan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
@@ -15236,7 +15236,7 @@ class AtzeFanCard extends HTMLElement {
         .fan-tile ha-icon { color:#64d2ff; flex-shrink:0; }
         .fan-tile small { display:block; opacity:.7; font-size:11px; }
         .fan-tile strong { display:block; font-size:15px; overflow-wrap:anywhere; }
-        .fan-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid rgba(255,255,255,.10); font-size:14px; }
+        .fan-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; font-size:14px; }
         .fan-row select,.fan-row input[type=number] { max-width:55%; min-width:0; border-radius:10px; padding:8px; color:inherit; background:#35373e; border:1px solid rgba(255,255,255,.18); }
         .fan-row input[type=checkbox] { width:20px; height:20px; accent-color:#64d2ff; }
       </style>
