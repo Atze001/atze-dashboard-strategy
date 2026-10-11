@@ -2139,18 +2139,16 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
-              <label class="row">
-                <span class="copy">
-                  <span class="name">Dashboard-Hintergrundbild</span>
-                  <span class="desc">Foto direkt vom Gerät auswählen. Das Bild wird verkleinert und mit den Dashboard-Einstellungen gespeichert.</span>
-                </span>
-              </label>
-              <div style="display:flex;gap:8px;align-items:center;padding:0 16px 12px;flex-wrap:wrap;">
-                <input class="dashboard-background-file" type="file" accept="image/*" style="display:none" aria-label="Hintergrundfoto auswählen" />
-                <button class="dashboard-background-pick" type="button">Foto auswählen</button>
-                <button class="dashboard-background-clear" type="button">Hintergrund entfernen</button>
-                ${this._config.dashboard_background_image ? `<img alt="Hintergrund-Vorschau" src="${this._escape(this._config.dashboard_background_image)}" style="width:100%;max-height:130px;object-fit:cover;border-radius:10px;margin-top:8px;" />` : ""}
-                <span class="dashboard-background-error" style="color:var(--error-color);font-size:12px;"></span>
+              <div class="dashboard-background-setting" style="padding:16px 18px;border-bottom:1px solid var(--divider-color, rgba(127,127,127,.24));">
+                <div class="name" style="font-weight:600;">Dashboard-Hintergrundbild</div>
+                <div class="desc" style="margin-top:6px;color:var(--secondary-text-color);font-size:13px;">Foto vom Gerät auswählen. Das Bild wird für das Dashboard optimiert und gespeichert.</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+                  <input class="dashboard-background-file" type="file" accept="image/*" style="display:none" aria-label="Hintergrundfoto auswählen" />
+                  <button class="dashboard-background-pick" type="button" style="padding:8px 12px;border-radius:10px;">Foto auswählen</button>
+                  <button class="dashboard-background-clear" type="button" style="padding:8px 12px;border-radius:10px;">Hintergrund entfernen</button>
+                </div>
+                ${this._config.dashboard_background_image ? `<img alt="Hintergrund-Vorschau" src="${this._escape(this._config.dashboard_background_image)}" style="display:block;width:100%;max-height:150px;object-fit:cover;border-radius:10px;margin-top:12px;" />` : ""}
+                <div class="dashboard-background-status" role="status" aria-live="polite" style="margin-top:8px;color:var(--secondary-text-color);font-size:12px;"></div>
               </div>
               ${this._toggleHtml(
                 "hide_scrollbar",
@@ -2626,7 +2624,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
 
     const backgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
-    const backgroundError = this.shadowRoot.querySelector(".dashboard-background-error");
+    const backgroundStatus = this.shadowRoot.querySelector(".dashboard-background-status");
+    const setBackgroundStatus = (message, error = false) => {
+      if (!backgroundStatus) return;
+      backgroundStatus.textContent = message;
+      backgroundStatus.style.color = error ? "var(--error-color)" : "var(--secondary-text-color)";
+    };
     const saveBackground = (value) => {
       const next = { ...this._config };
       if (value) next.dashboard_background_image = value;
@@ -2637,35 +2640,42 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     backgroundFile?.addEventListener("change", async (event) => {
       const file = event.currentTarget.files?.[0];
       if (!file) return;
-      if (!file.type.startsWith("image/")) {
-        if (backgroundError) backgroundError.textContent = "Bitte eine Bilddatei auswählen.";
+      if (!file.type.startsWith("image/") && !/\\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name)) {
+        setBackgroundStatus("Bitte eine Bilddatei auswählen.", true);
         return;
       }
+      setBackgroundStatus("Foto wird verarbeitet …");
       try {
         const url = URL.createObjectURL(file);
         const image = new Image();
         try {
           await new Promise((resolve, reject) => {
             image.onload = resolve;
-            image.onerror = reject;
+            image.onerror = () => reject(new Error("Dieses Bildformat konnte nicht geöffnet werden."));
             image.src = url;
           });
-          const maxSide = 1600;
+          const maxSide = 1280;
           const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
           const canvas = document.createElement("canvas");
           canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
           canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
           const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("Canvas nicht verfügbar");
+          if (!ctx) throw new Error("Bildverarbeitung nicht verfügbar.");
           ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-          const data = canvas.toDataURL("image/jpeg", 0.72);
-          if (data.length > 950000) throw new Error("Bild ist zu groß. Bitte ein kleineres Foto wählen.");
+          let data = "";
+          for (const quality of [0.7, 0.55, 0.4]) {
+            data = canvas.toDataURL("image/jpeg", quality);
+            if (data.length <= 250000) break;
+          }
+          if (data.length > 250000) throw new Error("Das Foto ist nach dem Verkleinern noch zu groß.");
           saveBackground(data);
         } finally {
           URL.revokeObjectURL(url);
         }
       } catch (error) {
-        if (backgroundError) backgroundError.textContent = "Bild konnte nicht geladen werden: " + (error.message || error);
+        setBackgroundStatus("Foto nicht übernommen: " + (error.message || error), true);
+      } finally {
+        if (backgroundFile?.isConnected) backgroundFile.value = "";
       }
     });
     this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
