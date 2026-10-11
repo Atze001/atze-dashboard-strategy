@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "7729689";
+const ATZE_TESTING_REVISION = "24D39C8";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14953,7 +14953,7 @@ class AtzeFanCard extends HTMLElement {
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
   _powerId() {
     const stem = this._config.entity?.slice(4)?.replace(/_(fan|filter)$/, "");
-    const candidates = ["switch." + stem + "_luftfilter", "switch." + stem + "_power"];
+    const candidates = [this._config.entity?.includes("wohnzimmer") ? "switch.wohnzimmer_luftfilter" : null, "switch." + stem + "_luftfilter", "switch." + stem + "_power"].filter(Boolean);
     return candidates.find(id => this._hass?.states?.[id]) || null;
   }
   _moreInfo() {
