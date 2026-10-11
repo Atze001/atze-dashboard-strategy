@@ -17,6 +17,8 @@ class AtzeSecurityOverviewCard extends HTMLElement {
       entity_ids: [],
       ...config,
     };
+    if (this._config.popup_mode) this.setAttribute("popup-mode", "");
+    else this.removeAttribute("popup-mode");
     this._render();
   }
 
@@ -323,6 +325,22 @@ class AtzeSecurityOverviewCard extends HTMLElement {
         :host([popup-mode]) .nav-row { display:none; }
         :host([popup-mode]) .entity-grid { grid-template-columns:1fr; }
         :host([popup-mode]) .entity-card { min-height:56px; border-radius:15px; }
+        :host([popup-mode]) { display:block; width:100%; min-height:0; background:transparent; }
+        :host([popup-mode]) ha-card { min-height:0; background:transparent; border:0; box-shadow:none; }
+        :host([popup-mode]) .page { width:100%; padding:0; margin:0; }
+        :host([popup-mode]) .nav-row { display:none; }
+        :host([popup-mode]) .summary { margin:0 0 18px; padding:12px; border-radius:15px; }
+        :host([popup-mode]) .summary-icon { width:38px; height:38px; flex:0 0 38px; }
+        :host([popup-mode]) .summary-main { font-size:16px; }
+        :host([popup-mode]) .summary-sub { font-size:12px; }
+        :host([popup-mode]) .area-section { margin-top:18px; }
+        :host([popup-mode]) .area-heading { font-size:15px; margin-bottom:9px; }
+        :host([popup-mode]) .entity-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+        :host([popup-mode]) .entity-card { width:100%; min-height:56px; padding:8px 12px; gap:10px; border-radius:15px; }
+        :host([popup-mode]) .entity-icon { width:38px; height:38px; flex:0 0 38px; border-radius:12px; }
+        :host([popup-mode]) .entity-name { font-size:14px; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+        :host([popup-mode]) .entity-state { font-size:12px; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+        :host([popup-mode]) .more { display:none; }
         .page {
           width: min(1180px, 100%);
           margin: 0 auto;
