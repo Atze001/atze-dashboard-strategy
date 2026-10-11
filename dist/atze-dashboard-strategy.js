@@ -14956,7 +14956,7 @@ class AtzeFanCard extends HTMLElement {
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
   _powerId() {
     const stem = this._config.entity?.slice(4)?.replace(/_(fan|filter)$/, "");
-    const candidates = [this._config.entity?.includes("wohnzimmer") ? "switch.wohnzimmer_luftfilter" : null, "switch." + stem + "_luftfilter", "switch." + stem + "_power"].filter(Boolean);
+    const candidates = [stem?.startsWith("luftfilter_") ? "switch." + stem.slice("luftfilter_".length) + "_luftfilter" : null, "switch." + stem + "_luftfilter", "switch." + stem + "_power"].filter(Boolean);
     return candidates.find(id => this._hass?.states?.[id]) || null;
   }
   _moreInfo() {
@@ -15034,7 +15034,7 @@ class AtzeFanCard extends HTMLElement {
       || options.find(option => String(option).toLowerCase().includes(mode.toLowerCase()));
   }
   _remainingTimer() {
-    const remaining = this._field("text_sensor", "timer_remaining")?.state;
+    const remaining = this._field("sensor", "timer_remaining")?.state;
     if (!remaining || ["unknown", "unavailable", "off", "none", "0", "00:00", "00:00:00"].includes(String(remaining).toLowerCase())) return "Aus";
     return remaining;
   }
@@ -15056,9 +15056,7 @@ class AtzeFanCard extends HTMLElement {
     } catch(error) { console.error("Atze Fan Popup: Geschwindigkeit fehlgeschlagen",error); }
   }
   async _setTimer(minutes) {
-    const timerId = this._hass?.states?.["number.luftfilter_wohnzimmer_timer"]
-      ? "number.luftfilter_wohnzimmer_timer"
-      : this._related("number", "timer_min");
+    const timerId = this._related("number", "timer") || this._related("number", "timer_min");
     if (!timerId || !this._hass) {
       console.warn("Atze Fan Popup: Timer-Entität nicht gefunden");
       return;
@@ -15150,7 +15148,7 @@ class AtzeFanCard extends HTMLElement {
     const powerId = this._powerId();
     const powerState = powerId && this._hass?.states?.[powerId];
     const powerButton = `<button class="fan-popup-power ${powerState?.state==="on"?"is-active":""}" data-fan-power aria-label="Stromversorgung" title="Stromversorgung" ${!powerId?"disabled":""}><ha-icon icon="mdi:power"></ha-icon></button>`;
-    const timerButtons = [[30,"30 Min"],[60,"1 Stunde"],[120,"2 Stunden"],[480,"8 Stunden"]].map(([minutes,label])=>
+    const timerButtons = [[60,"1 h"],[120,"2 h"],[480,"8 h"],[720,"12 h"]].map(([minutes,label])=>
       `<button class="fan-choice" data-timer="${minutes}"><ha-icon icon="mdi:clock-outline"></ha-icon><span>${label}</span></button>`).join("");
     return `<div class="fan-overlay"><section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
       <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span>${powerButton}</header>
