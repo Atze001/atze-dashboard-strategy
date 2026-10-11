@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.400.0**
+Version **0.401.0**
 
 Enthalten sind unter anderem:
 
@@ -224,6 +224,14 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.401.0
+
+- Hauptdashboard: Wetter, Strom, Warnungen, Batterie, Alarmo, AtzeHomeBase, Lichter, Rollläden und Thermostate auf kompakte Atze-Kartenoptik umgestellt.
+- Statuskacheln mit 56 px Höhe, kleineren Icons, klarer Beschriftung und einheitlichem Glass-Look; vorhandene Funktionen und Popups bleiben erhalten.
+- Favoritenkarten ebenfalls an die kompakte Atze-Optik angepasst, mit einheitlichen Ecken, Icons und Abständen.
+- Switch Cards zeigen statt Glühbirnen seitliche Ein-/Aus-Schalter und verzichten auf das überflüssige rechte Einstellungen-Icon.
+- Rechtes Einstellungen-Icon auch bei Automationen, Szenen und Skripten entfernt; Bedienung und Detailansicht bleiben erhalten.
+
 ## v0.400.0
 
 - Thermostat-Popup überarbeitet: kompakte Solltemperatursteuerung mit Ein-/Aus-Schalter (grau/rot), Isttemperatur und Plus-/Minus-Tasten.
@@ -239,14 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Raumunabhängige Zuordnung von Luftfilter-Sensoren, Stromschalter und Timer; Restlaufzeit wird live angezeigt.
 - Stromversorgungsstatus bleibt auf der Lüfterkarte sichtbar, ohne separaten Schalter.
 - Kompaktere Raumabschnitte und aufgeräumtes Lüfter-Popup mit flacheren Buttons und ohne Trennlinien.
-
-## v0.364.0
-
-- Eigene native Karten für Lichter, Rollläden und Thermostate mit einheitlicher Steuerung und Einstellungen.
-- Thermostat-Service-Popup für Identifizieren, Kindersicherung, Kalibrierung, Sensorwahl, Ventil- und Fenstererkennung sowie Diagnoseanzeigen.
-- Neue Thermostatübersicht auf der Startseite mit Live-Status und Steuerung.
-- Verbesserte Popup-Bedienung: kein Hintergrundscrollen, stabile Sensorauswahl und Live-Aktualisierung.
-- Thermostat-Service-Taster bleiben auch bei unbekanntem Zustand bedienbar.
 <!-- latest-changes:end -->
 
 ## Lizenz

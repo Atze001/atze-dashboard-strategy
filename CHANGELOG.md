@@ -1,3 +1,11 @@
+## v0.401.0
+
+- Hauptdashboard: Wetter, Strom, Warnungen, Batterie, Alarmo, AtzeHomeBase, Lichter, Rollläden und Thermostate auf kompakte Atze-Kartenoptik umgestellt.
+- Statuskacheln mit 56 px Höhe, kleineren Icons, klarer Beschriftung und einheitlichem Glass-Look; vorhandene Funktionen und Popups bleiben erhalten.
+- Favoritenkarten ebenfalls an die kompakte Atze-Optik angepasst, mit einheitlichen Ecken, Icons und Abständen.
+- Switch Cards zeigen statt Glühbirnen seitliche Ein-/Aus-Schalter und verzichten auf das überflüssige rechte Einstellungen-Icon.
+- Rechtes Einstellungen-Icon auch bei Automationen, Szenen und Skripten entfernt; Bedienung und Detailansicht bleiben erhalten.
+
 ## v0.400.0
 
 - Thermostat-Popup überarbeitet: kompakte Solltemperatursteuerung mit Ein-/Aus-Schalter (grau/rot), Isttemperatur und Plus-/Minus-Tasten.

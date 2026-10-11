@@ -2264,7 +2264,7 @@ class AtzeSwitchCard extends HTMLElement {
     const id=this._config.entity,entity=this._hass?.states[id];
     const active=entity?.state==="on",available=entity&&["on","off"].includes(entity.state);
     const name=this._config.name||entity?.attributes?.friendly_name||id;
-    const icon=this._config.icon||entity?.attributes?.icon||"mdi:toggle-switch";
+    const icon=active?"mdi:toggle-switch":"mdi:toggle-switch-off-outline";
     this.shadowRoot.innerHTML=`
       <style>
         :host{display:block;min-width:0}
@@ -2281,7 +2281,7 @@ class AtzeSwitchCard extends HTMLElement {
       <ha-card>
         <button class="control" type="button" aria-label="Schalter umschalten"><ha-icon></ha-icon></button>
         <button class="details" type="button" aria-label="Schalter-Details"><span class="name"></span><span class="status"></span></button>
-        <button class="settings" type="button" aria-label="Schalter-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
     this.shadowRoot.querySelector(".name").textContent=name;
@@ -2290,7 +2290,7 @@ class AtzeSwitchCard extends HTMLElement {
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());
     this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
-    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+
   }
 }
 const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";
@@ -2341,14 +2341,14 @@ class AtzeActionCard extends HTMLElement {
       <ha-card>
         <button class="control" type="button" aria-label="${domain==="automation"?"Automation umschalten":"Aktion ausführen"}"><ha-icon icon="${controlIcon}"></ha-icon></button>
         <button class="details" type="button" aria-label="Details öffnen"><span class="name"></span><span class="status"></span></button>
-        <button class="settings" type="button" aria-label="Einstellungen öffnen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        
       </ha-card>`;
     this.shadowRoot.querySelector(".name").textContent=name;
     this.shadowRoot.querySelector(".status").textContent=status;
     const control=this.shadowRoot.querySelector(".control");control.disabled=!available;
     control.addEventListener("click",()=>this._activate());
     this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
-    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+
   }
 }
 const atzeActionCardTag=ATZE_TESTING_BUILD?"atze-action-card-testing":"atze-action-card";
