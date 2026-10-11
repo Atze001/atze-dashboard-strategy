@@ -14289,8 +14289,6 @@ class AtzeThermostatCard extends HTMLElement {
     const state = this._hass?.states?.[this._config.entity];
     const attrs = state?.attributes || {};
     const unit = this._hass?.config?.unit_system?.temperature || "°C";
-    const min = Number(attrs.min_temp ?? 5), max = Number(attrs.max_temp ?? 30);
-    const step = Number(attrs.target_temp_step) > 0 ? Number(attrs.target_temp_step) : 0.5;
     const target = Number(attrs.temperature);
     const validTarget = attrs.temperature != null && Number.isFinite(target);
     const current = attrs.current_temperature;
@@ -14309,7 +14307,12 @@ class AtzeThermostatCard extends HTMLElement {
     const windowDetection = items.find(isWindowDetection);
     const rowItems = items.filter(item =>
       !(calibrationButton && calibrationState && item.id === calibrationState.id) &&
-      item.id !== batteryItem?.id && !isChildLock(item) && !isWindowDetection(item));
+      item.id !== batteryItem?.id && !isChildLock(item) && !isWindowDetection(item) &&
+      !((item.domain === "sensor" || item.domain === "binary_sensor") &&
+        (/(?:^|_)(?:operating_state|operation_state|running_state|hvac_action|heating_state|betriebszustand)$/.test(item.id.split(".")[1]) ||
+         /^(?:Betriebszustand|Operating state|Operation state|HVAC action)$/i.test(item.label.trim()) ||
+         /(?:^|_)(?:window|fenster)(?:_open|_state|_status)?$/.test(item.id.split(".")[1]) ||
+         /^(?:Fenster|Window|Fensterstatus|Window state)$/i.test(item.label.trim()))));
     const renderRow = ({id,domain,label,state:other}) => {
       const disabled = ["unknown","unavailable"].includes(other.state);
       let action = "";
@@ -14335,7 +14338,6 @@ class AtzeThermostatCard extends HTMLElement {
       '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
       '<div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
       '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div>' +
-      '<input class="temperature-slider" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + (validTarget ? target : min) + '" ' + (!validTarget ? "disabled" : "") + '>' +
       (modes ? '<div class="service-divider"></div><div class="service-caption">Betriebsmodus</div><div class="mode-options">' + modes + '</div>' : '') +
       '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
@@ -14358,8 +14360,6 @@ class AtzeThermostatCard extends HTMLElement {
     if (value && state?.attributes?.temperature != null && Number.isFinite(target)) {
       const unit = this._hass?.config?.unit_system?.temperature || "°C";
       value.textContent = target.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + unit;
-      const slider = dialog.querySelector(".temperature-slider");
-      if (slider && !this._temperatureDragging) slider.value = String(target);
     }
     dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
     const battery = dialog.querySelector(".thermostat-battery");
@@ -14532,7 +14532,6 @@ class AtzeThermostatCard extends HTMLElement {
     const dialog = this.shadowRoot.querySelector(".service-dialog");
     if (dialog) {
       dialog.querySelector(".service-title").textContent = this._deviceTitle();
-      const slider = dialog.querySelector(".temperature-slider");
       const step = Number(this._hass?.states?.[this._config.entity]?.attributes?.target_temp_step) > 0
         ? Number(this._hass.states[this._config.entity].attributes.target_temp_step) : 0.5;
       const adjust = direction => {
@@ -14544,12 +14543,6 @@ class AtzeThermostatCard extends HTMLElement {
       };
       dialog.querySelectorAll("[data-temp-step]").forEach(button =>
         button.addEventListener("click",() => adjust(Number(button.dataset.tempStep))));
-      slider?.addEventListener("input",() => {
-        this._temperatureDragging = true;
-        dialog.querySelector("[data-target-value]").textContent = Number(slider.value).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + (this._hass?.config?.unit_system?.temperature || "°C");
-      });
-      slider?.addEventListener("change",() => { this._temperatureDragging = false; this._setTemperature(Number(slider.value)); });
-      slider?.addEventListener("pointercancel",() => { this._temperatureDragging = false; });
       dialog.querySelectorAll("[data-hvac]").forEach(button =>
         button.addEventListener("click",() => this._setHvacMode(button.dataset.hvac)));
     }
