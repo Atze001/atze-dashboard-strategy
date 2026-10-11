@@ -17,7 +17,7 @@ Enthalten sind unter anderem:
 
 - automatische Raumansichten
 - Apple-Home-inspirierte Deckseite mit Raumbildern
-- Bubble-Card-Unterstützung
+- eigene Atze-Raumkarten ohne Bubble-Card-Abhängigkeit
 - Fenster-, Rollladen-, Schloss- und Leistungsstatus auf den Raumbildern
 - labelbasierte Sicherheitsansicht
 - Wartungs-/Batterieansicht nach Räumen
@@ -27,8 +27,8 @@ Enthalten sind unter anderem:
 - konfigurierbare Favoriten zwischen Status- und Raumkacheln
 - frei konfigurierbare eigene Dashboard-Seiten
 - automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
-- optionales Zeitpläne-Bubble-Popup mit Scheduler Card
-- optionales Lichtsteuerungs-Bubble-Popup aus einer eigenen Seite
+- optionales Zeitpläne-Popup mit Scheduler Card
+- optionales Lichtsteuerungs-Popup aus einer eigenen Seite
 - dynamische Raumbilder abhängig von Tag/Nacht und – je nach Bereich – Licht-, Fenster-, Tür-, Schloss- und Rollladenstatus
 - automatischer HACS-Update-Hinweis auf der Startseite
 
@@ -64,20 +64,6 @@ Installation und Updates der Strategy sowie der meisten Zusatzkarten.
 
 [HACS](https://www.hacs.xyz/)
 
-### Bubble Card — erforderlich
-
-Wird für Raumkarten, Climate-Karten und Bubble-Popups der Strategy benötigt.
-
-[GitHub – Clooos/Bubble-Card](https://github.com/Clooos/Bubble-Card)  
-In HACS nach **Bubble Card** suchen.
-
-### Bubble Card Tools — empfohlen
-
-Backend für den Bubble-Card Module Store und die Modulverwaltung.
-
-[GitHub – Clooos/Bubble-Card-Tools](https://github.com/Clooos/Bubble-Card-Tools)  
-In HACS nach **Bubble Card Tools** suchen.
-
 ### card-mod — empfohlen / optional
 
 Für zusätzliche CSS-Anpassungen und das Styling von Home-Assistant-Karten.
@@ -94,7 +80,7 @@ In HACS nach **Kiosk Mode** suchen.
 
 ### Scheduler Card — optional
 
-Wird für das optionale Zeitpläne-Bubble-Popup benötigt.
+Wird für die optionale Zeitpläne-Ansicht benötigt.
 
 [GitHub – nielsfaber/scheduler-card](https://github.com/nielsfaber/scheduler-card)  
 In HACS nach **Scheduler Card** suchen.
@@ -115,10 +101,7 @@ In HACS nach **Alarmo** suchen.
 
 ### Was davon ist wirklich nötig?
 
-Für die Grundfunktionen des Dashboards ist **Bubble Card** die wichtigste
-externe Abhängigkeit. **Bubble Card Tools**, **card-mod** und **Kiosk Mode**
-erweitern bzw. vereinfachen das Setup, werden aber nicht für jede Funktion der
-Strategy zwingend benötigt.
+Die Strategy verwendet eigene Atze-Karten und Popups. **Bubble Card** und **Bubble Card Tools** werden dafür nicht benötigt. **card-mod** und **Kiosk Mode** sind optionale Erweiterungen.
 
 **Scheduler Card** und **Scheduler Component** brauchst du nur, wenn das
 optionale Zeitpläne-Popup verwendet werden soll. **Alarmo** ist ebenfalls nur
