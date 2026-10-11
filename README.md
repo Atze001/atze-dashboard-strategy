@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.401.0**
+Version **0.402.0**
 
 Enthalten sind unter anderem:
 
@@ -224,6 +224,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.402.0
+
+- Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.
+- Sicherheitsabfrage vor dem Zurücksetzen; andere Entitätseinstellungen, Favoriten und Raumreihenfolge bleiben erhalten.
+- Erleichtert das Bereinigen veralteter Sichtbarkeitsregeln, beispielsweise aus früheren Template-Konfigurationen.
+
 ## v0.401.0
 
 - Hauptdashboard: Wetter, Strom, Warnungen, Batterie, Alarmo, AtzeHomeBase, Lichter, Rollläden und Thermostate auf kompakte Atze-Kartenoptik umgestellt.
@@ -240,13 +246,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Kalibrierungsstatus farblich am Button, Batteriestand als Icon mit Prozentwert im Header.
 - Redundante Temperatur-, Fenster- und Betriebsstatus-Anzeigen sowie den Temperatur-Slider entfernt.
 - Einheitliche Geräte-Popups und weitere Verbesserungen an Licht-, Rollladen- und Lüftersteuerung aus dem Testing-Branch.
-
-## v0.366.0
-
-- Native Lüfterkarte mit umfangreichem Levoit-Popup für Betriebsmodus, drei Lüfterstufen, Kindersicherung, Display und Timer.
-- Raumunabhängige Zuordnung von Luftfilter-Sensoren, Stromschalter und Timer; Restlaufzeit wird live angezeigt.
-- Stromversorgungsstatus bleibt auf der Lüfterkarte sichtbar, ohne separaten Schalter.
-- Kompaktere Raumabschnitte und aufgeräumtes Lüfter-Popup mit flacheren Buttons und ohne Trennlinien.
 <!-- latest-changes:end -->
 
 ## Lizenz
