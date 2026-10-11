@@ -2749,7 +2749,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
   return `
     ha-card {
       --bubble-border-radius: ${radius} !important;
-      --bubble-main-background-color: rgba(48, 50, 54, 0.30) !important;
+      --bubble-main-background-color: rgba(35, 38, 46, 0.78) !important;
       --bubble-secondary-background-color: rgba(58,58,60,0.72) !important;
       --bubble-accent-color: ${accent} !important;
       --bubble-icon-background-color: rgba(118,118,128,0.18) !important;
@@ -2779,19 +2779,19 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
     .bubble-select-card-container,
     .bubble-cover-card-container,
     .bubble-cover-container {
-      backdrop-filter: blur(8px) saturate(1.12) !important;
-      -webkit-backdrop-filter: blur(8px) saturate(1.12) !important;
+      backdrop-filter: blur(22px) saturate(1.25) !important;
+      -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
     }
 
     .bubble-button-card-container {
       background:
-        \${${active} ? '${activeTint}' : 'rgba(48, 50, 54, 0.30)'} !important;
+        \${${active} ? '${activeTint}' : 'rgba(35, 38, 46, 0.78)'} !important;
     }
 
     .bubble-media-player-container,
     .bubble-climate-container,
     .bubble-select-card-container {
-      background-color: rgba(48, 50, 54, 0.30) !important;
+      background-color: rgba(35, 38, 46, 0.78) !important;
     }
 
     .bubble-cover-card-container,
@@ -2799,7 +2799,7 @@ function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
       background-color:
         \${${domain === "cover" ? active : "false"}
           ? 'rgba(255,255,255,0.96)'
-          : 'rgba(48, 50, 54, 0.30)'} !important;
+          : 'rgba(35, 38, 46, 0.78)'} !important;
     }
 
     .bubble-cover-button {
