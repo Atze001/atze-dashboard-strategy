@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6919880";
+const ATZE_TESTING_REVISION = "81F8B3B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14937,6 +14937,7 @@ class AtzeFanCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = {};
     this._busy = false;
+    this._popupOpen = false;
   }
   setConfig(config) {
     if (!config?.entity?.startsWith("fan.")) throw new Error("Atze Fan Card benötigt eine fan-Entität");
@@ -14989,6 +14990,72 @@ class AtzeFanCard extends HTMLElement {
       this._busy = false;
     }
   }
+
+  _related(domain, suffix) {
+    const fanId = this._config.entity || "";
+    const stem = fanId.replace(/^fan\./, "").replace(/_(fan|filter)$/, "");
+    const id = domain + "." + stem + "_" + suffix;
+    return this._hass?.states?.[id] ? id : null;
+  }
+  _field(domain, suffix) {
+    const id = this._related(domain, suffix);
+    return id ? this._hass.states[id] : null;
+  }
+  _format(domain, suffix, fallback = "–") {
+    const state = this._field(domain, suffix);
+    return state && !["unknown", "unavailable"].includes(state.state) ? state.state : fallback;
+  }
+  async _set(domain, suffix, value) {
+    const id = this._related(domain, suffix);
+    if (!id || !this._hass) return;
+    try {
+      if (domain === "switch") await this._hass.callService("switch", value ? "turn_on" : "turn_off", {entity_id:id});
+      if (domain === "select") await this._hass.callService("select", "select_option", {entity_id:id, option:value});
+      if (domain === "number") await this._hass.callService("number", "set_value", {entity_id:id, value:Number(value)});
+    } catch (error) { console.error("Atze Fan Popup: Aktion fehlgeschlagen", error); }
+  }
+  _popupMarkup() {
+    const fan = this._hass?.states?.[this._config.entity];
+    const title = this._config.name || fan?.attributes?.friendly_name || "Luftreiniger";
+    const esc = value => String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    const tile = (icon, name, value) => `<div class="fan-tile"><ha-icon icon="${icon}"></ha-icon><div><small>${name}</small><strong>${esc(value)}</strong></div></div>`;
+    const selector = (suffix, label) => {
+      const entity = this._field("select", suffix);
+      if (!entity) return "";
+      return `<label class="fan-row"><span>${label}</span><select data-select="${suffix}">${(entity.attributes.options || []).map(option=>`<option value="${esc(option)}" ${option === entity.state ? "selected" : ""}>${esc(option)}</option>`).join("")}</select></label>`;
+    };
+    const toggle = (suffix, label) => {
+      const entity = this._field("switch", suffix);
+      return entity ? `<label class="fan-row"><span>${label}</span><input type="checkbox" data-switch="${suffix}" ${entity.state === "on" ? "checked" : ""}></label>` : "";
+    };
+    const timer = this._field("number", "timer_min");
+    const timerInput = timer ? `<label class="fan-row"><span>Timer (Minuten)</span><input type="number" data-number="timer_min" min="${timer.attributes.min ?? 0}" max="${timer.attributes.max ?? 1440}" step="${timer.attributes.step ?? 1}" value="${esc(timer.state)}"></label>` : "";
+    return `<div class="fan-overlay" role="presentation">
+      <section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
+        <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span></header>
+        <div class="fan-grid">
+          ${tile("mdi:blur", "PM2.5", this._format("sensor","aq_pm_2_5"))}
+          ${tile("mdi:air-filter", "Filter", this._format("sensor","filter") + " %")}
+          ${tile("mdi:timer-outline", "Timer", this._format("sensor","timer_duration"))}
+          ${tile("mdi:weather-windy", "Modus", fan?.attributes?.preset_mode || this._format("select","fan_operating_mode"))}
+        </div>
+        ${selector("fan_operating_mode", "Betriebsmodus")}
+        ${selector("auto_mode", "Auto-Modus")}
+        ${toggle("child_lock", "Kindersicherung")}
+        ${toggle("display", "Display")}
+        ${timerInput}
+      </section></div>`;
+  }
+  _bindPopup() {
+    const overlay = this.shadowRoot.querySelector(".fan-overlay");
+    if (!overlay) return;
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay) { this._popupOpen = false; this._render(); }
+    });
+    overlay.querySelectorAll("[data-switch]").forEach(el=>el.addEventListener("change",()=>this._set("switch",el.dataset.switch,el.checked)));
+    overlay.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>this._set("select",el.dataset.select,el.value)));
+    overlay.querySelectorAll("[data-number]").forEach(el=>el.addEventListener("change",()=>this._set("number",el.dataset.number,el.value)));
+  }
   _render() {
     if (!this._config.entity) return;
     const id = this._config.entity;
@@ -15021,6 +15088,19 @@ class AtzeFanCard extends HTMLElement {
         .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
         .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
         button:disabled { opacity:.4; cursor:default; }
+        .details,.status { cursor:pointer; }
+        .fan-overlay { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.45); }
+        .fan-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
+        .fan-dialog header { display:flex; align-items:center; gap:12px; font-weight:600; font-size:18px; margin-bottom:20px; }
+        .fan-dialog header ha-icon { color:#64d2ff; }
+        .fan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+        .fan-tile { display:flex; gap:10px; align-items:center; min-width:0; padding:13px 10px; border-radius:14px; background:rgba(255,255,255,.07); }
+        .fan-tile ha-icon { color:#64d2ff; flex-shrink:0; }
+        .fan-tile small { display:block; opacity:.7; font-size:11px; }
+        .fan-tile strong { display:block; font-size:15px; overflow-wrap:anywhere; }
+        .fan-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid rgba(255,255,255,.10); font-size:14px; }
+        .fan-row select,.fan-row input[type=number] { max-width:55%; min-width:0; border-radius:10px; padding:8px; color:inherit; background:#35373e; border:1px solid rgba(255,255,255,.18); }
+        .fan-row input[type=checkbox] { width:20px; height:20px; accent-color:#64d2ff; }
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
@@ -15028,7 +15108,7 @@ class AtzeFanCard extends HTMLElement {
         <span class="status"></span>
         ${powerId ? `<button class="power" type="button" aria-label="Stromversorgung umschalten" title="Shelly Stromversorgung" ${!["on", "off"].includes(power?.state) ? "disabled" : ""}><ha-icon icon="mdi:power-plug"></ha-icon></button>` : ""}
         <button class="settings" type="button" aria-label="Luftreiniger-Einstellungen" title="Luftreiniger-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
-      </ha-card>`;
+      </ha-card>${this._popupOpen ? this._popupMarkup() : ""}`;
     const details = this.shadowRoot.querySelector(".details");
     details.textContent = name;
     details.title = name;
@@ -15045,6 +15125,9 @@ class AtzeFanCard extends HTMLElement {
       if (window.confirm(message)) this._togglePower();
     });
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
+    this.shadowRoot.querySelector(".details").addEventListener("click", () => { this._popupOpen = true; this._render(); });
+    this.shadowRoot.querySelector(".status").addEventListener("click", () => { this._popupOpen = true; this._render(); });
+    this._bindPopup();
   }
 }
 if (!customElements.get("atze-fan-card")) {
