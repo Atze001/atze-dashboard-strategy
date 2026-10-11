@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "7FDED67";
+const ATZE_TESTING_REVISION = "8E18F0B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14237,6 +14237,23 @@ class AtzeThermostatCard extends HTMLElement {
       return { id, domain, label, state };
     }).sort((a,b) => a.label.localeCompare(b.label,"de"));
   }
+  _batteryItem(items = this._serviceItems()) {
+    return items.find(item => item.domain === "sensor" &&
+      (item.state.attributes?.device_class === "battery" ||
+       /(?:^|_)battery(?:_level)?$/.test(item.id.split(".")[1])) &&
+      (item.state.attributes?.unit_of_measurement === "%" || item.state.attributes?.device_class === "battery"));
+  }
+  _batteryMarkup(item) {
+    if (!item) return "";
+    const n = Number(item.state.state);
+    const valid = !["unknown","unavailable"].includes(item.state.state) && Number.isFinite(n);
+    const percent = valid ? Math.max(0,Math.min(100,Math.round(n))) : null;
+    const icon = percent == null ? "mdi:battery-unknown" : percent <= 10 ? "mdi:battery-outline" :
+      percent >= 95 ? "mdi:battery" : "mdi:battery-" + Math.max(10,Math.min(90,Math.round(percent/10)*10));
+    const color = percent == null ? "unknown" : percent <= 20 ? "low" : percent <= 40 ? "medium" : "good";
+    return '<span class="thermostat-battery ' + color + '" title="Batteriestand"><ha-icon icon="' + icon +
+      '"></ha-icon><span class="battery-percent">' + (percent == null ? "–" : percent) + '%</span></span>';
+  }
   _deviceTitle() {
     const entry = this._hass?.entities?.[this._config.entity];
     const device = entry?.device_id ? this._hass?.devices?.[entry.device_id] : null;
@@ -14282,7 +14299,15 @@ class AtzeThermostatCard extends HTMLElement {
     const items = this._serviceItems();
     const calibrationButton = items.find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
     const calibrationState = items.find(item => item.domain === "binary_sensor" && /(?:^|_)calibrated$/.test(item.id));
-    const rows = items.filter(item => !(calibrationButton && calibrationState && item.id === calibrationState.id)).map(({id,domain,label,state:other}) => {
+    const batteryItem = this._batteryItem(items);
+    const isChildLock = item => item.domain === "switch" && /(?:^|_)child_lock$/.test(item.id);
+    const isWindowDetection = item => item.domain === "switch" && /(?:^|_)window_detection$/.test(item.id);
+    const childLock = items.find(isChildLock);
+    const windowDetection = items.find(isWindowDetection);
+    const rowItems = items.filter(item =>
+      !(calibrationButton && calibrationState && item.id === calibrationState.id) &&
+      item.id !== batteryItem?.id && !isChildLock(item) && !isWindowDetection(item));
+    const renderRow = ({id,domain,label,state:other}) => {
       const disabled = ["unknown","unavailable"].includes(other.state);
       let action = "";
       if (domain === "button" || domain === "switch") {
@@ -14299,9 +14324,12 @@ class AtzeThermostatCard extends HTMLElement {
         action = '<span>' + this._escape(disabled ? "Nicht verfügbar" : other.state === "on" ? "Ja" : other.state === "off" ? "Nein" : other.state + (other.attributes.unit_of_measurement ? " " + other.attributes.unit_of_measurement : "")) + '</span>';
       }
       return '<div class="service-row"><span>' + this._escape(label) + '</span>' + action + '</div>';
-    }).join("");
+    };
+    const paired = [childLock,windowDetection].filter(Boolean);
+    const pairedHtml = paired.length ? '<div class="service-pair">' + paired.map(renderRow).join("") + '</div>' : "";
+    const rows = pairedHtml + rowItems.map(renderRow).join("");
     return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true">' +
-      '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span></header><div class="service-divider"></div>' +
+      '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
       '<div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
       '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div>' +
       '<input class="temperature-slider" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + (validTarget ? target : min) + '" ' + (!validTarget ? "disabled" : "") + '>' +
@@ -14331,6 +14359,15 @@ class AtzeThermostatCard extends HTMLElement {
       if (slider && !this._temperatureDragging) slider.value = String(target);
     }
     dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
+    const battery = dialog.querySelector(".thermostat-battery");
+    if (battery) {
+      const fresh = this._batteryMarkup(this._batteryItem());
+      if (fresh) {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = fresh;
+        battery.replaceWith(wrapper.firstElementChild);
+      }
+    }
     const calibrationButton = this._serviceItems().find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
     const calibrationState = this._serviceItems().find(item => item.domain === "binary_sensor" && /(?:^|_)calibrated$/.test(item.id));
     if (calibrationButton && calibrationState) {
@@ -14436,7 +14473,17 @@ class AtzeThermostatCard extends HTMLElement {
         .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
         .service-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
         .service-dialog header ha-icon { color:#64d2ff; }
-        .service-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .service-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .thermostat-battery { display:flex; flex:0 0 auto; align-items:center; gap:3px; font-size:12px; font-weight:600; white-space:nowrap; }
+        .thermostat-battery ha-icon { --mdc-icon-size:21px; }
+        .thermostat-battery.good { color:#30d158; }
+        .thermostat-battery.medium { color:#ff9f0a; }
+        .thermostat-battery.low { color:#ff453a; }
+        .thermostat-battery.unknown { color:var(--secondary-text-color,#8e8e93); }
+        .service-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+        .service-pair .service-row { min-width:0; display:flex; flex-direction:column; justify-content:center; gap:9px; border:1px solid var(--divider-color); border-radius:12px; padding:12px 6px; text-align:center; }
+        .service-pair .service-row span:first-child { font-size:12px; overflow-wrap:anywhere; }
+        .service-pair .service-toggle { margin:auto; }
         .service-divider { height:1px; background:rgba(255,255,255,.16); margin:18px 0; }
         .service-caption { font-size:13px; color:var(--secondary-text-color); margin:10px 0; }
         .temperature-control { display:flex; align-items:center; justify-content:center; gap:22px; margin:12px 0; }
