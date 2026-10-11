@@ -2693,6 +2693,26 @@ function buildEntityCard(
 
   let card = defaultTileCard(hass, entity, config, area);
 
+  // Room safety sensors use the same translucent tile surface as Atze controls.
+  // Keep the native tile's more-info interaction and device-class state labels.
+  if (domainOf(entityId) === "binary_sensor" && cardMode !== "tile" && !override.card) {
+    card["card_mod"] = {
+      style: `ha-card {
+        background: rgba(65, 57, 79, 0.38) !important;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        border-radius: 20px !important;
+        box-shadow: none !important;
+        min-height: 80px;
+      }
+      ha-card .content { min-width: 0; }
+      ha-card .primary, ha-card .secondary {
+        overflow-wrap: anywhere;
+      }`
+    };
+  }
+
   // Native Atze controls render supported room entity domains.
   // Explicit per-entity card overrides still take precedence.
   if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean", "automation", "scene", "script", "lock"].includes(domainOf(entityId)) &&
@@ -4134,7 +4154,7 @@ function buildGroupSection(
       area_id: area.area_id,
       group_key: groupKey,
       strategy_config: config,
-      columns: ["light", "scene", "automation"].includes(groupKey) ? 2 : (compact ? columns : 1),
+      columns: ["light", "scene", "automation", "binary_sensor"].includes(groupKey) ? 2 : (compact ? columns : 1),
       cards: visibleCards,
       popup_cards: popupCards,
     };
