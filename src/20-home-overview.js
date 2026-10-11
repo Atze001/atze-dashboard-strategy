@@ -3159,8 +3159,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .quick {
           margin-top: 28px;
-          padding-top: 26px;
-          border-top: 1px solid rgba(255,255,255,0.10);
+          padding-top: 0;
+          border-top: none;
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 14px;
