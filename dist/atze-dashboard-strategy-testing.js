@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FD99ADE";
+const ATZE_TESTING_REVISION = "C58BB0B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14366,7 +14366,7 @@ class AtzeFanCard extends HTMLElement {
     const timerButtons = [[60,"1 h"],[120,"2 h"],[480,"8 h"],[720,"12 h"]].map(([minutes,label])=>
       `<button class="fan-choice" data-timer="${minutes}"><ha-icon icon="mdi:clock-outline"></ha-icon><span>${label}</span></button>`).join("");
     return `<div class="fan-overlay"><section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
-      <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span>${powerButton}</header>\n      <div class="fan-header-divider" aria-hidden="true"></div>
+      <header><ha-icon icon="mdi:air-filter"></ha-icon><span>${esc(title)}</span>${powerButton}</header>\n      <div class="fan-header-divider" aria-hidden="true"></div>
       <div class="fan-grid">
         ${tile("mdi:blur","PM2.5",this._format("sensor","aq_pm_2_5"),"pm25")}
         ${tile("mdi:air-filter","Filter",this._format("sensor","filter")+" %","filter")}
@@ -14456,7 +14456,7 @@ class AtzeFanCard extends HTMLElement {
         .fan-row input[type=checkbox] { width:20px; height:20px; accent-color:#64d2ff; }
       </style>
       <ha-card>
-        <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
+        <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-filter"></ha-icon></button>
         <button class="details" type="button" aria-label="Luftreiniger-Details öffnen" title="Luftreiniger-Details öffnen"></button>
         <button class="status" type="button" aria-label="Luftreiniger-Details öffnen" title="Luftreiniger-Details öffnen"></button>
         <button class="settings" type="button" aria-label="Luftreiniger-Einstellungen" title="Luftreiniger-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
