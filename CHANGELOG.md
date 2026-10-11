@@ -1,3 +1,12 @@
+## v0.400.0
+
+- Thermostat-Popup überarbeitet: kompakte Solltemperatursteuerung mit Ein-/Aus-Schalter (grau/rot), Isttemperatur und Plus-/Minus-Tasten.
+- Temperatur-Presets für 5, 17, 20, 24 °C und geräteabhängiges Maximum; Sicherheitsabfrage vor maximaler Temperatur.
+- Automatisch zugeordnete Thermostat-Zusatzfunktionen übersichtlich gruppiert: Child Lock/Fenstererkennung und Ventilerkennung/Kalibrierung.
+- Kalibrierungsstatus farblich am Button, Batteriestand als Icon mit Prozentwert im Header.
+- Redundante Temperatur-, Fenster- und Betriebsstatus-Anzeigen sowie den Temperatur-Slider entfernt.
+- Einheitliche Geräte-Popups und weitere Verbesserungen an Licht-, Rollladen- und Lüftersteuerung aus dem Testing-Branch.
+
 ## v0.366.0
 
 - Native Lüfterkarte mit umfangreichem Levoit-Popup für Betriebsmodus, drei Lüfterstufen, Kindersicherung, Display und Timer.

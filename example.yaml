@@ -26,7 +26,7 @@ custom_pages:
 home_alarm_entity: alarm_control_panel.alarmo
 home_homebase_entity: select.atzehomebase_guard_mode
 
-default_card: bubble
+default_card: atze
 apple_home_style: true
 apple_card_layout: large
 apple_card_rows: 1

@@ -11,13 +11,13 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.366.0**
+Version **0.400.0**
 
 Enthalten sind unter anderem:
 
 - automatische Raumansichten
 - Apple-Home-inspirierte Deckseite mit Raumbildern
-- Bubble-Card-Unterstützung
+- eigene Atze-Raumkarten ohne Bubble-Card-Abhängigkeit
 - Fenster-, Rollladen-, Schloss- und Leistungsstatus auf den Raumbildern
 - labelbasierte Sicherheitsansicht
 - Wartungs-/Batterieansicht nach Räumen
@@ -27,8 +27,8 @@ Enthalten sind unter anderem:
 - konfigurierbare Favoriten zwischen Status- und Raumkacheln
 - frei konfigurierbare eigene Dashboard-Seiten
 - automatische Navigationsbuttons zu eigenen Seiten auf der Startseite
-- optionales Zeitpläne-Bubble-Popup mit Scheduler Card
-- optionales Lichtsteuerungs-Bubble-Popup aus einer eigenen Seite
+- optionales Zeitpläne-Popup mit Scheduler Card
+- optionales Lichtsteuerungs-Popup aus einer eigenen Seite
 - dynamische Raumbilder abhängig von Tag/Nacht und – je nach Bereich – Licht-, Fenster-, Tür-, Schloss- und Rollladenstatus
 - automatischer HACS-Update-Hinweis auf der Startseite
 
@@ -64,20 +64,6 @@ Installation und Updates der Strategy sowie der meisten Zusatzkarten.
 
 [HACS](https://www.hacs.xyz/)
 
-### Bubble Card — erforderlich
-
-Wird für Raumkarten, Climate-Karten und Bubble-Popups der Strategy benötigt.
-
-[GitHub – Clooos/Bubble-Card](https://github.com/Clooos/Bubble-Card)  
-In HACS nach **Bubble Card** suchen.
-
-### Bubble Card Tools — empfohlen
-
-Backend für den Bubble-Card Module Store und die Modulverwaltung.
-
-[GitHub – Clooos/Bubble-Card-Tools](https://github.com/Clooos/Bubble-Card-Tools)  
-In HACS nach **Bubble Card Tools** suchen.
-
 ### card-mod — empfohlen / optional
 
 Für zusätzliche CSS-Anpassungen und das Styling von Home-Assistant-Karten.
@@ -94,7 +80,7 @@ In HACS nach **Kiosk Mode** suchen.
 
 ### Scheduler Card — optional
 
-Wird für das optionale Zeitpläne-Bubble-Popup benötigt.
+Wird für die optionale Zeitpläne-Ansicht benötigt.
 
 [GitHub – nielsfaber/scheduler-card](https://github.com/nielsfaber/scheduler-card)  
 In HACS nach **Scheduler Card** suchen.
@@ -115,10 +101,7 @@ In HACS nach **Alarmo** suchen.
 
 ### Was davon ist wirklich nötig?
 
-Für die Grundfunktionen des Dashboards ist **Bubble Card** die wichtigste
-externe Abhängigkeit. **Bubble Card Tools**, **card-mod** und **Kiosk Mode**
-erweitern bzw. vereinfachen das Setup, werden aber nicht für jede Funktion der
-Strategy zwingend benötigt.
+Die Strategy verwendet eigene Atze-Karten und Popups. **Bubble Card** und **Bubble Card Tools** werden dafür nicht benötigt. **card-mod** und **Kiosk Mode** sind optionale Erweiterungen.
 
 **Scheduler Card** und **Scheduler Component** brauchst du nur, wenn das
 optionale Zeitpläne-Popup verwendet werden soll. **Alarmo** ist ebenfalls nur
@@ -241,6 +224,15 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.400.0
+
+- Thermostat-Popup überarbeitet: kompakte Solltemperatursteuerung mit Ein-/Aus-Schalter (grau/rot), Isttemperatur und Plus-/Minus-Tasten.
+- Temperatur-Presets für 5, 17, 20, 24 °C und geräteabhängiges Maximum; Sicherheitsabfrage vor maximaler Temperatur.
+- Automatisch zugeordnete Thermostat-Zusatzfunktionen übersichtlich gruppiert: Child Lock/Fenstererkennung und Ventilerkennung/Kalibrierung.
+- Kalibrierungsstatus farblich am Button, Batteriestand als Icon mit Prozentwert im Header.
+- Redundante Temperatur-, Fenster- und Betriebsstatus-Anzeigen sowie den Temperatur-Slider entfernt.
+- Einheitliche Geräte-Popups und weitere Verbesserungen an Licht-, Rollladen- und Lüftersteuerung aus dem Testing-Branch.
+
 ## v0.366.0
 
 - Native Lüfterkarte mit umfangreichem Levoit-Popup für Betriebsmodus, drei Lüfterstufen, Kindersicherung, Display und Timer.
@@ -255,12 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Neue Thermostatübersicht auf der Startseite mit Live-Status und Steuerung.
 - Verbesserte Popup-Bedienung: kein Hintergrundscrollen, stabile Sensorauswahl und Live-Aktualisierung.
 - Thermostat-Service-Taster bleiben auch bei unbekanntem Zustand bedienbar.
-
-## v0.360.0
-
-- Anwesenheitsverlauf als mittiges Popup beim Antippen des Personenfotos.
-- Personen-Entität und iCloud-iPhone-Tracker mit gemeinsamer chronologischer Ereignisliste und 24h-/7d-/30d-Auswahl.
-- Getestete Testing-Funktion in den aktuellen Main-Stand übernommen.
 <!-- latest-changes:end -->
 
 ## Lizenz

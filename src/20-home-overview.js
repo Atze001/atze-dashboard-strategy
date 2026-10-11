@@ -2023,7 +2023,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: block;
           width: auto;
           box-sizing: border-box;
-          --home-shell-bg: #111111;
+          --home-shell-bg: ${this._config?.dashboard_background_image ? "transparent" : "#111111"};
           background: var(--home-shell-bg);
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
@@ -2050,7 +2050,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           --home-red: #FF453A;
           --home-yellow: #FFD60A;
 
-          background: #111111;
+          background: var(--home-shell-bg);
           border: none;
           box-shadow: none;
           border-radius: 0;
@@ -3159,8 +3159,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .quick {
           margin-top: 28px;
-          padding-top: 26px;
-          border-top: 1px solid rgba(255,255,255,0.10);
+          padding-top: 0;
+          border-top: none;
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 14px;

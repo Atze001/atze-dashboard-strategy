@@ -2129,7 +2129,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
-                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Bubble-Popup mit Scheduler Card öffnet.</span>
+                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Popup mit Scheduler Card öffnet.</span>
                 </span>
                 <input
                   class="setting-toggle"
@@ -2139,6 +2139,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
+              <div class="dashboard-background-setting" style="padding:16px 18px;border-bottom:1px solid var(--divider-color, rgba(127,127,127,.24));">
+                <div class="name" style="font-weight:600;">Dashboard-Hintergrundbild</div>
+                <div class="desc" style="margin-top:6px;color:var(--secondary-text-color);font-size:13px;">Foto vom Gerät auswählen. Das Bild wird für das Dashboard optimiert und gespeichert.</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+                  <input class="dashboard-background-file" type="file" accept="image/*" style="display:none" aria-label="Hintergrundfoto auswählen" />
+                  <button class="dashboard-background-pick" type="button" style="padding:8px 12px;border-radius:10px;">Foto auswählen</button>
+                  <button class="dashboard-background-clear" type="button" style="padding:8px 12px;border-radius:10px;">Hintergrund entfernen</button>
+                </div>
+                ${this._config.dashboard_background_image ? `<img alt="Hintergrund-Vorschau" src="${this._escape(this._config.dashboard_background_image)}" style="display:block;width:100%;max-height:150px;object-fit:cover;border-radius:10px;margin-top:12px;" />` : ""}
+                <div class="dashboard-background-status" role="status" aria-live="polite" style="margin-top:8px;color:var(--secondary-text-color);font-size:12px;"></div>
+              </div>
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
@@ -2612,6 +2623,63 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
 
 
+    const backgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
+    const backgroundStatus = this.shadowRoot.querySelector(".dashboard-background-status");
+    const setBackgroundStatus = (message, error = false) => {
+      if (!backgroundStatus) return;
+      backgroundStatus.textContent = message;
+      backgroundStatus.style.color = error ? "var(--error-color)" : "var(--secondary-text-color)";
+    };
+    const saveBackground = (value) => {
+      const next = { ...this._config };
+      if (value) next.dashboard_background_image = value;
+      else delete next.dashboard_background_image;
+      this._fireConfigChanged(next);
+    };
+    this.shadowRoot.querySelector(".dashboard-background-pick")?.addEventListener("click", () => backgroundFile?.click());
+    backgroundFile?.addEventListener("change", async (event) => {
+      const file = event.currentTarget.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/") && !/\\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name)) {
+        setBackgroundStatus("Bitte eine Bilddatei auswählen.", true);
+        return;
+      }
+      setBackgroundStatus("Foto wird verarbeitet …");
+      try {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        try {
+          await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = () => reject(new Error("Dieses Bildformat konnte nicht geöffnet werden."));
+            image.src = url;
+          });
+          const maxSide = 1280;
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("Bildverarbeitung nicht verfügbar.");
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          let data = "";
+          for (const quality of [0.7, 0.55, 0.4]) {
+            data = canvas.toDataURL("image/jpeg", quality);
+            if (data.length <= 250000) break;
+          }
+          if (data.length > 250000) throw new Error("Das Foto ist nach dem Verkleinern noch zu groß.");
+          saveBackground(data);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        setBackgroundStatus("Foto nicht übernommen: " + (error.message || error), true);
+      } finally {
+        if (backgroundFile?.isConnected) backgroundFile.value = "";
+      }
+    });
+    this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
+
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
       input.addEventListener("change", (event) => {
         const target = event.currentTarget;
@@ -2933,7 +3001,7 @@ const atzeStrategyRegistration = {
   strategyType: "dashboard",
   name: "Atze Dashboard",
   description:
-    "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
+    "Automatisches, flexibel anpassbares Area-Dashboard mit eigenen Atze-Raumkarten und Popups.",
 };
 
 const existingAtzeStrategy = window.customStrategies.find(
