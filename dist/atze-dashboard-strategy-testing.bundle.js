@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "A7FDE15";
+const ATZE_TESTING_REVISION = "D8B6351";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10066,7 +10066,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: block;
           width: auto;
           box-sizing: border-box;
-          --home-shell-bg: #111111;
+          --home-shell-bg: ${this._config?.dashboard_background_image ? "transparent" : "#111111"};
           background: var(--home-shell-bg);
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
@@ -10093,7 +10093,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           --home-red: #FF453A;
           --home-yellow: #FFD60A;
 
-          background: #111111;
+          background: var(--home-shell-bg);
           border: none;
           box-shadow: none;
           border-radius: 0;
