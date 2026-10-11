@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "14956D9";
+const ATZE_TESTING_REVISION = "D5B2712";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8018,7 +8018,8 @@ class AtzeDashboardStrategy extends HTMLElement {
     const safeBackground = (
       backgroundValue.startsWith("/local/") ||
       backgroundValue.startsWith("/api/image/serve/") ||
-      /^https?:\/\//i.test(backgroundValue)
+      /^https?:\/\//i.test(backgroundValue) ||
+      /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(backgroundValue)
     ) && !/["'\\\n\r<>]/.test(backgroundValue)
       ? backgroundValue
       : "";
@@ -17450,19 +17451,15 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               <label class="row">
                 <span class="copy">
                   <span class="name">Dashboard-Hintergrundbild</span>
-                  <span class="desc">Bildpfad aus Home Assistant (z. B. /local/hintergrund.webp) oder eine HTTPS-Bildadresse. Gilt für alle Ansichten. Leer lassen für den Standardhintergrund.</span>
+                  <span class="desc">Foto direkt vom Gerät auswählen. Das Bild wird verkleinert und mit den Dashboard-Einstellungen gespeichert.</span>
                 </span>
               </label>
-              <div style="display:flex;gap:8px;align-items:center;padding:0 16px 12px;">
-                <input
-                  class="dashboard-background-input"
-                  type="text"
-                  placeholder="/local/hintergrund.webp"
-                  aria-label="Dashboard-Hintergrundbild"
-                  value="${this._escape(this._config.dashboard_background_image || "")}"
-                  style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--divider-color);background:var(--secondary-background-color);color:var(--primary-text-color);font:inherit;"
-                />
-                <button class="dashboard-background-clear" type="button" aria-label="Hintergrundbild entfernen">Entfernen</button>
+              <div style="display:flex;gap:8px;align-items:center;padding:0 16px 12px;flex-wrap:wrap;">
+                <input class="dashboard-background-file" type="file" accept="image/*" style="display:none" aria-label="Hintergrundfoto auswählen" />
+                <button class="dashboard-background-pick" type="button">Foto auswählen</button>
+                <button class="dashboard-background-clear" type="button">Hintergrund entfernen</button>
+                ${this._config.dashboard_background_image ? `<img alt="Hintergrund-Vorschau" src="${this._escape(this._config.dashboard_background_image)}" style="width:100%;max-height:130px;object-fit:cover;border-radius:10px;margin-top:8px;" />` : ""}
+                <span class="dashboard-background-error" style="color:var(--error-color);font-size:12px;"></span>
               </div>
               ${this._toggleHtml(
                 "hide_scrollbar",
@@ -17937,15 +17934,49 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
 
 
-    const backgroundInput = this.shadowRoot.querySelector(".dashboard-background-input");
+    const backgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
+    const backgroundError = this.shadowRoot.querySelector(".dashboard-background-error");
     const saveBackground = (value) => {
-      const image = String(value || "").trim();
       const next = { ...this._config };
-      if (image) next.dashboard_background_image = image;
+      if (value) next.dashboard_background_image = value;
       else delete next.dashboard_background_image;
       this._fireConfigChanged(next);
     };
-    backgroundInput?.addEventListener("change", (event) => saveBackground(event.currentTarget.value));
+    this.shadowRoot.querySelector(".dashboard-background-pick")?.addEventListener("click", () => backgroundFile?.click());
+    backgroundFile?.addEventListener("change", async (event) => {
+      const file = event.currentTarget.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        if (backgroundError) backgroundError.textContent = "Bitte eine Bilddatei auswählen.";
+        return;
+      }
+      try {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        try {
+          await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+            image.src = url;
+          });
+          const maxSide = 1600;
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("Canvas nicht verfügbar");
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          const data = canvas.toDataURL("image/jpeg", 0.72);
+          if (data.length > 950000) throw new Error("Bild ist zu groß. Bitte ein kleineres Foto wählen.");
+          saveBackground(data);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        if (backgroundError) backgroundError.textContent = "Bild konnte nicht geladen werden: " + (error.message || error);
+      }
+    });
     this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
