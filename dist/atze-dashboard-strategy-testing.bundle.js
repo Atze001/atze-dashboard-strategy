@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "4313EFD";
+const ATZE_TESTING_REVISION = "88BF277";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7226,6 +7226,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
     this._powerPopupOpen = false;
+    this._securityPopupOpen = false;
     this._groupControlPopup = null;
     this._climateHistoryPopup = null;
     this._climateHistory = [];
@@ -7266,6 +7267,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     if (this._schedulerCard) this._schedulerCard.hass = value;
+    const securityCard = this.shadowRoot?.querySelector("atze-security-overview-card[popup-mode]");
+    if (securityCard) securityCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
       else this._render();
@@ -8678,8 +8681,26 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
   }
 
+  _securityPopupHtml() {
+    if (!this._securityPopupOpen) return "";
+    return `<div class="weather-popup-backdrop" id="security-popup-backdrop">
+      <section class="weather-popup security-popup" role="dialog" aria-modal="true" aria-label="Warnungen">
+        <header class="security-popup-header"><ha-icon icon="mdi:shield-alert-outline"></ha-icon><span>Warnungen</span></header>
+        <div class="security-popup-content"><atze-security-overview-card popup-mode></atze-security-overview-card></div>
+      </section>
+    </div>`;
+  }
+
+  _mountSecurityPopup() {
+    const card = this.shadowRoot?.querySelector("atze-security-overview-card[popup-mode]");
+    const config = this._config?.security_popup_card;
+    if (!card || !config) return;
+    card.setConfig({ ...config, popup_mode: true });
+    card.hass = this._hass;
+  }
+
   _hasOpenDashboardPopup() {
-    return Boolean(this._weatherPopupOpen || this._powerPopupOpen ||
+    return Boolean(this._weatherPopupOpen || this._powerPopupOpen || this._securityPopupOpen ||
       this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
   }
 
@@ -9742,6 +9763,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
         .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:var(--card-background-color, #1c1c1c); box-shadow:0 24px 70px rgba(0,0,0,.48); }
+        .security-popup { display:flex; flex-direction:column; overflow:hidden; width:min(680px,calc(100vw - 40px)); padding:0; }
+        .security-popup-header { flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:20px 24px; font-size:20px; font-weight:650; border-bottom:1px solid rgba(255,255,255,.12); }
+        .security-popup-header ha-icon { color:var(--home-yellow); }
+        .security-popup-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; padding:18px 20px 24px; }
         .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
         .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
         .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
@@ -10892,6 +10917,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         </div>
         ${this._weatherPopupHtml(weather)}
           ${this._powerPopupHtml()}
+          ${this._securityPopupHtml()}
           ${this._groupControlPopup === "thermostats" ? this._homeThermostatPopupHtml() : this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
           ${this._presenceHistoryPopupHtml()}
@@ -10904,6 +10930,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (element) element.scrollTop = position.scrollTop;
     }
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
+    if (this._securityPopupOpen) this._mountSecurityPopup();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
     const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
     if (newPresenceScroll) newPresenceScroll.scrollTop = presencePopupScrollTop;
@@ -11268,8 +11295,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#security-status")
       ?.addEventListener(
         "click",
-        () => this._navigate(this._config.security_path)
+        () => { this._securityPopupOpen = true; this._render(); }
       );
+
+    this.shadowRoot.querySelector("#security-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "security-popup-backdrop") { this._securityPopupOpen = false; this._render(); }
+    });
 
     this.shadowRoot
       .querySelector("#battery-status")
