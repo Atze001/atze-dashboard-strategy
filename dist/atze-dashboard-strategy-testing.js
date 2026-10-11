@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6C4B361";
+const ATZE_TESTING_REVISION = "2367F67";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -2648,480 +2648,6 @@ function deepMerge(base, extra) {
 }
 
 
-function appendBubbleStyle(card, css) {
-  if (!css) return card;
-
-  const existing = Array.isArray(card.styles)
-    ? card.styles.join("\n")
-    : (card.styles || "");
-
-  card.styles = `${existing}\n${css}`.trim();
-  return card;
-}
-
-function appleHomeAccent(domain) {
-  switch (domain) {
-    case "light":
-      return "#FFD60A"; // Apple yellow
-    case "switch":
-    case "input_boolean":
-    case "number":
-    case "input_number":
-    case "select":
-      return "#0A84FF"; // Apple blue
-    case "cover":
-      return "#0A84FF";
-    case "climate":
-      return "#FF9F0A"; // Apple orange
-    case "media_player":
-      return "#BF5AF2"; // Apple purple
-    case "lock":
-      return "#30D158"; // Apple green
-    case "binary_sensor":
-      return "#FF453A"; // Apple red for active alerts/open states
-    case "fan":
-      return "#64D2FF";
-    default:
-      return "#8E8E93";
-  }
-}
-
-function appleHomeActiveExpression(domain) {
-  switch (domain) {
-    case "light":
-    case "switch":
-    case "input_boolean":
-    case "fan":
-    case "binary_sensor":
-      return "state === 'on'";
-    case "cover":
-      return "state === 'open'";
-    case "climate":
-      return "state !== 'off' && state !== 'unavailable'";
-    case "media_player":
-      return "state === 'playing' || state === 'paused'";
-    case "lock":
-      return "state === 'unlocked'";
-    default:
-      return "false";
-  }
-}
-
-function appleHomeTint(domain) {
-  switch (domain) {
-    case "light":
-    case "cover":
-      // Apple Home: active lights and open covers use a white accessory tile.
-      return "rgba(255, 255, 255, 0.96)";
-    case "climate":
-      return "rgba(255, 159, 10, 0.18)";
-    case "media_player":
-      return "rgba(191, 90, 242, 0.18)";
-    case "lock":
-      return "rgba(48, 209, 88, 0.18)";
-    case "binary_sensor":
-      return "rgba(255, 69, 58, 0.18)";
-    case "fan":
-      return "rgba(100, 210, 255, 0.18)";
-    case "switch":
-    case "input_boolean":
-    case "number":
-    case "input_number":
-    case "select":
-    case "cover":
-      return "rgba(10, 132, 255, 0.18)";
-    default:
-      return "rgba(142, 142, 147, 0.14)";
-  }
-}
-
-function appleHomeCardStyle(entityId, domain, compact = false, config = {}) {
-  const accent = appleHomeAccent(domain);
-  const active = appleHomeActiveExpression(domain);
-  const activeTint = appleHomeTint(domain);
-  const radius = compact ? "22px" : "24px";
-  const whiteSurface = domain === "light" || domain === "cover";
-  const appleAccessoryIcon =
-    domain === "light" ||
-    domain === "cover" ||
-    domain === "switch";
-
-  return `
-    ha-card {
-      --bubble-border-radius: ${radius} !important;
-      --bubble-main-background-color: rgba(35, 38, 46, 0.88) !important;
-      --ha-card-background: rgba(35, 38, 46, 0.88) !important;
-      background: rgba(35, 38, 46, 0.88) !important;
-      --bubble-secondary-background-color: rgba(58,58,60,0.72) !important;
-      --bubble-accent-color: ${accent} !important;
-      --bubble-icon-background-color: rgba(118,118,128,0.18) !important;
-      --bubble-sub-button-background-color: rgba(118,118,128,0.18) !important;
-      --bubble-border: 0 !important;
-      --bubble-box-shadow: none !important;
-      border: 0 !important;
-      box-shadow: none !important;
-      overflow: hidden !important;
-    }
-
-    /* Give all standard room cards 4 px more vertical space. */
-    ha-card,
-    .bubble-button-card-container,
-    .bubble-media-player-container,
-    .bubble-climate-container,
-    .bubble-select-card-container,
-    .bubble-cover-card-container,
-    .bubble-cover-container {
-      min-height: ${compact ? "56px" : "64px"} !important;
-    }
-
-    ha-card,
-    .bubble-button-card-container,
-    .bubble-media-player-container,
-    .bubble-climate-container,
-    .bubble-select-card-container,
-    .bubble-cover-card-container,
-    .bubble-cover-container {
-      backdrop-filter: blur(22px) saturate(1.25) !important;
-      -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
-    }
-
-    .bubble-button-card-container {
-      background-color: rgba(35, 38, 46, 0.88) !important;
-      background:
-        \${${active} ? '${activeTint}' : 'rgba(35, 38, 46, 0.88)'} !important;
-    }
-
-    .bubble-media-player-container,
-    .bubble-climate-container,
-    .bubble-select-card-container {
-      background-color: rgba(35, 38, 46, 0.88) !important;
-    }
-
-    .bubble-cover-card-container,
-    .bubble-cover-container {
-      background-color:
-        \${${domain === "cover" ? active : "false"}
-          ? 'rgba(255,255,255,0.96)'
-          : 'rgba(35, 38, 46, 0.88)'} !important;
-    }
-
-    .bubble-cover-button {
-      background-color: rgba(58,58,60,0.92) !important;
-    }
-
-    .bubble-cover-button-icon {
-      color: rgba(255,255,255,0.92) !important;
-    }
-
-    .bubble-cover-button.disabled {
-      opacity: 1 !important;
-    }
-
-    .bubble-cover-button.disabled .bubble-cover-button-icon {
-      opacity: 0.28 !important;
-    }
-
-    /* Bubble Card has its own ON-state layer. Override it so active
-       accessories use an Apple-Home-like tint instead of a solid blue tile. */
-    .bubble-button-background {
-      opacity: 1 !important;
-      background-color:
-        \${${active} ? '${activeTint}' : 'transparent'} !important;
-    }
-
-    .bubble-range-fill {
-      background: ${accent} !important;
-      opacity: 0.30 !important;
-    }
-
-    .bubble-icon-container {
-      width: ${compact ? "42px" : "44px"} !important;
-      min-width: ${compact ? "42px" : "44px"} !important;
-      height: ${compact ? "42px" : "44px"} !important;
-      min-height: ${compact ? "42px" : "44px"} !important;
-      border-radius: 50% !important;
-      background:
-        \${${appleAccessoryIcon ? active : "false"}
-          ? '${accent}'
-          : (${appleAccessoryIcon ? "true" : active}
-              ? 'rgba(118,118,128,0.16)'
-              : '${accent}26')} !important;
-      transition:
-        background 180ms ease,
-        transform 180ms ease !important;
-    }
-
-    .bubble-icon {
-      color:
-        \${${appleAccessoryIcon ? active : "false"}
-          ? 'rgba(255,255,255,0.98)'
-          : (${appleAccessoryIcon ? "true" : active}
-              ? '${accent}'
-              : 'rgba(235,235,245,0.72)')} !important;
-      transition: color 180ms ease !important;
-    }
-
-    ${whiteSurface ? `
-    .bubble-icon-container {
-      border:
-        1px solid
-        \${${active}
-          ? 'transparent'
-          : 'rgba(255,255,255,0.035)'} !important;
-    }
-    ` : ""}
-
-    .bubble-name {
-      font-size:
-        ${compact
-          ? (config.apple_compact_name_font_size || "15px")
-          : (config.apple_name_font_size || "16px")} !important;
-      line-height: 1.15 !important;
-      font-weight: 600 !important;
-      letter-spacing: -0.25px !important;
-      color:
-        \${${whiteSurface ? active : "false"}
-          ? 'rgba(28,28,30,0.96)'
-          : 'rgba(255,255,255,0.96)'} !important;
-    }
-
-    .bubble-state {
-      font-size:
-        ${config.apple_state_font_size || "13px"} !important;
-      line-height: 1.15 !important;
-      color:
-        \${${whiteSurface ? active : "false"}
-          ? 'rgba(60,60,67,0.72)'
-          : (${active}
-              ? 'rgba(255,255,255,0.72)'
-              : 'rgba(235,235,245,0.56)')} !important;
-      font-weight: 450 !important;
-    }
-
-    .bubble-sub-button {
-      width: ${compact ? "40px" : "42px"} !important;
-      min-width: ${compact ? "40px" : "42px"} !important;
-      height: ${compact ? "40px" : "42px"} !important;
-      min-height: ${compact ? "40px" : "42px"} !important;
-      border-radius: 50% !important;
-      background:
-        \${${whiteSurface ? active : "false"}
-          ? 'rgba(118,118,128,0.14)'
-          : 'rgba(118,118,128,0.18)'} !important;
-      border:
-        1px solid
-        \${${whiteSurface ? active : "false"}
-          ? 'rgba(60,60,67,0.10)'
-          : 'rgba(255,255,255,0.045)'} !important;
-      box-shadow: none !important;
-    }
-
-    .bubble-sub-button-icon {
-      color:
-        \${${whiteSurface ? active : "false"}
-          ? 'rgba(28,28,30,0.86)'
-          : 'rgba(255,255,255,0.90)'} !important;
-    }
-  `;
-}
-
-
-
-function switchPowerSubtextStyle(powerEntityId) {
-  if (!powerEntityId) return "";
-
-  const safePowerEntityId =
-    String(powerEntityId).replace(/'/g, "\\'");
-
-  return `
-    \${(() => {
-      const powerEntity =
-        hass.states['${safePowerEntityId}'];
-
-      if (!powerEntity) return '';
-
-      const rawState =
-        String(powerEntity.state ?? '').toLowerCase();
-
-      if (
-        rawState === '' ||
-        rawState === 'unknown' ||
-        rawState === 'unavailable' ||
-        rawState === 'none'
-      ) {
-        return '';
-      }
-
-      const stateElement =
-        card.querySelector('.bubble-state');
-
-      if (!stateElement) return '';
-
-      const formatted =
-        typeof hass.formatEntityState === 'function'
-          ? hass.formatEntityState(powerEntity)
-          : (
-              powerEntity.attributes?.unit_of_measurement
-                ? powerEntity.state + ' ' +
-                  powerEntity.attributes.unit_of_measurement
-                : powerEntity.state
-            );
-
-      stateElement.innerText = formatted;
-      return '';
-    })()}
-  `;
-}
-
-function appleHomeCoverControlStyle(entityId) {
-  const safeEntityId = String(entityId).replace(/'/g, "\\'");
-
-  return `
-    \${(() => {
-      const entityId = '${safeEntityId}';
-      const entity = hass.states[entityId];
-      if (!entity || !icon) return '';
-
-      // Keep the last real travel direction per cover. Home Assistant usually
-      // reports a stopped, partly open cover simply as "open"; without this
-      // memory we cannot know whether the next command should reverse upward
-      // or downward.
-      window.__atzeCoverLastDirection =
-        window.__atzeCoverLastDirection || {};
-      const directionMemory =
-        window.__atzeCoverLastDirection;
-
-      const coverState = entity.state;
-      const positionRaw = entity.attributes?.current_position;
-      const position = Number.isFinite(Number(positionRaw))
-        ? Number(positionRaw)
-        : null;
-
-      const moving =
-        coverState === 'opening' ||
-        coverState === 'closing';
-
-      if (moving) {
-        directionMemory[entityId] = coverState;
-      }
-
-      const isClosed =
-        coverState === 'closed' ||
-        position === 0;
-
-      const isFullyOpen =
-        position === 100;
-
-      const lastDirection =
-        directionMemory[entityId] || null;
-
-      let nextDirection;
-
-      if (isClosed) {
-        nextDirection = 'opening';
-      } else if (isFullyOpen) {
-        nextDirection = 'closing';
-      } else if (lastDirection === 'closing') {
-        // Was travelling down, then stopped -> reverse upward next.
-        nextDirection = 'opening';
-      } else if (lastDirection === 'opening') {
-        // Was travelling up, then stopped -> reverse downward next.
-        nextDirection = 'closing';
-      } else {
-        // Safe fallback for a partly open cover after a fresh page load.
-        nextDirection = 'closing';
-      }
-
-      const actionIcon = moving
-        ? 'mdi:stop'
-        : nextDirection === 'opening'
-          ? 'mdi:arrow-up-bold'
-          : 'mdi:arrow-down-bold';
-
-      icon.setAttribute('icon', actionIcon);
-
-      const iconContainer = icon.parentElement;
-      if (!iconContainer) return '';
-
-      // Bubble Card's own icon action is disabled. This one control owns
-      // Up / Stop / Down and always reverses after a manual stop.
-      iconContainer.onclick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const current = hass.states[entityId];
-        if (!current) return;
-
-        const currentState = current.state;
-        const currentPositionRaw =
-          current.attributes?.current_position;
-        const currentPosition =
-          Number.isFinite(Number(currentPositionRaw))
-            ? Number(currentPositionRaw)
-            : null;
-
-        if (
-          currentState === 'opening' ||
-          currentState === 'closing'
-        ) {
-          // Store the direction before sending stop, because HA can immediately
-          // collapse the state back to "open".
-          directionMemory[entityId] = currentState;
-
-          hass.callService(
-            'cover',
-            'stop_cover',
-            { entity_id: entityId }
-          );
-          return;
-        }
-
-        const currentClosed =
-          currentState === 'closed' ||
-          currentPosition === 0;
-
-        const currentFullyOpen =
-          currentPosition === 100;
-
-        const rememberedDirection =
-          directionMemory[entityId] || null;
-
-        let desiredDirection;
-
-        if (currentClosed) {
-          desiredDirection = 'opening';
-        } else if (currentFullyOpen) {
-          desiredDirection = 'closing';
-        } else if (rememberedDirection === 'closing') {
-          desiredDirection = 'opening';
-        } else if (rememberedDirection === 'opening') {
-          desiredDirection = 'closing';
-        } else {
-          desiredDirection = 'closing';
-        }
-
-        if (desiredDirection === 'opening') {
-          directionMemory[entityId] = 'opening';
-          hass.callService(
-            'cover',
-            'open_cover',
-            { entity_id: entityId }
-          );
-        } else {
-          directionMemory[entityId] = 'closing';
-          hass.callService(
-            'cover',
-            'close_cover',
-            { entity_id: entityId }
-          );
-        }
-      };
-
-      return '';
-    })()}
-  `;
-}
-
 function popupHashFor(parentEntityId) {
   return `#atze-${slugify(parentEntityId)}-settings`;
 }
@@ -3159,7 +2685,7 @@ function buildEntityCard(
 
   let card = defaultTileCard(hass, entity, config, area);
 
-  // Native Atze controls replace default Bubble Cards for room lights/covers.
+  // Native Atze controls render supported room entity domains.
   // Explicit per-entity card overrides still take precedence.
   if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean", "automation", "scene", "script", "lock"].includes(domainOf(entityId)) &&
       cardMode !== "tile" && !override.card) {
@@ -4479,8 +4005,7 @@ function buildPopupCard(
     .filter(Boolean);
 
   return {
-    type: ATZE_TESTING_BUILD ? "custom:atze-popup-card-testing" : "custom:bubble-card",
-    ...(ATZE_TESTING_BUILD ? {} : { card_type: "pop-up" }),
+    type: ATZE_TESTING_BUILD ? "custom:atze-popup-card-testing" : "custom:atze-popup-card",
     hash,
     name:
       isClimatePopup || isAggregatePopup
@@ -4588,10 +4113,10 @@ function buildGroupSection(
   // the chosen order per room in the browser and applies it immediately.
   if (groupKey !== "technik") {
     const visibleCards = cards.filter(
-      (card) => !(((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"))
+      (card) => !((card.type === "custom:atze-popup-card-testing" || card.type === "custom:atze-popup-card"))
     );
     const popupCards = cards.filter(
-      (card) => ((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing")
+      (card) => (card.type === "custom:atze-popup-card-testing" || card.type === "custom:atze-popup-card")
     );
 
     return {
@@ -4608,13 +4133,13 @@ function buildGroupSection(
   }
 
   // Never wrap pop-up cards inside an additional grid.
-  // Bubble standalone pop-ups are safest as direct section cards.
+  // Atze standalone pop-ups are safest as direct section cards.
   if (compact) {
     const visibleCards = cards.filter(
-      (card) => !(((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"))
+      (card) => !((card.type === "custom:atze-popup-card-testing" || card.type === "custom:atze-popup-card"))
     );
     const popupCards = cards.filter(
-      (card) => ((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing")
+      (card) => (card.type === "custom:atze-popup-card-testing" || card.type === "custom:atze-popup-card")
     );
 
     return {
@@ -4706,13 +4231,13 @@ function buildTechPopupCard(
   const visibleCards = cards.filter(
     (card) =>
       !(
-        (card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"
+        card.type === "custom:atze-popup-card-testing" || card.type === "custom:atze-popup-card"
       )
   );
 
   const nestedPopups = cards.filter(
     (card) =>
-      (card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"
+      card.type === "custom:atze-popup-card-testing" || card.type === "custom:atze-popup-card"
   );
 
   const columns = Number(
@@ -4722,8 +4247,7 @@ function buildTechPopupCard(
   );
 
   return {
-    type: ATZE_TESTING_BUILD ? "custom:atze-popup-card-testing" : "custom:bubble-card",
-    ...(ATZE_TESTING_BUILD ? {} : { card_type: "pop-up" }),
+    type: ATZE_TESTING_BUILD ? "custom:atze-popup-card-testing" : "custom:atze-popup-card",
     hash: techPopupHash(area),
     name: areaOverride.tech_popup_name || config.tech_popup_name || "Technik",
     icon: areaOverride.tech_popup_icon || config.tech_popup_icon || "mdi:cog-outline",
@@ -6844,7 +6368,7 @@ function buildAreaView(
     );
 
     if (techPopup) {
-      // Bubble pop-ups can live as standalone cards in an existing section
+      // Atze pop-ups can live as standalone cards in an existing section
       // without occupying visible dashboard space.
       if (sections.length) {
         sections[0].cards.push(techPopup);
