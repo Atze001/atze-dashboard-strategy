@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "42DFCBE";
+const ATZE_TESTING_REVISION = "E0781BF";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3373,7 +3373,7 @@ function buildEntityCard(
   if (["light", "cover", "climate", "fan"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : "custom:atze-entity-card",
+      type: domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
@@ -14772,8 +14772,9 @@ class AtzeEntityCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-entity-card")) {
-  customElements.define("atze-entity-card", AtzeEntityCard);
+const atzeEntityCardTag = ATZE_TESTING_BUILD ? "atze-entity-card-testing" : "atze-entity-card";
+if (!customElements.get(atzeEntityCardTag)) {
+  customElements.define(atzeEntityCardTag, AtzeEntityCard);
 }
 
 class AtzeThermostatCard extends HTMLElement {
@@ -14979,8 +14980,9 @@ class AtzeThermostatCard extends HTMLElement {
 
   }
 }
-if (!customElements.get("atze-thermostat-card")) {
-  customElements.define("atze-thermostat-card", AtzeThermostatCard);
+const atzeThermostatCardTag = ATZE_TESTING_BUILD ? "atze-thermostat-card-testing" : "atze-thermostat-card";
+if (!customElements.get(atzeThermostatCardTag)) {
+  customElements.define(atzeThermostatCardTag, AtzeThermostatCard);
 }
 
 
