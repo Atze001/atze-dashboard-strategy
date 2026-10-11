@@ -9789,10 +9789,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
         .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:var(--card-background-color, #1c1c1c); box-shadow:0 24px 70px rgba(0,0,0,.48); }
-        .security-popup { display:flex; flex-direction:column; overflow:hidden; width:min(680px,calc(100vw - 40px)); padding:0; }
+        .security-popup { display:flex; flex-direction:column; overflow:hidden; width:min(680px,calc(100vw - 40px)); max-height:calc(100dvh - 90px); padding:0; }
         .security-popup-header { flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:20px 24px; font-size:20px; font-weight:650; border-bottom:1px solid rgba(255,255,255,.12); }
         .security-popup-header ha-icon { color:var(--home-yellow); }
-        .security-popup-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; padding:18px 20px 24px; }
+        .security-popup-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; padding:18px 12px 24px; }
         .security-popup-summary { display:flex; align-items:center; gap:12px; padding:12px; border-radius:15px; background:rgba(48,50,54,.30); margin-bottom:18px; }
         .security-popup-summary > ha-icon { --mdc-icon-size:30px; color:#30d158; }
         .security-popup-summary span, .security-popup-row-copy { display:flex; flex-direction:column; min-width:0; gap:3px; }
