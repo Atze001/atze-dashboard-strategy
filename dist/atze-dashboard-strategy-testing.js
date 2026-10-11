@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "CE911E9";
+const ATZE_TESTING_REVISION = "D404853";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -2704,7 +2704,11 @@ function buildEntityCard(
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
         border-radius: 20px !important;
         box-shadow: none !important;
-        min-height: 80px;
+        height: 96px !important;
+        min-height: 96px !important;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
       }
       ha-card .content { min-width: 0; }
       ha-card .primary, ha-card .secondary {
