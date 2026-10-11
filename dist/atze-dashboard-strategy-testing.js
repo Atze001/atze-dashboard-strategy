@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0EC5D47";
+const ATZE_TESTING_REVISION = "81E6AA1";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -1311,6 +1311,14 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
 
     // Keep Home Assistant's own sidebar gesture untouched.
     if (startX <= ATZE_HOME_SWIPE_NATIVE_EDGE) {
+      return;
+    }
+
+    // A light popup owns horizontal gestures (brightness slider). Never
+    // start the dashboard swipe-back gesture while touching its overlay.
+    if ((event.composedPath?.() || []).some(node =>
+      node instanceof HTMLElement && node.classList?.contains("light-overlay")
+    )) {
       return;
     }
 
