@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0712FAC";
+const ATZE_TESTING_REVISION = "7117E82";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -4840,8 +4840,8 @@ function buildPopupCard(
     .filter(Boolean);
 
   return {
-    type: "custom:bubble-card",
-    card_type: "pop-up",
+    type: ATZE_TESTING_BUILD ? "custom:atze-popup-card-testing" : "custom:bubble-card",
+    ...(ATZE_TESTING_BUILD ? {} : { card_type: "pop-up" }),
     hash,
     name:
       isClimatePopup || isAggregatePopup
@@ -4949,10 +4949,10 @@ function buildGroupSection(
   // the chosen order per room in the browser and applies it immediately.
   if (groupKey !== "technik") {
     const visibleCards = cards.filter(
-      (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
+      (card) => !(((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"))
     );
     const popupCards = cards.filter(
-      (card) => card.type === "custom:bubble-card" && card.card_type === "pop-up"
+      (card) => ((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing")
     );
 
     return {
@@ -4972,10 +4972,10 @@ function buildGroupSection(
   // Bubble standalone pop-ups are safest as direct section cards.
   if (compact) {
     const visibleCards = cards.filter(
-      (card) => !(card.type === "custom:bubble-card" && card.card_type === "pop-up")
+      (card) => !(((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"))
     );
     const popupCards = cards.filter(
-      (card) => card.type === "custom:bubble-card" && card.card_type === "pop-up"
+      (card) => ((card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing")
     );
 
     return {
