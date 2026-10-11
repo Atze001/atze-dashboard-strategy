@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "24D39C8";
+const ATZE_TESTING_REVISION = "C4A8793";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15052,7 +15052,16 @@ class AtzeFanCard extends HTMLElement {
     } catch(error) { console.error("Atze Fan Popup: Geschwindigkeit fehlgeschlagen",error); }
   }
   async _setTimer(minutes) {
-    await this._set("number", "timer_min", minutes);
+    const timerId = this._hass?.states?.["number.luftfilter_wohnzimmer_timer"]
+      ? "number.luftfilter_wohnzimmer_timer"
+      : this._related("number", "timer_min");
+    if (!timerId || !this._hass) {
+      console.warn("Atze Fan Popup: Timer-Entität nicht gefunden");
+      return;
+    }
+    try {
+      await this._hass.callService("number", "set_value", {entity_id:timerId, value:minutes});
+    } catch (error) { console.error("Atze Fan Popup: Timer fehlgeschlagen", error); }
   }
   _refreshPopup() {
     const dialog = this.shadowRoot?.querySelector(".fan-dialog");
