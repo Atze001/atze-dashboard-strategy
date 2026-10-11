@@ -14484,9 +14484,9 @@ class AtzeThermostatCard extends HTMLElement {
         .thermostat-battery.low { color:#ff453a; }
         .thermostat-battery.unknown { color:var(--secondary-text-color,#8e8e93); }
         .service-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-        .service-pair .service-row { min-width:0; display:flex; flex-direction:column; justify-content:center; gap:9px; border:1px solid var(--divider-color); border-radius:12px; padding:12px 6px; text-align:center; }
+        .service-pair .service-row { min-width:0; display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:6px; border:1px solid var(--divider-color); border-radius:12px; padding:6px 8px; text-align:left; }
         .service-pair .service-row span:first-child { font-size:12px; overflow-wrap:anywhere; }
-        .service-pair .service-toggle { margin:auto; }
+        .service-pair .service-toggle { margin:0; flex:0 0 38px; width:38px; height:34px; }
         .service-divider { height:1px; background:rgba(255,255,255,.16); margin:18px 0; }
         .service-caption { font-size:13px; color:var(--secondary-text-color); margin:10px 0; }
         .temperature-control { display:flex; align-items:center; justify-content:center; gap:22px; margin:12px 0; }
