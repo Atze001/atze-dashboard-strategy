@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D481116";
+const ATZE_TESTING_REVISION = "1B01157";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15096,8 +15096,6 @@ class AtzeFanCard extends HTMLElement {
         <div class="fan-grid">
           ${tile("mdi:blur", "PM2.5", this._format("sensor","aq_pm_2_5"), "pm25")}
           ${tile("mdi:air-filter", "Filter", this._format("sensor","filter") + " %", "filter")}
-          ${tile("mdi:timer-outline", "Timer", this._format("sensor","timer_duration"), "timer")}
-          ${tile("mdi:weather-windy", "Modus", fan?.attributes?.preset_mode || this._format("select","fan_operating_mode"), "mode")}
         </div>
         ${selector("fan_operating_mode", "Betriebsmodus")}
         ${selector("auto_mode", "Auto-Modus")}
