@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FB30383";
+const ATZE_TESTING_REVISION = "227C792";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3370,10 +3370,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if (["light", "cover", "climate", "fan"].includes(domainOf(entityId)) &&
+  if (["light", "cover", "climate", "fan", "media_player"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
+      type: domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
@@ -15313,6 +15313,58 @@ const atzeFanCardTag = ATZE_TESTING_BUILD ? "atze-fan-card-testing" : "atze-fan-
 if (!customElements.get(atzeFanCardTag)) {
   customElements.define(atzeFanCardTag, AtzeFanCard);
 }
+
+class AtzeMediaCard extends HTMLElement {
+  constructor() { super(); this.attachShadow({mode:"open"}); this._config={}; this._busy=false; }
+  setConfig(config) { if (!config?.entity?.startsWith("media_player.")) throw new Error("media_player benötigt"); this._config=config; this._render(); }
+  set hass(value) { this._hass=value; this._render(); }
+  getCardSize() { return 1; }
+  getGridOptions() { return {columns:12,rows:1,min_columns:6}; }
+  _moreInfo() { this.dispatchEvent(new CustomEvent("hass-more-info",{bubbles:true,composed:true,detail:{entityId:this._config.entity}})); }
+  async _toggle() {
+    if(this._busy||!this._hass)return;
+    const state=this._hass.states[this._config.entity];
+    if(!state||["unknown","unavailable"].includes(state.state))return;
+    const playing=state.state==="playing",features=Number(state.attributes?.supported_features||0);
+    if(!(features & (playing?1:16384))) { this._moreInfo(); return; }
+    this._busy=true;
+    try { await this._hass.callService("media_player",playing?"media_pause":"media_play",{entity_id:this._config.entity}); }
+    catch(e) { console.error("Atze Media Card",e); }
+    finally { this._busy=false; }
+  }
+  _render() {
+    if(!this._config.entity)return;
+    const state=this._hass?.states[this._config.entity],playing=state?.state==="playing";
+    const features=Number(state?.attributes?.supported_features||0);
+    const canToggle=state&&!["unavailable","unknown"].includes(state.state)&&Boolean(features&(playing?1:16384));
+    const name=this._config.name||state?.attributes?.friendly_name||this._config.entity;
+    const status=playing&&state?.attributes?.media_title?[state.attributes.media_title,state.attributes.media_artist].filter(Boolean).join(" · "):
+      ({playing:"Wiedergabe",paused:"Pausiert",idle:"Bereit",off:"Aus",standby:"Standby"})[state?.state]||(state?.state||"Nicht verfügbar");
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;min-width:0}
+        ha-card{box-sizing:border-box;height:56px;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:15px;border:1px solid var(--home-card-border,rgba(255,255,255,.10));background:rgba(55,58,67,.30);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);color:var(--primary-text-color);overflow:hidden;box-shadow:none}
+        button{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit}
+        .control,.settings{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
+        .control ha-icon{--mdc-icon-size:23px;color:${playing?"#BF5AF2":"var(--secondary-text-color,#8e8e93)"}}
+        .settings ha-icon{--mdc-icon-size:23px}
+        .details{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left;padding:0;background:transparent}
+        .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      </style>
+      <ha-card><button class="control" type="button" aria-label="Wiedergabe"><ha-icon icon="${playing?"mdi:pause":"mdi:play"}"></ha-icon></button><button class="details" type="button" aria-label="Medien-Details"><span class="name"></span><span class="status"></span></button><button class="settings" type="button" aria-label="Medien-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button></ha-card>`;
+    this.shadowRoot.querySelector(".name").textContent=name;
+    this.shadowRoot.querySelector(".status").textContent=status;
+    const control=this.shadowRoot.querySelector(".control");
+    control.disabled=!canToggle;
+    if(!canToggle)control.style.opacity=".45";
+    control.addEventListener("click",()=>this._toggle());
+    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
+    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+  }
+}
+const atzeMediaCardTag=ATZE_TESTING_BUILD?"atze-media-card-testing":"atze-media-card";
+if(!customElements.get(atzeMediaCardTag))customElements.define(atzeMediaCardTag,AtzeMediaCard);
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
