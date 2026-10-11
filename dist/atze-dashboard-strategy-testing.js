@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6DC2563";
+const ATZE_TESTING_REVISION = "3C2B0CF";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14310,7 +14310,7 @@ class AtzeThermostatCard extends HTMLElement {
       item.id !== batteryItem?.id && !isChildLock(item) && !isWindowDetection(item) &&
       item.id !== valveDetection?.id && item.id !== calibrationButton?.id &&
       !(item.domain === "sensor" && item.state.attributes?.device_class === "temperature") &&
-      !(item.domain === "number" && /(?:^|_)temperature$/.test(item.id.split(".")[1])) &&
+      !(item.domain === "number" && (/(?:^|_)temperature$/.test(item.id.split(".")[1]) || /^Temperatur$/i.test(item.label.trim()))) &&
       !((item.domain === "sensor" || item.domain === "binary_sensor") &&
         (/(?:^|_)(?:operating_state|operation_state|running_state|hvac_action|heating_state|betriebszustand)$/.test(item.id.split(".")[1]) ||
          /^(?:Betriebszustand|Operating state|Operation state|HVAC action)$/i.test(item.label.trim()) ||
@@ -14343,6 +14343,9 @@ class AtzeThermostatCard extends HTMLElement {
       '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
       '<div class="thermostat-main">' + (hasPowerToggle ? '<button type="button" class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Heizung umschalten"><ha-icon icon="mdi:power"></ha-icon></button>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
       '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div></div></div>' +
+      '<div class="service-divider"></div><div class="service-caption">Temperatur-Voreinstellungen</div>' +
+      '<div class="temperature-presets">' + [5,17,20,24].map(t => '<button type="button" data-temp-preset="' + t + '"' + (t < Number(attrs.min_temp ?? 5) || t > Number(attrs.max_temp ?? 30) ? ' disabled' : '') + '>' + t + '°</button>').join("") +
+      '<button type="button" data-temp-preset="max" class="preset-max">Max</button></div>' +
       (modes ? '<div class="service-divider"></div><div class="service-caption">Betriebsmodus</div><div class="mode-options">' + modes + '</div>' : '') +
       '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
@@ -14503,7 +14506,10 @@ class AtzeThermostatCard extends HTMLElement {
         .temperature-control { display:flex; align-items:center; justify-content:space-between; gap:6px; margin:12px 0; }
         .temperature-control strong { white-space:nowrap; font-size:clamp(20px,5vw,30px); font-weight:600; font-variant-numeric:tabular-nums; }
         .temperature-control button { flex:0 0 36px; width:36px; height:36px; border-radius:50%; background:rgba(118,118,128,.20); border:1px solid var(--divider-color); font-size:25px; }
-        .temperature-slider { width:100%; accent-color:#64d2ff; touch-action:pan-y; }
+        .temperature-presets { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; }
+        .temperature-presets button { min-width:0; padding:10px 2px; border-radius:10px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); font-size:13px; }
+        .temperature-presets button:disabled { opacity:.35; cursor:default; }
+        .temperature-presets .preset-max { color:#ff9f0a; }
         .mode-options { display:flex; flex-wrap:wrap; gap:8px; }
         .mode-button { padding:10px 14px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); }
         .mode-button.is-active { border-color:#64d2ff; color:#64d2ff; }
@@ -14554,6 +14560,16 @@ class AtzeThermostatCard extends HTMLElement {
       };
       dialog.querySelectorAll("[data-temp-step]").forEach(button =>
         button.addEventListener("click",() => adjust(Number(button.dataset.tempStep))));
+      dialog.querySelectorAll("[data-temp-preset]").forEach(button => button.addEventListener("click",() => {
+        const state = this._hass?.states?.[this._config.entity];
+        if (!state || ["unknown","unavailable"].includes(state.state)) return;
+        const isMax = button.dataset.tempPreset === "max";
+        const max = Number(state.attributes?.max_temp ?? 30);
+        const temperature = isMax ? max : Number(button.dataset.tempPreset);
+        if (!Number.isFinite(temperature)) return;
+        if (isMax && !window.confirm("Thermostat wirklich auf die maximale Solltemperatur von " + max + " °C stellen?")) return;
+        this._setTemperature(temperature);
+      }));
       dialog.querySelector(".thermostat-power")?.addEventListener("click",() => {
         const current = this._hass?.states?.[this._config.entity];
         if (current && !["unknown","unavailable"].includes(current.state)) this._setHvacMode(current.state === "off" ? "heat" : "off");
