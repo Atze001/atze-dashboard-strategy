@@ -2704,7 +2704,11 @@ function buildEntityCard(
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
         border-radius: 20px !important;
         box-shadow: none !important;
-        min-height: 80px;
+        height: 96px !important;
+        min-height: 96px !important;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
       }
       ha-card .content { min-width: 0; }
       ha-card .primary, ha-card .secondary {
