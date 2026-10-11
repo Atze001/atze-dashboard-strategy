@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "16A1EA3";
+const ATZE_TESTING_REVISION = "14956D9";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8009,6 +8009,24 @@ class AtzeDashboardStrategy extends HTMLElement {
           },
         ],
       });
+    }
+
+    // Apply the optional dashboard background to every generated view.
+    // Restrict to HA-local paths or HTTP(S) images so arbitrary CSS cannot
+    // be injected through the editor setting.
+    const backgroundValue = String(config.dashboard_background_image || "").trim();
+    const safeBackground = (
+      backgroundValue.startsWith("/local/") ||
+      backgroundValue.startsWith("/api/image/serve/") ||
+      /^https?:\/\//i.test(backgroundValue)
+    ) && !/["'\\\n\r<>]/.test(backgroundValue)
+      ? backgroundValue
+      : "";
+    if (safeBackground) {
+      const background = `center / cover no-repeat fixed url("${safeBackground}")`;
+      for (const view of views) {
+        view.background = background;
+      }
     }
 
     return {
@@ -17429,6 +17447,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
+              <label class="row">
+                <span class="copy">
+                  <span class="name">Dashboard-Hintergrundbild</span>
+                  <span class="desc">Bildpfad aus Home Assistant (z. B. /local/hintergrund.webp) oder eine HTTPS-Bildadresse. Gilt für alle Ansichten. Leer lassen für den Standardhintergrund.</span>
+                </span>
+              </label>
+              <div style="display:flex;gap:8px;align-items:center;padding:0 16px 12px;">
+                <input
+                  class="dashboard-background-input"
+                  type="text"
+                  placeholder="/local/hintergrund.webp"
+                  aria-label="Dashboard-Hintergrundbild"
+                  value="${this._escape(this._config.dashboard_background_image || "")}"
+                  style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--divider-color);background:var(--secondary-background-color);color:var(--primary-text-color);font:inherit;"
+                />
+                <button class="dashboard-background-clear" type="button" aria-label="Hintergrundbild entfernen">Entfernen</button>
+              </div>
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
@@ -17901,6 +17936,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       else customElements.whenDefined("ha-yaml-editor").then(initialize);
     }
 
+
+    const backgroundInput = this.shadowRoot.querySelector(".dashboard-background-input");
+    const saveBackground = (value) => {
+      const image = String(value || "").trim();
+      const next = { ...this._config };
+      if (image) next.dashboard_background_image = image;
+      else delete next.dashboard_background_image;
+      this._fireConfigChanged(next);
+    };
+    backgroundInput?.addEventListener("change", (event) => saveBackground(event.currentTarget.value));
+    this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
       input.addEventListener("change", (event) => {
