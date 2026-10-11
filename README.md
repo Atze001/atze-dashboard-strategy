@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.364.0**
+Version **0.366.0**
 
 Enthalten sind unter anderem:
 
@@ -241,6 +241,13 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.366.0
+
+- Native Lüfterkarte mit umfangreichem Levoit-Popup für Betriebsmodus, drei Lüfterstufen, Kindersicherung, Display und Timer.
+- Raumunabhängige Zuordnung von Luftfilter-Sensoren, Stromschalter und Timer; Restlaufzeit wird live angezeigt.
+- Stromversorgungsstatus bleibt auf der Lüfterkarte sichtbar, ohne separaten Schalter.
+- Kompaktere Raumabschnitte und aufgeräumtes Lüfter-Popup mit flacheren Buttons und ohne Trennlinien.
+
 ## v0.364.0
 
 - Eigene native Karten für Lichter, Rollläden und Thermostate mit einheitlicher Steuerung und Einstellungen.
@@ -254,12 +261,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Anwesenheitsverlauf als mittiges Popup beim Antippen des Personenfotos.
 - Personen-Entität und iCloud-iPhone-Tracker mit gemeinsamer chronologischer Ereignisliste und 24h-/7d-/30d-Auswahl.
 - Getestete Testing-Funktion in den aktuellen Main-Stand übernommen.
-
-## v0.355.0
-
-- Schließen-X aus Dashboard-Popups entfernt; Popups lassen sich per Klick außerhalb schließen.
-- Zeitpläne-Dialog auf ein zentriertes natives Popup umgestellt.
-- Testing-Build-Workflow mit Source-Revision, Loader und lokaler Synchronisationsprüfung verbessert.
 <!-- latest-changes:end -->
 
 ## Lizenz
