@@ -1105,6 +1105,7 @@ class AtzeEntityCard extends HTMLElement {
     this._config = {};
     this._hass = null;
     this._busy = false;
+    this._lightPopupOpen = false;
   }
 
   setConfig(config) {
@@ -1156,6 +1157,62 @@ class AtzeEntityCard extends HTMLElement {
     }
   }
 
+  _openLightPopup() {
+    this._lightPopupOpen = true;
+    this._render();
+  }
+
+  _closeLightPopup() {
+    this._lightPopupOpen = false;
+    this._render();
+  }
+
+  async _setColorTemperature(kelvin) {
+    if (this._busy || !this._hass) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("light", "turn_on", {
+        entity_id: this._config.entity,
+        color_temp_kelvin: kelvin,
+      });
+    } catch (error) {
+      console.error("Atze Licht-Popup: Farbtemperatur fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+
+  _lightPopupMarkup(name, state) {
+    const registryEntity = this._hass?.entities?.[this._config.entity];
+    const device = registryEntity?.device_id ? this._hass?.devices?.[registryEntity.device_id] : null;
+    const title = device?.name_by_user || device?.name || name;
+    const modes = state?.attributes?.supported_color_modes || [];
+    const supportsTemperature = modes.includes("color_temp");
+    const min = Number(state?.attributes?.min_color_temp_kelvin);
+    const max = Number(state?.attributes?.max_color_temp_kelvin);
+    const current = Number(state?.attributes?.color_temp_kelvin);
+    const presets = [
+      [2200, "Kerzenlicht", "#ffad55"],
+      [2700, "Warmweiß", "#ffc782"],
+      [3000, "Weiß warm", "#ffdaa4"],
+      [4000, "Neutralweiß", "#fff0d5"],
+      [5000, "Tageslicht", "#f4f7ff"],
+      [6500, "Kaltweiß", "#dceaff"],
+    ];
+    const choices = presets.map(([kelvin,label,color]) => {
+      const available = supportsTemperature && Number.isFinite(min) && Number.isFinite(max) && kelvin >= min && kelvin <= max;
+      const selected = state?.state === "on" && Number.isFinite(current) && Math.abs(current-kelvin) < 100;
+      return '<button type="button" class="light-choice' + (selected ? ' is-active' : '') + '" data-kelvin="' + kelvin + '"' + (available ? '' : ' disabled') + '><span class="light-dot" style="background:' + color + '"></span><strong>' + kelvin + ' K</strong><small>' + label + '</small></button>';
+    }).join("");
+    return `<div class="light-overlay"><section class="light-dialog" role="dialog" aria-modal="true" aria-label="Licht Farbtemperatur">
+      <header><ha-icon icon="mdi:lightbulb"></ha-icon><span class="light-title"></span></header>
+      <div class="light-divider"></div>
+      <div class="light-heading">Farbtemperatur</div>
+      <div class="light-options">${choices}</div>
+      ${supportsTemperature ? "" : '<p class="light-hint">Diese Lampe unterstützt keine Farbtemperatursteuerung.</p>'}
+    </section></div>`;
+  }
+
   _render() {
     if (!this.shadowRoot || !this._config.entity) return;
     const id = this._config.entity;
@@ -1192,18 +1249,56 @@ class AtzeEntityCard extends HTMLElement {
           background:rgba(118,118,128,.20); }
         .settings ha-icon { --mdc-icon-size:23px; }
         button:disabled { opacity:.4; cursor:default; }
+        .details.light-details { cursor:pointer; }
+        .light-overlay { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
+        .light-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
+        .light-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
+        .light-dialog header ha-icon { color:#64d2ff; }
+        .light-title { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+        .light-divider { height:1px; background:rgba(255,255,255,.16); margin-bottom:20px; }
+        .light-heading { font-size:14px; font-weight:600; margin-bottom:12px; }
+        .light-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+        .light-choice { display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; min-width:0; border:1px solid rgba(255,255,255,.17); border-radius:14px; background:rgba(255,255,255,.07); color:#fff; font-size:12px; }
+        .light-choice.is-active { border-color:#64d2ff; background:rgba(20,107,153,.35); }
+        .light-choice:disabled { opacity:.35; cursor:default; }
+        .light-dot { display:block; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.3); }
+        .light-choice strong { font-size:12px; }
+        .light-choice small { font-size:11px; color:#c6c6cc; }
+        .light-hint { font-size:12px; color:#c6c6cc; }
+
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="Steuern" ${unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>
-        <span class="details"></span>
+        <span class="details ${cover ? "" : "light-details"}" role="${cover ? "text" : "button"}" tabindex="${cover ? "-1" : "0"}"></span>
         ${cover && position != null && Number.isFinite(position) ? `<span class="position">${Math.round(position)} %</span>` : ""}
         <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
-      </ha-card>`;
+      </ha-card>${!cover && this._lightPopupOpen ? this._lightPopupMarkup(name, state) : ""}`;
     const details = this.shadowRoot.querySelector(".details");
     details.textContent = name;
     details.title = name;
     this.shadowRoot.querySelector(".control")?.addEventListener("click", () => this._toggle());
     this.shadowRoot.querySelector(".settings")?.addEventListener("click", () => this._moreInfo());
+    if (!cover) {
+      const open = () => this._openLightPopup();
+      details.addEventListener("click", open);
+      details.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+      });
+      const overlay = this.shadowRoot.querySelector(".light-overlay");
+      if (overlay) {
+        overlay.querySelector(".light-title").textContent = (() => {
+          const registryEntity = this._hass?.entities?.[id];
+          const device = registryEntity?.device_id ? this._hass?.devices?.[registryEntity.device_id] : null;
+          return device?.name_by_user || device?.name || name;
+        })();
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) this._closeLightPopup();
+        });
+        overlay.querySelectorAll("[data-kelvin]").forEach(button => {
+          button.addEventListener("click", () => this._setColorTemperature(Number(button.dataset.kelvin)));
+        });
+      }
+    }
   }
 }
 
