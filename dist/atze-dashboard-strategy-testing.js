@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9B94AC5";
+const ATZE_TESTING_REVISION = "4898C55";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14386,8 +14386,8 @@ class AtzeRoomGroup extends HTMLElement {
     this.style.display = "block";
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display:block; }
-        .heading { display:flex; align-items:center; gap:12px; margin:20px 8px 12px; font-size:16px; line-height:20px; font-weight:400; }
+        :host { display:block; margin-bottom:-12px; }
+        .heading { display:flex; align-items:center; gap:12px; margin:16px 8px 8px; font-size:16px; line-height:20px; font-weight:400; }
         .heading ha-icon { --mdc-icon-size:24px; }
       </style>
       <div class="heading"><ha-icon></ha-icon><span></span></div>
