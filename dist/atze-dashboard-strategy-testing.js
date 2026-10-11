@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FDAB984";
+const ATZE_TESTING_REVISION = "0908D28";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14677,14 +14677,14 @@ class AtzeLockCard extends HTMLElement {
         .control,.settings{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
         .control ha-icon{--mdc-icon-size:23px;color:${iconColor}}
         .settings ha-icon{--mdc-icon-size:23px}
-        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;padding:0;background:transparent}
+        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;padding:0;background:transparent;cursor:default;pointer-events:none}
         .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         button:disabled{opacity:.5;cursor:default}
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="${state==="locked"?"Tür entriegeln":"Tür verriegeln"}"><ha-icon></ha-icon></button>
-        <button class="details" type="button" aria-label="Schlossdetails"><span class="name"></span><span class="status"></span></button>
+        <div class="details"><span class="name"></span><span class="status"></span></div>
         <button class="settings" type="button" aria-label="Schlosseinstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
@@ -14692,7 +14692,6 @@ class AtzeLockCard extends HTMLElement {
     this.shadowRoot.querySelector(".status").textContent=statuses[state]||state;
     const control=this.shadowRoot.querySelector(".control");control.disabled=!enabled;
     control.addEventListener("click",()=>this._toggle());
-    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
     this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
   }
 }
