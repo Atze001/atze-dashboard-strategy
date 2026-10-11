@@ -3373,7 +3373,7 @@ function buildEntityCard(
   if (["light", "cover", "climate", "fan"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "climate" ? "custom:atze-thermostat-card" : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : "custom:atze-entity-card",
+      type: domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
