@@ -1573,6 +1573,8 @@ class AtzeThermostatCard extends HTMLElement {
     const rowItems = items.filter(item =>
       !(calibrationButton && calibrationState && item.id === calibrationState.id) &&
       item.id !== batteryItem?.id && !isChildLock(item) && !isWindowDetection(item) &&
+      !(item.domain === "sensor" && item.state.attributes?.device_class === "temperature") &&
+      !(item.domain === "number" && /(?:^|_)temperature$/.test(item.id.split(".")[1])) &&
       !((item.domain === "sensor" || item.domain === "binary_sensor") &&
         (/(?:^|_)(?:operating_state|operation_state|running_state|hvac_action|heating_state|betriebszustand)$/.test(item.id.split(".")[1]) ||
          /^(?:Betriebszustand|Operating state|Operation state|HVAC action)$/i.test(item.label.trim()) ||
