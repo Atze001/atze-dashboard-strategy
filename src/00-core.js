@@ -5868,6 +5868,7 @@ function buildHomeOverviewView(
     smoke_entities: uniqueEntityIds(smokeEntities),
     security_entities: uniqueEntityIds(securityEntityIds),
     security_path: config.security_path || "sicherheit",
+    security_popup_card: config.security_popup_card || null,
     battery_entities: uniqueEntityIds(batteryEntityIds),
     maintenance_path: config.maintenance_path || "wartung",
     favorite_entities: asArray(config.favorite_entities)
