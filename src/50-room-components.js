@@ -1595,8 +1595,8 @@ class AtzeFanCard extends HTMLElement {
         .control ha-icon { --mdc-icon-size:23px; color:${active && !powerOff ? "#64D2FF" : "var(--secondary-text-color, #8e8e93)"}; }
         .power ha-icon { --mdc-icon-size:23px; color:${power?.state === "on" ? "#30D158" : "var(--secondary-text-color, #8e8e93)"}; }
         .settings ha-icon { --mdc-icon-size:23px; }
-        .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; }
-        .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
+        .details { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:14px; font-weight:500; text-align:left; padding:0; background:transparent; border:0; }
+        .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; padding:0; background:transparent; border:0; }
         button:disabled { opacity:.4; cursor:default; }
         .details,.status { cursor:pointer; }
         .fan-overlay { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
@@ -1614,8 +1614,8 @@ class AtzeFanCard extends HTMLElement {
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
-        <span class="details"></span>
-        <span class="status"></span>
+        <button class="details" type="button" aria-label="Luftreiniger-Details öffnen" title="Luftreiniger-Details öffnen"></button>
+        <button class="status" type="button" aria-label="Luftreiniger-Details öffnen" title="Luftreiniger-Details öffnen"></button>
         ${powerId ? `<button class="power" type="button" aria-label="Stromversorgung umschalten" title="Shelly Stromversorgung" ${!["on", "off"].includes(power?.state) ? "disabled" : ""}><ha-icon icon="mdi:power-plug"></ha-icon></button>` : ""}
         <button class="settings" type="button" aria-label="Luftreiniger-Einstellungen" title="Luftreiniger-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>${this._popupOpen ? this._popupMarkup() : ""}`;
@@ -1635,10 +1635,8 @@ class AtzeFanCard extends HTMLElement {
       if (window.confirm(message)) this._togglePower();
     });
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
-    this.shadowRoot.querySelector("ha-card").addEventListener("click", event => {
-      if (event.target.closest("button")) return;
-      this._openPopup();
-    });
+    this.shadowRoot.querySelector(".details").addEventListener("click", () => this._openPopup());
+    this.shadowRoot.querySelector(".status").addEventListener("click", () => this._openPopup());
     this._bindPopup();
   }
 }
