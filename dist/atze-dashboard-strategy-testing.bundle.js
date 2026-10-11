@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B9222F3";
+const ATZE_TESTING_REVISION = "B81BE47";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3370,10 +3370,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean"].includes(domainOf(entityId)) &&
+  if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean", "automation", "scene", "script"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
+      type: ["automation", "scene", "script"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-action-card-testing" : "custom:atze-action-card") : ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
@@ -15423,6 +15423,64 @@ class AtzeSwitchCard extends HTMLElement {
 }
 const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";
 if(!customElements.get(atzeSwitchCardTag))customElements.define(atzeSwitchCardTag,AtzeSwitchCard);
+
+class AtzeActionCard extends HTMLElement {
+  constructor(){super();this.attachShadow({mode:"open"});this._config={};this._busy=false;}
+  setConfig(config){
+    if(!config?.entity||!/^(automation|scene|script)\./.test(config.entity))throw new Error("Atze Action Card benötigt automation, scene oder script");
+    this._config=config;this._render();
+  }
+  set hass(value){this._hass=value;this._render();}
+  getCardSize(){return 1;}
+  getGridOptions(){return {columns:6,rows:1,min_columns:3};}
+  _moreInfo(){this.dispatchEvent(new CustomEvent("hass-more-info",{bubbles:true,composed:true,detail:{entityId:this._config.entity}}));}
+  async _activate(){
+    if(this._busy||!this._hass)return;
+    const id=this._config.entity,domain=id.split(".")[0],entity=this._hass.states[id];
+    if(!entity||["unknown","unavailable"].includes(entity.state))return;
+    const service=domain==="automation"?"toggle":domain==="scene"?"turn_on":"turn_on";
+    this._busy=true;
+    try{await this._hass.callService(domain,service,{entity_id:id});}
+    catch(e){console.error("Atze Action Card: Aktion fehlgeschlagen",e);}
+    finally{this._busy=false;}
+  }
+  _render(){
+    if(!this._config.entity)return;
+    const id=this._config.entity,domain=id.split(".")[0],entity=this._hass?.states[id];
+    const available=Boolean(entity)&&!["unknown","unavailable"].includes(entity.state);
+    const active=entity?.state==="on";
+    const name=this._config.name||entity?.attributes?.friendly_name||id;
+    const icon=this._config.icon||entity?.attributes?.icon||({automation:"mdi:robot",scene:"mdi:palette",script:"mdi:script-text"})[domain];
+    const status=!available?"Nicht verfügbar":domain==="automation"?(active?"Aktiv":"Deaktiviert"):domain==="script"?(active?"Läuft":"Bereit"):"Aktivieren";
+    const controlIcon=domain==="automation"?(active?"mdi:toggle-switch":"mdi:toggle-switch-off-outline"):domain==="scene"?"mdi:play":"mdi:play";
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;min-width:0}
+        ha-card{box-sizing:border-box;height:56px;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:15px;border:1px solid var(--home-card-border,rgba(255,255,255,.10));background:rgba(55,58,67,.30);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);color:var(--primary-text-color);overflow:hidden;box-shadow:none}
+        button{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit}
+        .control,.settings{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
+        .control ha-icon{--mdc-icon-size:23px;color:${domain==="automation"&&active?"#30D158":domain==="scene"?"#BF5AF2":"#0A84FF"}}
+        .settings ha-icon{--mdc-icon-size:23px}
+        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;padding:0;background:transparent}
+        .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        button:disabled{opacity:.4;cursor:default}
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="${domain==="automation"?"Automation umschalten":"Aktion ausführen"}"><ha-icon icon="${controlIcon}"></ha-icon></button>
+        <button class="details" type="button" aria-label="Details öffnen"><span class="name"></span><span class="status"></span></button>
+        <button class="settings" type="button" aria-label="Einstellungen öffnen"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    this.shadowRoot.querySelector(".name").textContent=name;
+    this.shadowRoot.querySelector(".status").textContent=status;
+    const control=this.shadowRoot.querySelector(".control");control.disabled=!available;
+    control.addEventListener("click",()=>this._activate());
+    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
+    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+  }
+}
+const atzeActionCardTag=ATZE_TESTING_BUILD?"atze-action-card-testing":"atze-action-card";
+if(!customElements.get(atzeActionCardTag))customElements.define(atzeActionCardTag,AtzeActionCard);
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
