@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.401.0";
+const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -15726,6 +15726,44 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._fireConfigChanged(next);
   }
 
+  _resetRoomEntityVisibility() {
+    const overrides = this._config.entity_overrides || {};
+    const changed = Object.values(overrides).some((override) =>
+      override && (
+        Object.prototype.hasOwnProperty.call(override, "visibility") ||
+        Object.prototype.hasOwnProperty.call(override, "visible") ||
+        Object.prototype.hasOwnProperty.call(override, "hidden") ||
+        override.card === "hidden"
+      )
+    );
+
+    if (!changed) return;
+    if (!window.confirm(
+      "Alle Sichtbarkeitseinstellungen für Entitäten pro Raum auf Auto zurücksetzen? Andere Entitätseinstellungen bleiben erhalten."
+    )) return;
+
+    const entityOverrides = {};
+    for (const [entityId, override] of Object.entries(overrides)) {
+      if (!override || typeof override !== "object") continue;
+      const nextOverride = { ...override };
+      delete nextOverride.visibility;
+      delete nextOverride.visible;
+      delete nextOverride.hidden;
+      if (nextOverride.card === "hidden") delete nextOverride.card;
+      if (Object.keys(nextOverride).length) {
+        entityOverrides[entityId] = nextOverride;
+      }
+    }
+
+    const next = { ...this._config };
+    if (Object.keys(entityOverrides).length) {
+      next.entity_overrides = entityOverrides;
+    } else {
+      delete next.entity_overrides;
+    }
+    this._fireConfigChanged(next);
+  }
+
   _setFavoriteEntity(entityId, checked) {
     const favorites = asArray(
       this._config.favorite_entities
@@ -17656,6 +17694,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               )}
             </div>
 
+            <div class="toolbar">
+              <button id="reset-room-entity-visibility" type="button">
+                <ha-icon icon="mdi:restore"></ha-icon>
+                Sichtbarkeit aller Entitäten auf Auto zurücksetzen
+              </button>
+            </div>
+
             <div class="entity-filter-wrap">
               <ha-icon icon="mdi:magnify"></ha-icon>
               <input
@@ -17725,6 +17770,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .querySelector("#reset-drag-layout")
       ?.addEventListener("click", () =>
         this._resetDirectDragLayout()
+      );
+
+    this.shadowRoot
+      .querySelector("#reset-room-entity-visibility")
+      ?.addEventListener("click", () =>
+        this._resetRoomEntityVisibility()
       );
 
     this.shadowRoot

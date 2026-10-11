@@ -1,3 +1,9 @@
+## v0.402.0
+
+- Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.
+- Sicherheitsabfrage vor dem Zurücksetzen; andere Entitätseinstellungen, Favoriten und Raumreihenfolge bleiben erhalten.
+- Erleichtert das Bereinigen veralteter Sichtbarkeitsregeln, beispielsweise aus früheren Template-Konfigurationen.
+
 ## v0.401.0
 
 - Hauptdashboard: Wetter, Strom, Warnungen, Batterie, Alarmo, AtzeHomeBase, Lichter, Rollläden und Thermostate auf kompakte Atze-Kartenoptik umgestellt.
