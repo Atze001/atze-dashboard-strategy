@@ -14975,6 +14975,7 @@ class AtzeFanCard extends HTMLElement {
       console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error);
     } finally {
       this._busy = false;
+      this._refreshPopup();
     }
   }
   async _toggle() {

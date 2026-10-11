@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.364.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "C4A8793";
+const ATZE_TESTING_REVISION = "0D3F50D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14972,6 +14972,7 @@ class AtzeFanCard extends HTMLElement {
       console.error("Atze Fan Card: Stromversorgung fehlgeschlagen", error);
     } finally {
       this._busy = false;
+      this._refreshPopup();
     }
   }
   async _toggle() {
