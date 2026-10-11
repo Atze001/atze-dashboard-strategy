@@ -2139,6 +2139,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   ${this._schedulerPopupEnabled() ? "checked" : ""}
                 />
               </label>
+              <label class="row">
+                <span class="copy">
+                  <span class="name">Dashboard-Hintergrundbild</span>
+                  <span class="desc">Bildpfad aus Home Assistant (z. B. /local/hintergrund.webp) oder eine HTTPS-Bildadresse. Gilt für alle Ansichten. Leer lassen für den Standardhintergrund.</span>
+                </span>
+              </label>
+              <div style="display:flex;gap:8px;align-items:center;padding:0 16px 12px;">
+                <input
+                  class="dashboard-background-input"
+                  type="text"
+                  placeholder="/local/hintergrund.webp"
+                  aria-label="Dashboard-Hintergrundbild"
+                  value="${this._escape(this._config.dashboard_background_image || "")}"
+                  style="flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--divider-color);background:var(--secondary-background-color);color:var(--primary-text-color);font:inherit;"
+                />
+                <button class="dashboard-background-clear" type="button" aria-label="Hintergrundbild entfernen">Entfernen</button>
+              </div>
               ${this._toggleHtml(
                 "hide_scrollbar",
                 "Scrollbalken ausblenden",
@@ -2611,6 +2628,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       else customElements.whenDefined("ha-yaml-editor").then(initialize);
     }
 
+
+    const backgroundInput = this.shadowRoot.querySelector(".dashboard-background-input");
+    const saveBackground = (value) => {
+      const image = String(value || "").trim();
+      const next = { ...this._config };
+      if (image) next.dashboard_background_image = image;
+      else delete next.dashboard_background_image;
+      this._fireConfigChanged(next);
+    };
+    backgroundInput?.addEventListener("change", (event) => saveBackground(event.currentTarget.value));
+    this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
       input.addEventListener("change", (event) => {
