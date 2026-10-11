@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "227C792";
+const ATZE_TESTING_REVISION = "B9222F3";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -3370,10 +3370,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if (["light", "cover", "climate", "fan", "media_player"].includes(domainOf(entityId)) &&
+  if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
+      type: ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
@@ -15365,6 +15365,64 @@ class AtzeMediaCard extends HTMLElement {
 }
 const atzeMediaCardTag=ATZE_TESTING_BUILD?"atze-media-card-testing":"atze-media-card";
 if(!customElements.get(atzeMediaCardTag))customElements.define(atzeMediaCardTag,AtzeMediaCard);
+
+class AtzeSwitchCard extends HTMLElement {
+  constructor() { super(); this.attachShadow({mode:"open"}); this._config={}; this._busy=false; }
+  setConfig(config) {
+    if (!config?.entity || !/^(switch|input_boolean)\./.test(config.entity)) throw new Error("Atze Switch Card benötigt eine Schalter-Entität");
+    this._config=config; this._render();
+  }
+  set hass(value) { this._hass=value; this._render(); }
+  getCardSize() { return 1; }
+  getGridOptions() { return {columns:6,rows:1,min_columns:3}; }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info",{bubbles:true,composed:true,detail:{entityId:this._config.entity}}));
+  }
+  async _toggle() {
+    if(this._busy||!this._hass)return;
+    const id=this._config.entity,entity=this._hass.states[id];
+    if(!entity||!["on","off"].includes(entity.state))return;
+    this._busy=true;
+    try { await this._hass.callService(id.split(".")[0],"toggle",{entity_id:id}); }
+    catch(e) { console.error("Atze Switch Card: Schalten fehlgeschlagen",e); }
+    finally { this._busy=false; }
+  }
+  _render() {
+    if(!this._config.entity)return;
+    const id=this._config.entity,entity=this._hass?.states[id];
+    const active=entity?.state==="on",available=entity&&["on","off"].includes(entity.state);
+    const name=this._config.name||entity?.attributes?.friendly_name||id;
+    const icon=this._config.icon||entity?.attributes?.icon||"mdi:toggle-switch";
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;min-width:0}
+        ha-card{box-sizing:border-box;height:56px;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:15px;border:1px solid var(--home-card-border,rgba(255,255,255,.10));background:rgba(55,58,67,.30);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);color:var(--primary-text-color);overflow:hidden;box-shadow:none}
+        button{appearance:none;border:0;cursor:pointer;font:inherit;color:inherit}
+        .control,.settings{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
+        .control ha-icon{--mdc-icon-size:23px;color:${active?"#0A84FF":"var(--secondary-text-color,#8e8e93)"}}
+        .settings ha-icon{--mdc-icon-size:23px}
+        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;padding:0;background:transparent}
+        .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        button:disabled{opacity:.4;cursor:default}
+      </style>
+      <ha-card>
+        <button class="control" type="button" aria-label="Schalter umschalten"><ha-icon></ha-icon></button>
+        <button class="details" type="button" aria-label="Schalter-Details"><span class="name"></span><span class="status"></span></button>
+        <button class="settings" type="button" aria-label="Schalter-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
+      </ha-card>`;
+    this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
+    this.shadowRoot.querySelector(".name").textContent=name;
+    this.shadowRoot.querySelector(".status").textContent=!available?"Nicht verfügbar":active?"Ein":"Aus";
+    const control=this.shadowRoot.querySelector(".control");
+    control.disabled=!available;
+    control.addEventListener("click",()=>this._toggle());
+    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
+    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+  }
+}
+const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";
+if(!customElements.get(atzeSwitchCardTag))customElements.define(atzeSwitchCardTag,AtzeSwitchCard);
 
 class AtzeDashboardStrategyEditor extends HTMLElement {
   constructor() {
