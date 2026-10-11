@@ -2693,27 +2693,13 @@ function buildEntityCard(
 
   let card = defaultTileCard(hass, entity, config, area);
 
-  // Room safety sensors use the same translucent tile surface as Atze controls.
-  // Keep the native tile's more-info interaction and device-class state labels.
+  // Read-only safety sensor card matching the 56px Atze switch layout.
   if (domainOf(entityId) === "binary_sensor" && cardMode !== "tile" && !override.card) {
-    card["card_mod"] = {
-      style: `ha-card {
-        background: rgba(65, 57, 79, 0.38) !important;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        border-radius: 20px !important;
-        box-shadow: none !important;
-        height: 96px !important;
-        min-height: 96px !important;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-      }
-      ha-card .content { min-width: 0; }
-      ha-card .primary, ha-card .secondary {
-        overflow-wrap: anywhere;
-      }`
+    card = {
+      type: ATZE_TESTING_BUILD ? "custom:atze-safety-card-testing" : "custom:atze-safety-card",
+      entity: entityId,
+      name: displayName(hass, entity, config, area),
+      icon: entityIcon(hass, entityId, entity) || "mdi:shield-check-outline",
     };
   }
 
