@@ -6738,6 +6738,7 @@ function buildHomeOverviewView(
     cover_entities: uniqueEntityIds(coverEntities),
     lock_entity: lockEntity,
     night_entity: config.home_night_entity || null,
+    dashboard_background_image: config.dashboard_background_image || null,
     page_scroll: config.page_scroll === true,
     force_kiosk: config.force_kiosk === true,
     clock_kiosk_toggle:
