@@ -3370,10 +3370,10 @@ function buildEntityCard(
 
   // Native Atze controls replace default Bubble Cards for room lights/covers.
   // Explicit per-entity card overrides still take precedence.
-  if (["light", "cover", "climate", "fan", "media_player"].includes(domainOf(entityId)) &&
+  if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean"].includes(domainOf(entityId)) &&
       cardMode === "bubble" && !override.card) {
     card = {
-      type: domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
+      type: ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
