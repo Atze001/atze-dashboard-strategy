@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "241A3F9";
+const ATZE_TESTING_REVISION = "8C2639A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13943,8 +13943,8 @@ class AtzeEntityCard extends HTMLElement {
     const presets = [
       [0, "Geschlossen", "mdi:window-shutter"],
       [100, "Offen", "mdi:window-shutter-open"],
-      [50, "Halb offen", "mdi:window-shutter"],
-      [15, "Schlitz offen", "mdi:window-shutter"],
+      [70, "Halb offen", "mdi:window-shutter"],
+      [10, "Schlitz offen", "mdi:window-shutter"],
     ];
     const choices = presets.map(([value, label, icon]) => {
       const supported = value === 0 ? (features & 2) : value === 100 ? (features & 1) : (features & 4);
