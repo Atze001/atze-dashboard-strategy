@@ -2341,14 +2341,14 @@ class AtzeActionCard extends HTMLElement {
       <ha-card>
         <button class="control" type="button" aria-label="${domain==="automation"?"Automation umschalten":"Aktion ausführen"}"><ha-icon icon="${controlIcon}"></ha-icon></button>
         <button class="details" type="button" aria-label="Details öffnen"><span class="name"></span><span class="status"></span></button>
-        <button class="settings" type="button" aria-label="Einstellungen öffnen"><ha-icon icon="mdi:tune"></ha-icon></button>
+        
       </ha-card>`;
     this.shadowRoot.querySelector(".name").textContent=name;
     this.shadowRoot.querySelector(".status").textContent=status;
     const control=this.shadowRoot.querySelector(".control");control.disabled=!available;
     control.addEventListener("click",()=>this._activate());
     this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
-    this.shadowRoot.querySelector(".settings").addEventListener("click",()=>this._moreInfo());
+
   }
 }
 const atzeActionCardTag=ATZE_TESTING_BUILD?"atze-action-card-testing":"atze-action-card";
