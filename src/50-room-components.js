@@ -1699,7 +1699,6 @@ class AtzeFanCard extends HTMLElement {
         <button class="control" type="button" aria-label="Luftreiniger ein- oder ausschalten" ${unavailable || powerOff ? "disabled" : ""}><ha-icon icon="mdi:air-purifier"></ha-icon></button>
         <button class="details" type="button" aria-label="Luftreiniger-Details öffnen" title="Luftreiniger-Details öffnen"></button>
         <button class="status" type="button" aria-label="Luftreiniger-Details öffnen" title="Luftreiniger-Details öffnen"></button>
-        ${powerId ? `<button class="power" type="button" aria-label="Stromversorgung umschalten" title="Shelly Stromversorgung" ${!["on", "off"].includes(power?.state) ? "disabled" : ""}><ha-icon icon="mdi:power-plug"></ha-icon></button>` : ""}
         <button class="settings" type="button" aria-label="Luftreiniger-Einstellungen" title="Luftreiniger-Einstellungen"><ha-icon icon="mdi:tune"></ha-icon></button>
       </ha-card>${this._popupOpen ? this._popupMarkup() : ""}`;
     const details = this.shadowRoot.querySelector(".details");
@@ -1707,16 +1706,6 @@ class AtzeFanCard extends HTMLElement {
     details.title = name;
     this.shadowRoot.querySelector(".status").textContent = status;
     this.shadowRoot.querySelector(".control").addEventListener("click", () => this._toggle());
-    this.shadowRoot.querySelector(".power")?.addEventListener("click", () => {
-      const powerId = this._powerId();
-      const powerState = powerId && this._hass?.states?.[powerId];
-      if (!powerState || !["on", "off"].includes(powerState.state)) return;
-      const turningOff = powerState.state === "on";
-      const message = turningOff
-        ? "Stromversorgung des Luftfilters wirklich ausschalten?"
-        : "Stromversorgung des Luftfilters wirklich einschalten?";
-      if (window.confirm(message)) this._togglePower();
-    });
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
     this.shadowRoot.querySelector(".details").addEventListener("click", () => this._openPopup());
     this.shadowRoot.querySelector(".status").addEventListener("click", () => this._openPopup());
