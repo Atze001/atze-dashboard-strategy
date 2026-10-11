@@ -357,6 +357,24 @@ class AtzeDashboardStrategy extends HTMLElement {
       });
     }
 
+    // Apply the optional dashboard background to every generated view.
+    // Restrict to HA-local paths or HTTP(S) images so arbitrary CSS cannot
+    // be injected through the editor setting.
+    const backgroundValue = String(config.dashboard_background_image || "").trim();
+    const safeBackground = (
+      backgroundValue.startsWith("/local/") ||
+      backgroundValue.startsWith("/api/image/serve/") ||
+      /^https?:\/\//i.test(backgroundValue)
+    ) && !/["'\\\n\r<>]/.test(backgroundValue)
+      ? backgroundValue
+      : "";
+    if (safeBackground) {
+      const background = `center / cover no-repeat fixed url("${safeBackground}")`;
+      for (const view of views) {
+        view.background = background;
+      }
+    }
+
     return {
       title: config.title || "Atze Dashboard",
       ...(config.kiosk_mode != null
