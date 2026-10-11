@@ -1677,13 +1677,13 @@ class AtzeFanCard extends HTMLElement {
         .fan-options { display:grid; gap:8px; }
         .fan-three { grid-template-columns:repeat(3,minmax(0,1fr)); }
         .fan-four { grid-template-columns:repeat(4,minmax(0,1fr)); }
-        .fan-choice { min-width:0; min-height:76px; padding:9px 3px; border-radius:14px; border:1px solid rgba(255,255,255,.17); background:rgba(255,255,255,.07); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; font-size:11px; }
+        .fan-choice { min-width:0; min-height:66px; padding:6px 3px; border-radius:14px; border:1px solid rgba(255,255,255,.17); background:rgba(255,255,255,.07); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; font-size:11px; }
         .fan-choice ha-icon { --mdc-icon-size:26px; color:#bec2cc; }
         .fan-choice.is-active { border-color:#64d2ff; background:rgba(20,107,153,.35); }
         .fan-choice.is-active ha-icon { color:#64d2ff; }
         .fan-row[hidden] { display:none; }
         .fan-row > span:first-child { display:flex; align-items:center; gap:10px; }
-        .fan-timer-heading { border-top:1px solid rgba(255,255,255,.1); padding-top:15px; }
+        .fan-timer-heading { border-top:1px solid rgba(255,255,255,.1); margin-top:0; padding-top:12px; }
         .fan-remaining strong { font-size:14px; font-weight:500; }
         .fan-dialog header ha-icon { color:#64d2ff; }
         .fan-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
