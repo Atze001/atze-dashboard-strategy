@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "993D3DE";
+const ATZE_TESTING_REVISION = "16A1EA3";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14351,6 +14351,36 @@ class AtzeRoomGroup extends HTMLElement {
   }
 
   getCardSize() { return 1; }
+
+  connectedCallback() {
+    // HA sections are laid out outside the card's shadow DOM.
+    // Apply the compact row spacing only to the room view containing this card.
+    requestAnimationFrame(() => this._compactSectionSpacing());
+  }
+
+  _compactSectionSpacing() {
+    let node = this;
+    while (node) {
+      const root = node.getRootNode?.();
+      const host = root?.host;
+      if (!host || host === node) break;
+      if (host.localName === "hui-sections-view") {
+        const viewRoot = host.shadowRoot;
+        if (viewRoot && !viewRoot.querySelector("#atze-room-section-spacing")) {
+          const style = document.createElement("style");
+          style.id = "atze-room-section-spacing";
+          style.textContent = `
+            #sections, .sections {
+              row-gap: 12px !important;
+            }
+          `;
+          viewRoot.appendChild(style);
+        }
+        break;
+      }
+      node = host;
+    }
+  }
 
   _hiddenEntities() {
     let hidden = atzeLayoutValue(
