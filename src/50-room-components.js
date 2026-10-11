@@ -1207,8 +1207,9 @@ class AtzeEntityCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("atze-entity-card")) {
-  customElements.define("atze-entity-card", AtzeEntityCard);
+const atzeEntityCardTag = ATZE_TESTING_BUILD ? "atze-entity-card-testing" : "atze-entity-card";
+if (!customElements.get(atzeEntityCardTag)) {
+  customElements.define(atzeEntityCardTag, AtzeEntityCard);
 }
 
 class AtzeThermostatCard extends HTMLElement {
@@ -1414,8 +1415,9 @@ class AtzeThermostatCard extends HTMLElement {
 
   }
 }
-if (!customElements.get("atze-thermostat-card")) {
-  customElements.define("atze-thermostat-card", AtzeThermostatCard);
+const atzeThermostatCardTag = ATZE_TESTING_BUILD ? "atze-thermostat-card-testing" : "atze-thermostat-card";
+if (!customElements.get(atzeThermostatCardTag)) {
+  customElements.define(atzeThermostatCardTag, AtzeThermostatCard);
 }
 
 
