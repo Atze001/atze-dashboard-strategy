@@ -1209,8 +1209,8 @@ class AtzeEntityCard extends HTMLElement {
     const presets = [
       [0, "Geschlossen", "mdi:window-shutter"],
       [100, "Offen", "mdi:window-shutter-open"],
-      [50, "Halb offen", "mdi:window-shutter"],
-      [15, "Schlitz offen", "mdi:window-shutter"],
+      [70, "Halb offen", "mdi:window-shutter"],
+      [10, "Schlitz offen", "mdi:window-shutter"],
     ];
     const choices = presets.map(([value, label, icon]) => {
       const supported = value === 0 ? (features & 2) : value === 100 ? (features & 1) : (features & 4);
