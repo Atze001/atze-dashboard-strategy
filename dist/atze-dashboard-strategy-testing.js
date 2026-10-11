@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "7117E82";
+const ATZE_TESTING_REVISION = "DAD1BC8";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -5067,15 +5067,13 @@ function buildTechPopupCard(
   const visibleCards = cards.filter(
     (card) =>
       !(
-        card.type === "custom:bubble-card" &&
-        card.card_type === "pop-up"
+        (card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"
       )
   );
 
   const nestedPopups = cards.filter(
     (card) =>
-      card.type === "custom:bubble-card" &&
-      card.card_type === "pop-up"
+      (card.type === "custom:bubble-card" && card.card_type === "pop-up") || card.type === "custom:atze-popup-card-testing"
   );
 
   const columns = Number(
@@ -5085,8 +5083,8 @@ function buildTechPopupCard(
   );
 
   return {
-    type: "custom:bubble-card",
-    card_type: "pop-up",
+    type: ATZE_TESTING_BUILD ? "custom:atze-popup-card-testing" : "custom:bubble-card",
+    ...(ATZE_TESTING_BUILD ? {} : { card_type: "pop-up" }),
     hash: techPopupHash(area),
     name: areaOverride.tech_popup_name || config.tech_popup_name || "Technik",
     icon: areaOverride.tech_popup_icon || config.tech_popup_icon || "mdi:cog-outline",
