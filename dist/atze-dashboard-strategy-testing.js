@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "2367F67";
+const ATZE_TESTING_REVISION = "FDAB984";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16902,7 +16902,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
-                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Bubble-Popup mit Scheduler Card öffnet.</span>
+                  <span class="desc">Zeigt auf der Startseite einen Button, der ein Popup mit Scheduler Card öffnet.</span>
                 </span>
                 <input
                   class="setting-toggle"
@@ -17774,7 +17774,7 @@ const atzeStrategyRegistration = {
   strategyType: "dashboard",
   name: "Atze Dashboard",
   description:
-    "Automatisches, flexibel anpassbares Area-Dashboard mit Bubble-Card-Unterstützung.",
+    "Automatisches, flexibel anpassbares Area-Dashboard mit eigenen Atze-Raumkarten und Popups.",
 };
 
 const existingAtzeStrategy = window.customStrategies.find(
