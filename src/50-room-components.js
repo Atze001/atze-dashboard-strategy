@@ -1411,7 +1411,7 @@ class AtzeFanCard extends HTMLElement {
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
   _powerId() {
     const stem = this._config.entity?.slice(4)?.replace(/_(fan|filter)$/, "");
-    const candidates = ["switch." + stem + "_luftfilter", "switch." + stem + "_power"];
+    const candidates = [this._config.entity?.includes("wohnzimmer") ? "switch.wohnzimmer_luftfilter" : null, "switch." + stem + "_luftfilter", "switch." + stem + "_power"].filter(Boolean);
     return candidates.find(id => this._hass?.states?.[id]) || null;
   }
   _moreInfo() {
