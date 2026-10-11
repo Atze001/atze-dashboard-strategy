@@ -1640,6 +1640,7 @@ class AtzeFanCard extends HTMLElement {
     this._bindPopup();
   }
 }
-if (!customElements.get("atze-fan-card")) {
-  customElements.define("atze-fan-card", AtzeFanCard);
+const atzeFanCardTag = ATZE_TESTING_BUILD ? "atze-fan-card-testing" : "atze-fan-card";
+if (!customElements.get(atzeFanCardTag)) {
+  customElements.define(atzeFanCardTag, AtzeFanCard);
 }
