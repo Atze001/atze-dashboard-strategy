@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "26C8C89";
+const ATZE_TESTING_REVISION = "174D586";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7229,6 +7229,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherPopupOpen = false;
     this._powerPopupOpen = false;
     this._securityPopupOpen = false;
+    this._batteryPopupOpen = false;
     this._groupControlPopup = null;
     this._climateHistoryPopup = null;
     this._climateHistory = [];
@@ -8723,8 +8724,68 @@ class AtzeHomeOverviewCard extends HTMLElement {
     </div>`;
   }
 
+  _batteryPopupHtml() {
+    if (!this._batteryPopupOpen) return "";
+    const data = this._config?.battery_popup_card;
+    const entries = (data?.groups || []).flatMap((group) => group.entities || []);
+    const groups = [
+      { title: "Kritisch · 0–20 %", icon: "mdi:battery-alert", severity: "critical" },
+      { title: "Niedrig · 21–40 %", icon: "mdi:battery-low", severity: "warning" },
+      { title: "Gut · 41–100 %", icon: "mdi:battery-check", severity: "good" },
+    ].map((group) => {
+      const matches = entries.filter((entry) => {
+        const severity = batterySeverity(this._hass, entry.entity_id);
+        return group.severity === "critical"
+          ? ["critical", "unavailable", "neutral"].includes(severity)
+          : severity === group.severity;
+      }).sort((a, b) => {
+        const diff = batterySortValue(this._hass, a.entity_id) - batterySortValue(this._hass, b.entity_id);
+        return diff || String(a.name || "").localeCompare(String(b.name || ""), "de");
+      });
+      if (!matches.length) return "";
+      const rows = matches.map((entry) => {
+        const id = entry.entity_id;
+        const state = this._state(id);
+        const severity = batterySeverity(this._hass, id);
+        const value = state
+          ? (typeof this._hass?.formatEntityState === "function"
+              ? this._hass.formatEntityState(state)
+              : `${state.state}${state.attributes?.unit_of_measurement || ""}`)
+          : "Nicht verfügbar";
+        const level = Number.parseFloat(state?.state);
+        const icon = id.startsWith("binary_sensor.")
+          ? (severity === "critical" ? "mdi:battery-alert" : "mdi:battery-check")
+          : !Number.isFinite(level) ? "mdi:battery-unknown"
+          : level >= 95 ? "mdi:battery" : level >= 85 ? "mdi:battery-90"
+          : level >= 75 ? "mdi:battery-80" : level >= 65 ? "mdi:battery-70"
+          : level >= 55 ? "mdi:battery-60" : level >= 45 ? "mdi:battery-50"
+          : level >= 35 ? "mdi:battery-40" : level >= 25 ? "mdi:battery-30"
+          : level >= 15 ? "mdi:battery-20" : "mdi:battery-10";
+        const statusClass = severity === "good" ? "safe" : severity === "warning" ? "warning" : "unavailable";
+        return `<button type="button" class="security-popup-row ${statusClass}" data-battery-entity="${this._escapeHtml(id)}">
+          <span class="security-popup-row-icon"><ha-icon icon="${icon}"></ha-icon></span>
+          <span class="security-popup-row-copy"><strong>${this._escapeHtml(entry.name || id)}</strong><small>${this._escapeHtml(String(value))}${entry.area_name ? " · " + this._escapeHtml(entry.area_name) : ""}</small></span>
+          <ha-icon class="security-popup-chevron" icon="mdi:chevron-right"></ha-icon>
+        </button>`;
+      }).join("");
+      return `<section class="security-popup-group">
+        <div class="security-popup-group-title"><ha-icon icon="${group.icon}"></ha-icon>${group.title}</div>
+        <div class="security-popup-rows">${rows}</div>
+      </section>`;
+    }).join("");
+    return `<div class="weather-popup-backdrop" id="battery-popup-backdrop">
+      <section class="weather-popup security-popup" role="dialog" aria-modal="true" aria-label="Batterien">
+        <header class="security-popup-header"><ha-icon icon="mdi:battery-heart-variant"></ha-icon><span>Batterien</span></header>
+        <div class="security-popup-content">
+          <div class="security-popup-summary"><ha-icon icon="mdi:battery-check"></ha-icon><span><strong>${entries.length} Sensoren</strong><small>Batteriestatus</small></span></div>
+          ${groups || '<div class="security-popup-empty">Keine Batteriesensoren vorhanden.</div>'}
+        </div>
+      </section>
+    </div>`;
+  }
+
   _hasOpenDashboardPopup() {
-    return Boolean(this._weatherPopupOpen || this._powerPopupOpen || this._securityPopupOpen ||
+    return Boolean(this._weatherPopupOpen || this._powerPopupOpen || this._securityPopupOpen || this._batteryPopupOpen ||
       this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
   }
 
@@ -10960,6 +11021,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ${this._weatherPopupHtml(weather)}
           ${this._powerPopupHtml()}
           ${this._securityPopupHtml()}
+          ${this._batteryPopupHtml()}
           ${this._groupControlPopup === "thermostats" ? this._homeThermostatPopupHtml() : this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
           ${this._presenceHistoryPopupHtml()}
@@ -11340,6 +11402,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       );
 
     this.shadowRoot.querySelectorAll("[data-security-entity]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.securityEntity)));
+    this.shadowRoot.querySelectorAll("[data-battery-entity]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.batteryEntity)));
+    this.shadowRoot.querySelector("#battery-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "battery-popup-backdrop") { this._batteryPopupOpen = false; this._render(); }
+    });
     this.shadowRoot.querySelector("#security-popup-backdrop")?.addEventListener("click", (event) => {
       if (event.target?.id === "security-popup-backdrop") { this._securityPopupOpen = false; this._render(); }
     });
@@ -11348,7 +11414,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#battery-status")
       ?.addEventListener(
         "click",
-        () => this._navigate(this._config.maintenance_path)
+        () => { this._batteryPopupOpen = true; this._render(); }
       );
 
     this.shadowRoot
