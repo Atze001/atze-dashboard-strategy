@@ -30,12 +30,12 @@ class AtzeSecurityOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
-    if (!this._scrollTopCleanup) {
+    if (!this._config?.popup_mode && !this._scrollTopCleanup) {
       this._scrollTopCleanup =
         setupAtzeScrollTopButton(this);
     }
 
-    if (!this._homeSwipeCleanup) {
+    if (!this._config?.popup_mode && !this._homeSwipeCleanup) {
       this._homeSwipeCleanup =
         setupAtzeHomeSwipe(
           this,
@@ -317,6 +317,12 @@ class AtzeSecurityOverviewCard extends HTMLElement {
           color: var(--primary-text-color);
         }
 
+        :host([popup-mode]) { min-height:0; background:transparent; }
+        :host([popup-mode]) ha-card { min-height:0; background:transparent; }
+        :host([popup-mode]) .page { padding:0; }
+        :host([popup-mode]) .nav-row { display:none; }
+        :host([popup-mode]) .entity-grid { grid-template-columns:1fr; }
+        :host([popup-mode]) .entity-card { min-height:56px; border-radius:15px; }
         .page {
           width: min(1180px, 100%);
           margin: 0 auto;
