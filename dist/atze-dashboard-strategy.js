@@ -14419,7 +14419,7 @@ class AtzeFanCard extends HTMLElement {
         :host { display:block; min-width:0; }
         ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center; gap:10px;
           padding:10px 12px; border-radius:15px; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
-          background:rgba(55,58,67,.43); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
+          background:rgba(55,58,67,.30); backdrop-filter:blur(10px) saturate(1.2); -webkit-backdrop-filter:blur(10px) saturate(1.2); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
         button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
         .control,.settings,.power { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
           border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
