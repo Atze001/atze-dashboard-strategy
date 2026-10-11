@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8128309";
+const ATZE_TESTING_REVISION = "26C8C89";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -5866,6 +5866,7 @@ function buildHomeOverviewView(
     security_entities: uniqueEntityIds(securityEntityIds),
     security_path: config.security_path || "sicherheit",
     security_popup_card: config.security_popup_card || null,
+    battery_popup_card: config.battery_popup_card || null,
     battery_entities: uniqueEntityIds(batteryEntityIds),
     maintenance_path: config.maintenance_path || "wartung",
     favorite_entities: asArray(config.favorite_entities)
