@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "2F9AD1A";
+const ATZE_TESTING_REVISION = "FCC5CCE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11203,8 +11203,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .quick {
           margin-top: 28px;
-          padding-top: 26px;
-          border-top: 1px solid rgba(255,255,255,0.10);
+          padding-top: 0;
+          border-top: none;
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 14px;
@@ -14740,7 +14740,7 @@ class AtzeEntityCard extends HTMLElement {
         :host { display:block; min-width:0; }
         ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center;
           gap:10px; padding:10px 12px; border-radius:15px;
-          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); background:rgba(118,118,128,.13);
+          border:1px solid var(--home-card-border, rgba(255,255,255,.10)); background:rgba(55,58,67,.43); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2);
           color:var(--primary-text-color);
           overflow:hidden; box-shadow:none; }
         button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
@@ -14920,7 +14920,7 @@ class AtzeThermostatCard extends HTMLElement {
         ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center;
           gap:10px; padding:7px 12px; border-radius:15px;
           border:1px solid var(--home-card-border, rgba(255,255,255,.10));
-          background:rgba(118,118,128,.13); color:var(--primary-text-color);
+          background:rgba(55,58,67,.43); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2); color:var(--primary-text-color);
           overflow:hidden; box-shadow:none; }
         .thermometer, .settings { width:38px; height:38px; flex:0 0 38px;
           display:grid; place-items:center; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
@@ -15248,7 +15248,7 @@ class AtzeFanCard extends HTMLElement {
         :host { display:block; min-width:0; }
         ha-card { box-sizing:border-box; height:56px; min-width:0; display:flex; align-items:center; gap:10px;
           padding:10px 12px; border-radius:15px; border:1px solid var(--home-card-border, rgba(255,255,255,.10));
-          background:rgba(118,118,128,.13); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
+          background:rgba(55,58,67,.43); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2); color:var(--primary-text-color); overflow:hidden; box-shadow:none; }
         button { appearance:none; border:0; cursor:pointer; font:inherit; color:inherit; }
         .control,.settings,.power { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
           border:1px solid var(--home-card-border, rgba(255,255,255,.10)); border-radius:13px;
