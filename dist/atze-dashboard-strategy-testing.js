@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.366.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0908D28";
+const ATZE_TESTING_REVISION = "3831E8A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14341,7 +14341,7 @@ class AtzeFanCard extends HTMLElement {
   }
   _popupMarkup() {
     const fan = this._hass?.states?.[this._config.entity];
-    const title = this._config.name || fan?.attributes?.friendly_name || "Luftreiniger";
+    const title = fan?.attributes?.friendly_name || this._config.entity || "Luftreiniger";
     const esc = value => String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     const tile = (icon,name,value,key) => `<div class="fan-tile"><ha-icon icon="${icon}"></ha-icon><div><small>${name}</small><strong data-value="${key}">${esc(value)}</strong></div></div>`;
     const mode = this._operatingMode().toLowerCase();
@@ -14364,7 +14364,7 @@ class AtzeFanCard extends HTMLElement {
     const timerButtons = [[60,"1 h"],[120,"2 h"],[480,"8 h"],[720,"12 h"]].map(([minutes,label])=>
       `<button class="fan-choice" data-timer="${minutes}"><ha-icon icon="mdi:clock-outline"></ha-icon><span>${label}</span></button>`).join("");
     return `<div class="fan-overlay"><section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
-      <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span>${powerButton}</header>
+      <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span>${powerButton}</header>\n      <div class="fan-header-divider" aria-hidden="true"></div>
       <div class="fan-grid">
         ${tile("mdi:blur","PM2.5",this._format("sensor","aq_pm_2_5"),"pm25")}
         ${tile("mdi:air-filter","Filter",this._format("sensor","filter")+" %","filter")}
@@ -14428,7 +14428,7 @@ class AtzeFanCard extends HTMLElement {
         .details,.status { cursor:pointer; }
         .fan-overlay { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
         .fan-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
-        .fan-dialog header { display:flex; align-items:center; gap:12px; font-weight:600; font-size:18px; margin-bottom:20px; }
+        .fan-dialog header { display:flex; align-items:center; gap:12px; font-weight:600; font-size:18px; margin-bottom:16px; }\n        .fan-header-divider { height:1px; background:rgba(255,255,255,.16); margin-bottom:20px; }
         .fan-popup-power { margin-left:auto; flex:0 0 46px; height:46px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:#aaa; }
         .fan-popup-power.is-active { background:rgba(100,210,255,.16); color:#64d2ff; border-color:#64d2ff; }
         .fan-heading { font-size:14px; font-weight:600; margin:16px 0 9px; }
