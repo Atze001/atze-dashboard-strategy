@@ -1972,3 +1972,76 @@ class AtzeLockCard extends HTMLElement {
 }
 const atzeLockCardTag=ATZE_TESTING_BUILD?"atze-lock-card-testing":"atze-lock-card";
 if(!customElements.get(atzeLockCardTag))customElements.define(atzeLockCardTag,AtzeLockCard);
+
+class AtzePopupCard extends HTMLElement {
+  constructor(){
+    super();this.attachShadow({mode:"open"});
+    this._config={};this._hass=null;
+    this._onNavigation=()=>this._syncOpen();
+  }
+  setConfig(config){
+    if(!config?.hash)throw new Error("Atze Popup benötigt hash");
+    this._config=config;this._render();
+  }
+  set hass(value){
+    this._hass=value;
+    for(const card of this.shadowRoot?.querySelectorAll("hui-card"))card.hass=value;
+  }
+  getCardSize(){return 0;}
+  connectedCallback(){
+    window.addEventListener("hashchange",this._onNavigation);
+    window.addEventListener("popstate",this._onNavigation);
+    this._syncOpen();
+  }
+  disconnectedCallback(){
+    window.removeEventListener("hashchange",this._onNavigation);
+    window.removeEventListener("popstate",this._onNavigation);
+  }
+  _syncOpen(){
+    const overlay=this.shadowRoot?.querySelector(".atze-popup-overlay");
+    if(!overlay)return;
+    const open=window.location.hash===this._config.hash;
+    overlay.hidden=!open;
+    if(open)overlay.querySelector(".atze-popup-dialog")?.focus({preventScroll:true});
+  }
+  _close(){
+    if(window.location.hash!==this._config.hash)return;
+    const url=window.location.pathname+window.location.search;
+    window.history.replaceState(window.history.state,"",url);
+    this._syncOpen();
+    window.dispatchEvent(new Event("hashchange"));
+  }
+  _render(){
+    if(!this._config.hash)return;
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;height:0;min-height:0;overflow:visible}
+        .atze-popup-overlay[hidden]{display:none!important}
+        .atze-popup-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
+        .atze-popup-dialog{box-sizing:border-box;width:min(460px,100%);max-height:min(85vh,850px);overflow:auto;overscroll-behavior:contain;padding:20px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:var(--card-background-color,#24252b);box-shadow:0 18px 55px rgba(0,0,0,.45);outline:none}
+        .atze-popup-title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:600;margin:0 0 18px}
+        .atze-popup-title ha-icon{--mdc-icon-size:23px;color:var(--primary-color)}
+        .atze-popup-cards{display:grid;gap:12px}
+      </style>
+      <div class="atze-popup-overlay" hidden>
+        <section class="atze-popup-dialog" role="dialog" aria-modal="true" tabindex="-1" aria-label="Geräteeinstellungen">
+          <div class="atze-popup-title"><ha-icon></ha-icon><span></span></div>
+          <div class="atze-popup-cards"></div>
+        </section>
+      </div>`;
+    this.shadowRoot.querySelector(".atze-popup-title ha-icon").setAttribute("icon",this._config.icon||"mdi:tune");
+    this.shadowRoot.querySelector(".atze-popup-title span").textContent=this._config.name||"Einstellungen";
+    const cards=this.shadowRoot.querySelector(".atze-popup-cards");
+    for(const cardConfig of this._config.cards||[]){
+      const card=document.createElement("hui-card");
+      card.hass=this._hass;
+      card.config=cardConfig;
+      cards.appendChild(card);
+    }
+    const overlay=this.shadowRoot.querySelector(".atze-popup-overlay");
+    overlay.addEventListener("click",event=>{if(event.target===overlay)this._close();});
+    this._syncOpen();
+  }
+}
+const atzePopupCardTag=ATZE_TESTING_BUILD?"atze-popup-card-testing":"atze-popup-card";
+if(!customElements.get(atzePopupCardTag))customElements.define(atzePopupCardTag,AtzePopupCard);
