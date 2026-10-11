@@ -1,3 +1,10 @@
+## v0.403.0
+
+- Warnungen und Batterien als scrollbar gestaltete Popups in der kompakten Atze-Optik.
+- Alte eigenständige Sicherheits- und Batterieansichten aus der Dashboard-Navigation entfernt; Popup-Inhalte bleiben erhalten.
+- Raum-Sicherheitssensoren als eigene Atze-Karten mit 56 px Höhe, Glasoptik und zweispaltigem Layout.
+- Sensor-Detailansichten und Statusanzeigen bleiben erhalten.
+
 ## v0.402.0
 
 - Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.

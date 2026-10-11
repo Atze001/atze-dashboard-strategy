@@ -2693,6 +2693,16 @@ function buildEntityCard(
 
   let card = defaultTileCard(hass, entity, config, area);
 
+  // Read-only safety sensor card matching the 56px Atze switch layout.
+  if (domainOf(entityId) === "binary_sensor" && cardMode !== "tile" && !override.card) {
+    card = {
+      type: ATZE_TESTING_BUILD ? "custom:atze-safety-card-testing" : "custom:atze-safety-card",
+      entity: entityId,
+      name: displayName(hass, entity, config, area),
+      icon: entityIcon(hass, entityId, entity) || "mdi:shield-check-outline",
+    };
+  }
+
   // Native Atze controls render supported room entity domains.
   // Explicit per-entity card overrides still take precedence.
   if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean", "automation", "scene", "script", "lock"].includes(domainOf(entityId)) &&
@@ -4134,7 +4144,7 @@ function buildGroupSection(
       area_id: area.area_id,
       group_key: groupKey,
       strategy_config: config,
-      columns: ["light", "scene", "automation"].includes(groupKey) ? 2 : (compact ? columns : 1),
+      columns: ["light", "scene", "automation", "binary_sensor"].includes(groupKey) ? 2 : (compact ? columns : 1),
       cards: visibleCards,
       popup_cards: popupCards,
     };
@@ -5868,6 +5878,8 @@ function buildHomeOverviewView(
     smoke_entities: uniqueEntityIds(smokeEntities),
     security_entities: uniqueEntityIds(securityEntityIds),
     security_path: config.security_path || "sicherheit",
+    security_popup_card: config.security_popup_card || null,
+    battery_popup_card: config.battery_popup_card || null,
     battery_entities: uniqueEntityIds(batteryEntityIds),
     maintenance_path: config.maintenance_path || "wartung",
     favorite_entities: asArray(config.favorite_entities)

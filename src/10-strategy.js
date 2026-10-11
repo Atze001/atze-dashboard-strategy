@@ -301,10 +301,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     const views =
       config.home_view === false
         ? [
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ]
@@ -314,7 +310,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              config,
+              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
@@ -322,10 +318,6 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ];

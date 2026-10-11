@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "4A9A167";
+const ATZE_TESTING_REVISION = "0F5E81A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -2693,6 +2693,16 @@ function buildEntityCard(
 
   let card = defaultTileCard(hass, entity, config, area);
 
+  // Read-only safety sensor card matching the 56px Atze switch layout.
+  if (domainOf(entityId) === "binary_sensor" && cardMode !== "tile" && !override.card) {
+    card = {
+      type: ATZE_TESTING_BUILD ? "custom:atze-safety-card-testing" : "custom:atze-safety-card",
+      entity: entityId,
+      name: displayName(hass, entity, config, area),
+      icon: entityIcon(hass, entityId, entity) || "mdi:shield-check-outline",
+    };
+  }
+
   // Native Atze controls render supported room entity domains.
   // Explicit per-entity card overrides still take precedence.
   if (["light", "cover", "climate", "fan", "media_player", "switch", "input_boolean", "automation", "scene", "script", "lock"].includes(domainOf(entityId)) &&
@@ -4134,7 +4144,7 @@ function buildGroupSection(
       area_id: area.area_id,
       group_key: groupKey,
       strategy_config: config,
-      columns: ["light", "scene", "automation"].includes(groupKey) ? 2 : (compact ? columns : 1),
+      columns: ["light", "scene", "automation", "binary_sensor"].includes(groupKey) ? 2 : (compact ? columns : 1),
       cards: visibleCards,
       popup_cards: popupCards,
     };
@@ -5865,6 +5875,8 @@ function buildHomeOverviewView(
     smoke_entities: uniqueEntityIds(smokeEntities),
     security_entities: uniqueEntityIds(securityEntityIds),
     security_path: config.security_path || "sicherheit",
+    security_popup_card: config.security_popup_card || null,
+    battery_popup_card: config.battery_popup_card || null,
     battery_entities: uniqueEntityIds(batteryEntityIds),
     maintenance_path: config.maintenance_path || "wartung",
     favorite_entities: asArray(config.favorite_entities)
@@ -7128,10 +7140,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     const views =
       config.home_view === false
         ? [
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ]
@@ -7141,7 +7149,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              config,
+              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
@@ -7149,10 +7157,6 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ];
@@ -7226,6 +7230,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._pageScrollCleanup = null;
     this._weatherPopupOpen = false;
     this._powerPopupOpen = false;
+    this._securityPopupOpen = false;
+    this._batteryPopupOpen = false;
     this._groupControlPopup = null;
     this._climateHistoryPopup = null;
     this._climateHistory = [];
@@ -8678,8 +8684,110 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
   }
 
+  _securityPopupHtml() {
+    if (!this._securityPopupOpen) return "";
+    const data = this._config?.security_popup_card;
+    const ids = data?.entity_ids || [];
+    const count = ids.filter((id) => securityEntityIsIssue(this._hass, id)).length;
+    const groups = (data?.groups || []).map((group) => {
+      const rows = (group.entities || []).map((entry) => {
+        const id = entry.entity_id;
+        const state = this._state(id);
+        const value = state
+          ? (typeof this._hass?.formatEntityState === "function"
+              ? this._hass.formatEntityState(state) : state.state)
+          : "Nicht verfügbar";
+        const issue = securityEntityIsIssue(this._hass, id);
+        const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
+        const severity = unavailable ? "unavailable" : issue ? "warning" : "safe";
+        const icon = state?.attributes?.icon ||
+          (id.startsWith("cover.") ? "mdi:window-shutter" :
+          id.startsWith("lock.") ? "mdi:lock" :
+          id.startsWith("binary_sensor.") ? "mdi:shield-check-outline" : "mdi:shield-outline");
+        return `<button type="button" class="security-popup-row ${severity}" data-security-entity="${this._escapeHtml(id)}">
+          <span class="security-popup-row-icon"><ha-icon icon="${this._escapeHtml(icon)}"></ha-icon></span>
+          <span class="security-popup-row-copy"><strong>${this._escapeHtml(entry.name || id)}</strong><small>${this._escapeHtml(String(value))}</small></span>
+          <ha-icon class="security-popup-chevron" icon="mdi:chevron-right"></ha-icon>
+        </button>`;
+      }).join("");
+      return `<section class="security-popup-group">
+        <div class="security-popup-group-title"><ha-icon icon="${this._escapeHtml(group.icon || "mdi:home-outline")}"></ha-icon>${this._escapeHtml(group.name || "Ohne Bereich")}</div>
+        <div class="security-popup-rows">${rows}</div>
+      </section>`;
+    }).join("");
+    return `<div class="weather-popup-backdrop" id="security-popup-backdrop">
+      <section class="weather-popup security-popup" role="dialog" aria-modal="true" aria-label="Warnungen">
+        <header class="security-popup-header"><ha-icon icon="mdi:shield-alert-outline"></ha-icon><span>Warnungen</span></header>
+        <div class="security-popup-content">
+          <div class="security-popup-summary"><ha-icon icon="${count ? "mdi:shield-alert" : "mdi:shield-check"}"></ha-icon><span><strong>${count ? `${count} Warnung${count === 1 ? "" : "en"}` : "Alles ok"}</strong><small>${ids.length} Entitäten</small></span></div>
+          ${groups || '<div class="security-popup-empty">Keine Sicherheitssensoren eingerichtet.</div>'}
+        </div>
+      </section>
+    </div>`;
+  }
+
+  _batteryPopupHtml() {
+    if (!this._batteryPopupOpen) return "";
+    const data = this._config?.battery_popup_card;
+    const entries = (data?.groups || []).flatMap((group) => group.entities || []);
+    const groups = [
+      { title: "Kritisch · 0–20 %", icon: "mdi:battery-alert", severity: "critical" },
+      { title: "Niedrig · 21–40 %", icon: "mdi:battery-low", severity: "warning" },
+      { title: "Gut · 41–100 %", icon: "mdi:battery-check", severity: "good" },
+    ].map((group) => {
+      const matches = entries.filter((entry) => {
+        const severity = batterySeverity(this._hass, entry.entity_id);
+        return group.severity === "critical"
+          ? ["critical", "unavailable", "neutral"].includes(severity)
+          : severity === group.severity;
+      }).sort((a, b) => {
+        const diff = batterySortValue(this._hass, a.entity_id) - batterySortValue(this._hass, b.entity_id);
+        return diff || String(a.name || "").localeCompare(String(b.name || ""), "de");
+      });
+      if (!matches.length) return "";
+      const rows = matches.map((entry) => {
+        const id = entry.entity_id;
+        const state = this._state(id);
+        const severity = batterySeverity(this._hass, id);
+        const value = state
+          ? (typeof this._hass?.formatEntityState === "function"
+              ? this._hass.formatEntityState(state)
+              : `${state.state}${state.attributes?.unit_of_measurement || ""}`)
+          : "Nicht verfügbar";
+        const level = Number.parseFloat(state?.state);
+        const icon = id.startsWith("binary_sensor.")
+          ? (severity === "critical" ? "mdi:battery-alert" : "mdi:battery-check")
+          : !Number.isFinite(level) ? "mdi:battery-unknown"
+          : level >= 95 ? "mdi:battery" : level >= 85 ? "mdi:battery-90"
+          : level >= 75 ? "mdi:battery-80" : level >= 65 ? "mdi:battery-70"
+          : level >= 55 ? "mdi:battery-60" : level >= 45 ? "mdi:battery-50"
+          : level >= 35 ? "mdi:battery-40" : level >= 25 ? "mdi:battery-30"
+          : level >= 15 ? "mdi:battery-20" : "mdi:battery-10";
+        const statusClass = severity === "good" ? "safe" : severity === "warning" ? "warning" : "unavailable";
+        return `<button type="button" class="security-popup-row ${statusClass}" data-battery-entity="${this._escapeHtml(id)}">
+          <span class="security-popup-row-icon"><ha-icon icon="${icon}"></ha-icon></span>
+          <span class="security-popup-row-copy"><strong>${this._escapeHtml(entry.name || id)}</strong><small>${this._escapeHtml(String(value))}${entry.area_name ? " · " + this._escapeHtml(entry.area_name) : ""}</small></span>
+          <ha-icon class="security-popup-chevron" icon="mdi:chevron-right"></ha-icon>
+        </button>`;
+      }).join("");
+      return `<section class="security-popup-group">
+        <div class="security-popup-group-title"><ha-icon icon="${group.icon}"></ha-icon>${group.title}</div>
+        <div class="security-popup-rows">${rows}</div>
+      </section>`;
+    }).join("");
+    return `<div class="weather-popup-backdrop" id="battery-popup-backdrop">
+      <section class="weather-popup security-popup" role="dialog" aria-modal="true" aria-label="Batterien">
+        <header class="security-popup-header"><ha-icon icon="mdi:battery-heart-variant"></ha-icon><span>Batterien</span></header>
+        <div class="security-popup-content">
+          <div class="security-popup-summary"><ha-icon icon="mdi:battery-check"></ha-icon><span><strong>${entries.length} Sensoren</strong><small>Batteriestatus</small></span></div>
+          ${groups || '<div class="security-popup-empty">Keine Batteriesensoren vorhanden.</div>'}
+        </div>
+      </section>
+    </div>`;
+  }
+
   _hasOpenDashboardPopup() {
-    return Boolean(this._weatherPopupOpen || this._powerPopupOpen ||
+    return Boolean(this._weatherPopupOpen || this._powerPopupOpen || this._securityPopupOpen || this._batteryPopupOpen ||
       this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
   }
 
@@ -9742,6 +9850,28 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
         .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:var(--card-background-color, #1c1c1c); box-shadow:0 24px 70px rgba(0,0,0,.48); }
+        .security-popup { display:flex; flex-direction:column; overflow:hidden; width:min(680px,calc(100vw - 40px)); max-height:calc(100dvh - 110px); padding:0; }
+        .security-popup-header { flex:0 0 auto; display:flex; align-items:center; gap:12px; padding:20px 24px; font-size:20px; font-weight:650; border-bottom:1px solid rgba(255,255,255,.12); }
+        .security-popup-header ha-icon { color:var(--home-yellow); }
+        .security-popup-content { min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; padding:18px 12px 24px; }
+        .security-popup-summary { display:flex; align-items:center; gap:12px; padding:12px; border-radius:15px; background:rgba(48,50,54,.30); margin-bottom:18px; }
+        .security-popup-summary > ha-icon { --mdc-icon-size:30px; color:#30d158; }
+        .security-popup-summary span, .security-popup-row-copy { display:flex; flex-direction:column; min-width:0; gap:3px; }
+        .security-popup-summary strong { font-size:16px; }
+        .security-popup-summary small { font-size:12px; color:var(--secondary-text-color); }
+        .security-popup-group { margin-top:18px; }
+        .security-popup-group-title { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:650; margin-bottom:9px; }
+        .security-popup-group-title ha-icon { --mdc-icon-size:20px; opacity:.75; }
+        .security-popup-rows { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+        .security-popup-row { width:100%; min-width:0; min-height:56px; display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid rgba(255,255,255,.11); border-radius:15px; background:rgba(48,50,54,.30); color:var(--primary-text-color); font:inherit; text-align:left; cursor:pointer; }
+        .security-popup-row-icon { width:38px; height:38px; flex:0 0 38px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:rgba(48,209,88,.15); color:#30d158; }
+        .security-popup-row.warning .security-popup-row-icon { background:rgba(255,69,58,.16); color:#ff453a; }
+        .security-popup-row.unavailable .security-popup-row-icon { background:rgba(255,159,10,.16); color:#ff9f0a; }
+        .security-popup-row-icon ha-icon { --mdc-icon-size:22px; }
+        .security-popup-row-copy { flex:1; }
+        .security-popup-row-copy strong { font-size:14px; overflow-wrap:anywhere; }
+        .security-popup-row-copy small { font-size:12px; color:var(--secondary-text-color); overflow-wrap:anywhere; }
+        .security-popup-chevron { --mdc-icon-size:18px; opacity:.5; }
         .weather-popup-current { display:flex; align-items:center; gap:18px; padding-right:48px; }
         .weather-popup-icon { --mdc-icon-size:64px; color:var(--home-yellow); }
         .weather-popup-temp { font-size:36px; font-weight:700; line-height:1; }
@@ -10892,6 +11022,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         </div>
         ${this._weatherPopupHtml(weather)}
           ${this._powerPopupHtml()}
+          ${this._securityPopupHtml()}
+          ${this._batteryPopupHtml()}
           ${this._groupControlPopup === "thermostats" ? this._homeThermostatPopupHtml() : this._groupControlPopupHtml()}
           ${this._climateHistoryPopupHtml()}
           ${this._presenceHistoryPopupHtml()}
@@ -11268,14 +11400,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#security-status")
       ?.addEventListener(
         "click",
-        () => this._navigate(this._config.security_path)
+        () => { this._securityPopupOpen = true; this._render(); }
       );
+
+    this.shadowRoot.querySelectorAll("[data-security-entity]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.securityEntity)));
+    this.shadowRoot.querySelectorAll("[data-battery-entity]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.batteryEntity)));
+    this.shadowRoot.querySelector("#battery-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "battery-popup-backdrop") { this._batteryPopupOpen = false; this._render(); }
+    });
+    this.shadowRoot.querySelector("#security-popup-backdrop")?.addEventListener("click", (event) => {
+      if (event.target?.id === "security-popup-backdrop") { this._securityPopupOpen = false; this._render(); }
+    });
 
     this.shadowRoot
       .querySelector("#battery-status")
       ?.addEventListener(
         "click",
-        () => this._navigate(this._config.maintenance_path)
+        () => { this._batteryPopupOpen = true; this._render(); }
       );
 
     this.shadowRoot
@@ -11364,6 +11505,8 @@ class AtzeSecurityOverviewCard extends HTMLElement {
       entity_ids: [],
       ...config,
     };
+    if (this._config.popup_mode) this.setAttribute("popup-mode", "");
+    else this.removeAttribute("popup-mode");
     this._render();
   }
 
@@ -11377,12 +11520,12 @@ class AtzeSecurityOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
-    if (!this._scrollTopCleanup) {
+    if (!this._config?.popup_mode && !this._scrollTopCleanup) {
       this._scrollTopCleanup =
         setupAtzeScrollTopButton(this);
     }
 
-    if (!this._homeSwipeCleanup) {
+    if (!this._config?.popup_mode && !this._homeSwipeCleanup) {
       this._homeSwipeCleanup =
         setupAtzeHomeSwipe(
           this,
@@ -11664,6 +11807,28 @@ class AtzeSecurityOverviewCard extends HTMLElement {
           color: var(--primary-text-color);
         }
 
+        :host([popup-mode]) { min-height:0; background:transparent; }
+        :host([popup-mode]) ha-card { min-height:0; background:transparent; }
+        :host([popup-mode]) .page { padding:0; }
+        :host([popup-mode]) .nav-row { display:none; }
+        :host([popup-mode]) .entity-grid { grid-template-columns:1fr; }
+        :host([popup-mode]) .entity-card { min-height:56px; border-radius:15px; }
+        :host([popup-mode]) { display:block; width:100%; min-height:0; background:transparent; }
+        :host([popup-mode]) ha-card { min-height:0; background:transparent; border:0; box-shadow:none; }
+        :host([popup-mode]) .page { width:100%; padding:0; margin:0; }
+        :host([popup-mode]) .nav-row { display:none; }
+        :host([popup-mode]) .summary { margin:0 0 18px; padding:12px; border-radius:15px; }
+        :host([popup-mode]) .summary-icon { width:38px; height:38px; flex:0 0 38px; }
+        :host([popup-mode]) .summary-main { font-size:16px; }
+        :host([popup-mode]) .summary-sub { font-size:12px; }
+        :host([popup-mode]) .area-section { margin-top:18px; }
+        :host([popup-mode]) .area-heading { font-size:15px; margin-bottom:9px; }
+        :host([popup-mode]) .entity-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+        :host([popup-mode]) .entity-card { width:100%; min-height:56px; padding:8px 12px; gap:10px; border-radius:15px; }
+        :host([popup-mode]) .entity-icon { width:38px; height:38px; flex:0 0 38px; border-radius:12px; }
+        :host([popup-mode]) .entity-name { font-size:14px; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+        :host([popup-mode]) .entity-state { font-size:12px; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+        :host([popup-mode]) .more { display:none; }
         .page {
           width: min(1180px, 100%);
           margin: 0 auto;
@@ -15027,6 +15192,49 @@ class AtzeSwitchCard extends HTMLElement {
 }
 const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";
 if(!customElements.get(atzeSwitchCardTag))customElements.define(atzeSwitchCardTag,AtzeSwitchCard);
+
+class AtzeSafetyCard extends HTMLElement {
+  constructor() { super(); this.attachShadow({mode:"open"}); this._config={}; }
+  setConfig(config) {
+    if (!config?.entity?.startsWith("binary_sensor.")) throw new Error("Atze Safety Card benötigt einen Binärsensor");
+    this._config=config; this._render();
+  }
+  set hass(value) { this._hass=value; this._render(); }
+  getCardSize() { return 1; }
+  getGridOptions() { return {columns:6,rows:1,min_columns:3}; }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info",{bubbles:true,composed:true,detail:{entityId:this._config.entity}}));
+  }
+  _render() {
+    if (!this._config.entity) return;
+    const id=this._config.entity, entity=this._hass?.states?.[id];
+    const name=this._config.name||entity?.attributes?.friendly_name||id;
+    const deviceClass=entity?.attributes?.device_class||"";
+    const state=entity?.state;
+    const onLabels={door:"Offen",window:"Offen",opening:"Offen",garage_door:"Offen",smoke:"Erkannt",gas:"Erkannt",carbon_monoxide:"Erkannt",moisture:"Feucht",motion:"Erkannt",occupancy:"Erkannt",problem:"Problem",safety:"Unsicher",tamper:"Manipulation",lock:"Entriegelt",battery:"Niedrig"};
+    const offLabels={door:"Geschlossen",window:"Geschlossen",opening:"Geschlossen",garage_door:"Geschlossen",smoke:"Frei",gas:"Frei",carbon_monoxide:"Frei",moisture:"Trocken",motion:"Frei",occupancy:"Frei",problem:"OK",safety:"Sicher",tamper:"Frei",lock:"Verriegelt",battery:"Normal"};
+    const status=state==="on"?(onLabels[deviceClass]||"Ein"):state==="off"?(offLabels[deviceClass]||"Aus"):"Nicht verfügbar";
+    const warning=state==="on" && ["door","window","opening","garage_door","smoke","gas","carbon_monoxide","moisture","problem","safety","tamper","battery"].includes(deviceClass);
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;min-width:0}
+        ha-card{box-sizing:border-box;height:56px;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:15px;border:1px solid var(--home-card-border,rgba(255,255,255,.10));background:rgba(55,58,67,.30);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);color:var(--primary-text-color);overflow:hidden;box-shadow:none}
+        .symbol{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
+        .symbol ha-icon{--mdc-icon-size:23px;color:${warning?"#ff453a":"var(--secondary-text-color,#8e8e93)"}}
+        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;background:transparent;border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
+        .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      </style>
+      <ha-card><div class="symbol"><ha-icon></ha-icon></div><button class="details" type="button"><span class="name"></span><span class="status"></span></button></ha-card>`;
+    this.shadowRoot.querySelector("ha-icon").setAttribute("icon",this._config.icon||entity?.attributes?.icon||"mdi:shield-check-outline");
+    this.shadowRoot.querySelector(".name").textContent=name;
+    this.shadowRoot.querySelector(".status").textContent=status;
+    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
+    this.shadowRoot.querySelector(".symbol").addEventListener("click",()=>this._moreInfo());
+  }
+}
+const atzeSafetyCardTag=ATZE_TESTING_BUILD?"atze-safety-card-testing":"atze-safety-card";
+if(!customElements.get(atzeSafetyCardTag))customElements.define(atzeSafetyCardTag,AtzeSafetyCard);
 
 class AtzeActionCard extends HTMLElement {
   constructor(){super();this.attachShadow({mode:"open"});this._config={};this._busy=false;}
