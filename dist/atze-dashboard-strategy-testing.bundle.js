@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "A7FC9F7";
+const ATZE_TESTING_REVISION = "0F5E81A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7140,10 +7140,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     const views =
       config.home_view === false
         ? [
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ]
@@ -7161,10 +7157,6 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ];

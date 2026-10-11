@@ -7143,10 +7143,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     const views =
       config.home_view === false
         ? [
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ]
@@ -7164,10 +7160,6 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
-            ...(securityView ? [securityView] : []),
-            ...(maintenanceView
-              ? [maintenanceView]
-              : []),
             ...customPageViews,
             ...roomViews,
           ];
