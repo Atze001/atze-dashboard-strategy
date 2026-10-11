@@ -1404,7 +1404,8 @@ class AtzeFanCard extends HTMLElement {
   }
   set hass(value) {
     this._hass = value;
-    this._render();
+    if (this._popupOpen) this._refreshPopup();
+    else this._render();
   }
   getCardSize() { return 1; }
   getGridOptions() { return { columns: 6, rows: 1, min_columns: 3 }; }
@@ -1472,11 +1473,62 @@ class AtzeFanCard extends HTMLElement {
       if (domain === "number") await this._hass.callService("number", "set_value", {entity_id:id, value:Number(value)});
     } catch (error) { console.error("Atze Fan Popup: Aktion fehlgeschlagen", error); }
   }
+  _refreshPopup() {
+    const dialog = this.shadowRoot?.querySelector(".fan-dialog");
+    if (!dialog) return;
+    const fan = this._hass?.states?.[this._config.entity];
+    const values = {
+      pm25: this._format("sensor", "aq_pm_2_5"),
+      filter: this._format("sensor", "filter") + " %",
+      timer: this._format("sensor", "timer_duration"),
+      mode: fan?.attributes?.preset_mode || this._format("select", "fan_operating_mode"),
+    };
+    for (const [key, value] of Object.entries(values)) {
+      const el = dialog.querySelector('[data-value="' + key + '"]');
+      if (el) el.textContent = value;
+    }
+    for (const suffix of ["child_lock", "display"]) {
+      const el = dialog.querySelector('[data-switch="' + suffix + '"]');
+      if (el) el.checked = this._format("switch", suffix) === "on";
+    }
+    for (const suffix of ["fan_operating_mode", "auto_mode"]) {
+      const el = dialog.querySelector('[data-select="' + suffix + '"]');
+      if (el && this.shadowRoot.activeElement !== el) {
+        const value = this._format("select", suffix);
+        if ([...el.options].some(option => option.value === value)) el.value = value;
+      }
+    }
+    const timer = dialog.querySelector('[data-number="timer_min"]');
+    if (timer && this.shadowRoot.activeElement !== timer) timer.value = this._format("number", "timer_min", "");
+  }
+  _lockScroll() {
+    if (this._scrollCleanup) return;
+    const prevent = event => {
+      if (this._popupOpen && !event.target.closest?.(".fan-dialog")) event.preventDefault();
+    };
+    document.addEventListener("touchmove", prevent, {passive:false});
+    document.addEventListener("wheel", prevent, {passive:false});
+    this._scrollCleanup = () => {
+      document.removeEventListener("touchmove", prevent);
+      document.removeEventListener("wheel", prevent);
+    };
+  }
+  _openPopup() { this._popupOpen = true; this._lockScroll(); this._render(); }
+  _closePopup() {
+    this._popupOpen = false;
+    this._scrollCleanup?.();
+    this._scrollCleanup = null;
+    this._render();
+  }
+  disconnectedCallback() {
+    this._scrollCleanup?.();
+    this._scrollCleanup = null;
+  }
   _popupMarkup() {
     const fan = this._hass?.states?.[this._config.entity];
     const title = this._config.name || fan?.attributes?.friendly_name || "Luftreiniger";
     const esc = value => String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-    const tile = (icon, name, value) => `<div class="fan-tile"><ha-icon icon="${icon}"></ha-icon><div><small>${name}</small><strong>${esc(value)}</strong></div></div>`;
+    const tile = (icon, name, value, key) => `<div class="fan-tile"><ha-icon icon="${icon}"></ha-icon><div><small>${name}</small><strong data-value="${key}">${esc(value)}</strong></div></div>`;
     const selector = (suffix, label) => {
       const entity = this._field("select", suffix);
       if (!entity) return "";
@@ -1488,30 +1540,27 @@ class AtzeFanCard extends HTMLElement {
     };
     const timer = this._field("number", "timer_min");
     const timerInput = timer ? `<label class="fan-row"><span>Timer (Minuten)</span><input type="number" data-number="timer_min" min="${timer.attributes.min ?? 0}" max="${timer.attributes.max ?? 1440}" step="${timer.attributes.step ?? 1}" value="${esc(timer.state)}"></label>` : "";
-    return `<dialog class="fan-overlay" aria-label="Luftreiniger">
+    return `<div class="fan-overlay">
       <section class="fan-dialog" role="dialog" aria-modal="true" aria-label="Luftreiniger">
         <header><ha-icon icon="mdi:air-purifier"></ha-icon><span>${esc(title)}</span></header>
         <div class="fan-grid">
-          ${tile("mdi:blur", "PM2.5", this._format("sensor","aq_pm_2_5"))}
-          ${tile("mdi:air-filter", "Filter", this._format("sensor","filter") + " %")}
-          ${tile("mdi:timer-outline", "Timer", this._format("sensor","timer_duration"))}
-          ${tile("mdi:weather-windy", "Modus", fan?.attributes?.preset_mode || this._format("select","fan_operating_mode"))}
+          ${tile("mdi:blur", "PM2.5", this._format("sensor","aq_pm_2_5"), "pm25")}
+          ${tile("mdi:air-filter", "Filter", this._format("sensor","filter") + " %", "filter")}
+          ${tile("mdi:timer-outline", "Timer", this._format("sensor","timer_duration"), "timer")}
+          ${tile("mdi:weather-windy", "Modus", fan?.attributes?.preset_mode || this._format("select","fan_operating_mode"), "mode")}
         </div>
         ${selector("fan_operating_mode", "Betriebsmodus")}
         ${selector("auto_mode", "Auto-Modus")}
         ${toggle("child_lock", "Kindersicherung")}
         ${toggle("display", "Display")}
         ${timerInput}
-      </section></dialog>`;
+      </section></div>`;
   }
   _bindPopup() {
     const overlay = this.shadowRoot.querySelector(".fan-overlay");
     if (!overlay) return;
-    if (!overlay.open) overlay.showModal();
-    overlay.addEventListener("close", () => { this._popupOpen = false; });
-    overlay.addEventListener("click", e => {
-      const bounds = overlay.querySelector(".fan-dialog").getBoundingClientRect();
-      if (e.clientX < bounds.left || e.clientX > bounds.right || e.clientY < bounds.top || e.clientY > bounds.bottom) overlay.close();
+    overlay.addEventListener("click", event => {
+      if (event.target === overlay) this._closePopup();
     });
     overlay.querySelectorAll("[data-switch]").forEach(el=>el.addEventListener("change",()=>this._set("switch",el.dataset.switch,el.checked)));
     overlay.querySelectorAll("[data-select]").forEach(el=>el.addEventListener("change",()=>this._set("select",el.dataset.select,el.value)));
@@ -1550,8 +1599,7 @@ class AtzeFanCard extends HTMLElement {
         .status { flex-shrink:0; color:var(--secondary-text-color); font-size:12px; }
         button:disabled { opacity:.4; cursor:default; }
         .details,.status { cursor:pointer; }
-        .fan-overlay { position:fixed; inset:0; margin:auto; padding:0; border:0; max-width:none; max-height:none; background:transparent; color:inherit; overflow:visible; }
-        .fan-overlay::backdrop { background:rgba(0,0,0,.5); backdrop-filter:blur(3px); }
+        .fan-overlay { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
         .fan-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
         .fan-dialog header { display:flex; align-items:center; gap:12px; font-weight:600; font-size:18px; margin-bottom:20px; }
         .fan-dialog header ha-icon { color:#64d2ff; }
@@ -1589,8 +1637,7 @@ class AtzeFanCard extends HTMLElement {
     this.shadowRoot.querySelector(".settings").addEventListener("click", () => this._moreInfo());
     this.shadowRoot.querySelector("ha-card").addEventListener("click", event => {
       if (event.target.closest("button")) return;
-      this._popupOpen = true;
-      this._render();
+      this._openPopup();
     });
     this._bindPopup();
   }
