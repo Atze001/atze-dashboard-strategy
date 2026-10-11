@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D404853";
+const ATZE_TESTING_REVISION = "A7FC9F7";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -2693,27 +2693,13 @@ function buildEntityCard(
 
   let card = defaultTileCard(hass, entity, config, area);
 
-  // Room safety sensors use the same translucent tile surface as Atze controls.
-  // Keep the native tile's more-info interaction and device-class state labels.
+  // Read-only safety sensor card matching the 56px Atze switch layout.
   if (domainOf(entityId) === "binary_sensor" && cardMode !== "tile" && !override.card) {
-    card["card_mod"] = {
-      style: `ha-card {
-        background: rgba(65, 57, 79, 0.38) !important;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        border-radius: 20px !important;
-        box-shadow: none !important;
-        height: 96px !important;
-        min-height: 96px !important;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-      }
-      ha-card .content { min-width: 0; }
-      ha-card .primary, ha-card .secondary {
-        overflow-wrap: anywhere;
-      }`
+    card = {
+      type: ATZE_TESTING_BUILD ? "custom:atze-safety-card-testing" : "custom:atze-safety-card",
+      entity: entityId,
+      name: displayName(hass, entity, config, area),
+      icon: entityIcon(hass, entityId, entity) || "mdi:shield-check-outline",
     };
   }
 
@@ -15214,6 +15200,49 @@ class AtzeSwitchCard extends HTMLElement {
 }
 const atzeSwitchCardTag=ATZE_TESTING_BUILD?"atze-switch-card-testing":"atze-switch-card";
 if(!customElements.get(atzeSwitchCardTag))customElements.define(atzeSwitchCardTag,AtzeSwitchCard);
+
+class AtzeSafetyCard extends HTMLElement {
+  constructor() { super(); this.attachShadow({mode:"open"}); this._config={}; }
+  setConfig(config) {
+    if (!config?.entity?.startsWith("binary_sensor.")) throw new Error("Atze Safety Card benötigt einen Binärsensor");
+    this._config=config; this._render();
+  }
+  set hass(value) { this._hass=value; this._render(); }
+  getCardSize() { return 1; }
+  getGridOptions() { return {columns:6,rows:1,min_columns:3}; }
+  _moreInfo() {
+    this.dispatchEvent(new CustomEvent("hass-more-info",{bubbles:true,composed:true,detail:{entityId:this._config.entity}}));
+  }
+  _render() {
+    if (!this._config.entity) return;
+    const id=this._config.entity, entity=this._hass?.states?.[id];
+    const name=this._config.name||entity?.attributes?.friendly_name||id;
+    const deviceClass=entity?.attributes?.device_class||"";
+    const state=entity?.state;
+    const onLabels={door:"Offen",window:"Offen",opening:"Offen",garage_door:"Offen",smoke:"Erkannt",gas:"Erkannt",carbon_monoxide:"Erkannt",moisture:"Feucht",motion:"Erkannt",occupancy:"Erkannt",problem:"Problem",safety:"Unsicher",tamper:"Manipulation",lock:"Entriegelt",battery:"Niedrig"};
+    const offLabels={door:"Geschlossen",window:"Geschlossen",opening:"Geschlossen",garage_door:"Geschlossen",smoke:"Frei",gas:"Frei",carbon_monoxide:"Frei",moisture:"Trocken",motion:"Frei",occupancy:"Frei",problem:"OK",safety:"Sicher",tamper:"Frei",lock:"Verriegelt",battery:"Normal"};
+    const status=state==="on"?(onLabels[deviceClass]||"Ein"):state==="off"?(offLabels[deviceClass]||"Aus"):"Nicht verfügbar";
+    const warning=state==="on" && ["door","window","opening","garage_door","smoke","gas","carbon_monoxide","moisture","problem","safety","tamper","battery"].includes(deviceClass);
+    this.shadowRoot.innerHTML=`
+      <style>
+        :host{display:block;min-width:0}
+        ha-card{box-sizing:border-box;height:56px;min-width:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:15px;border:1px solid var(--home-card-border,rgba(255,255,255,.10));background:rgba(55,58,67,.30);backdrop-filter:blur(10px) saturate(1.2);-webkit-backdrop-filter:blur(10px) saturate(1.2);color:var(--primary-text-color);overflow:hidden;box-shadow:none}
+        .symbol{width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border:1px solid var(--home-card-border,rgba(255,255,255,.10));border-radius:13px;background:rgba(118,118,128,.20)}
+        .symbol ha-icon{--mdc-icon-size:23px;color:${warning?"#ff453a":"var(--secondary-text-color,#8e8e93)"}}
+        .details{flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;text-align:left;background:transparent;border:0;color:inherit;padding:0;font:inherit;cursor:pointer}
+        .name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .status{font-size:11px;color:var(--secondary-text-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      </style>
+      <ha-card><div class="symbol"><ha-icon></ha-icon></div><button class="details" type="button"><span class="name"></span><span class="status"></span></button></ha-card>`;
+    this.shadowRoot.querySelector("ha-icon").setAttribute("icon",this._config.icon||entity?.attributes?.icon||"mdi:shield-check-outline");
+    this.shadowRoot.querySelector(".name").textContent=name;
+    this.shadowRoot.querySelector(".status").textContent=status;
+    this.shadowRoot.querySelector(".details").addEventListener("click",()=>this._moreInfo());
+    this.shadowRoot.querySelector(".symbol").addEventListener("click",()=>this._moreInfo());
+  }
+}
+const atzeSafetyCardTag=ATZE_TESTING_BUILD?"atze-safety-card-testing":"atze-safety-card";
+if(!customElements.get(atzeSafetyCardTag))customElements.define(atzeSafetyCardTag,AtzeSafetyCard);
 
 class AtzeActionCard extends HTMLElement {
   constructor(){super();this.attachShadow({mode:"open"});this._config={};this._busy=false;}
