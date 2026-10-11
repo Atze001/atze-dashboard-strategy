@@ -1106,6 +1106,7 @@ class AtzeEntityCard extends HTMLElement {
     this._hass = null;
     this._busy = false;
     this._lightPopupOpen = false;
+    this._coverPopupOpen = false;
     this._brightnessDragging = false;
   }
 
@@ -1166,6 +1167,61 @@ class AtzeEntityCard extends HTMLElement {
   _closeLightPopup() {
     this._lightPopupOpen = false;
     this._render();
+  }
+
+  _openCoverPopup() {
+    this._coverPopupOpen = true;
+    this._render();
+  }
+
+  _closeCoverPopup() {
+    this._coverPopupOpen = false;
+    this._render();
+  }
+
+  async _setCoverPosition(position) {
+    if (this._busy || !this._hass) return;
+    const state = this._hass.states[this._config.entity];
+    if (!state || ["unknown", "unavailable"].includes(state.state)) return;
+    const features = Number(state.attributes?.supported_features || 0);
+    const service = position === 0 ? "close_cover" : position === 100 ? "open_cover" : "set_cover_position";
+    const supported = position === 0 ? (features & 2) : position === 100 ? (features & 1) : (features & 4);
+    if (!supported) return;
+    this._busy = true;
+    try {
+      await this._hass.callService("cover", service, {
+        entity_id: this._config.entity,
+        ...(service === "set_cover_position" ? { position } : {}),
+      });
+    } catch (error) {
+      console.error("Atze Rollladen-Popup: Position fehlgeschlagen", error);
+    } finally {
+      this._busy = false;
+    }
+  }
+
+  _coverPopupMarkup(name, state) {
+    const features = Number(state?.attributes?.supported_features || 0);
+    const position = Number(state?.attributes?.current_position);
+    const hasPosition = state?.attributes?.current_position != null && Number.isFinite(position);
+    const unavailable = !state || ["unknown", "unavailable"].includes(state.state);
+    const presets = [
+      [0, "Geschlossen", "mdi:window-shutter"],
+      [100, "Offen", "mdi:window-shutter-open"],
+      [50, "Halb offen", "mdi:window-shutter"],
+      [15, "Schlitz offen", "mdi:window-shutter"],
+    ];
+    const choices = presets.map(([value, label, icon]) => {
+      const supported = value === 0 ? (features & 2) : value === 100 ? (features & 1) : (features & 4);
+      const selected = hasPosition && Math.abs(position - value) <= 1;
+      return `<button type="button" class="light-choice${selected ? " is-active" : ""}" data-cover-position="${value}" ${!supported || unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon><strong>${label}</strong><small>${value} %</small></button>`;
+    }).join("");
+    return `<div class="light-overlay cover-overlay"><section class="light-dialog" role="dialog" aria-modal="true" aria-label="Rollladen Positionen">
+      <header><ha-icon icon="mdi:window-shutter"></ha-icon><span class="cover-title"></span></header>
+      <div class="light-divider"></div>
+      <div class="light-heading">Position</div>
+      <div class="cover-options">${choices}</div>
+    </section></div>`;
   }
 
   async _setColorTemperature(kelvin) {
@@ -1271,7 +1327,7 @@ class AtzeEntityCard extends HTMLElement {
         .settings ha-icon { --mdc-icon-size:23px; }
         button:disabled { opacity:.4; cursor:default; }
         .details.light-details { cursor:pointer; }
-        ha-card:has(.light-details) { cursor:pointer; }
+        ha-card:has(.light-details),ha-card:has(.cover-details) { cursor:pointer; }
         .light-overlay { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
         .light-dialog { box-sizing:border-box; width:min(430px,100%); max-height:85vh; overflow:auto; padding:22px; border-radius:22px; border:1px solid rgba(255,255,255,.17); background:rgba(38,40,46,.94); backdrop-filter:blur(22px); color:#fff; box-shadow:0 18px 55px rgba(0,0,0,.4); }
         .light-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
@@ -1285,6 +1341,10 @@ class AtzeEntityCard extends HTMLElement {
         .light-choice:disabled { opacity:.35; cursor:default; }
         .light-dot { display:block; width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,.3); }
         .light-choice strong { font-size:12px; }
+        .cover-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+        .cover-options .light-choice { min-height:100px; }
+        .cover-options .light-choice ha-icon { --mdc-icon-size:30px; color:#bec2cc; }
+        .cover-options .light-choice.is-active ha-icon { color:#64d2ff; }
         .light-choice small { font-size:11px; color:#c6c6cc; }
         .light-hint { font-size:12px; color:#c6c6cc; }
         .light-brightness-heading { display:flex; justify-content:space-between; align-items:center; margin:22px 0 12px; font-size:14px; font-weight:600; }
@@ -1295,16 +1355,37 @@ class AtzeEntityCard extends HTMLElement {
       </style>
       <ha-card>
         <button class="control" type="button" aria-label="Steuern" ${unavailable ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>
-        <span class="details ${cover ? "" : "light-details"}" role="${cover ? "text" : "button"}" tabindex="${cover ? "-1" : "0"}"></span>
+        <span class="details ${cover ? "cover-details" : "light-details"}" role="button" tabindex="0"></span>
         ${cover && position != null && Number.isFinite(position) ? `<span class="position">${Math.round(position)} %</span>` : ""}
         <button class="settings" type="button" aria-label="Weitere Steuerung" title="Weitere Steuerung"><ha-icon icon="mdi:tune"></ha-icon></button>
-      </ha-card>${!cover && this._lightPopupOpen ? this._lightPopupMarkup(name, state) : ""}`;
+      </ha-card>${!cover && this._lightPopupOpen ? this._lightPopupMarkup(name, state) : ""}${cover && this._coverPopupOpen ? this._coverPopupMarkup(name, state) : ""}`;
     const details = this.shadowRoot.querySelector(".details");
     details.textContent = name;
     details.title = name;
     this.shadowRoot.querySelector(".control")?.addEventListener("click", () => this._toggle());
     this.shadowRoot.querySelector(".settings")?.addEventListener("click", () => this._moreInfo());
-    if (!cover) {
+    if (cover) {
+      const open = () => this._openCoverPopup();
+      this.shadowRoot.querySelector("ha-card").addEventListener("click", event => {
+        if (event.target.closest("button")) return;
+        open();
+      });
+      details.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); open(); }
+      });
+      const overlay = this.shadowRoot.querySelector(".cover-overlay");
+      if (overlay) {
+        const registryEntity = this._hass?.entities?.[id];
+        const device = registryEntity?.device_id ? this._hass?.devices?.[registryEntity.device_id] : null;
+        overlay.querySelector(".cover-title").textContent = device?.name_by_user || device?.name || name;
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) this._closeCoverPopup();
+        });
+        overlay.querySelectorAll("[data-cover-position]").forEach(button => {
+          button.addEventListener("click", () => this._setCoverPosition(Number(button.dataset.coverPosition)));
+        });
+      }
+    } else {
       const open = () => this._openLightPopup();
       this.shadowRoot.querySelector("ha-card").addEventListener("click", event => {
         if (event.target.closest("button")) return;
