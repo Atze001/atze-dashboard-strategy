@@ -314,7 +314,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              config,
+              { ...config, security_popup_card: securityView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
