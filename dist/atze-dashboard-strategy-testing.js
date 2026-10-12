@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8F7D420";
+const ATZE_TESTING_REVISION = "0C144AE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10795,7 +10795,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
         }
         .rooms:has(.room-compact) { grid-template-columns: 1fr; gap: 10px; }
-        .room-compact { height: 56px; min-height: 56px; border-radius: 15px; padding: 0 14px; display: flex; align-items: center; cursor: pointer; background: rgba(115,125,145,.16); border: 1px solid rgba(175,185,205,.18); box-sizing: border-box; overflow: hidden; }
+        .room-compact { height: 56px; min-height: 56px; border-radius: 15px; padding: 0 14px; display: flex; align-items: center; cursor: pointer; background: rgba(55, 58, 67, 0.30); backdrop-filter: blur(8px) saturate(1.12); -webkit-backdrop-filter: blur(8px) saturate(1.12); border: 1px solid var(--home-card-border); box-sizing: border-box; overflow: hidden; }
         .room-compact > :not(.room-compact-content) { display: none !important; }
         .room-compact-content { display: none; align-items: center; width: 100%; gap: 12px; font-size: 15px; font-weight: 600; position: relative; z-index: 1; }
         .room-compact .room-compact-content { display: flex; }
