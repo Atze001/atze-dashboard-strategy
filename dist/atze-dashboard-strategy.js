@@ -14655,7 +14655,7 @@ class AtzeThermostatCard extends HTMLElement {
     const format = n => Number(n).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});
     const hvacModes = attrs.hvac_modes || [];
     const hasPowerToggle = hvacModes.includes("off") && hvacModes.includes("heat");
-    const modes = hvacModes.filter(mode => !hasPowerToggle || mode !== "off").map(mode => {
+    const modes = hvacModes.map(mode => {
       const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
       return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
     }).join("");
@@ -14704,12 +14704,12 @@ class AtzeThermostatCard extends HTMLElement {
     const rows = pairedHtml + valvePairHtml + rowItems.map(renderRow).join("");
     return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true">' +
       '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
-      '<div class="thermostat-main">' + (hasPowerToggle ? '<button type="button" class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Heizung umschalten"><ha-icon icon="mdi:power"></ha-icon></button>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
+      '<div class="thermostat-main">' + (modes ? '<details class="thermostat-mode-menu"><summary class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Betriebsmodus wählen" title="Betriebsmodus wählen"><ha-icon icon="mdi:power"></ha-icon><ha-icon class="mode-chevron" icon="mdi:chevron-down"></ha-icon></summary><div class="thermostat-mode-options"><div class="service-caption">Betriebsmodus</div>' + modes + '</div></details>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
       '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div></div></div>' +
       '<div class="service-divider"></div><div class="service-caption">Temperatur-Voreinstellungen</div>' +
       '<div class="temperature-presets">' + [5,17,20,24].map(t => '<button type="button" data-temp-preset="' + t + '"' + (t < Number(attrs.min_temp ?? 5) || t > Number(attrs.max_temp ?? 30) ? ' disabled' : '') + '>' + t + '°</button>').join("") +
       '<button type="button" data-temp-preset="max" class="preset-max">Max</button></div>' +
-      (modes ? '<div class="service-divider"></div><div class="service-caption">Betriebsmodus</div><div class="mode-options">' + modes + '</div>' : '') +
+      
       '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
   async _serviceAction(id, option) {
@@ -14871,7 +14871,14 @@ class AtzeThermostatCard extends HTMLElement {
         .service-caption { font-size:13px; color:var(--secondary-text-color); margin:10px 0; }
         .thermostat-main { display:flex; align-items:center; gap:12px; }
         .thermostat-temperatures { flex:1; min-width:0; text-align:center; }
-        .thermostat-power { flex:0 0 54px; width:54px; height:54px; display:grid; place-items:center; border-radius:15px; border:1px solid var(--divider-color); background:rgba(118,118,128,.2); color:#8e8e93; }
+        .thermostat-mode-menu { position:relative; flex:0 0 54px; align-self:center; }
+        .thermostat-mode-menu summary { list-style:none; cursor:pointer; }
+        .thermostat-mode-menu summary::-webkit-details-marker { display:none; }
+        .thermostat-mode-options { position:absolute; z-index:10; top:calc(100% + 8px); left:0; width:180px; max-width:calc(100vw - 76px); max-height:45dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding:10px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,.35); }
+        .thermostat-mode-options .service-caption { margin:0 0 4px; }
+        .thermostat-mode-options .mode-button { text-align:left; padding:9px 11px; }
+        .thermostat-power .mode-chevron { --mdc-icon-size:13px; position:absolute; right:1px; bottom:1px; }
+        .thermostat-power { position:relative; flex:0 0 54px; width:54px; height:54px; display:grid; place-items:center; border-radius:15px; border:1px solid var(--divider-color); background:rgba(118,118,128,.2); color:#8e8e93; }
         .thermostat-power.is-on { color:#ff453a; border-color:rgba(255,69,58,.4); }
         .thermostat-power ha-icon { --mdc-icon-size:28px; }
         .temperature-control { display:flex; align-items:center; justify-content:space-between; gap:6px; margin:12px 0; }
@@ -14941,12 +14948,11 @@ class AtzeThermostatCard extends HTMLElement {
         if (isMax && !window.confirm("Thermostat wirklich auf die maximale Solltemperatur von " + max + " °C stellen?")) return;
         this._setTemperature(temperature);
       }));
-      dialog.querySelector(".thermostat-power")?.addEventListener("click",() => {
-        const current = this._hass?.states?.[this._config.entity];
-        if (current && !["unknown","unavailable"].includes(current.state)) this._setHvacMode(current.state === "off" ? "heat" : "off");
-      });
       dialog.querySelectorAll("[data-hvac]").forEach(button =>
-        button.addEventListener("click",() => this._setHvacMode(button.dataset.hvac)));
+        button.addEventListener("click",() => {
+          dialog.querySelector(".thermostat-mode-menu")?.removeAttribute("open");
+          this._setHvacMode(button.dataset.hvac);
+        }));
     }
     this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
       const id = el.dataset.service;
