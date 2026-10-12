@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.402.0";
+const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0F5E81A";
+const ATZE_TESTING_REVISION = "AB468EE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -2711,6 +2711,7 @@ function buildEntityCard(
       type: domainOf(entityId) === "lock" ? (ATZE_TESTING_BUILD ? "custom:atze-lock-card-testing" : "custom:atze-lock-card") : ["automation", "scene", "script"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-action-card-testing" : "custom:atze-action-card") : ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
+      ...(domainOf(entityId) === "switch" && options.powerEntityId ? { power_entity: options.powerEntityId } : {}),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
     };
   }
@@ -7844,8 +7845,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   async _openPresenceHistory(range = "24h", entityId = null) {
     const personId = entityId || this._config?.person_entity || "person.alexander_reimann";
-    const trackerId = "device_tracker.atzes_iphone_17_pro_2";
-    const request = { personId, trackerId };
+    const request = { personId };
     this._presenceHistoryPopup = request;
     this._presenceHistory = [];
     this._presenceHistoryLoading = true;
@@ -7856,7 +7856,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const end = new Date().toISOString();
     try {
       const response = await this._hass.callApi("GET",
-        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(end)}&filter_entity_id=${encodeURIComponent(personId + "," + trackerId)}&no_attributes`);
+        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(end)}&filter_entity_id=${encodeURIComponent(personId)}&no_attributes`);
       if (this._presenceHistoryPopup !== request) return;
       const events = [];
       for (const entries of Array.isArray(response) ? response : []) {
@@ -7864,7 +7864,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         let previous = null;
         for (const entry of entries) {
           const source = entry.entity_id;
-          if (source !== personId && source !== trackerId) continue;
+          if (source !== personId) continue;
           const state = String(entry.state ?? "");
           const timestamp = new Date(entry.last_changed || entry.last_updated).getTime();
           if (!Number.isFinite(timestamp)) continue;
@@ -7909,16 +7909,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const events = this._presenceHistory.map((event) => `
       <div class="presence-event">
         <span class="presence-event-time">${formatTime(event.timestamp)}</span>
-        <span class="presence-event-source">${event.source === popup.personId ? "Person" : "iCloud iPhone"}</span>
+        
         <strong>${this._escapeHtml(formatState(event.state))}</strong>
       </div>`).join("");
     return `
       <div class="weather-popup-backdrop" id="presence-history-backdrop">
         <section class="weather-popup presence-history-popup" role="dialog" aria-modal="true" aria-label="Anwesenheitsverlauf">
-          <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Person und iCloud im Vergleich</small></div></div>
+          <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Letzte 24 Stunden</small></div></div>
           <div class="presence-summary">
             <div><span>Person</span><strong>${stateBadge(popup.personId)}</strong></div>
-            <div><span>iCloud iPhone</span><strong>${stateBadge(popup.trackerId)}</strong></div>
           </div>
           <div class="presence-event-list">
             ${this._presenceHistoryLoading ? '<div class="history-empty">Verlauf wird geladen …</div>' :
@@ -8680,7 +8679,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }[value] || value);
       const badges = root.querySelectorAll(".presence-summary strong");
       if (badges[0]) badges[0].textContent = formatState(this._state(popup.personId)?.state || "unavailable");
-      if (badges[1]) badges[1].textContent = formatState(this._state(popup.trackerId)?.state || "unavailable");
     }
   }
 
@@ -10429,7 +10427,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .presence-history-title div { display:flex; flex-direction:column; gap:4px; }
         .presence-history-title strong { font-size:21px; }
         .presence-history-title small, .presence-summary span { color:var(--home-muted); font-size:12px; }
-        .presence-summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+        .presence-summary { display:grid; grid-template-columns:1fr; gap:10px; margin:16px 0; }
         .presence-summary > div { display:flex; flex-direction:column; gap:7px; padding:12px; border-radius:14px; background:rgba(118,118,128,.14); }
         .presence-event-list { max-height:50vh; overflow:auto; }
         .presence-event { display:grid; grid-template-columns:1fr auto; gap:5px 12px; padding:12px 3px; border-bottom:1px solid rgba(255,255,255,.09); }
@@ -15182,7 +15180,16 @@ class AtzeSwitchCard extends HTMLElement {
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
     this.shadowRoot.querySelector(".name").textContent=name;
-    this.shadowRoot.querySelector(".status").textContent=!available?"Nicht verfügbar":active?"Ein":"Aus";
+    const powerState=this._config.power_entity ? this._hass?.states?.[this._config.power_entity] : null;
+    const watts=powerState ? Number(powerState.state) : NaN;
+    const unit=String(powerState?.attributes?.unit_of_measurement||"W").trim();
+    const factor=unit==="kW"?1000:unit==="mW"?0.001:unit==="W"?1:null;
+    const powerText=factor!==null && Number.isFinite(watts) && powerState?.state!=="unknown" && powerState?.state!=="unavailable"
+      ? new Intl.NumberFormat("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1}).format(watts*factor)+" W"
+      : "";
+    const status=this.shadowRoot.querySelector(".status");
+    status.textContent=powerText;
+    status.hidden=!powerText;
     const control=this.shadowRoot.querySelector(".control");
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());
@@ -15598,6 +15605,45 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         composed: true,
       })
     );
+  }
+
+  _exportDashboardBackup() {
+    const backup = {
+      format: "atze-dashboard-config",
+      schema_version: 1,
+      exported_at: new Date().toISOString(),
+      config: JSON.parse(JSON.stringify(this._config)),
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "atze-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async _importDashboardBackup(file) {
+    if (!file) return;
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error("Datei ist zu groß (maximal 2 MB).");
+      const parsed = JSON.parse(await file.text());
+      if (!parsed || parsed.format !== "atze-dashboard-config" || parsed.schema_version !== 1 ||
+          !parsed.config || typeof parsed.config !== "object" || Array.isArray(parsed.config)) {
+        throw new Error("Keine gültige Atze-Dashboard-Sicherungsdatei.");
+      }
+      const config = parsed.config;
+      if (Object.keys(config).some((key) => ["__proto__", "prototype", "constructor"].includes(key))) {
+        throw new Error("Ungültige Konfigurationsschlüssel.");
+      }
+      if (!window.confirm("Die aktuelle Dashboard-Konfiguration wird vollständig durch die Sicherung ersetzt. Fortfahren?")) return;
+      this._fireConfigChanged(JSON.parse(JSON.stringify(config)));
+      window.alert("Konfiguration übernommen. Bitte Dashboard-Einstellungen speichern, falls Home Assistant dies verlangt.");
+    } catch (error) {
+      window.alert("Import fehlgeschlagen: " + (error?.message || String(error)));
+    }
   }
 
   _setArea(areaId, checked) {
@@ -17933,6 +17979,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             </div>
           </div>
         </details>
+        <details class="panel editor-section" data-editor-section="backup" ${this._openEditorSections.has("backup") ? "open" : ""}>
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:backup-restore"></ha-icon>
+              <span class="editor-section-summary-title">Sichern & Wiederherstellen</span>
+            </span>
+            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
+          </summary>
+          <div class="editor-section-body">
+            <div class="editor-section-help">Sichere deine Dashboard-Einstellungen einschließlich Raumreihenfolge, Favoriten, eigener Seiten und Drag-&-Drop-Anordnung als JSON-Datei. Beim Import wird die aktuelle Konfiguration ersetzt.</div>
+            <div class="toolbar">
+              <button id="atze-backup-export" type="button"><ha-icon icon="mdi:download"></ha-icon> Konfiguration exportieren</button>
+              <button id="atze-backup-import" type="button"><ha-icon icon="mdi:upload"></ha-icon> Konfiguration importieren</button>
+              <input id="atze-backup-file" type="file" accept=".json,application/json" style="display:none" />
+            </div>
+          </div>
+        </details>
       </div>
     `;
 
@@ -17958,6 +18021,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
       );
     }
+
+    this.shadowRoot.querySelector("#atze-backup-export")
+      ?.addEventListener("click", () => this._exportDashboardBackup());
+    this.shadowRoot.querySelector("#atze-backup-import")
+      ?.addEventListener("click", () => this.shadowRoot.querySelector("#atze-backup-file")?.click());
+    this.shadowRoot.querySelector("#atze-backup-file")
+      ?.addEventListener("change", async (event) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        await this._importDashboardBackup(file);
+        if (input.isConnected) input.value = "";
+      });
 
     this.shadowRoot
       .querySelector("#select-all")

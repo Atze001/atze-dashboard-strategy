@@ -1,3 +1,9 @@
+## v0.404.0
+
+- Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
+- Schalterkarten zeigen bei zugeordnetem Leistungssensor den Verbrauch in Watt auch im ausgeschalteten Zustand; Ein/Aus-Text entfällt.
+- Anwesenheitsverlauf zeigt nur noch den Personenstatus; iCloud-Tracker und iCloud-Historie entfernt.
+
 ## v0.403.0
 
 - Warnungen und Batterien als scrollbar gestaltete Popups in der kompakten Atze-Optik.

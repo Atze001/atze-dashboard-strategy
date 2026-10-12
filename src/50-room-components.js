@@ -2285,7 +2285,16 @@ class AtzeSwitchCard extends HTMLElement {
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
     this.shadowRoot.querySelector(".name").textContent=name;
-    this.shadowRoot.querySelector(".status").textContent=!available?"Nicht verfügbar":active?"Ein":"Aus";
+    const powerState=this._config.power_entity ? this._hass?.states?.[this._config.power_entity] : null;
+    const watts=powerState ? Number(powerState.state) : NaN;
+    const unit=String(powerState?.attributes?.unit_of_measurement||"W").trim();
+    const factor=unit==="kW"?1000:unit==="mW"?0.001:unit==="W"?1:null;
+    const powerText=factor!==null && Number.isFinite(watts) && powerState?.state!=="unknown" && powerState?.state!=="unavailable"
+      ? new Intl.NumberFormat("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1}).format(watts*factor)+" W"
+      : "";
+    const status=this.shadowRoot.querySelector(".status");
+    status.textContent=powerText;
+    status.hidden=!powerText;
     const control=this.shadowRoot.querySelector(".control");
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());

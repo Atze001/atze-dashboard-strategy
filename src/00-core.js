@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.403.0";
+const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -2711,6 +2711,7 @@ function buildEntityCard(
       type: domainOf(entityId) === "lock" ? (ATZE_TESTING_BUILD ? "custom:atze-lock-card-testing" : "custom:atze-lock-card") : ["automation", "scene", "script"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-action-card-testing" : "custom:atze-action-card") : ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
+      ...(domainOf(entityId) === "switch" && options.powerEntityId ? { power_entity: options.powerEntityId } : {}),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
     };
   }
