@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "A0DB557";
+const ATZE_TESTING_REVISION = "808B7F9";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11058,6 +11058,68 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
     if (homeStatusPanel && heroImage) {
       homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
+    }
+
+    // Restore the status tile order independently of temporarily hidden tiles.
+    const statusGrid = this.shadowRoot.querySelector(".status-grid");
+    const statusOrderKey = "atze-dashboard:home-status-order";
+    let statusOrder = atzeLayoutValue(this._config, "home_status_order", []);
+    if (!statusOrder.length) {
+      try { statusOrder = JSON.parse(localStorage.getItem(statusOrderKey) || "[]"); } catch (_e) {}
+    }
+    if (statusGrid) {
+      const tiles = [...statusGrid.querySelectorAll(".status[id]")];
+      const ranks = new Map((Array.isArray(statusOrder) ? statusOrder : []).map((id, index) => [id, index]));
+      const original = new Map(tiles.map((tile, index) => [tile.id, index]));
+      tiles.sort((a, b) => (ranks.get(a.id) ?? (ranks.size + original.get(a.id))) - (ranks.get(b.id) ?? (ranks.size + original.get(b.id))))
+        .forEach((tile) => statusGrid.appendChild(tile));
+
+      let draggedTile = null;
+      let suppressStatusClick = false;
+      const saveStatusOrder = () => {
+        const visible = [...statusGrid.querySelectorAll(".status[id]")].map((tile) => tile.id);
+        const previous = Array.isArray(statusOrder) ? statusOrder : [];
+        const merged = [...visible, ...previous.filter((id) => !visible.includes(id))];
+        statusOrder = merged;
+        try { localStorage.setItem(statusOrderKey, JSON.stringify(merged)); } catch (_e) {}
+        saveAtzeStrategyLayout(this._hass, this._config, { home_status_order: merged });
+      };
+      for (const tile of statusGrid.querySelectorAll(".status[id]")) {
+        tile.draggable = true;
+        tile.style.touchAction = "pan-y";
+        tile.addEventListener("dragstart", (event) => {
+          draggedTile = tile;
+          tile.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", tile.id);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        });
+        tile.addEventListener("dragover", (event) => {
+          if (!draggedTile || draggedTile === tile) return;
+          event.preventDefault();
+          tile.classList.add("drag-over");
+        });
+        tile.addEventListener("dragleave", () => tile.classList.remove("drag-over"));
+        tile.addEventListener("drop", (event) => {
+          event.preventDefault();
+          tile.classList.remove("drag-over");
+          if (!draggedTile || draggedTile === tile) return;
+          const current = [...statusGrid.querySelectorAll(".status[id]")];
+          if (current.indexOf(draggedTile) < current.indexOf(tile)) tile.after(draggedTile);
+          else tile.before(draggedTile);
+          suppressStatusClick = true;
+          saveStatusOrder();
+        });
+        tile.addEventListener("dragend", () => {
+          draggedTile = null;
+          statusGrid.querySelectorAll(".status").forEach((entry) => entry.classList.remove("dragging", "drag-over"));
+        });
+        tile.addEventListener("click", (event) => {
+          if (!suppressStatusClick) return;
+          suppressStatusClick = false;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }, true);
+      }
     }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
