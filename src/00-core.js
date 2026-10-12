@@ -5909,6 +5909,7 @@ function buildHomeOverviewView(
     ],
     scheduler_popup: showSchedulerPopup,
     room_tiles: roomTiles,
+    home_dashboard_layout: config.home_dashboard_layout === "compact" ? "compact" : "standard",
     asset_base: config.home_asset_base || null,
     hero_day_image:
       config.home_hero_day_image ||
