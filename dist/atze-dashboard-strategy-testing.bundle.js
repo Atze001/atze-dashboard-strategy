@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "F036BA1";
+const ATZE_TESTING_REVISION = "F4B85B1";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14656,6 +14656,12 @@ class AtzeThermostatCard extends HTMLElement {
       const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
       return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
     }).join("");
+    const fanModes = Array.isArray(attrs.fan_modes) ? attrs.fan_modes : [];
+    const fanModeLabels = {auto:"Auto",low:"Niedrig",medium:"Mittel",high:"Hoch",quiet:"Leise",silent:"Leise",turbo:"Turbo",strong:"Stark",max:"Maximum"};
+    const fanOptions = fanModes.map(mode => {
+      const label = fanModeLabels[String(mode).toLowerCase()] || mode;
+      return '<button type="button" data-fan-mode="' + this._escape(mode) + '" class="mode-button' + (attrs.fan_mode === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
+    }).join("");
     const items = this._serviceItems();
     const calibrationButton = items.find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
     const calibrationState = items.find(item => item.domain === "binary_sensor" && /(?:^|_)calibrated$/.test(item.id));
@@ -14707,6 +14713,7 @@ class AtzeThermostatCard extends HTMLElement {
       '<div class="temperature-presets">' + [5,17,20,24].map(t => '<button type="button" data-temp-preset="' + t + '"' + (t < Number(attrs.min_temp ?? 5) || t > Number(attrs.max_temp ?? 30) ? ' disabled' : '') + '>' + t + '°</button>').join("") +
       '<button type="button" data-temp-preset="max" class="preset-max">Max</button></div>' +
       
+      (fanOptions ? '<div class="service-divider"></div><div class="service-caption">Lüftergeschwindigkeit</div><details class="thermostat-fan-menu"><summary class="thermostat-fan-trigger"><ha-icon icon="mdi:fan"></ha-icon><span data-current-fan>' + this._escape(fanModeLabels[String(attrs.fan_mode || "").toLowerCase()] || attrs.fan_mode || "Auswählen") + '</span><ha-icon icon="mdi:chevron-down"></ha-icon></summary><div class="thermostat-fan-options">' + fanOptions + '</div></details>' : '') +
       '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
   async _serviceAction(id, option) {
@@ -14730,6 +14737,12 @@ class AtzeThermostatCard extends HTMLElement {
       value.textContent = target.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + unit;
     }
     dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
+    dialog.querySelectorAll("[data-fan-mode]").forEach(button => button.classList.toggle("is-active", button.dataset.fanMode === state?.attributes?.fan_mode));
+    const fanLabel = dialog.querySelector("[data-current-fan]");
+    if (fanLabel) {
+      const mode = state?.attributes?.fan_mode;
+      fanLabel.textContent = ({auto:"Auto",low:"Niedrig",medium:"Mittel",high:"Hoch",quiet:"Leise",silent:"Leise",turbo:"Turbo",strong:"Stark",max:"Maximum"})[String(mode || "").toLowerCase()] || mode || "Auswählen";
+    }
     dialog.querySelector(".thermostat-power")?.classList.toggle("is-on",state?.state !== "off" && !["unknown","unavailable"].includes(state?.state));
     const battery = dialog.querySelector(".thermostat-battery");
     if (battery) {
@@ -14908,6 +14921,11 @@ class AtzeThermostatCard extends HTMLElement {
         .temperature-presets button { min-width:0; padding:10px 2px; border-radius:10px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); font-size:13px; }
         .temperature-presets button:disabled { opacity:.35; cursor:default; }
         .temperature-presets .preset-max { color:#ff9f0a; }
+        .thermostat-fan-menu { position:relative; }
+        .thermostat-fan-trigger { list-style:none; display:flex; align-items:center; gap:10px; padding:10px 13px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); cursor:pointer; }
+        .thermostat-fan-trigger::-webkit-details-marker { display:none; }
+        .thermostat-fan-trigger span { flex:1; }
+        .thermostat-fan-options { display:flex; flex-wrap:wrap; gap:7px; padding:10px 0; }
         .mode-options { display:flex; flex-wrap:wrap; gap:8px; }
         .mode-button { padding:10px 14px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); }
         .mode-button.is-active { border-color:#64d2ff; color:#64d2ff; }
@@ -14968,6 +14986,15 @@ class AtzeThermostatCard extends HTMLElement {
         if (isMax && !window.confirm("Thermostat wirklich auf die maximale Solltemperatur von " + max + " °C stellen?")) return;
         this._setTemperature(temperature);
       }));
+      dialog.querySelectorAll("[data-fan-mode]").forEach(button =>
+        button.addEventListener("click", async () => {
+          const mode = button.dataset.fanMode;
+          dialog.querySelector(".thermostat-fan-menu")?.removeAttribute("open");
+          if (!this._hass?.states?.[this._config.entity]?.attributes?.fan_modes?.includes(mode)) return;
+          try {
+            await this._hass.callService("climate", "set_fan_mode", {entity_id:this._config.entity, fan_mode:mode});
+          } catch (error) { console.error("Thermostat Lüftermodus", error); }
+        }));
       dialog.querySelectorAll("[data-hvac]").forEach(button =>
         button.addEventListener("click",() => {
           dialog.querySelector(".thermostat-mode-menu")?.removeAttribute("open");
