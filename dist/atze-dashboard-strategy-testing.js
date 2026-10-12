@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9F4AD07";
+const ATZE_TESTING_REVISION = "C806A27";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -5837,7 +5837,6 @@ function buildHomeOverviewView(
   const homeCard = {
     type: "custom:atze-testing-home-overview-card",
     thermostat_room_popups: homeThermostatPopups,
-    bedroom_popup_view: config.bedroom_popup_view || null,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
@@ -7166,7 +7165,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null, bedroom_popup_view: roomViews.find((view) => filteredAreas.some((area) => area.area_id === "schlafzimmer" && view.path === (getOverride(config.area_overrides, area.area_id).path || slugify(getOverride(config.area_overrides, area.area_id).name || area.name || area.area_id)))) || null },
+              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
