@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1031E0E";
+const ATZE_TESTING_REVISION = "B3E310F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7845,8 +7845,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   async _openPresenceHistory(range = "24h", entityId = null) {
     const personId = entityId || this._config?.person_entity || "person.alexander_reimann";
-    const trackerId = "device_tracker.atzes_iphone_17_pro_2";
-    const request = { personId, trackerId };
+    const request = { personId };
     this._presenceHistoryPopup = request;
     this._presenceHistory = [];
     this._presenceHistoryLoading = true;
@@ -7857,7 +7856,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const end = new Date().toISOString();
     try {
       const response = await this._hass.callApi("GET",
-        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(end)}&filter_entity_id=${encodeURIComponent(personId + "," + trackerId)}&no_attributes`);
+        `history/period/${encodeURIComponent(start)}?end_time=${encodeURIComponent(end)}&filter_entity_id=${encodeURIComponent(personId)}&no_attributes`);
       if (this._presenceHistoryPopup !== request) return;
       const events = [];
       for (const entries of Array.isArray(response) ? response : []) {
@@ -7865,7 +7864,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         let previous = null;
         for (const entry of entries) {
           const source = entry.entity_id;
-          if (source !== personId && source !== trackerId) continue;
+          if (source !== personId) continue;
           const state = String(entry.state ?? "");
           const timestamp = new Date(entry.last_changed || entry.last_updated).getTime();
           if (!Number.isFinite(timestamp)) continue;
@@ -7910,16 +7909,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const events = this._presenceHistory.map((event) => `
       <div class="presence-event">
         <span class="presence-event-time">${formatTime(event.timestamp)}</span>
-        <span class="presence-event-source">${event.source === popup.personId ? "Person" : "iCloud iPhone"}</span>
+        
         <strong>${this._escapeHtml(formatState(event.state))}</strong>
       </div>`).join("");
     return `
       <div class="weather-popup-backdrop" id="presence-history-backdrop">
         <section class="weather-popup presence-history-popup" role="dialog" aria-modal="true" aria-label="Anwesenheitsverlauf">
-          <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Person und iCloud im Vergleich</small></div></div>
+          <div class="presence-history-title"><ha-icon icon="mdi:account-clock"></ha-icon><div><strong>Anwesenheitsverlauf</strong><small>Letzte 24 Stunden</small></div></div>
           <div class="presence-summary">
             <div><span>Person</span><strong>${stateBadge(popup.personId)}</strong></div>
-            <div><span>iCloud iPhone</span><strong>${stateBadge(popup.trackerId)}</strong></div>
           </div>
           <div class="presence-event-list">
             ${this._presenceHistoryLoading ? '<div class="history-empty">Verlauf wird geladen …</div>' :
@@ -8681,7 +8679,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }[value] || value);
       const badges = root.querySelectorAll(".presence-summary strong");
       if (badges[0]) badges[0].textContent = formatState(this._state(popup.personId)?.state || "unavailable");
-      if (badges[1]) badges[1].textContent = formatState(this._state(popup.trackerId)?.state || "unavailable");
     }
   }
 
@@ -10430,7 +10427,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .presence-history-title div { display:flex; flex-direction:column; gap:4px; }
         .presence-history-title strong { font-size:21px; }
         .presence-history-title small, .presence-summary span { color:var(--home-muted); font-size:12px; }
-        .presence-summary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+        .presence-summary { display:grid; grid-template-columns:1fr; gap:10px; margin:16px 0; }
         .presence-summary > div { display:flex; flex-direction:column; gap:7px; padding:12px; border-radius:14px; background:rgba(118,118,128,.14); }
         .presence-event-list { max-height:50vh; overflow:auto; }
         .presence-event { display:grid; grid-template-columns:1fr auto; gap:5px 12px; padding:12px 3px; border-bottom:1px solid rgba(255,255,255,.09); }
