@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.405.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "73EBCC7";
+const ATZE_TESTING_REVISION = "0619C7A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -813,49 +813,8 @@ function setupAtzeScrollTopButton(anchor) {
 
     document.body.appendChild(button);
 
-    const backButton = document.createElement("button");
-    backButton.type = "button";
-    backButton.id = "atze-dashboard-back";
-    backButton.setAttribute("aria-label", "Zurück");
-    backButton.setAttribute("title", "Zurück");
-    backButton.innerHTML = '<ha-icon icon="mdi:arrow-left"></ha-icon>';
-    backButton.style.cssText = [
-      "position:fixed",
-      "left:20px",
-      "bottom:calc(20px + env(safe-area-inset-bottom, 0px))",
-      "width:48px",
-      "height:48px",
-      "padding:0",
-      "border:0",
-      "border-radius:50%",
-      "display:flex",
-      "align-items:center",
-      "justify-content:center",
-      "background:color-mix(in srgb, var(--primary-color, #03a9f4) 50%, transparent)",
-      "color:var(--text-primary-color, #fff)",
-      "box-shadow:0 6px 20px rgba(0,0,0,.28)",
-      "cursor:pointer",
-      "z-index:5",
-      "-webkit-tap-highlight-color:transparent"
-    ].join(";");
-    const backIcon = backButton.querySelector("ha-icon");
-    if (backIcon) {
-      backIcon.style.setProperty("--mdc-icon-size", "26px");
-      backIcon.style.width = "26px";
-      backIcon.style.height = "26px";
-    }
-    backButton.addEventListener("click", () => {
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        atzeNavigateToDashboardPath("home");
-      }
-    });
-    document.body.appendChild(backButton);
-
     state = {
       button,
-      backButton,
       anchors: new Set(),
       anchor: null,
       scrollTarget: null,
@@ -1003,7 +962,6 @@ function setupAtzeScrollTopButton(anchor) {
     clearRetryTimers();
     unbindScrollTarget();
     state.button?.remove();
-    state.backButton?.remove();
     delete window[ATZE_SCROLL_TOP_STATE_KEY];
   };
 }
@@ -1178,6 +1136,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     pendingRestores: new Map(),
     fadeOverlay: null,
     fadeTimer: null,
+    gestureIndicator: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1216,6 +1175,36 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       delete surface.__atzeSwipeSnapshot;
     }
     state.pendingRestores.clear();
+  };
+
+  const showGestureIndicator = (progress) => {
+    if (!state.gestureIndicator) {
+      const indicator = document.createElement("div");
+      indicator.setAttribute("aria-hidden", "true");
+      indicator.innerHTML = '<ha-icon icon="mdi:arrow-left"></ha-icon>';
+      indicator.style.cssText = [
+        "position:fixed", "left:18px", "top:50%",
+        "width:48px", "height:48px", "border-radius:50%",
+        "display:flex", "align-items:center", "justify-content:center",
+        "background:color-mix(in srgb, var(--primary-color, #03a9f4) 60%, transparent)",
+        "color:var(--text-primary-color, #fff)",
+        "box-shadow:0 6px 20px rgba(0,0,0,.28)",
+        "pointer-events:none", "z-index:2147483646",
+        "opacity:0", "transform:translate(-28px,-50%) scale(.85)",
+        "transition:opacity 100ms ease, transform 100ms ease"
+      ].join(";");
+      document.body.appendChild(indicator);
+      state.gestureIndicator = indicator;
+    }
+    const p = Math.max(0, Math.min(1, progress));
+    state.gestureIndicator.style.opacity = String(Math.min(1, p * 1.5));
+    state.gestureIndicator.style.transform =
+      `translate(${-28 + 28 * p}px,-50%) scale(${0.85 + 0.15 * p})`;
+  };
+
+  const hideGestureIndicator = () => {
+    state.gestureIndicator?.remove();
+    state.gestureIndicator = null;
   };
 
   const clearFadeOverlay = () => {
@@ -1266,6 +1255,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.startY = 0;
     state.startedAt = 0;
     state.horizontalLocked = false;
+    hideGestureIndicator();
     state.swipeSurface = null;
     state.surfaceSnapshot = null;
   };
@@ -1474,8 +1464,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       }
     }
 
-    // Visual feedback lives in an independent overlay; never transform the HA view.
-    // Fade feedback is shown only after the completed swipe.
+    // Show progress without shifting the Home Assistant view.
+    showGestureIndicator(dx / ATZE_HOME_SWIPE_MIN_DISTANCE);
 
   };
 
