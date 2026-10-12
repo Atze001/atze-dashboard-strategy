@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "C806A27";
+const ATZE_TESTING_REVISION = "089EC69";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -8057,60 +8057,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     loadNext();
   }
 
-  _openBedroomPopup() {
-    if (!this._config?.bedroom_popup_view) return false;
-    this._bedroomPopupOpen = true;
-    this._render();
-    return true;
-  }
-
-  _closeBedroomPopup() {
-    this._bedroomPopupOpen = false;
-    this._render();
-  }
-
-  async _mountBedroomPopup() {
-    const host = this.shadowRoot?.querySelector("#atze-bedroom-popup-cards");
-    if (!host || !this._bedroomPopupOpen) return;
-    if (this._bedroomPopupCards) {
-      for (const card of this._bedroomPopupCards) {
-        host.appendChild(card);
-        card.hass = this._hass;
-      }
-      return;
-    }
-    if (this._bedroomPopupLoading) return;
-    this._bedroomPopupLoading = true;
-    try {
-      const helpers = await window.loadCardHelpers();
-      const configs = (this._config.bedroom_popup_view?.sections || []).flatMap((section) => section.cards || []);
-      const cards = [];
-      for (const config of configs) {
-        const card = await helpers.createCardElement(config);
-        card.hass = this._hass;
-        cards.push(card);
-      }
-      this._bedroomPopupCards = cards;
-      if (this._bedroomPopupOpen) this._mountBedroomPopup();
-    } catch (error) {
-      const target = this.shadowRoot?.querySelector("#atze-bedroom-popup-cards");
-      if (target) target.textContent = "Raumkarten konnten nicht geladen werden.";
-      console.error("Bedroom popup test:", error);
-    } finally {
-      this._bedroomPopupLoading = false;
-    }
-  }
-
-  _bedroomPopupHtml() {
-    if (!this._bedroomPopupOpen) return "";
-    return `<div class="weather-popup-backdrop atze-bedroom-popup-backdrop" id="atze-bedroom-popup-backdrop">
-      <section class="weather-popup atze-bedroom-popup" role="dialog" aria-modal="true" aria-label="Schlafzimmer">
-        <header class="atze-bedroom-popup-header"><ha-icon icon="mdi:bed-king-outline"></ha-icon><strong>Schlafzimmer</strong></header>
-        <div id="atze-bedroom-popup-cards"></div>
-      </section>
-    </div>`;
-  }
-
   _navigate(path) {
     if (!path) return;
 
@@ -9916,10 +9862,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           cursor: pointer;
         }
 
-        .atze-bedroom-popup-backdrop { z-index: 12000; }
-        .atze-bedroom-popup { width:min(720px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); padding:16px; }
-        .atze-bedroom-popup-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; font-size:19px; }
-        #atze-bedroom-popup-cards { display:grid; gap:12px; }
         .weather-popup-backdrop { overscroll-behavior:contain; touch-action:none; position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
         .weather-popup { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; touch-action:pan-y; position:relative; width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:24px; border:1px solid rgba(255,255,255,.12); border-radius:28px; background:var(--card-background-color, #1c1c1c); box-shadow:0 24px 70px rgba(0,0,0,.48); }
         .security-popup { display:flex; flex-direction:column; overflow:hidden; width:min(680px,calc(100vw - 40px)); max-height:calc(100dvh - 110px); padding:0; }
@@ -11111,7 +11053,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ${this._securityPopupHtml()}
           ${this._batteryPopupHtml()}
           ${this._groupControlPopup === "thermostats" ? this._homeThermostatPopupHtml() : this._groupControlPopupHtml()}
-          ${this._bedroomPopupHtml()}
           ${this._climateHistoryPopupHtml()}
           ${this._presenceHistoryPopupHtml()}
           ${this._schedulerPopupHtml()}
@@ -11137,7 +11078,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this.shadowRoot.appendChild(card);
       this._homeThermostatCards.set(entityId, card);
     }
-    if (this._bedroomPopupOpen) this._mountBedroomPopup();
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
     const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
@@ -11316,7 +11256,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         element.addEventListener("click", (event) => {
           if (event.target?.closest?.(".room-history-trigger")) return;
-          if (element.dataset.areaId === "schlafzimmer" && this._openBedroomPopup()) return;
           this._navigate(element.dataset.path);
         });
 
@@ -11325,15 +11264,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            if (element.dataset.areaId === "schlafzimmer" && this._openBedroomPopup()) return;
-          this._navigate(element.dataset.path);
+            this._navigate(element.dataset.path);
           }
         });
       });
-
-    this.shadowRoot.querySelector("#atze-bedroom-popup-backdrop")?.addEventListener("click", (event) => {
-      if (event.target?.id === "atze-bedroom-popup-backdrop") this._closeBedroomPopup();
-    });
 
     const installProvenDrag = (container, selector, idGetter, storageKey) => {
       if (!container) return;
