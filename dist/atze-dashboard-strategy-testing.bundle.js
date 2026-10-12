@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D2BDB81";
+const ATZE_TESTING_REVISION = "23ED49B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11553,7 +11553,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }));
     this.shadowRoot.querySelectorAll("[data-thermostat-toggle]").forEach((button) => button.addEventListener("click", () => this._homeThermostatToggle(button.dataset.thermostatToggle)));
     this.shadowRoot.querySelectorAll("[data-group-entity]").forEach((button) => button.addEventListener("click", () => this._groupControlAction(button.dataset.groupEntity)));
-    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.groupMoreInfo)));
+    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => {
+      const entityId = button.dataset.groupMoreInfo;
+      if (this._groupControlPopup === "thermostats" && entityId?.startsWith("climate.")) {
+        // Experiment: open the same strategy popup hash used by room climate cards.
+        // Keep the home thermostat overview mounted underneath.
+        const hash = "#atze-" + entityId.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-settings";
+        if (window.location.hash !== hash) window.location.hash = hash;
+        return;
+      }
+      this._moreInfo(entityId);
+    }));
 
     this.shadowRoot
       .querySelector("#lock-info")
