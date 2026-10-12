@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "AB59B0D";
+const ATZE_TESTING_REVISION = "A0DB557";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9013,14 +9013,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ? "Alles ok"
           : "Keine Daten";
 
-    const batteryCount = (
-      this._config.battery_entities || []
-    ).length;
-
-    const batterySubText =
-      batteryCount === 1
-        ? "1 Sensor"
-        : `${batteryCount} Sensoren`;
+    const lowBatteryCount = (this._config.battery_entities || []).filter((entityId) => {
+      const state = this._state(entityId);
+      if (!state || ["unknown", "unavailable"].includes(String(state.state).toLowerCase())) return false;
+      if (entityId.startsWith("binary_sensor.")) return state.state === "on";
+      const level = Number(state.state);
+      return Number.isFinite(level) && level >= 0 && level < 25;
+    }).length;
+    const batterySubText = `${lowBatteryCount} ${lowBatteryCount === 1 ? "Batterie" : "Batterien"} unter 25 %`;
 
     const favoriteStates = asArray(
       this._config.favorite_entities
@@ -10951,6 +10951,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
+            ${lowBatteryCount > 0 ? `
             <div
               class="status battery"
               id="battery-status"
@@ -10961,6 +10962,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <div class="status-sub">${batterySubText}</div>
               </div>
             </div>
+            ` : ""}
 
             ${alarmAvailable ? `
               <div
