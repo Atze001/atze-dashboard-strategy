@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.402.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "BC321B2";
+const ATZE_TESTING_REVISION = "1031E0E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15187,10 +15187,12 @@ class AtzeSwitchCard extends HTMLElement {
     const watts=powerState ? Number(powerState.state) : NaN;
     const unit=String(powerState?.attributes?.unit_of_measurement||"W").trim();
     const factor=unit==="kW"?1000:unit==="mW"?0.001:unit==="W"?1:null;
-    const powerText=active && factor!==null && Number.isFinite(watts) && powerState?.state!=="unknown" && powerState?.state!=="unavailable"
-      ? " · "+new Intl.NumberFormat("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1}).format(watts*factor)+" W"
+    const powerText=factor!==null && Number.isFinite(watts) && powerState?.state!=="unknown" && powerState?.state!=="unavailable"
+      ? new Intl.NumberFormat("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1}).format(watts*factor)+" W"
       : "";
-    this.shadowRoot.querySelector(".status").textContent=!available?"Nicht verfügbar":active?"Ein"+powerText:"Aus";
+    const status=this.shadowRoot.querySelector(".status");
+    status.textContent=powerText;
+    status.hidden=!powerText;
     const control=this.shadowRoot.querySelector(".control");
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());
