@@ -2007,6 +2007,20 @@ class AtzeHomeOverviewCard extends HTMLElement {
             }
 
             <div class="room-shade"></div>
+            ${room.area_id === "schlafzimmer" ? `
+              <button type="button" class="room-quick-trigger" aria-label="Schlafzimmer Quicksteuerung öffnen" title="Quicksteuerung"><ha-icon icon="mdi:tune-variant"></ha-icon></button>
+              <div class="room-quick-panel" hidden>
+                <div class="room-quick-heading">Schnellsteuerung <button type="button" class="room-quick-close" aria-label="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
+                <div class="room-quick-controls">
+                  <button type="button" data-quick-action="light"><ha-icon icon="mdi:lightbulb"></ha-icon><span>Licht</span></button>
+                  <button type="button" data-quick-action="cover-open"><ha-icon icon="mdi:blinds-open"></ha-icon><span>Auf</span></button>
+                  <button type="button" data-quick-action="cover-stop"><ha-icon icon="mdi:stop"></ha-icon><span>Stopp</span></button>
+                  <button type="button" data-quick-action="cover-close"><ha-icon icon="mdi:blinds"></ha-icon><span>Zu</span></button>
+                  <button type="button" data-quick-action="heat-down"><ha-icon icon="mdi:minus"></ha-icon><span>Heizung</span></button>
+                  <button type="button" data-quick-action="heat-up"><ha-icon icon="mdi:plus"></ha-icon><span>Heizung</span></button>
+                </div>
+              </div>
+            ` : ""}
 
             ${
               room.smoke_entity
@@ -2928,6 +2942,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
           -webkit-user-select: none;
         }
 
+        .room-quick-trigger { position:absolute;right:12px;bottom:12px;z-index:5;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(25,30,38,.65);backdrop-filter:blur(12px);color:white;display:grid;place-items:center;cursor:pointer; }
+        .room-quick-trigger ha-icon { --mdc-icon-size:21px; }
+        .room-quick-panel[hidden] { display:none!important; }
+        .room-quick-panel { position:absolute;inset:0;z-index:6;padding:15px;background:rgba(13,19,27,.88);backdrop-filter:blur(15px);display:flex;flex-direction:column;gap:12px;cursor:default; }
+        .room-quick-heading { display:flex;align-items:center;justify-content:space-between;font-weight:650;font-size:14px; }
+        .room-quick-close { border:0;background:rgba(255,255,255,.12);border-radius:50%;color:white;width:30px;height:30px;display:grid;place-items:center; }
+        .room-quick-close ha-icon { --mdc-icon-size:18px; }
+        .room-quick-controls { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;flex:1; }
+        .room-quick-controls button { min-width:0;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(255,255,255,.12);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;cursor:pointer; }
+        .room-quick-controls ha-icon { --mdc-icon-size:22px; }
+        .room-quick-panel ~ .room-bottom { pointer-events:none; }
         .room.dragging { opacity:.45; }
         .room.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
 
@@ -4018,8 +4043,31 @@ class AtzeHomeOverviewCard extends HTMLElement {
           });
         });
 
+        if (room?.area_id === "schlafzimmer") {
+          const panel = element.querySelector(".room-quick-panel");
+          const toggle = (open) => { panel.hidden = !open; element.querySelector(".room-quick-trigger").hidden = open; };
+          element.querySelector(".room-quick-trigger")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); toggle(true); });
+          element.querySelector(".room-quick-close")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); toggle(false); });
+          panel?.addEventListener("click", (event) => { event.stopPropagation(); });
+          panel?.querySelectorAll("[data-quick-action]").forEach((button) => button.addEventListener("click", async (event) => {
+            event.preventDefault(); event.stopPropagation();
+            const action = button.dataset.quickAction;
+            const light = (room.light_entities || []).find((id) => this._state(id));
+            const cover = [room.cover_entity, room.roller_sensor_entity].find((id) => id && this._state(id) && id.startsWith("cover."));
+            const climate = ["climate.schlafzimmer_thermostat", ...(room.climate_entities || [])].find((id) => this._state(id));
+            try {
+              if (action === "light" && light) await this._hass.callService("homeassistant", "toggle", {}, { entity_id: light });
+              if (action.startsWith("cover-") && cover) await this._hass.callService("cover", { "cover-open":"open_cover", "cover-stop":"stop_cover", "cover-close":"close_cover" }[action], {}, { entity_id: cover });
+              if (action.startsWith("heat-") && climate) {
+                const state = this._state(climate);
+                const current = Number(state?.attributes?.temperature);
+                if (Number.isFinite(current)) await this._hass.callService("climate", "set_temperature", { temperature: current + (action === "heat-up" ? 0.5 : -0.5) }, { entity_id: climate });
+              }
+            } catch (error) { console.error("Atze Quicksteuerung:", error); }
+          }));
+        }
         element.addEventListener("click", (event) => {
-          if (event.target?.closest?.(".room-history-trigger")) return;
+          if (event.target?.closest?.(".room-history-trigger, .room-quick-trigger, .room-quick-panel")) return;
           this._navigate(element.dataset.path);
         });
 
