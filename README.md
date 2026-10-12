@@ -11,9 +11,9 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.402.0**
+Version **0.404.0**
 
-Enthalten sind unter anderem:
+Neu in v0.404.0: Manuelle JSON-Sicherung und Wiederherstellung der Dashboard-Konfiguration, Leistungsanzeige auf Schalterkarten und vereinfachter Anwesenheitsverlauf.\n\nEnthalten sind unter anderem:
 
 - automatische Raumansichten
 - Apple-Home-inspirierte Deckseite mit Raumbildern
