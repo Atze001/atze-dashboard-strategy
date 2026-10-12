@@ -2203,6 +2203,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="rows">
+              <label class="row"><span class="copy"><span class="name">Hauptdashboard</span><span class="desc">Raumbilder oder kompakte Raumbuttons anzeigen.</span></span><select class="home-dashboard-layout-select" aria-label="Hauptdashboard-Ansicht"><option value="standard" ${this._config.home_dashboard_layout !== "compact" ? "selected" : ""}>Standard</option><option value="compact" ${this._config.home_dashboard_layout === "compact" ? "selected" : ""}>Kompakt</option></select></label>
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
@@ -3007,6 +3008,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         this._endEntityVisibilityInteraction();
       });
     }
+
+    this.shadowRoot.querySelector(".home-dashboard-layout-select")?.addEventListener("change", (event) => {
+      this._fireConfigChanged({ ...this._config, home_dashboard_layout: event.currentTarget.value === "compact" ? "compact" : "standard" });
+    });
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
       input.addEventListener("change", (event) => {
