@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.404.0";
+const ATZE_VERSION = "0.405.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -1132,6 +1132,10 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     swipeSurface: null,
     surfaceSnapshot: null,
     animationTimer: null,
+    gestureTimeout: null,
+    pendingRestores: new Map(),
+    fadeOverlay: null,
+    fadeTimer: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1150,7 +1154,60 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surface.style.boxShadow = snapshot.boxShadow;
   };
 
+  const queueRestore = (surface, snapshot, delay) => {
+    if (!surface || !snapshot) return;
+    const previous = state.pendingRestores.get(surface);
+    if (previous) window.clearTimeout(previous);
+    const timer = window.setTimeout(() => {
+      state.pendingRestores.delete(surface);
+      restoreSurface(surface, snapshot);
+      delete surface.__atzeSwipeSnapshot;
+    }, delay);
+    state.pendingRestores.set(surface, timer);
+  };
+
+  const restorePendingSurfaces = () => {
+    for (const [surface, timer] of state.pendingRestores) {
+      window.clearTimeout(timer);
+      const snapshot = surface.__atzeSwipeSnapshot;
+      restoreSurface(surface, snapshot);
+      delete surface.__atzeSwipeSnapshot;
+    }
+    state.pendingRestores.clear();
+  };
+
+  const clearFadeOverlay = () => {
+    if (state.fadeTimer) window.clearTimeout(state.fadeTimer);
+    state.fadeTimer = null;
+    state.fadeOverlay?.remove();
+    state.fadeOverlay = null;
+  };
+
+  const fadeToHome = () => {
+    clearFadeOverlay();
+    // An independent fixed overlay fades the screen without modifying the HA view.
+    const overlay = document.createElement("div");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:var(--primary-background-color,#111827);opacity:0;transition:opacity 300ms ease-in-out";
+    document.body.appendChild(overlay);
+    state.fadeOverlay = overlay;
+    requestAnimationFrame(() => {
+      if (state.fadeOverlay !== overlay) return;
+      overlay.style.opacity = "1";
+    });
+    state.fadeTimer = window.setTimeout(() => {
+      atzeNavigateToDashboardPath(state.homeTarget);
+      overlay.style.transition = "opacity 380ms ease-in-out";
+      overlay.style.opacity = "0";
+      state.fadeTimer = window.setTimeout(() => clearFadeOverlay(), 420);
+    }, 320);
+  };
+
   const resetGesture = ({ restore = true } = {}) => {
+    if (state.gestureTimeout) {
+      window.clearTimeout(state.gestureTimeout);
+      state.gestureTimeout = null;
+    }
     if (
       restore &&
       state.swipeSurface &&
@@ -1212,6 +1269,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       boxShadow: surface.style.boxShadow,
     };
 
+    surface.__atzeSwipeSnapshot = state.surfaceSnapshot;
     surface.style.transition = "none";
     surface.style.willChange = "transform";
     surface.style.boxShadow =
@@ -1235,10 +1293,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surface.style.boxShadow =
       "0 0 0 rgba(0,0,0,0)";
 
-    state.animationTimer = window.setTimeout(() => {
-      restoreSurface(surface, snapshot);
-      state.animationTimer = null;
-    }, 210);
+    queueRestore(surface, snapshot, 230);
 
     resetGesture({ restore: false });
   };
@@ -1279,14 +1334,12 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         state.homeTarget
       );
 
-      window.setTimeout(() => {
-        restoreSurface(surface, snapshot);
-      }, 80);
+      queueRestore(surface, snapshot, 80);
     };
 
     surface.addEventListener(
       "transitionend",
-      finish,
+      (event) => { if (event.target === surface && event.propertyName === "transform") finish(); },
       { once: true }
     );
 
@@ -1335,6 +1388,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.startY = startY;
     state.startedAt = performance.now();
     state.horizontalLocked = false;
+    // Recover if iOS/WebKit drops touchend or touchcancel.
+    state.gestureTimeout = window.setTimeout(() => resetGesture(), 2500);
   };
 
   state.onTouchMove = (event) => {
@@ -1377,24 +1432,9 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       }
     }
 
-    const surface =
-      prepareSurface(event);
+    // Visual feedback lives in an independent overlay; never transform the HA view.
+    // Fade feedback is shown only after the completed swipe.
 
-    if (!surface) {
-      resetGesture();
-      return;
-    }
-
-    event.preventDefault();
-
-    const distance = Math.max(0, dx);
-    const viewportWidth =
-      Math.max(window.innerWidth || 0, 320);
-    const cappedDistance =
-      Math.min(distance, viewportWidth * 0.92);
-
-    surface.style.transform =
-      `translate3d(${cappedDistance}px,0,0)`;
   };
 
   state.onTouchEnd = (event) => {
@@ -1436,22 +1476,16 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     }
 
     if (isRightSwipe) {
-      animateOutAndNavigate(
-        surface,
-        snapshot
-      );
+      resetGesture();
+      state.suppressClickUntil = performance.now() + 500;
+      fadeToHome();
       return;
     }
 
-    animateBack(surface, snapshot);
+    resetGesture();
   };
 
-  state.onTouchCancel = () => {
-    animateBack(
-      state.swipeSurface,
-      state.surfaceSnapshot
-    );
-  };
+  state.onTouchCancel = () => resetGesture();
 
   state.onClick = (event) => {
     if (
@@ -1488,6 +1522,16 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.onClick,
     { capture: true }
   );
+
+  // A route change can interrupt an active touch sequence in Home Assistant.
+  state.onRouteChange = () => {
+    resetGesture();
+    restorePendingSurfaces();
+    // Do not cancel the fade here: navigation fires during its animation.
+  };
+  window.addEventListener("location-changed", state.onRouteChange);
+  window.addEventListener("popstate", state.onRouteChange);
+  window.addEventListener("pageshow", state.onRouteChange);
 
   window[ATZE_HOME_SWIPE_STATE_KEY] = state;
 
@@ -5824,8 +5868,22 @@ function buildHomeOverviewView(
       })),
   ];
 
+  // Test-only: mount the exact room thermostat popup definitions on Home too.
+  const homeThermostatPopups = [];
+  for (const [parentId, children] of popupMap.parentToChildren.entries()) {
+    if (!parentId.startsWith("climate.")) continue;
+    const parent = usableEntities.find((entity) => entity.entity_id === parentId);
+    if (!parent) continue;
+    const areaId = filteredAreas.find((area) => (entitiesByArea.get(area.area_id) || []).some((entity) => entity.entity_id === parentId))?.area_id;
+    const area = filteredAreas.find((item) => item.area_id === areaId);
+    if (!area) continue;
+    const popup = buildPopupCard(hass, parent, children, config, getOverride(config.area_overrides, areaId), area);
+    if (popup) homeThermostatPopups.push(popup);
+  }
+
   const homeCard = {
     type: "custom:atze-home-overview-card",
+    thermostat_room_popups: homeThermostatPopups,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
@@ -5909,6 +5967,7 @@ function buildHomeOverviewView(
     ],
     scheduler_popup: showSchedulerPopup,
     room_tiles: roomTiles,
+    home_dashboard_layout: config.home_dashboard_layout === "compact" ? "compact" : "standard",
     asset_base: config.home_asset_base || null,
     hero_day_image:
       config.home_hero_day_image ||

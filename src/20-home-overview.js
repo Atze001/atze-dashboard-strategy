@@ -1791,14 +1791,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ? "Alles ok"
           : "Keine Daten";
 
-    const batteryCount = (
-      this._config.battery_entities || []
-    ).length;
-
-    const batterySubText =
-      batteryCount === 1
-        ? "1 Sensor"
-        : `${batteryCount} Sensoren`;
+    const lowBatteryCount = (this._config.battery_entities || []).filter((entityId) => {
+      const state = this._state(entityId);
+      if (!state || ["unknown", "unavailable"].includes(String(state.state).toLowerCase())) return false;
+      if (entityId.startsWith("binary_sensor.")) return state.state === "on";
+      const level = Number(state.state);
+      return Number.isFinite(level) && level >= 0 && level < 25;
+    }).length;
+    const batterySubText = `${lowBatteryCount} ${lowBatteryCount === 1 ? "Batterie" : "Batterien"} unter 25 %`;
 
     const favoriteStates = asArray(
       this._config.favorite_entities
@@ -1985,7 +1985,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         return `
           <div
-            class="room ${roomPrimaryMetric ? "has-power" : ""}"
+            class="room ${roomPrimaryMetric ? "has-power" : ""} ${this._config.home_dashboard_layout === "compact" ? "room-compact" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
             data-atze-scroll-snap="room"
@@ -1993,6 +1993,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -3571,6 +3572,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
             margin-left: auto;
           }
         }
+        .rooms:has(.room-compact) { grid-template-columns: 1fr; gap: 10px; }
+        .room-compact { height: 56px; min-height: 56px; border-radius: 15px; padding: 0 14px; display: flex; align-items: center; cursor: pointer; background: rgba(55, 58, 67, 0.30); backdrop-filter: blur(8px) saturate(1.12); -webkit-backdrop-filter: blur(8px) saturate(1.12); border: 1px solid var(--home-card-border); box-sizing: border-box; overflow: hidden; }
+        .room-compact > :not(.room-compact-content) { display: none !important; }
+        .room-compact-content { display: none; align-items: center; width: 100%; gap: 12px; font-size: 15px; font-weight: 600; position: relative; z-index: 1; }
+        .room-compact .room-compact-content { display: flex; }
+        .room-compact-label { display:flex; flex-direction:column; min-width:0; gap:3px; }
+        .room-compact-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .room-compact-climate { display:flex; align-items:center; flex-wrap:wrap; gap:12px; font-size:12px; font-weight:400; opacity:.82; line-height:1.2; }
+        .room-compact-climate > span { display:inline-flex; align-items:center; gap:3px; }
+        .room-compact-climate ha-icon { --mdc-icon-size:14px; width:14px; height:14px; }
+        .room-compact-content > ha-icon { --mdc-icon-size: 24px; flex: 0 0 24px; }
+        .room-compact-content .room-compact-chevron { margin-left: auto; opacity: .6; --mdc-icon-size: 20px; }
       </style>
 
       <ha-card>
@@ -3716,6 +3729,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
+            ${lowBatteryCount > 0 ? `
             <div
               class="status battery"
               id="battery-status"
@@ -3726,6 +3740,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <div class="status-sub">${batterySubText}</div>
               </div>
             </div>
+            ` : ""}
 
             ${alarmAvailable ? `
               <div
@@ -3812,6 +3827,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
+    // Mount the actual room thermostat controls, not the generic device-popup card.
+    // The native thermostat service dialog is rendered inside each control.
+    this._homeThermostatCards = new Map();
+    for (const entityId of this._homeThermostatEntities()) {
+      const tag = ATZE_TESTING_BUILD ? "atze-thermostat-card-testing" : "atze-thermostat-card";
+      const card = document.createElement(tag);
+      card.setConfig({ entity: entityId });
+      card.hass = this._hass;
+      card.style.cssText = "position:absolute;width:0;height:0;overflow:visible;pointer-events:none;";
+      const layer = document.createElement("style");
+      layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+      card.shadowRoot?.appendChild(layer);
+      this.shadowRoot.appendChild(card);
+      this._homeThermostatCards.set(entityId, card);
+    }
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
     const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
@@ -3821,6 +3851,100 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
     if (homeStatusPanel && heroImage) {
       homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
+    }
+
+    // Restore the status tile order independently of temporarily hidden tiles.
+    const statusGrid = this.shadowRoot.querySelector(".status-grid");
+    const statusOrderKey = "atze-dashboard:home-status-order";
+    let statusOrder = atzeLayoutValue(this._config, "home_status_order", []);
+    try {
+      const locallySavedOrder = JSON.parse(localStorage.getItem(statusOrderKey) || "[]");
+      if (Array.isArray(locallySavedOrder) && locallySavedOrder.length) statusOrder = locallySavedOrder;
+    } catch (_e) {}
+    if (statusGrid) {
+      const tiles = [...statusGrid.querySelectorAll(".status[id]")];
+      const ranks = new Map((Array.isArray(statusOrder) ? statusOrder : []).map((id, index) => [id, index]));
+      const original = new Map(tiles.map((tile, index) => [tile.id, index]));
+      tiles.sort((a, b) => (ranks.get(a.id) ?? (ranks.size + original.get(a.id))) - (ranks.get(b.id) ?? (ranks.size + original.get(b.id))))
+        .forEach((tile) => statusGrid.appendChild(tile));
+
+      let draggedTile = null;
+      let suppressStatusClick = false;
+      const saveStatusOrder = () => {
+        const visible = [...statusGrid.querySelectorAll(".status[id]")].map((tile) => tile.id);
+        const previous = Array.isArray(statusOrder) ? statusOrder : [];
+        const merged = [...visible, ...previous.filter((id) => !visible.includes(id))];
+        statusOrder = merged;
+        try { localStorage.setItem(statusOrderKey, JSON.stringify(merged)); } catch (_e) {}
+        saveAtzeStrategyLayout(this._hass, this._config, { home_status_order: merged });
+      };
+      // iOS WebKit may show the native drag preview without dispatching drop.
+      // Commit the reorder on touch release using the element beneath the finger.
+      let touchStart = null;
+      let touchMoved = false;
+      statusGrid.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) return;
+        const tile = event.target.closest(".status[id]");
+        if (!tile || !statusGrid.contains(tile)) return;
+        touchStart = { tile, x: event.touches[0].clientX, y: event.touches[0].clientY, at: Date.now() };
+        touchMoved = false;
+      }, { passive: true });
+      statusGrid.addEventListener("touchmove", (event) => {
+        if (!touchStart || event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        if (Math.abs(touch.clientY - touchStart.y) > 14 || Math.abs(touch.clientX - touchStart.x) > 14) touchMoved = true;
+      }, { passive: true });
+      statusGrid.addEventListener("touchend", (event) => {
+        if (!touchStart) return;
+        const start = touchStart;
+        touchStart = null;
+        if (!touchMoved || Date.now() - start.at < 350) return;
+        const touch = event.changedTouches[0];
+        const target = this.shadowRoot.elementFromPoint(touch.clientX, touch.clientY)?.closest(".status[id]");
+        if (!target || target === start.tile || !statusGrid.contains(target)) return;
+        const current = [...statusGrid.querySelectorAll(".status[id]")];
+        if (current.indexOf(start.tile) < current.indexOf(target)) target.after(start.tile);
+        else target.before(start.tile);
+        suppressStatusClick = true;
+        saveStatusOrder();
+      }, { passive: true });
+
+      for (const tile of statusGrid.querySelectorAll(".status[id]")) {
+        tile.draggable = true;
+        tile.style.touchAction = "pan-y";
+        tile.addEventListener("dragstart", (event) => {
+          draggedTile = tile;
+          tile.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", tile.id);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        });
+        tile.addEventListener("dragover", (event) => {
+          if (!draggedTile || draggedTile === tile) return;
+          event.preventDefault();
+          tile.classList.add("drag-over");
+        });
+        tile.addEventListener("dragleave", () => tile.classList.remove("drag-over"));
+        tile.addEventListener("drop", (event) => {
+          event.preventDefault();
+          tile.classList.remove("drag-over");
+          if (!draggedTile || draggedTile === tile) return;
+          const current = [...statusGrid.querySelectorAll(".status[id]")];
+          if (current.indexOf(draggedTile) < current.indexOf(tile)) tile.after(draggedTile);
+          else tile.before(draggedTile);
+          suppressStatusClick = true;
+          saveStatusOrder();
+        });
+        tile.addEventListener("dragend", () => {
+          draggedTile = null;
+          statusGrid.querySelectorAll(".status").forEach((entry) => entry.classList.remove("dragging", "drag-over"));
+        });
+        tile.addEventListener("click", (event) => {
+          if (!suppressStatusClick) return;
+          suppressStatusClick = false;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }, true);
+      }
     }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
@@ -4222,7 +4346,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }));
     this.shadowRoot.querySelectorAll("[data-thermostat-toggle]").forEach((button) => button.addEventListener("click", () => this._homeThermostatToggle(button.dataset.thermostatToggle)));
     this.shadowRoot.querySelectorAll("[data-group-entity]").forEach((button) => button.addEventListener("click", () => this._groupControlAction(button.dataset.groupEntity)));
-    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.groupMoreInfo)));
+    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => {
+      const entityId = button.dataset.groupMoreInfo;
+      if (this._groupControlPopup === "thermostats" && entityId?.startsWith("climate.")) {
+        const card = this._homeThermostatCards?.get(entityId);
+        if (card) {
+          card._openService();
+          // The thermostat card rerenders its shadow root when opening.
+          const layer = document.createElement("style");
+          layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+          card.shadowRoot?.appendChild(layer);
+          return;
+        }
+        this._moreInfo(entityId);
+        return;
+      }
+      this._moreInfo(entityId);
+    }));
 
     this.shadowRoot
       .querySelector("#lock-info")

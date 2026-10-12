@@ -40,7 +40,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...(config || {}) };
-    if (this._navigationEditActive) {
+    if (this._navigationEditActive || this._homeLayoutSelectActive) {
       this._pendingHassRender = true;
       return;
     }
@@ -2203,6 +2203,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="rows">
+              <label class="row"><span class="copy"><span class="name">Hauptdashboard</span><span class="desc">Raumbilder oder kompakte Raumbuttons anzeigen.</span></span><div class="home-dashboard-layout-buttons" style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" data-layout="standard" aria-pressed="${this._config.home_dashboard_layout !== "compact"}" style="padding:9px 12px;border-radius:10px;${this._config.home_dashboard_layout !== "compact" ? "background:var(--primary-color);color:white;" : ""}">Standard</button><button type="button" data-layout="compact" aria-pressed="${this._config.home_dashboard_layout === "compact"}" style="padding:9px 12px;border-radius:10px;${this._config.home_dashboard_layout === "compact" ? "background:var(--primary-color);color:white;" : ""}">Kompakt</button></div></label>
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
@@ -3007,6 +3008,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         this._endEntityVisibilityInteraction();
       });
     }
+
+    this.shadowRoot.querySelectorAll(".home-dashboard-layout-buttons button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const layout = button.dataset.layout === "compact" ? "compact" : "standard";
+        if ((this._config.home_dashboard_layout || "standard") === layout) return;
+        this._fireConfigChanged({ ...this._config, home_dashboard_layout: layout });
+      });
+    });
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
       input.addEventListener("change", (event) => {

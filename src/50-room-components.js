@@ -1558,9 +1558,15 @@ class AtzeThermostatCard extends HTMLElement {
     const format = n => Number(n).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});
     const hvacModes = attrs.hvac_modes || [];
     const hasPowerToggle = hvacModes.includes("off") && hvacModes.includes("heat");
-    const modes = hvacModes.filter(mode => !hasPowerToggle || !["off","heat"].includes(mode)).map(mode => {
+    const modes = hvacModes.map(mode => {
       const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
       return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
+    }).join("");
+    const fanModes = Array.isArray(attrs.fan_modes) ? attrs.fan_modes : [];
+    const fanModeLabels = {auto:"Auto",low:"Niedrig",medium:"Mittel",high:"Hoch",quiet:"Leise",silent:"Leise",turbo:"Turbo",strong:"Stark",max:"Maximum"};
+    const fanOptions = fanModes.map(mode => {
+      const label = fanModeLabels[String(mode).toLowerCase()] || mode;
+      return '<button type="button" data-fan-mode="' + this._escape(mode) + '" class="mode-button' + (attrs.fan_mode === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
     }).join("");
     const items = this._serviceItems();
     const calibrationButton = items.find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
@@ -1607,12 +1613,13 @@ class AtzeThermostatCard extends HTMLElement {
     const rows = pairedHtml + valvePairHtml + rowItems.map(renderRow).join("");
     return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true">' +
       '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
-      '<div class="thermostat-main">' + (hasPowerToggle ? '<button type="button" class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Heizung umschalten"><ha-icon icon="mdi:power"></ha-icon></button>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
+      '<div class="thermostat-main">' + (modes ? '<details class="thermostat-mode-menu"><summary class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Betriebsmodus wählen" title="Betriebsmodus wählen"><ha-icon icon="mdi:power"></ha-icon><ha-icon class="mode-chevron" icon="mdi:chevron-down"></ha-icon></summary><div class="thermostat-mode-options"><div class="service-caption">Betriebsmodus</div>' + modes + '</div></details>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
       '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div></div></div>' +
       '<div class="service-divider"></div><div class="service-caption">Temperatur-Voreinstellungen</div>' +
       '<div class="temperature-presets">' + [5,17,20,24].map(t => '<button type="button" data-temp-preset="' + t + '"' + (t < Number(attrs.min_temp ?? 5) || t > Number(attrs.max_temp ?? 30) ? ' disabled' : '') + '>' + t + '°</button>').join("") +
       '<button type="button" data-temp-preset="max" class="preset-max">Max</button></div>' +
-      (modes ? '<div class="service-divider"></div><div class="service-caption">Betriebsmodus</div><div class="mode-options">' + modes + '</div>' : '') +
+      
+      (fanOptions ? '<div class="service-divider"></div><div class="service-caption">Lüftergeschwindigkeit</div><details class="thermostat-fan-menu"><summary class="thermostat-fan-trigger"><ha-icon icon="mdi:fan"></ha-icon><span data-current-fan>' + this._escape(fanModeLabels[String(attrs.fan_mode || "").toLowerCase()] || attrs.fan_mode || "Auswählen") + '</span><ha-icon icon="mdi:chevron-down"></ha-icon></summary><div class="thermostat-fan-options">' + fanOptions + '</div></details>' : '') +
       '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
   async _serviceAction(id, option) {
@@ -1636,6 +1643,12 @@ class AtzeThermostatCard extends HTMLElement {
       value.textContent = target.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + unit;
     }
     dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
+    dialog.querySelectorAll("[data-fan-mode]").forEach(button => button.classList.toggle("is-active", button.dataset.fanMode === state?.attributes?.fan_mode));
+    const fanLabel = dialog.querySelector("[data-current-fan]");
+    if (fanLabel) {
+      const mode = state?.attributes?.fan_mode;
+      fanLabel.textContent = ({auto:"Auto",low:"Niedrig",medium:"Mittel",high:"Hoch",quiet:"Leise",silent:"Leise",turbo:"Turbo",strong:"Stark",max:"Maximum"})[String(mode || "").toLowerCase()] || mode || "Auswählen";
+    }
     dialog.querySelector(".thermostat-power")?.classList.toggle("is-on",state?.state !== "off" && !["unknown","unavailable"].includes(state?.state));
     const battery = dialog.querySelector(".thermostat-battery");
     if (battery) {
@@ -1682,10 +1695,41 @@ class AtzeThermostatCard extends HTMLElement {
   _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
   _lockScroll() {
     if (this._scrollCleanup) return;
-    const prevent = (event) => { if (this._serviceOpen && !event.target.closest?.(".service-dialog")) event.preventDefault(); };
+    let lastY = null;
+    const dialogFor = event => (event.composedPath?.() || []).find(
+      node => node instanceof Element && node.classList?.contains("service-dialog")
+    );
+    const onStart = event => { lastY = event.touches?.[0]?.clientY ?? null; };
+    const prevent = event => {
+      if (!this._serviceOpen) return;
+      const dialog = dialogFor(event);
+      if (!dialog) {
+        if (event.cancelable) event.preventDefault();
+        return;
+      }
+      const maxScroll = dialog.scrollHeight - dialog.clientHeight;
+      const y = event.touches?.[0]?.clientY;
+      const delta = y != null && lastY != null ? lastY - y : 0;
+      if (y != null) lastY = y;
+      // Stop iOS scroll chaining when a short popup cannot scroll, or its edge is reached.
+      const atEdge = maxScroll <= 1 ||
+        (delta < 0 && dialog.scrollTop <= 0) ||
+        (delta > 0 && dialog.scrollTop >= maxScroll - 1);
+      if (atEdge && event.cancelable) event.preventDefault();
+    };
+    const onEnd = () => { lastY = null; };
+    document.addEventListener("touchstart", onStart, { passive:true });
     document.addEventListener("touchmove", prevent, { passive:false });
+    document.addEventListener("touchend", onEnd, { passive:true });
+    document.addEventListener("touchcancel", onEnd, { passive:true });
     document.addEventListener("wheel", prevent, { passive:false });
-    this._scrollCleanup = () => { document.removeEventListener("touchmove", prevent); document.removeEventListener("wheel", prevent); };
+    this._scrollCleanup = () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", prevent);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+      document.removeEventListener("wheel", prevent);
+    };
   }
   _closeService() { this._serviceOpen = false; this._scrollCleanup?.(); this._scrollCleanup = null; this._render(); }
   disconnectedCallback() { this._scrollCleanup?.(); this._scrollCleanup = null; }
@@ -1747,8 +1791,8 @@ class AtzeThermostatCard extends HTMLElement {
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
         .settings ha-icon { --mdc-icon-size:23px; }
         .thermometer:disabled { opacity:.4; cursor:default; }
-        .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
-        .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
+        .service-backdrop { position:fixed; inset:0; z-index:1000; overscroll-behavior:contain; touch-action:none; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
+        .service-dialog { width:min(430px,100%); max-height:min(85vh, calc(100dvh - 36px)); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
         .service-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
         .service-dialog header ha-icon { color:#64d2ff; }
         .service-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1766,7 +1810,14 @@ class AtzeThermostatCard extends HTMLElement {
         .service-caption { font-size:13px; color:var(--secondary-text-color); margin:10px 0; }
         .thermostat-main { display:flex; align-items:center; gap:12px; }
         .thermostat-temperatures { flex:1; min-width:0; text-align:center; }
-        .thermostat-power { flex:0 0 54px; width:54px; height:54px; display:grid; place-items:center; border-radius:15px; border:1px solid var(--divider-color); background:rgba(118,118,128,.2); color:#8e8e93; }
+        .thermostat-mode-menu { position:relative; flex:0 0 54px; align-self:center; }
+        .thermostat-mode-menu summary { list-style:none; cursor:pointer; }
+        .thermostat-mode-menu summary::-webkit-details-marker { display:none; }
+        .thermostat-mode-options { position:absolute; z-index:10; top:calc(100% + 8px); left:0; width:180px; max-width:calc(100vw - 76px); max-height:45dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding:10px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,.35); }
+        .thermostat-mode-options .service-caption { margin:0 0 4px; }
+        .thermostat-mode-options .mode-button { text-align:left; padding:9px 11px; }
+        .thermostat-power .mode-chevron { --mdc-icon-size:13px; position:absolute; right:1px; bottom:1px; }
+        .thermostat-power { position:relative; flex:0 0 54px; width:54px; height:54px; display:grid; place-items:center; border-radius:15px; border:1px solid var(--divider-color); background:rgba(118,118,128,.2); color:#8e8e93; }
         .thermostat-power.is-on { color:#ff453a; border-color:rgba(255,69,58,.4); }
         .thermostat-power ha-icon { --mdc-icon-size:28px; }
         .temperature-control { display:flex; align-items:center; justify-content:space-between; gap:6px; margin:12px 0; }
@@ -1776,6 +1827,11 @@ class AtzeThermostatCard extends HTMLElement {
         .temperature-presets button { min-width:0; padding:10px 2px; border-radius:10px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); font-size:13px; }
         .temperature-presets button:disabled { opacity:.35; cursor:default; }
         .temperature-presets .preset-max { color:#ff9f0a; }
+        .thermostat-fan-menu { position:relative; }
+        .thermostat-fan-trigger { list-style:none; display:flex; align-items:center; gap:10px; padding:10px 13px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); cursor:pointer; }
+        .thermostat-fan-trigger::-webkit-details-marker { display:none; }
+        .thermostat-fan-trigger span { flex:1; }
+        .thermostat-fan-options { display:flex; flex-wrap:wrap; gap:7px; padding:10px 0; }
         .mode-options { display:flex; flex-wrap:wrap; gap:8px; }
         .mode-button { padding:10px 14px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); }
         .mode-button.is-active { border-color:#64d2ff; color:#64d2ff; }
@@ -1836,12 +1892,20 @@ class AtzeThermostatCard extends HTMLElement {
         if (isMax && !window.confirm("Thermostat wirklich auf die maximale Solltemperatur von " + max + " °C stellen?")) return;
         this._setTemperature(temperature);
       }));
-      dialog.querySelector(".thermostat-power")?.addEventListener("click",() => {
-        const current = this._hass?.states?.[this._config.entity];
-        if (current && !["unknown","unavailable"].includes(current.state)) this._setHvacMode(current.state === "off" ? "heat" : "off");
-      });
+      dialog.querySelectorAll("[data-fan-mode]").forEach(button =>
+        button.addEventListener("click", async () => {
+          const mode = button.dataset.fanMode;
+          dialog.querySelector(".thermostat-fan-menu")?.removeAttribute("open");
+          if (!this._hass?.states?.[this._config.entity]?.attributes?.fan_modes?.includes(mode)) return;
+          try {
+            await this._hass.callService("climate", "set_fan_mode", {entity_id:this._config.entity, fan_mode:mode});
+          } catch (error) { console.error("Thermostat Lüftermodus", error); }
+        }));
       dialog.querySelectorAll("[data-hvac]").forEach(button =>
-        button.addEventListener("click",() => this._setHvacMode(button.dataset.hvac)));
+        button.addEventListener("click",() => {
+          dialog.querySelector(".thermostat-mode-menu")?.removeAttribute("open");
+          this._setHvacMode(button.dataset.hvac);
+        }));
     }
     this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
       const id = el.dataset.service;

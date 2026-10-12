@@ -11,9 +11,9 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.404.0**
+Version **0.405.0**
 
-Neu in v0.404.0: Manuelle JSON-Sicherung und Wiederherstellung der Dashboard-Konfiguration, Leistungsanzeige auf Schalterkarten und vereinfachter Anwesenheitsverlauf.
+Neu in v0.405.0: Verbesserte Klima-/Thermostat-Popups mit HVAC-Modusmenü, Lüfterauswahl und korrigierter Scroll-Steuerung.
 
 Enthalten sind unter anderem:
 

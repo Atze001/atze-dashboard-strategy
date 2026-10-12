@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.404.0";
+const ATZE_VERSION = "0.405.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "AB468EE";
+const ATZE_TESTING_REVISION = "F750881";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -1132,6 +1132,10 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     swipeSurface: null,
     surfaceSnapshot: null,
     animationTimer: null,
+    gestureTimeout: null,
+    pendingRestores: new Map(),
+    fadeOverlay: null,
+    fadeTimer: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1150,7 +1154,60 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surface.style.boxShadow = snapshot.boxShadow;
   };
 
+  const queueRestore = (surface, snapshot, delay) => {
+    if (!surface || !snapshot) return;
+    const previous = state.pendingRestores.get(surface);
+    if (previous) window.clearTimeout(previous);
+    const timer = window.setTimeout(() => {
+      state.pendingRestores.delete(surface);
+      restoreSurface(surface, snapshot);
+      delete surface.__atzeSwipeSnapshot;
+    }, delay);
+    state.pendingRestores.set(surface, timer);
+  };
+
+  const restorePendingSurfaces = () => {
+    for (const [surface, timer] of state.pendingRestores) {
+      window.clearTimeout(timer);
+      const snapshot = surface.__atzeSwipeSnapshot;
+      restoreSurface(surface, snapshot);
+      delete surface.__atzeSwipeSnapshot;
+    }
+    state.pendingRestores.clear();
+  };
+
+  const clearFadeOverlay = () => {
+    if (state.fadeTimer) window.clearTimeout(state.fadeTimer);
+    state.fadeTimer = null;
+    state.fadeOverlay?.remove();
+    state.fadeOverlay = null;
+  };
+
+  const fadeToHome = () => {
+    clearFadeOverlay();
+    // An independent fixed overlay fades the screen without modifying the HA view.
+    const overlay = document.createElement("div");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:var(--primary-background-color,#111827);opacity:0;transition:opacity 300ms ease-in-out";
+    document.body.appendChild(overlay);
+    state.fadeOverlay = overlay;
+    requestAnimationFrame(() => {
+      if (state.fadeOverlay !== overlay) return;
+      overlay.style.opacity = "1";
+    });
+    state.fadeTimer = window.setTimeout(() => {
+      atzeNavigateToDashboardPath(state.homeTarget);
+      overlay.style.transition = "opacity 380ms ease-in-out";
+      overlay.style.opacity = "0";
+      state.fadeTimer = window.setTimeout(() => clearFadeOverlay(), 420);
+    }, 320);
+  };
+
   const resetGesture = ({ restore = true } = {}) => {
+    if (state.gestureTimeout) {
+      window.clearTimeout(state.gestureTimeout);
+      state.gestureTimeout = null;
+    }
     if (
       restore &&
       state.swipeSurface &&
@@ -1212,6 +1269,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       boxShadow: surface.style.boxShadow,
     };
 
+    surface.__atzeSwipeSnapshot = state.surfaceSnapshot;
     surface.style.transition = "none";
     surface.style.willChange = "transform";
     surface.style.boxShadow =
@@ -1235,10 +1293,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surface.style.boxShadow =
       "0 0 0 rgba(0,0,0,0)";
 
-    state.animationTimer = window.setTimeout(() => {
-      restoreSurface(surface, snapshot);
-      state.animationTimer = null;
-    }, 210);
+    queueRestore(surface, snapshot, 230);
 
     resetGesture({ restore: false });
   };
@@ -1279,14 +1334,12 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         state.homeTarget
       );
 
-      window.setTimeout(() => {
-        restoreSurface(surface, snapshot);
-      }, 80);
+      queueRestore(surface, snapshot, 80);
     };
 
     surface.addEventListener(
       "transitionend",
-      finish,
+      (event) => { if (event.target === surface && event.propertyName === "transform") finish(); },
       { once: true }
     );
 
@@ -1335,6 +1388,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.startY = startY;
     state.startedAt = performance.now();
     state.horizontalLocked = false;
+    // Recover if iOS/WebKit drops touchend or touchcancel.
+    state.gestureTimeout = window.setTimeout(() => resetGesture(), 2500);
   };
 
   state.onTouchMove = (event) => {
@@ -1377,24 +1432,9 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       }
     }
 
-    const surface =
-      prepareSurface(event);
+    // Visual feedback lives in an independent overlay; never transform the HA view.
+    // Fade feedback is shown only after the completed swipe.
 
-    if (!surface) {
-      resetGesture();
-      return;
-    }
-
-    event.preventDefault();
-
-    const distance = Math.max(0, dx);
-    const viewportWidth =
-      Math.max(window.innerWidth || 0, 320);
-    const cappedDistance =
-      Math.min(distance, viewportWidth * 0.92);
-
-    surface.style.transform =
-      `translate3d(${cappedDistance}px,0,0)`;
   };
 
   state.onTouchEnd = (event) => {
@@ -1436,22 +1476,16 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     }
 
     if (isRightSwipe) {
-      animateOutAndNavigate(
-        surface,
-        snapshot
-      );
+      resetGesture();
+      state.suppressClickUntil = performance.now() + 500;
+      fadeToHome();
       return;
     }
 
-    animateBack(surface, snapshot);
+    resetGesture();
   };
 
-  state.onTouchCancel = () => {
-    animateBack(
-      state.swipeSurface,
-      state.surfaceSnapshot
-    );
-  };
+  state.onTouchCancel = () => resetGesture();
 
   state.onClick = (event) => {
     if (
@@ -1488,6 +1522,16 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.onClick,
     { capture: true }
   );
+
+  // A route change can interrupt an active touch sequence in Home Assistant.
+  state.onRouteChange = () => {
+    resetGesture();
+    restorePendingSurfaces();
+    // Do not cancel the fade here: navigation fires during its animation.
+  };
+  window.addEventListener("location-changed", state.onRouteChange);
+  window.addEventListener("popstate", state.onRouteChange);
+  window.addEventListener("pageshow", state.onRouteChange);
 
   window[ATZE_HOME_SWIPE_STATE_KEY] = state;
 
@@ -5821,8 +5865,22 @@ function buildHomeOverviewView(
       })),
   ];
 
+  // Test-only: mount the exact room thermostat popup definitions on Home too.
+  const homeThermostatPopups = [];
+  for (const [parentId, children] of popupMap.parentToChildren.entries()) {
+    if (!parentId.startsWith("climate.")) continue;
+    const parent = usableEntities.find((entity) => entity.entity_id === parentId);
+    if (!parent) continue;
+    const areaId = filteredAreas.find((area) => (entitiesByArea.get(area.area_id) || []).some((entity) => entity.entity_id === parentId))?.area_id;
+    const area = filteredAreas.find((item) => item.area_id === areaId);
+    if (!area) continue;
+    const popup = buildPopupCard(hass, parent, children, config, getOverride(config.area_overrides, areaId), area);
+    if (popup) homeThermostatPopups.push(popup);
+  }
+
   const homeCard = {
     type: "custom:atze-testing-home-overview-card",
+    thermostat_room_popups: homeThermostatPopups,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
@@ -5906,6 +5964,7 @@ function buildHomeOverviewView(
     ],
     scheduler_popup: showSchedulerPopup,
     room_tiles: roomTiles,
+    home_dashboard_layout: config.home_dashboard_layout === "compact" ? "compact" : "standard",
     asset_base: config.home_asset_base || null,
     hero_day_image:
       config.home_hero_day_image ||
@@ -9012,14 +9071,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ? "Alles ok"
           : "Keine Daten";
 
-    const batteryCount = (
-      this._config.battery_entities || []
-    ).length;
-
-    const batterySubText =
-      batteryCount === 1
-        ? "1 Sensor"
-        : `${batteryCount} Sensoren`;
+    const lowBatteryCount = (this._config.battery_entities || []).filter((entityId) => {
+      const state = this._state(entityId);
+      if (!state || ["unknown", "unavailable"].includes(String(state.state).toLowerCase())) return false;
+      if (entityId.startsWith("binary_sensor.")) return state.state === "on";
+      const level = Number(state.state);
+      return Number.isFinite(level) && level >= 0 && level < 25;
+    }).length;
+    const batterySubText = `${lowBatteryCount} ${lowBatteryCount === 1 ? "Batterie" : "Batterien"} unter 25 %`;
 
     const favoriteStates = asArray(
       this._config.favorite_entities
@@ -9206,7 +9265,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         return `
           <div
-            class="room ${roomPrimaryMetric ? "has-power" : ""}"
+            class="room ${roomPrimaryMetric ? "has-power" : ""} ${this._config.home_dashboard_layout === "compact" ? "room-compact" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
             data-atze-scroll-snap="room"
@@ -9214,6 +9273,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -10792,6 +10852,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
             margin-left: auto;
           }
         }
+        .rooms:has(.room-compact) { grid-template-columns: 1fr; gap: 10px; }
+        .room-compact { height: 56px; min-height: 56px; border-radius: 15px; padding: 0 14px; display: flex; align-items: center; cursor: pointer; background: rgba(55, 58, 67, 0.30); backdrop-filter: blur(8px) saturate(1.12); -webkit-backdrop-filter: blur(8px) saturate(1.12); border: 1px solid var(--home-card-border); box-sizing: border-box; overflow: hidden; }
+        .room-compact > :not(.room-compact-content) { display: none !important; }
+        .room-compact-content { display: none; align-items: center; width: 100%; gap: 12px; font-size: 15px; font-weight: 600; position: relative; z-index: 1; }
+        .room-compact .room-compact-content { display: flex; }
+        .room-compact-label { display:flex; flex-direction:column; min-width:0; gap:3px; }
+        .room-compact-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .room-compact-climate { display:flex; align-items:center; flex-wrap:wrap; gap:12px; font-size:12px; font-weight:400; opacity:.82; line-height:1.2; }
+        .room-compact-climate > span { display:inline-flex; align-items:center; gap:3px; }
+        .room-compact-climate ha-icon { --mdc-icon-size:14px; width:14px; height:14px; }
+        .room-compact-content > ha-icon { --mdc-icon-size: 24px; flex: 0 0 24px; }
+        .room-compact-content .room-compact-chevron { margin-left: auto; opacity: .6; --mdc-icon-size: 20px; }
       </style>
 
       <ha-card>
@@ -10937,6 +11009,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
+            ${lowBatteryCount > 0 ? `
             <div
               class="status battery"
               id="battery-status"
@@ -10947,6 +11020,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 <div class="status-sub">${batterySubText}</div>
               </div>
             </div>
+            ` : ""}
 
             ${alarmAvailable ? `
               <div
@@ -11033,6 +11107,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
+    // Mount the actual room thermostat controls, not the generic device-popup card.
+    // The native thermostat service dialog is rendered inside each control.
+    this._homeThermostatCards = new Map();
+    for (const entityId of this._homeThermostatEntities()) {
+      const tag = ATZE_TESTING_BUILD ? "atze-thermostat-card-testing" : "atze-thermostat-card";
+      const card = document.createElement(tag);
+      card.setConfig({ entity: entityId });
+      card.hass = this._hass;
+      card.style.cssText = "position:absolute;width:0;height:0;overflow:visible;pointer-events:none;";
+      const layer = document.createElement("style");
+      layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+      card.shadowRoot?.appendChild(layer);
+      this.shadowRoot.appendChild(card);
+      this._homeThermostatCards.set(entityId, card);
+    }
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
     const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
@@ -11042,6 +11131,100 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const homeStatusPanel = this.shadowRoot.querySelector(".home-status-panel");
     if (homeStatusPanel && heroImage) {
       homeStatusPanel.style.setProperty("--home-hero-image", `url("${String(heroImage).replace(/"/g, "%22")}")`);
+    }
+
+    // Restore the status tile order independently of temporarily hidden tiles.
+    const statusGrid = this.shadowRoot.querySelector(".status-grid");
+    const statusOrderKey = "atze-dashboard:home-status-order";
+    let statusOrder = atzeLayoutValue(this._config, "home_status_order", []);
+    try {
+      const locallySavedOrder = JSON.parse(localStorage.getItem(statusOrderKey) || "[]");
+      if (Array.isArray(locallySavedOrder) && locallySavedOrder.length) statusOrder = locallySavedOrder;
+    } catch (_e) {}
+    if (statusGrid) {
+      const tiles = [...statusGrid.querySelectorAll(".status[id]")];
+      const ranks = new Map((Array.isArray(statusOrder) ? statusOrder : []).map((id, index) => [id, index]));
+      const original = new Map(tiles.map((tile, index) => [tile.id, index]));
+      tiles.sort((a, b) => (ranks.get(a.id) ?? (ranks.size + original.get(a.id))) - (ranks.get(b.id) ?? (ranks.size + original.get(b.id))))
+        .forEach((tile) => statusGrid.appendChild(tile));
+
+      let draggedTile = null;
+      let suppressStatusClick = false;
+      const saveStatusOrder = () => {
+        const visible = [...statusGrid.querySelectorAll(".status[id]")].map((tile) => tile.id);
+        const previous = Array.isArray(statusOrder) ? statusOrder : [];
+        const merged = [...visible, ...previous.filter((id) => !visible.includes(id))];
+        statusOrder = merged;
+        try { localStorage.setItem(statusOrderKey, JSON.stringify(merged)); } catch (_e) {}
+        saveAtzeStrategyLayout(this._hass, this._config, { home_status_order: merged });
+      };
+      // iOS WebKit may show the native drag preview without dispatching drop.
+      // Commit the reorder on touch release using the element beneath the finger.
+      let touchStart = null;
+      let touchMoved = false;
+      statusGrid.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) return;
+        const tile = event.target.closest(".status[id]");
+        if (!tile || !statusGrid.contains(tile)) return;
+        touchStart = { tile, x: event.touches[0].clientX, y: event.touches[0].clientY, at: Date.now() };
+        touchMoved = false;
+      }, { passive: true });
+      statusGrid.addEventListener("touchmove", (event) => {
+        if (!touchStart || event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        if (Math.abs(touch.clientY - touchStart.y) > 14 || Math.abs(touch.clientX - touchStart.x) > 14) touchMoved = true;
+      }, { passive: true });
+      statusGrid.addEventListener("touchend", (event) => {
+        if (!touchStart) return;
+        const start = touchStart;
+        touchStart = null;
+        if (!touchMoved || Date.now() - start.at < 350) return;
+        const touch = event.changedTouches[0];
+        const target = this.shadowRoot.elementFromPoint(touch.clientX, touch.clientY)?.closest(".status[id]");
+        if (!target || target === start.tile || !statusGrid.contains(target)) return;
+        const current = [...statusGrid.querySelectorAll(".status[id]")];
+        if (current.indexOf(start.tile) < current.indexOf(target)) target.after(start.tile);
+        else target.before(start.tile);
+        suppressStatusClick = true;
+        saveStatusOrder();
+      }, { passive: true });
+
+      for (const tile of statusGrid.querySelectorAll(".status[id]")) {
+        tile.draggable = true;
+        tile.style.touchAction = "pan-y";
+        tile.addEventListener("dragstart", (event) => {
+          draggedTile = tile;
+          tile.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", tile.id);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        });
+        tile.addEventListener("dragover", (event) => {
+          if (!draggedTile || draggedTile === tile) return;
+          event.preventDefault();
+          tile.classList.add("drag-over");
+        });
+        tile.addEventListener("dragleave", () => tile.classList.remove("drag-over"));
+        tile.addEventListener("drop", (event) => {
+          event.preventDefault();
+          tile.classList.remove("drag-over");
+          if (!draggedTile || draggedTile === tile) return;
+          const current = [...statusGrid.querySelectorAll(".status[id]")];
+          if (current.indexOf(draggedTile) < current.indexOf(tile)) tile.after(draggedTile);
+          else tile.before(draggedTile);
+          suppressStatusClick = true;
+          saveStatusOrder();
+        });
+        tile.addEventListener("dragend", () => {
+          draggedTile = null;
+          statusGrid.querySelectorAll(".status").forEach((entry) => entry.classList.remove("dragging", "drag-over"));
+        });
+        tile.addEventListener("click", (event) => {
+          if (!suppressStatusClick) return;
+          suppressStatusClick = false;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }, true);
+      }
     }
 
     const roomGrid = this.shadowRoot.querySelector(".rooms");
@@ -11443,7 +11626,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }));
     this.shadowRoot.querySelectorAll("[data-thermostat-toggle]").forEach((button) => button.addEventListener("click", () => this._homeThermostatToggle(button.dataset.thermostatToggle)));
     this.shadowRoot.querySelectorAll("[data-group-entity]").forEach((button) => button.addEventListener("click", () => this._groupControlAction(button.dataset.groupEntity)));
-    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => this._moreInfo(button.dataset.groupMoreInfo)));
+    this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => {
+      const entityId = button.dataset.groupMoreInfo;
+      if (this._groupControlPopup === "thermostats" && entityId?.startsWith("climate.")) {
+        const card = this._homeThermostatCards?.get(entityId);
+        if (card) {
+          card._openService();
+          // The thermostat card rerenders its shadow root when opening.
+          const layer = document.createElement("style");
+          layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+          card.shadowRoot?.appendChild(layer);
+          return;
+        }
+        this._moreInfo(entityId);
+        return;
+      }
+      this._moreInfo(entityId);
+    }));
 
     this.shadowRoot
       .querySelector("#lock-info")
@@ -14453,9 +14652,15 @@ class AtzeThermostatCard extends HTMLElement {
     const format = n => Number(n).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});
     const hvacModes = attrs.hvac_modes || [];
     const hasPowerToggle = hvacModes.includes("off") && hvacModes.includes("heat");
-    const modes = hvacModes.filter(mode => !hasPowerToggle || !["off","heat"].includes(mode)).map(mode => {
+    const modes = hvacModes.map(mode => {
       const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
       return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
+    }).join("");
+    const fanModes = Array.isArray(attrs.fan_modes) ? attrs.fan_modes : [];
+    const fanModeLabels = {auto:"Auto",low:"Niedrig",medium:"Mittel",high:"Hoch",quiet:"Leise",silent:"Leise",turbo:"Turbo",strong:"Stark",max:"Maximum"};
+    const fanOptions = fanModes.map(mode => {
+      const label = fanModeLabels[String(mode).toLowerCase()] || mode;
+      return '<button type="button" data-fan-mode="' + this._escape(mode) + '" class="mode-button' + (attrs.fan_mode === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
     }).join("");
     const items = this._serviceItems();
     const calibrationButton = items.find(item => item.domain === "button" && /(?:^|_)calibrate$/.test(item.id));
@@ -14502,12 +14707,13 @@ class AtzeThermostatCard extends HTMLElement {
     const rows = pairedHtml + valvePairHtml + rowItems.map(renderRow).join("");
     return '<div class="service-backdrop"><section class="service-dialog" role="dialog" aria-modal="true">' +
       '<header><ha-icon icon="mdi:thermostat"></ha-icon><span class="service-title"></span>' + this._batteryMarkup(batteryItem) + '</header><div class="service-divider"></div>' +
-      '<div class="thermostat-main">' + (hasPowerToggle ? '<button type="button" class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Heizung umschalten"><ha-icon icon="mdi:power"></ha-icon></button>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
+      '<div class="thermostat-main">' + (modes ? '<details class="thermostat-mode-menu"><summary class="thermostat-power' + (state?.state !== "off" ? ' is-on' : '') + '" aria-label="Betriebsmodus wählen" title="Betriebsmodus wählen"><ha-icon icon="mdi:power"></ha-icon><ha-icon class="mode-chevron" icon="mdi:chevron-down"></ha-icon></summary><div class="thermostat-mode-options"><div class="service-caption">Betriebsmodus</div>' + modes + '</div></details>' : '') + '<div class="thermostat-temperatures"><div class="service-caption">Solltemperatur</div><div class="temperature-control"><button type="button" data-temp-step="-1" aria-label="Temperatur senken">−</button><strong data-target-value>' + (validTarget ? format(target) : "–") + ' ' + unit + '</strong><button type="button" data-temp-step="1" aria-label="Temperatur erhöhen">+</button></div>' +
       '<div class="service-caption">Isttemperatur: ' + this._escape(current == null ? "–" : format(current)) + ' ' + this._escape(unit) + '</div></div></div>' +
       '<div class="service-divider"></div><div class="service-caption">Temperatur-Voreinstellungen</div>' +
       '<div class="temperature-presets">' + [5,17,20,24].map(t => '<button type="button" data-temp-preset="' + t + '"' + (t < Number(attrs.min_temp ?? 5) || t > Number(attrs.max_temp ?? 30) ? ' disabled' : '') + '>' + t + '°</button>').join("") +
       '<button type="button" data-temp-preset="max" class="preset-max">Max</button></div>' +
-      (modes ? '<div class="service-divider"></div><div class="service-caption">Betriebsmodus</div><div class="mode-options">' + modes + '</div>' : '') +
+      
+      (fanOptions ? '<div class="service-divider"></div><div class="service-caption">Lüftergeschwindigkeit</div><details class="thermostat-fan-menu"><summary class="thermostat-fan-trigger"><ha-icon icon="mdi:fan"></ha-icon><span data-current-fan>' + this._escape(fanModeLabels[String(attrs.fan_mode || "").toLowerCase()] || attrs.fan_mode || "Auswählen") + '</span><ha-icon icon="mdi:chevron-down"></ha-icon></summary><div class="thermostat-fan-options">' + fanOptions + '</div></details>' : '') +
       '<div class="service-divider"></div><div class="service-caption">Weitere Funktionen</div>' + (rows || '<p class="service-empty">Keine zusätzlichen Gerätefunktionen verfügbar</p>') + '</section></div>';
   }
   async _serviceAction(id, option) {
@@ -14531,6 +14737,12 @@ class AtzeThermostatCard extends HTMLElement {
       value.textContent = target.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1}) + " " + unit;
     }
     dialog.querySelectorAll("[data-hvac]").forEach(button => button.classList.toggle("is-active",button.dataset.hvac === state?.state));
+    dialog.querySelectorAll("[data-fan-mode]").forEach(button => button.classList.toggle("is-active", button.dataset.fanMode === state?.attributes?.fan_mode));
+    const fanLabel = dialog.querySelector("[data-current-fan]");
+    if (fanLabel) {
+      const mode = state?.attributes?.fan_mode;
+      fanLabel.textContent = ({auto:"Auto",low:"Niedrig",medium:"Mittel",high:"Hoch",quiet:"Leise",silent:"Leise",turbo:"Turbo",strong:"Stark",max:"Maximum"})[String(mode || "").toLowerCase()] || mode || "Auswählen";
+    }
     dialog.querySelector(".thermostat-power")?.classList.toggle("is-on",state?.state !== "off" && !["unknown","unavailable"].includes(state?.state));
     const battery = dialog.querySelector(".thermostat-battery");
     if (battery) {
@@ -14577,10 +14789,41 @@ class AtzeThermostatCard extends HTMLElement {
   _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
   _lockScroll() {
     if (this._scrollCleanup) return;
-    const prevent = (event) => { if (this._serviceOpen && !event.target.closest?.(".service-dialog")) event.preventDefault(); };
+    let lastY = null;
+    const dialogFor = event => (event.composedPath?.() || []).find(
+      node => node instanceof Element && node.classList?.contains("service-dialog")
+    );
+    const onStart = event => { lastY = event.touches?.[0]?.clientY ?? null; };
+    const prevent = event => {
+      if (!this._serviceOpen) return;
+      const dialog = dialogFor(event);
+      if (!dialog) {
+        if (event.cancelable) event.preventDefault();
+        return;
+      }
+      const maxScroll = dialog.scrollHeight - dialog.clientHeight;
+      const y = event.touches?.[0]?.clientY;
+      const delta = y != null && lastY != null ? lastY - y : 0;
+      if (y != null) lastY = y;
+      // Stop iOS scroll chaining when a short popup cannot scroll, or its edge is reached.
+      const atEdge = maxScroll <= 1 ||
+        (delta < 0 && dialog.scrollTop <= 0) ||
+        (delta > 0 && dialog.scrollTop >= maxScroll - 1);
+      if (atEdge && event.cancelable) event.preventDefault();
+    };
+    const onEnd = () => { lastY = null; };
+    document.addEventListener("touchstart", onStart, { passive:true });
     document.addEventListener("touchmove", prevent, { passive:false });
+    document.addEventListener("touchend", onEnd, { passive:true });
+    document.addEventListener("touchcancel", onEnd, { passive:true });
     document.addEventListener("wheel", prevent, { passive:false });
-    this._scrollCleanup = () => { document.removeEventListener("touchmove", prevent); document.removeEventListener("wheel", prevent); };
+    this._scrollCleanup = () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", prevent);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+      document.removeEventListener("wheel", prevent);
+    };
   }
   _closeService() { this._serviceOpen = false; this._scrollCleanup?.(); this._scrollCleanup = null; this._render(); }
   disconnectedCallback() { this._scrollCleanup?.(); this._scrollCleanup = null; }
@@ -14642,8 +14885,8 @@ class AtzeThermostatCard extends HTMLElement {
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
         .settings ha-icon { --mdc-icon-size:23px; }
         .thermometer:disabled { opacity:.4; cursor:default; }
-        .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
-        .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
+        .service-backdrop { position:fixed; inset:0; z-index:1000; overscroll-behavior:contain; touch-action:none; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
+        .service-dialog { width:min(430px,100%); max-height:min(85vh, calc(100dvh - 36px)); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
         .service-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
         .service-dialog header ha-icon { color:#64d2ff; }
         .service-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -14661,7 +14904,14 @@ class AtzeThermostatCard extends HTMLElement {
         .service-caption { font-size:13px; color:var(--secondary-text-color); margin:10px 0; }
         .thermostat-main { display:flex; align-items:center; gap:12px; }
         .thermostat-temperatures { flex:1; min-width:0; text-align:center; }
-        .thermostat-power { flex:0 0 54px; width:54px; height:54px; display:grid; place-items:center; border-radius:15px; border:1px solid var(--divider-color); background:rgba(118,118,128,.2); color:#8e8e93; }
+        .thermostat-mode-menu { position:relative; flex:0 0 54px; align-self:center; }
+        .thermostat-mode-menu summary { list-style:none; cursor:pointer; }
+        .thermostat-mode-menu summary::-webkit-details-marker { display:none; }
+        .thermostat-mode-options { position:absolute; z-index:10; top:calc(100% + 8px); left:0; width:180px; max-width:calc(100vw - 76px); max-height:45dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding:10px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,.35); }
+        .thermostat-mode-options .service-caption { margin:0 0 4px; }
+        .thermostat-mode-options .mode-button { text-align:left; padding:9px 11px; }
+        .thermostat-power .mode-chevron { --mdc-icon-size:13px; position:absolute; right:1px; bottom:1px; }
+        .thermostat-power { position:relative; flex:0 0 54px; width:54px; height:54px; display:grid; place-items:center; border-radius:15px; border:1px solid var(--divider-color); background:rgba(118,118,128,.2); color:#8e8e93; }
         .thermostat-power.is-on { color:#ff453a; border-color:rgba(255,69,58,.4); }
         .thermostat-power ha-icon { --mdc-icon-size:28px; }
         .temperature-control { display:flex; align-items:center; justify-content:space-between; gap:6px; margin:12px 0; }
@@ -14671,6 +14921,11 @@ class AtzeThermostatCard extends HTMLElement {
         .temperature-presets button { min-width:0; padding:10px 2px; border-radius:10px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); font-size:13px; }
         .temperature-presets button:disabled { opacity:.35; cursor:default; }
         .temperature-presets .preset-max { color:#ff9f0a; }
+        .thermostat-fan-menu { position:relative; }
+        .thermostat-fan-trigger { list-style:none; display:flex; align-items:center; gap:10px; padding:10px 13px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); cursor:pointer; }
+        .thermostat-fan-trigger::-webkit-details-marker { display:none; }
+        .thermostat-fan-trigger span { flex:1; }
+        .thermostat-fan-options { display:flex; flex-wrap:wrap; gap:7px; padding:10px 0; }
         .mode-options { display:flex; flex-wrap:wrap; gap:8px; }
         .mode-button { padding:10px 14px; border-radius:12px; border:1px solid var(--divider-color); background:rgba(118,118,128,.20); }
         .mode-button.is-active { border-color:#64d2ff; color:#64d2ff; }
@@ -14731,12 +14986,20 @@ class AtzeThermostatCard extends HTMLElement {
         if (isMax && !window.confirm("Thermostat wirklich auf die maximale Solltemperatur von " + max + " °C stellen?")) return;
         this._setTemperature(temperature);
       }));
-      dialog.querySelector(".thermostat-power")?.addEventListener("click",() => {
-        const current = this._hass?.states?.[this._config.entity];
-        if (current && !["unknown","unavailable"].includes(current.state)) this._setHvacMode(current.state === "off" ? "heat" : "off");
-      });
+      dialog.querySelectorAll("[data-fan-mode]").forEach(button =>
+        button.addEventListener("click", async () => {
+          const mode = button.dataset.fanMode;
+          dialog.querySelector(".thermostat-fan-menu")?.removeAttribute("open");
+          if (!this._hass?.states?.[this._config.entity]?.attributes?.fan_modes?.includes(mode)) return;
+          try {
+            await this._hass.callService("climate", "set_fan_mode", {entity_id:this._config.entity, fan_mode:mode});
+          } catch (error) { console.error("Thermostat Lüftermodus", error); }
+        }));
       dialog.querySelectorAll("[data-hvac]").forEach(button =>
-        button.addEventListener("click",() => this._setHvacMode(button.dataset.hvac)));
+        button.addEventListener("click",() => {
+          dialog.querySelector(".thermostat-mode-menu")?.removeAttribute("open");
+          this._setHvacMode(button.dataset.hvac);
+        }));
     }
     this.shadowRoot.querySelectorAll("[data-service]").forEach(el => {
       const id = el.dataset.service;
@@ -15470,7 +15733,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...(config || {}) };
-    if (this._navigationEditActive) {
+    if (this._navigationEditActive || this._homeLayoutSelectActive) {
       this._pendingHassRender = true;
       return;
     }
@@ -17633,6 +17896,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="rows">
+              <label class="row"><span class="copy"><span class="name">Hauptdashboard</span><span class="desc">Raumbilder oder kompakte Raumbuttons anzeigen.</span></span><div class="home-dashboard-layout-buttons" style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" data-layout="standard" aria-pressed="${this._config.home_dashboard_layout !== "compact"}" style="padding:9px 12px;border-radius:10px;${this._config.home_dashboard_layout !== "compact" ? "background:var(--primary-color);color:white;" : ""}">Standard</button><button type="button" data-layout="compact" aria-pressed="${this._config.home_dashboard_layout === "compact"}" style="padding:9px 12px;border-radius:10px;${this._config.home_dashboard_layout === "compact" ? "background:var(--primary-color);color:white;" : ""}">Kompakt</button></div></label>
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
@@ -18437,6 +18701,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         this._endEntityVisibilityInteraction();
       });
     }
+
+    this.shadowRoot.querySelectorAll(".home-dashboard-layout-buttons button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const layout = button.dataset.layout === "compact" ? "compact" : "standard";
+        if ((this._config.home_dashboard_layout || "standard") === layout) return;
+        this._fireConfigChanged({ ...this._config, home_dashboard_layout: layout });
+      });
+    });
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
       input.addEventListener("change", (event) => {
