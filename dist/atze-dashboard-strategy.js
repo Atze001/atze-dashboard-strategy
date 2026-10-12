@@ -5824,8 +5824,22 @@ function buildHomeOverviewView(
       })),
   ];
 
+  // Test-only: mount the exact room thermostat popup definitions on Home too.
+  const homeThermostatPopups = [];
+  for (const [parentId, children] of popupMap.parentToChildren.entries()) {
+    if (!parentId.startsWith("climate.")) continue;
+    const parent = usableEntities.find((entity) => entity.entity_id === parentId);
+    if (!parent) continue;
+    const areaId = filteredAreas.find((area) => (entitiesByArea.get(area.area_id) || []).some((entity) => entity.entity_id === parentId))?.area_id;
+    const area = filteredAreas.find((item) => item.area_id === areaId);
+    if (!area) continue;
+    const popup = buildPopupCard(hass, parent, children, config, getOverride(config.area_overrides, areaId), area);
+    if (popup) homeThermostatPopups.push(popup);
+  }
+
   const homeCard = {
     type: "custom:atze-home-overview-card",
+    thermostat_room_popups: homeThermostatPopups,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
@@ -11051,6 +11065,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     for (const position of popupScrollPositions) {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
+    }
+    // Keep the original room popup cards alive on Home, so their hash listeners
+    // can open them above the thermostat overview without changing room views.
+    for (const popupConfig of this._config.thermostat_room_popups || []) {
+      const tag = ATZE_TESTING_BUILD ? "atze-popup-card-testing" : "atze-popup-card";
+      const popup = document.createElement(tag);
+      popup.setConfig(popupConfig);
+      popup.hass = this._hass;
+      this.shadowRoot.appendChild(popup);
     }
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
