@@ -5824,8 +5824,22 @@ function buildHomeOverviewView(
       })),
   ];
 
+  // Test-only: mount the exact room thermostat popup definitions on Home too.
+  const homeThermostatPopups = [];
+  for (const [parentId, children] of popupMap.parentToChildren.entries()) {
+    if (!parentId.startsWith("climate.")) continue;
+    const parent = usableEntities.find((entity) => entity.entity_id === parentId);
+    if (!parent) continue;
+    const areaId = filteredAreas.find((area) => (entitiesByArea.get(area.area_id) || []).some((entity) => entity.entity_id === parentId))?.area_id;
+    const area = filteredAreas.find((item) => item.area_id === areaId);
+    if (!area) continue;
+    const popup = buildPopupCard(hass, parent, children, config, getOverride(config.area_overrides, areaId), area);
+    if (popup) homeThermostatPopups.push(popup);
+  }
+
   const homeCard = {
     type: "custom:atze-home-overview-card",
+    thermostat_room_popups: homeThermostatPopups,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
