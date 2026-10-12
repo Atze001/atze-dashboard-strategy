@@ -5840,6 +5840,7 @@ function buildHomeOverviewView(
   const homeCard = {
     type: "custom:atze-home-overview-card",
     thermostat_room_popups: homeThermostatPopups,
+    bedroom_popup_view: config.bedroom_popup_view || null,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
