@@ -5909,6 +5909,7 @@ function buildHomeOverviewView(
     ],
     scheduler_popup: showSchedulerPopup,
     room_tiles: roomTiles,
+    home_dashboard_layout: config.home_dashboard_layout === "compact" ? "compact" : "standard",
     asset_base: config.home_asset_base || null,
     hero_day_image:
       config.home_hero_day_image ||
@@ -15481,7 +15482,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...(config || {}) };
-    if (this._navigationEditActive) {
+    if (this._navigationEditActive || this._homeLayoutSelectActive) {
       this._pendingHassRender = true;
       return;
     }
@@ -18450,8 +18451,16 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       });
     }
 
-    this.shadowRoot.querySelector(".home-dashboard-layout-select")?.addEventListener("change", (event) => {
+    const layoutSelect = this.shadowRoot.querySelector(".home-dashboard-layout-select");
+    layoutSelect?.addEventListener("focus", () => { this._homeLayoutSelectActive = true; });
+    layoutSelect?.addEventListener("pointerdown", () => { this._homeLayoutSelectActive = true; });
+    layoutSelect?.addEventListener("change", (event) => {
+      this._homeLayoutSelectActive = false;
       this._fireConfigChanged({ ...this._config, home_dashboard_layout: event.currentTarget.value === "compact" ? "compact" : "standard" });
+    });
+    layoutSelect?.addEventListener("blur", () => {
+      this._homeLayoutSelectActive = false;
+      if (this._pendingHassRender) { this._pendingHassRender = false; this._render(); }
     });
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
