@@ -14655,7 +14655,7 @@ class AtzeThermostatCard extends HTMLElement {
     const format = n => Number(n).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});
     const hvacModes = attrs.hvac_modes || [];
     const hasPowerToggle = hvacModes.includes("off") && hvacModes.includes("heat");
-    const modes = hvacModes.filter(mode => !hasPowerToggle || !["off","heat"].includes(mode)).map(mode => {
+    const modes = hvacModes.filter(mode => !hasPowerToggle || mode !== "off").map(mode => {
       const label = {off:"Aus",heat:"Heizen",auto:"Auto",heat_cool:"Heizen/Kühlen",cool:"Kühlen",dry:"Trocknen",fan_only:"Lüften"}[mode] || mode;
       return '<button type="button" data-hvac="' + this._escape(mode) + '" class="mode-button' + (state.state === mode ? ' is-active' : '') + '">' + this._escape(label) + '</button>';
     }).join("");
@@ -14845,7 +14845,7 @@ class AtzeThermostatCard extends HTMLElement {
         .settings ha-icon { --mdc-icon-size:23px; }
         .thermometer:disabled { opacity:.4; cursor:default; }
         .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
-        .service-dialog { width:min(430px,100%); max-height:85vh; overflow:auto; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
+        .service-dialog { width:min(430px,100%); max-height:min(85vh, calc(100dvh - 36px)); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
         .service-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
         .service-dialog header ha-icon { color:#64d2ff; }
         .service-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
