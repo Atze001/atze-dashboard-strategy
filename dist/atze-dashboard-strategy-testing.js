@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "C9D4DA0";
+const ATZE_TESTING_REVISION = "8F7D420";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -17642,7 +17642,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="rows">
-              <label class="row"><span class="copy"><span class="name">Hauptdashboard</span><span class="desc">Raumbilder oder kompakte Raumbuttons anzeigen.</span></span><select class="home-dashboard-layout-select" aria-label="Hauptdashboard-Ansicht"><option value="standard" ${this._config.home_dashboard_layout !== "compact" ? "selected" : ""}>Standard</option><option value="compact" ${this._config.home_dashboard_layout === "compact" ? "selected" : ""}>Kompakt</option></select></label>
+              <label class="row"><span class="copy"><span class="name">Hauptdashboard</span><span class="desc">Raumbilder oder kompakte Raumbuttons anzeigen.</span></span><div class="home-dashboard-layout-buttons" style="display:flex;gap:6px;flex-wrap:wrap;"><button type="button" data-layout="standard" aria-pressed="${this._config.home_dashboard_layout !== "compact"}" style="padding:9px 12px;border-radius:10px;${this._config.home_dashboard_layout !== "compact" ? "background:var(--primary-color);color:white;" : ""}">Standard</button><button type="button" data-layout="compact" aria-pressed="${this._config.home_dashboard_layout === "compact"}" style="padding:9px 12px;border-radius:10px;${this._config.home_dashboard_layout === "compact" ? "background:var(--primary-color);color:white;" : ""}">Kompakt</button></div></label>
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
@@ -18448,16 +18448,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       });
     }
 
-    const layoutSelect = this.shadowRoot.querySelector(".home-dashboard-layout-select");
-    layoutSelect?.addEventListener("focus", () => { this._homeLayoutSelectActive = true; });
-    layoutSelect?.addEventListener("pointerdown", () => { this._homeLayoutSelectActive = true; });
-    layoutSelect?.addEventListener("change", (event) => {
-      this._homeLayoutSelectActive = false;
-      this._fireConfigChanged({ ...this._config, home_dashboard_layout: event.currentTarget.value === "compact" ? "compact" : "standard" });
-    });
-    layoutSelect?.addEventListener("blur", () => {
-      this._homeLayoutSelectActive = false;
-      if (this._pendingHassRender) { this._pendingHassRender = false; this._render(); }
+    this.shadowRoot.querySelectorAll(".home-dashboard-layout-buttons button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const layout = button.dataset.layout === "compact" ? "compact" : "standard";
+        if ((this._config.home_dashboard_layout || "standard") === layout) return;
+        this._fireConfigChanged({ ...this._config, home_dashboard_layout: layout });
+      });
     });
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
