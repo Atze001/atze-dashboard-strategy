@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "AB468EE";
+const ATZE_TESTING_REVISION = "E444E56";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9206,7 +9206,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         return `
           <div
-            class="room ${roomPrimaryMetric ? "has-power" : ""}"
+            class="room ${roomPrimaryMetric ? "has-power" : ""} ${this._config.home_dashboard_layout === "compact" ? "room-compact" : ""}"
             data-path="${room.path}"
             data-area-id="${room.area_id}"
             data-atze-scroll-snap="room"
@@ -9214,6 +9214,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><span>${this._escapeHtml(room.name || "Raum")}</span><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -10792,6 +10793,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
             margin-left: auto;
           }
         }
+        .rooms:has(.room-compact) { grid-template-columns: 1fr; gap: 10px; }
+        .room-compact { height: 56px; min-height: 56px; border-radius: 15px; padding: 0 14px; display: flex; align-items: center; cursor: pointer; background: rgba(115,125,145,.16); border: 1px solid rgba(175,185,205,.18); box-sizing: border-box; overflow: hidden; }
+        .room-compact > :not(.room-compact-content) { display: none !important; }
+        .room-compact-content { display: none; align-items: center; width: 100%; gap: 12px; font-size: 15px; font-weight: 600; position: relative; z-index: 1; }
+        .room-compact .room-compact-content { display: flex; }
+        .room-compact-content > ha-icon { --mdc-icon-size: 24px; flex: 0 0 24px; }
+        .room-compact-content .room-compact-chevron { margin-left: auto; opacity: .6; --mdc-icon-size: 20px; }
       </style>
 
       <ha-card>
@@ -17633,6 +17641,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="rows">
+              <label class="row"><span class="copy"><span class="name">Hauptdashboard</span><span class="desc">Raumbilder oder kompakte Raumbuttons anzeigen.</span></span><select class="home-dashboard-layout-select" aria-label="Hauptdashboard-Ansicht"><option value="standard" ${this._config.home_dashboard_layout !== "compact" ? "selected" : ""}>Standard</option><option value="compact" ${this._config.home_dashboard_layout === "compact" ? "selected" : ""}>Kompakt</option></select></label>
               <label class="row">
                 <span class="copy">
                   <span class="name">Zeitpläne</span>
@@ -18437,6 +18446,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         this._endEntityVisibilityInteraction();
       });
     }
+
+    this.shadowRoot.querySelector(".home-dashboard-layout-select")?.addEventListener("change", (event) => {
+      this._fireConfigChanged({ ...this._config, home_dashboard_layout: event.currentTarget.value === "compact" ? "compact" : "standard" });
+    });
 
     for (const input of this.shadowRoot.querySelectorAll(".setting-toggle")) {
       input.addEventListener("change", (event) => {
