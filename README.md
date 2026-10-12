@@ -11,9 +11,9 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.405.0**
+Version **0.406.0**
 
-Neu in v0.405.0: Verbesserte Klima-/Thermostat-Popups mit HVAC-Modusmenü, Lüfterauswahl und korrigierter Scroll-Steuerung.
+Neu in v0.406.0: Zurück-Wischgeste mit eingeblendetem Pfeil und dynamischem Blur-Effekt während der Geste.
 
 Enthalten sind unter anderem:
 
@@ -226,6 +226,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.406.0
+
+- Zurück-Wischgeste zeigt während der Bewegung einen Pfeil am linken Bildschirmrand.
+- Dynamische Hintergrundunschärfe bis 6 px als Gesten-Feedback, ohne die Home-Assistant-Ansicht zu verschieben.
+- Permanenten Zurück-Button zugunsten der platzsparenden Gestenanzeige verworfen.
+
 ## v0.404.0
 
 - Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
@@ -239,11 +245,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Raum-Sicherheitssensoren als eigene Atze-Karten mit 56 px Höhe, Glasoptik und zweispaltigem Layout.
 - Sensor-Detailansichten und Statusanzeigen bleiben erhalten.
 
-## v0.402.0
-
-- Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.
-- Sicherheitsabfrage vor dem Zurücksetzen; andere Entitätseinstellungen, Favoriten und Raumreihenfolge bleiben erhalten.
-- Erleichtert das Bereinigen veralteter Sichtbarkeitsregeln, beispielsweise aus früheren Template-Konfigurationen.
 <!-- latest-changes:end -->
 
 ## Lizenz
