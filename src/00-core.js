@@ -1132,6 +1132,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     swipeSurface: null,
     surfaceSnapshot: null,
     animationTimer: null,
+    gestureTimeout: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1151,6 +1152,10 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   };
 
   const resetGesture = ({ restore = true } = {}) => {
+    if (state.gestureTimeout) {
+      window.clearTimeout(state.gestureTimeout);
+      state.gestureTimeout = null;
+    }
     if (
       restore &&
       state.swipeSurface &&
@@ -1335,6 +1340,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.startY = startY;
     state.startedAt = performance.now();
     state.horizontalLocked = false;
+    // Recover if iOS/WebKit drops touchend or touchcancel.
+    state.gestureTimeout = window.setTimeout(() => resetGesture(), 2500);
   };
 
   state.onTouchMove = (event) => {
@@ -1488,6 +1495,12 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.onClick,
     { capture: true }
   );
+
+  // A route change can interrupt an active touch sequence in Home Assistant.
+  state.onRouteChange = () => resetGesture();
+  window.addEventListener("location-changed", state.onRouteChange);
+  window.addEventListener("popstate", state.onRouteChange);
+  window.addEventListener("pageshow", state.onRouteChange);
 
   window[ATZE_HOME_SWIPE_STATE_KEY] = state;
 
