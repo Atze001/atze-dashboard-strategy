@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6004F3E";
+const ATZE_TESTING_REVISION = "7A78830";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7262,7 +7262,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
-    this._bedroomQuickOpen = false;
     this._hiddenRoomIds = [];
   }
 
@@ -9244,17 +9243,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
             }
 
             <div class="room-shade"></div>
-            ${room.area_id === "schlafzimmer" ? `
-              <button type="button" class="room-quick-trigger" ${this._bedroomQuickOpen ? "hidden" : ""} aria-label="Schlafzimmer Quicksteuerung öffnen" title="Quicksteuerung"><ha-icon icon="mdi:tune-variant"></ha-icon></button>
-              <div class="room-quick-panel" ${this._bedroomQuickOpen ? "" : "hidden"}>
-                <div class="room-quick-heading"><span>Schlafzimmer</span><button type="button" class="room-quick-close" aria-label="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
-                <div class="room-quick-controls">
-                  <button type="button" data-quick-domain="light" aria-label="Lichtsteuerung" title="Licht"><ha-icon icon="mdi:lightbulb"></ha-icon></button>
-                  <button type="button" data-quick-domain="cover" aria-label="Rollladensteuerung" title="Rollladen"><ha-icon icon="mdi:window-shutter"></ha-icon></button>
-                  <button type="button" data-quick-domain="climate" aria-label="Heizungssteuerung" title="Heizung"><ha-icon icon="mdi:thermostat"></ha-icon></button>
-                </div>
-              </div>
-            ` : ""}
 
             ${
               room.smoke_entity
@@ -10176,18 +10164,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           -webkit-user-select: none;
         }
 
-        .room-quick-trigger { position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:5;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(25,30,38,.65);backdrop-filter:blur(12px);color:white;display:grid;place-items:center;cursor:pointer; }
-        .room-quick-trigger[hidden] { display:none!important; }
-        .room-quick-trigger ha-icon { --mdc-icon-size:21px; }
-        .room-quick-panel[hidden] { display:none!important; }
-        .room-quick-panel { position:absolute;inset:0;z-index:6;padding:15px;background:rgba(13,19,27,.88);backdrop-filter:blur(15px);display:flex;flex-direction:column;gap:12px;cursor:default; }
-        .room-quick-heading { display:flex;align-items:center;justify-content:space-between;font-weight:650;font-size:14px; }
-        .room-quick-close { border:0;background:rgba(255,255,255,.12);border-radius:50%;color:white;width:30px;height:30px;display:grid;place-items:center; }
-        .room-quick-close ha-icon { --mdc-icon-size:18px; }
-        .room-quick-controls { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;flex:1; }
-        .room-quick-controls button { min-width:0;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(255,255,255,.12);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;cursor:pointer; }
-        .room-quick-controls ha-icon { --mdc-icon-size:22px; }
-        .room-quick-panel ~ .room-bottom { pointer-events:none; }
         .room.dragging { opacity:.45; }
         .room.drag-over { outline:2px solid var(--primary-color,#03a9f4); border-radius:14px; }
 
@@ -11278,25 +11254,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           });
         });
 
-        if (room?.area_id === "schlafzimmer") {
-          const panel = element.querySelector(".room-quick-panel");
-          const toggle = (open) => { this._bedroomQuickOpen = open; panel.hidden = !open; element.querySelector(".room-quick-trigger").hidden = open; };
-          element.querySelector(".room-quick-trigger")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); toggle(true); });
-          element.querySelector(".room-quick-close")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); toggle(false); });
-          panel?.addEventListener("click", (event) => { event.stopPropagation(); });
-          panel?.querySelectorAll("[data-quick-domain]").forEach((button) => button.addEventListener("click", (event) => {
-            event.preventDefault(); event.stopPropagation();
-            const domain = button.dataset.quickDomain;
-            const entity = domain === "light"
-              ? (room.light_entities || []).find((id) => this._state(id))
-              : domain === "cover"
-                ? [room.cover_entity, room.roller_sensor_entity].find((id) => id?.startsWith("cover.") && this._state(id))
-                : ["climate.schlafzimmer_thermostat", ...(room.climate_entities || [])].find((id) => this._state(id));
-            if (entity) { toggle(false); this._moreInfo(entity); }
-          }));
-        }
         element.addEventListener("click", (event) => {
-          if (event.target?.closest?.(".room-history-trigger, .room-quick-trigger, .room-quick-panel")) return;
+          if (event.target?.closest?.(".room-history-trigger")) return;
           this._navigate(element.dataset.path);
         });
 
