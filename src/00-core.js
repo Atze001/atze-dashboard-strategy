@@ -1137,6 +1137,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     fadeOverlay: null,
     fadeTimer: null,
     gestureIndicator: null,
+    gestureBlurOverlay: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1196,7 +1197,23 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       document.body.appendChild(indicator);
       state.gestureIndicator = indicator;
     }
+    if (!state.gestureBlurOverlay) {
+      const blurOverlay = document.createElement("div");
+      blurOverlay.setAttribute("aria-hidden", "true");
+      blurOverlay.style.cssText = [
+        "position:fixed", "inset:0", "pointer-events:none",
+        "z-index:2147483645", "backdrop-filter:blur(0px)",
+        "-webkit-backdrop-filter:blur(0px)",
+        "background:rgba(0,0,0,0)",
+        "transition:backdrop-filter 80ms linear, -webkit-backdrop-filter 80ms linear"
+      ].join(";");
+      document.body.appendChild(blurOverlay);
+      state.gestureBlurOverlay = blurOverlay;
+    }
     const p = Math.max(0, Math.min(1, progress));
+    const blur = (p * 6).toFixed(1);
+    state.gestureBlurOverlay.style.backdropFilter = `blur(${blur}px)`;
+    state.gestureBlurOverlay.style.webkitBackdropFilter = `blur(${blur}px)`;
     state.gestureIndicator.style.opacity = String(Math.min(1, p * 1.5));
     state.gestureIndicator.style.transform =
       `translate(${-28 + 28 * p}px,-50%) scale(${0.85 + 0.15 * p})`;
@@ -1205,6 +1222,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   const hideGestureIndicator = () => {
     state.gestureIndicator?.remove();
     state.gestureIndicator = null;
+    state.gestureBlurOverlay?.remove();
+    state.gestureBlurOverlay = null;
   };
 
   const clearFadeOverlay = () => {
