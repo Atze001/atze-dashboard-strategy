@@ -5840,6 +5840,7 @@ function buildHomeOverviewView(
   const homeCard = {
     type: "custom:atze-home-overview-card",
     thermostat_room_popups: homeThermostatPopups,
+    bedroom_popup_view: config.bedroom_popup_view || null,
     title: config.home_title || "Zuhause",
     subtitle:
       config.home_subtitle === false
@@ -7168,7 +7169,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
+              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null, bedroom_popup_view: roomViews.find((view) => filteredAreas.some((area) => area.area_id === "schlafzimmer" && view.path === (getOverride(config.area_overrides, area.area_id).path || slugify(getOverride(config.area_overrides, area.area_id).name || area.name || area.area_id)))) || null },
               popupMap,
               areaById,
               securityEntityIds,
