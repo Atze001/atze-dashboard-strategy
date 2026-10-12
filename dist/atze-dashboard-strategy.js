@@ -1133,6 +1133,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surfaceSnapshot: null,
     animationTimer: null,
     gestureTimeout: null,
+    pendingRestores: new Map(),
   };
 
   const clearAnimationTimer = () => {
@@ -1149,6 +1150,28 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surface.style.transform = snapshot.transform;
     surface.style.willChange = snapshot.willChange;
     surface.style.boxShadow = snapshot.boxShadow;
+  };
+
+  const queueRestore = (surface, snapshot, delay) => {
+    if (!surface || !snapshot) return;
+    const previous = state.pendingRestores.get(surface);
+    if (previous) window.clearTimeout(previous);
+    const timer = window.setTimeout(() => {
+      state.pendingRestores.delete(surface);
+      restoreSurface(surface, snapshot);
+      delete surface.__atzeSwipeSnapshot;
+    }, delay);
+    state.pendingRestores.set(surface, timer);
+  };
+
+  const restorePendingSurfaces = () => {
+    for (const [surface, timer] of state.pendingRestores) {
+      window.clearTimeout(timer);
+      const snapshot = surface.__atzeSwipeSnapshot;
+      restoreSurface(surface, snapshot);
+      delete surface.__atzeSwipeSnapshot;
+    }
+    state.pendingRestores.clear();
   };
 
   const resetGesture = ({ restore = true } = {}) => {
@@ -1217,6 +1240,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       boxShadow: surface.style.boxShadow,
     };
 
+    surface.__atzeSwipeSnapshot = state.surfaceSnapshot;
     surface.style.transition = "none";
     surface.style.willChange = "transform";
     surface.style.boxShadow =
@@ -1240,10 +1264,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     surface.style.boxShadow =
       "0 0 0 rgba(0,0,0,0)";
 
-    state.animationTimer = window.setTimeout(() => {
-      restoreSurface(surface, snapshot);
-      state.animationTimer = null;
-    }, 210);
+    queueRestore(surface, snapshot, 230);
 
     resetGesture({ restore: false });
   };
@@ -1284,14 +1305,12 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
         state.homeTarget
       );
 
-      window.setTimeout(() => {
-        restoreSurface(surface, snapshot);
-      }, 80);
+      queueRestore(surface, snapshot, 80);
     };
 
     surface.addEventListener(
       "transitionend",
-      finish,
+      (event) => { if (event.target === surface && event.propertyName === "transform") finish(); },
       { once: true }
     );
 
@@ -1497,7 +1516,10 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   );
 
   // A route change can interrupt an active touch sequence in Home Assistant.
-  state.onRouteChange = () => resetGesture();
+  state.onRouteChange = () => {
+    resetGesture();
+    restorePendingSurfaces();
+  };
   window.addEventListener("location-changed", state.onRouteChange);
   window.addEventListener("popstate", state.onRouteChange);
   window.addEventListener("pageshow", state.onRouteChange);
