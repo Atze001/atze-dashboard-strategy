@@ -1188,7 +1188,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     // An independent fixed overlay fades the screen without modifying the HA view.
     const overlay = document.createElement("div");
     overlay.setAttribute("aria-hidden", "true");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:var(--primary-background-color,#111827);opacity:0;transition:opacity 110ms ease";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:var(--primary-background-color,#111827);opacity:0;transition:opacity 300ms ease-in-out";
     document.body.appendChild(overlay);
     state.fadeOverlay = overlay;
     requestAnimationFrame(() => {
@@ -1197,10 +1197,10 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     });
     state.fadeTimer = window.setTimeout(() => {
       atzeNavigateToDashboardPath(state.homeTarget);
-      overlay.style.transition = "opacity 180ms ease";
+      overlay.style.transition = "opacity 380ms ease-in-out";
       overlay.style.opacity = "0";
-      state.fadeTimer = window.setTimeout(() => clearFadeOverlay(), 220);
-    }, 130);
+      state.fadeTimer = window.setTimeout(() => clearFadeOverlay(), 420);
+    }, 320);
   };
 
   const resetGesture = ({ restore = true } = {}) => {
