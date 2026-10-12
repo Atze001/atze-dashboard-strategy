@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "F5C9EE9";
+const ATZE_TESTING_REVISION = "EC8414E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -1403,24 +1403,9 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       }
     }
 
-    const surface =
-      prepareSurface(event);
+    // Diagnostic test: recognize horizontal swipe without translating the HA view.
+    // No preventDefault here: the experiment isolates our CSS transforms.
 
-    if (!surface) {
-      resetGesture();
-      return;
-    }
-
-    event.preventDefault();
-
-    const distance = Math.max(0, dx);
-    const viewportWidth =
-      Math.max(window.innerWidth || 0, 320);
-    const cappedDistance =
-      Math.min(distance, viewportWidth * 0.92);
-
-    surface.style.transform =
-      `translate3d(${cappedDistance}px,0,0)`;
   };
 
   state.onTouchEnd = (event) => {
@@ -1462,14 +1447,13 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     }
 
     if (isRightSwipe) {
-      animateOutAndNavigate(
-        surface,
-        snapshot
-      );
+      resetGesture();
+      state.suppressClickUntil = performance.now() + 500;
+      atzeNavigateToDashboardPath(state.homeTarget);
       return;
     }
 
-    animateBack(surface, snapshot);
+    resetGesture();
   };
 
   state.onTouchCancel = () => {
