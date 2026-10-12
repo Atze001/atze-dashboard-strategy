@@ -1134,7 +1134,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     animationTimer: null,
     gestureTimeout: null,
     pendingRestores: new Map(),
-    edgeIndicator: null,
+    fadeOverlay: null,
+    fadeTimer: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1175,28 +1176,34 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.pendingRestores.clear();
   };
 
-  const hideEdgeIndicator = () => {
-    state.edgeIndicator?.remove();
-    state.edgeIndicator = null;
+  const clearFadeOverlay = () => {
+    if (state.fadeTimer) window.clearTimeout(state.fadeTimer);
+    state.fadeTimer = null;
+    state.fadeOverlay?.remove();
+    state.fadeOverlay = null;
   };
 
-  const updateEdgeIndicator = (distance) => {
-    if (!state.edgeIndicator) {
-      const indicator = document.createElement("div");
-      indicator.setAttribute("aria-hidden", "true");
-      indicator.style.cssText = "position:fixed;left:12px;top:50%;width:52px;height:52px;border-radius:18px;background:rgba(37,44,58,.75);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:white;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.24);pointer-events:none;z-index:2147483647;opacity:0;transition:opacity 100ms ease,background 100ms ease;transform:translate3d(0,-50%,0)";
-      indicator.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5m7-7-7 7 7 7"/></svg>';
-      document.body.appendChild(indicator);
-      state.edgeIndicator = indicator;
-    }
-    const progress = Math.min(Math.max(distance / ATZE_HOME_SWIPE_MIN_DISTANCE, 0), 1);
-    state.edgeIndicator.style.opacity = String(Math.min(.35 + progress * .65, 1));
-    state.edgeIndicator.style.left = `${12 + progress * 20}px`;
-    state.edgeIndicator.style.background = progress >= 1 ? "rgba(34,125,94,.88)" : "rgba(37,44,58,.75)";
+  const fadeToHome = () => {
+    clearFadeOverlay();
+    // An independent fixed overlay fades the screen without modifying the HA view.
+    const overlay = document.createElement("div");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:var(--primary-background-color,#111827);opacity:0;transition:opacity 110ms ease";
+    document.body.appendChild(overlay);
+    state.fadeOverlay = overlay;
+    requestAnimationFrame(() => {
+      if (state.fadeOverlay !== overlay) return;
+      overlay.style.opacity = "1";
+    });
+    state.fadeTimer = window.setTimeout(() => {
+      atzeNavigateToDashboardPath(state.homeTarget);
+      overlay.style.transition = "opacity 180ms ease";
+      overlay.style.opacity = "0";
+      state.fadeTimer = window.setTimeout(() => clearFadeOverlay(), 220);
+    }, 130);
   };
 
   const resetGesture = ({ restore = true } = {}) => {
-    hideEdgeIndicator();
     if (state.gestureTimeout) {
       window.clearTimeout(state.gestureTimeout);
       state.gestureTimeout = null;
@@ -1426,7 +1433,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     }
 
     // Visual feedback lives in an independent overlay; never transform the HA view.
-    updateEdgeIndicator(dx);
+    // Fade feedback is shown only after the completed swipe.
 
   };
 
@@ -1471,7 +1478,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     if (isRightSwipe) {
       resetGesture();
       state.suppressClickUntil = performance.now() + 500;
-      atzeNavigateToDashboardPath(state.homeTarget);
+      fadeToHome();
       return;
     }
 
@@ -1520,6 +1527,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   state.onRouteChange = () => {
     resetGesture();
     restorePendingSurfaces();
+    // Do not cancel the fade here: navigation fires during its animation.
   };
   window.addEventListener("location-changed", state.onRouteChange);
   window.addEventListener("popstate", state.onRouteChange);
