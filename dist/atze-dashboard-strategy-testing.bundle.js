@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1FD427A";
+const ATZE_TESTING_REVISION = "3A5AE93";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11063,14 +11063,20 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
-    // Keep the original room popup cards alive on Home, so their hash listeners
-    // can open them above the thermostat overview without changing room views.
-    for (const popupConfig of this._config.thermostat_room_popups || []) {
-      const tag = ATZE_TESTING_BUILD ? "atze-popup-card-testing" : "atze-popup-card";
-      const popup = document.createElement(tag);
-      popup.setConfig(popupConfig);
-      popup.hass = this._hass;
-      this.shadowRoot.appendChild(popup);
+    // Mount the actual room thermostat controls, not the generic device-popup card.
+    // The native thermostat service dialog is rendered inside each control.
+    this._homeThermostatCards = new Map();
+    for (const entityId of this._homeThermostatEntities()) {
+      const tag = ATZE_TESTING_BUILD ? "atze-thermostat-card-testing" : "atze-thermostat-card";
+      const card = document.createElement(tag);
+      card.setConfig({ entity: entityId });
+      card.hass = this._hass;
+      card.style.cssText = "position:absolute;width:0;height:0;overflow:visible;pointer-events:none;";
+      const layer = document.createElement("style");
+      layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+      card.shadowRoot?.appendChild(layer);
+      this.shadowRoot.appendChild(card);
+      this._homeThermostatCards.set(entityId, card);
     }
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
@@ -11579,10 +11585,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-group-more-info]").forEach((button) => button.addEventListener("click", () => {
       const entityId = button.dataset.groupMoreInfo;
       if (this._groupControlPopup === "thermostats" && entityId?.startsWith("climate.")) {
-        // Experiment: open the same strategy popup hash used by room climate cards.
-        // Keep the home thermostat overview mounted underneath.
-        const hash = "#atze-" + entityId.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-settings";
-        if (window.location.hash !== hash) window.location.hash = hash;
+        const card = this._homeThermostatCards?.get(entityId);
+        if (card) {
+          card._openService();
+          // The thermostat card rerenders its shadow root when opening.
+          const layer = document.createElement("style");
+          layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+          card.shadowRoot?.appendChild(layer);
+          return;
+        }
+        this._moreInfo(entityId);
         return;
       }
       this._moreInfo(entityId);
