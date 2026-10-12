@@ -9218,7 +9218,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
-            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><span>${this._escapeHtml(room.name || "Raum")}</span><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -10802,6 +10802,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .room-compact > :not(.room-compact-content) { display: none !important; }
         .room-compact-content { display: none; align-items: center; width: 100%; gap: 12px; font-size: 15px; font-weight: 600; position: relative; z-index: 1; }
         .room-compact .room-compact-content { display: flex; }
+        .room-compact-label { display:flex; flex-direction:column; min-width:0; gap:3px; }
+        .room-compact-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .room-compact-climate { display:flex; align-items:center; flex-wrap:wrap; gap:12px; font-size:12px; font-weight:400; opacity:.82; line-height:1.2; }
+        .room-compact-climate > span { display:inline-flex; align-items:center; gap:3px; }
+        .room-compact-climate ha-icon { --mdc-icon-size:14px; width:14px; height:14px; }
         .room-compact-content > ha-icon { --mdc-icon-size: 24px; flex: 0 0 24px; }
         .room-compact-content .room-compact-chevron { margin-left: auto; opacity: .6; --mdc-icon-size: 20px; }
       </style>
