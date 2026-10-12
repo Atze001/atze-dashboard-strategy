@@ -1682,18 +1682,41 @@ class AtzeThermostatCard extends HTMLElement {
   _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
   _lockScroll() {
     if (this._scrollCleanup) return;
-    const prevent = (event) => {
+    let lastY = null;
+    const dialogFor = event => (event.composedPath?.() || []).find(
+      node => node instanceof Element && node.classList?.contains("service-dialog")
+    );
+    const onStart = event => { lastY = event.touches?.[0]?.clientY ?? null; };
+    const prevent = event => {
       if (!this._serviceOpen) return;
-      // Shadow DOM retargets event.target to the host at document level.
-      // Use the composed path so touches inside the actual popup can scroll.
-      const insideDialog = (event.composedPath?.() || []).some(
-        node => node instanceof Element && node.classList?.contains("service-dialog")
-      );
-      if (!insideDialog && event.cancelable) event.preventDefault();
+      const dialog = dialogFor(event);
+      if (!dialog) {
+        if (event.cancelable) event.preventDefault();
+        return;
+      }
+      const maxScroll = dialog.scrollHeight - dialog.clientHeight;
+      const y = event.touches?.[0]?.clientY;
+      const delta = y != null && lastY != null ? lastY - y : 0;
+      if (y != null) lastY = y;
+      // Stop iOS scroll chaining when a short popup cannot scroll, or its edge is reached.
+      const atEdge = maxScroll <= 1 ||
+        (delta < 0 && dialog.scrollTop <= 0) ||
+        (delta > 0 && dialog.scrollTop >= maxScroll - 1);
+      if (atEdge && event.cancelable) event.preventDefault();
     };
+    const onEnd = () => { lastY = null; };
+    document.addEventListener("touchstart", onStart, { passive:true });
     document.addEventListener("touchmove", prevent, { passive:false });
+    document.addEventListener("touchend", onEnd, { passive:true });
+    document.addEventListener("touchcancel", onEnd, { passive:true });
     document.addEventListener("wheel", prevent, { passive:false });
-    this._scrollCleanup = () => { document.removeEventListener("touchmove", prevent); document.removeEventListener("wheel", prevent); };
+    this._scrollCleanup = () => {
+      document.removeEventListener("touchstart", onStart);
+      document.removeEventListener("touchmove", prevent);
+      document.removeEventListener("touchend", onEnd);
+      document.removeEventListener("touchcancel", onEnd);
+      document.removeEventListener("wheel", prevent);
+    };
   }
   _closeService() { this._serviceOpen = false; this._scrollCleanup?.(); this._scrollCleanup = null; this._render(); }
   disconnectedCallback() { this._scrollCleanup?.(); this._scrollCleanup = null; }
@@ -1755,7 +1778,7 @@ class AtzeThermostatCard extends HTMLElement {
         button { appearance:none; cursor:pointer; font:inherit; color:inherit; }
         .settings ha-icon { --mdc-icon-size:23px; }
         .thermometer:disabled { opacity:.4; cursor:default; }
-        .service-backdrop { position:fixed; inset:0; z-index:1000; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
+        .service-backdrop { position:fixed; inset:0; z-index:1000; overscroll-behavior:contain; touch-action:none; display:flex; justify-content:center; align-items:center; padding:18px; box-sizing:border-box; background:rgba(0,0,0,.65); }
         .service-dialog { width:min(430px,100%); max-height:min(85vh, calc(100dvh - 36px)); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; padding:20px; box-sizing:border-box; border-radius:20px; background:var(--card-background-color,#242429); border:1px solid var(--divider-color); }
         .service-dialog header { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; margin-bottom:16px; }
         .service-dialog header ha-icon { color:#64d2ff; }
