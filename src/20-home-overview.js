@@ -3827,6 +3827,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
+    // Keep the original room popup cards alive on Home, so their hash listeners
+    // can open them above the thermostat overview without changing room views.
+    for (const popupConfig of this._config.thermostat_room_popups || []) {
+      const tag = ATZE_TESTING_BUILD ? "atze-popup-card-testing" : "atze-popup-card";
+      const popup = document.createElement(tag);
+      popup.setConfig(popupConfig);
+      popup.hass = this._hass;
+      this.shadowRoot.appendChild(popup);
+    }
     if (this._schedulerPopupOpen) this._mountSchedulerCard();
     const newPresenceScroll = this.shadowRoot.querySelector(".presence-history-popup");
     const newPresenceList = this.shadowRoot.querySelector(".presence-event-list");
