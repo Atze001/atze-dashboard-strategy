@@ -15610,6 +15610,45 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     );
   }
 
+  _exportDashboardBackup() {
+    const backup = {
+      format: "atze-dashboard-config",
+      schema_version: 1,
+      exported_at: new Date().toISOString(),
+      config: JSON.parse(JSON.stringify(this._config)),
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "atze-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async _importDashboardBackup(file) {
+    if (!file) return;
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error("Datei ist zu groß (maximal 2 MB).");
+      const parsed = JSON.parse(await file.text());
+      if (!parsed || parsed.format !== "atze-dashboard-config" || parsed.schema_version !== 1 ||
+          !parsed.config || typeof parsed.config !== "object" || Array.isArray(parsed.config)) {
+        throw new Error("Keine gültige Atze-Dashboard-Sicherungsdatei.");
+      }
+      const config = parsed.config;
+      if (Object.keys(config).some((key) => ["__proto__", "prototype", "constructor"].includes(key))) {
+        throw new Error("Ungültige Konfigurationsschlüssel.");
+      }
+      if (!window.confirm("Die aktuelle Dashboard-Konfiguration wird vollständig durch die Sicherung ersetzt. Fortfahren?")) return;
+      this._fireConfigChanged(JSON.parse(JSON.stringify(config)));
+      window.alert("Konfiguration übernommen. Bitte Dashboard-Einstellungen speichern, falls Home Assistant dies verlangt.");
+    } catch (error) {
+      window.alert("Import fehlgeschlagen: " + (error?.message || String(error)));
+    }
+  }
+
   _setArea(areaId, checked) {
     const selected = this._selectedAreaIds();
 
@@ -17943,6 +17982,23 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             </div>
           </div>
         </details>
+        <details class="panel editor-section" data-editor-section="backup" ${this._openEditorSections.has("backup") ? "open" : ""}>
+          <summary>
+            <span class="editor-section-summary-main">
+              <ha-icon icon="mdi:backup-restore"></ha-icon>
+              <span class="editor-section-summary-title">Sichern & Wiederherstellen</span>
+            </span>
+            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
+          </summary>
+          <div class="editor-section-body">
+            <div class="editor-section-help">Sichere deine Dashboard-Einstellungen einschließlich Raumreihenfolge, Favoriten, eigener Seiten und Drag-&-Drop-Anordnung als JSON-Datei. Beim Import wird die aktuelle Konfiguration ersetzt.</div>
+            <div class="toolbar">
+              <button id="atze-backup-export" type="button"><ha-icon icon="mdi:download"></ha-icon> Konfiguration exportieren</button>
+              <button id="atze-backup-import" type="button"><ha-icon icon="mdi:upload"></ha-icon> Konfiguration importieren</button>
+              <input id="atze-backup-file" type="file" accept=".json,application/json" style="display:none" />
+            </div>
+          </div>
+        </details>
       </div>
     `;
 
@@ -17968,6 +18024,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         }
       );
     }
+
+    this.shadowRoot.querySelector("#atze-backup-export")
+      ?.addEventListener("click", () => this._exportDashboardBackup());
+    this.shadowRoot.querySelector("#atze-backup-import")
+      ?.addEventListener("click", () => this.shadowRoot.querySelector("#atze-backup-file")?.click());
+    this.shadowRoot.querySelector("#atze-backup-file")
+      ?.addEventListener("change", async (event) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        await this._importDashboardBackup(file);
+        if (input.isConnected) input.value = "";
+      });
 
     this.shadowRoot
       .querySelector("#select-all")
