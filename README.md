@@ -11,9 +11,9 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.405.0**
+Version **0.406.0**
 
-Neu in v0.405.0: Verbesserte Klima-/Thermostat-Popups mit HVAC-Modusmenü, Lüfterauswahl und korrigierter Scroll-Steuerung.
+Neu in v0.406.0: Zurück-Wischgeste mit eingeblendetem Pfeil und dynamischem Blur-Effekt während der Geste.
 
 Enthalten sind unter anderem:
 

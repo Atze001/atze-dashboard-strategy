@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.405.0";
+const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "F750881";
+const ATZE_TESTING_REVISION = "FAF5B0A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -1136,6 +1136,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     pendingRestores: new Map(),
     fadeOverlay: null,
     fadeTimer: null,
+    gestureIndicator: null,
+    gestureBlurOverlay: null,
   };
 
   const clearAnimationTimer = () => {
@@ -1174,6 +1176,54 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       delete surface.__atzeSwipeSnapshot;
     }
     state.pendingRestores.clear();
+  };
+
+  const showGestureIndicator = (progress) => {
+    if (!state.gestureIndicator) {
+      const indicator = document.createElement("div");
+      indicator.setAttribute("aria-hidden", "true");
+      indicator.innerHTML = '<ha-icon icon="mdi:arrow-left"></ha-icon>';
+      indicator.style.cssText = [
+        "position:fixed", "left:18px", "top:50%",
+        "width:48px", "height:48px", "border-radius:50%",
+        "display:flex", "align-items:center", "justify-content:center",
+        "background:color-mix(in srgb, var(--primary-color, #03a9f4) 60%, transparent)",
+        "color:var(--text-primary-color, #fff)",
+        "box-shadow:0 6px 20px rgba(0,0,0,.28)",
+        "pointer-events:none", "z-index:2147483646",
+        "opacity:0", "transform:translate(-28px,-50%) scale(.85)",
+        "transition:opacity 100ms ease, transform 100ms ease"
+      ].join(";");
+      document.body.appendChild(indicator);
+      state.gestureIndicator = indicator;
+    }
+    if (!state.gestureBlurOverlay) {
+      const blurOverlay = document.createElement("div");
+      blurOverlay.setAttribute("aria-hidden", "true");
+      blurOverlay.style.cssText = [
+        "position:fixed", "inset:0", "pointer-events:none",
+        "z-index:2147483645", "backdrop-filter:blur(0px)",
+        "-webkit-backdrop-filter:blur(0px)",
+        "background:rgba(0,0,0,0)",
+        "transition:backdrop-filter 80ms linear, -webkit-backdrop-filter 80ms linear"
+      ].join(";");
+      document.body.appendChild(blurOverlay);
+      state.gestureBlurOverlay = blurOverlay;
+    }
+    const p = Math.max(0, Math.min(1, progress));
+    const blur = (p * 6).toFixed(1);
+    state.gestureBlurOverlay.style.backdropFilter = `blur(${blur}px)`;
+    state.gestureBlurOverlay.style.webkitBackdropFilter = `blur(${blur}px)`;
+    state.gestureIndicator.style.opacity = String(Math.min(1, p * 1.5));
+    state.gestureIndicator.style.transform =
+      `translate(${-28 + 28 * p}px,-50%) scale(${0.85 + 0.15 * p})`;
+  };
+
+  const hideGestureIndicator = () => {
+    state.gestureIndicator?.remove();
+    state.gestureIndicator = null;
+    state.gestureBlurOverlay?.remove();
+    state.gestureBlurOverlay = null;
   };
 
   const clearFadeOverlay = () => {
@@ -1224,6 +1274,7 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
     state.startY = 0;
     state.startedAt = 0;
     state.horizontalLocked = false;
+    hideGestureIndicator();
     state.swipeSurface = null;
     state.surfaceSnapshot = null;
   };
@@ -1432,8 +1483,8 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
       }
     }
 
-    // Visual feedback lives in an independent overlay; never transform the HA view.
-    // Fade feedback is shown only after the completed swipe.
+    // Show progress without shifting the Home Assistant view.
+    showGestureIndicator(dx / ATZE_HOME_SWIPE_MIN_DISTANCE);
 
   };
 
