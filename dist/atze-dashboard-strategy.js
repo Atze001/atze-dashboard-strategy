@@ -2711,6 +2711,7 @@ function buildEntityCard(
       type: domainOf(entityId) === "lock" ? (ATZE_TESTING_BUILD ? "custom:atze-lock-card-testing" : "custom:atze-lock-card") : ["automation", "scene", "script"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-action-card-testing" : "custom:atze-action-card") : ["switch", "input_boolean"].includes(domainOf(entityId)) ? (ATZE_TESTING_BUILD ? "custom:atze-switch-card-testing" : "custom:atze-switch-card") : domainOf(entityId) === "media_player" ? (ATZE_TESTING_BUILD ? "custom:atze-media-card-testing" : "custom:atze-media-card") : domainOf(entityId) === "climate" ? (ATZE_TESTING_BUILD ? "custom:atze-thermostat-card-testing" : "custom:atze-thermostat-card") : domainOf(entityId) === "fan" ? (ATZE_TESTING_BUILD ? "custom:atze-fan-card-testing" : "custom:atze-fan-card") : (ATZE_TESTING_BUILD ? "custom:atze-entity-card-testing" : "custom:atze-entity-card"),
       entity: entityId,
       name: displayName(hass, entity, config, area),
+      ...(domainOf(entityId) === "switch" && options.powerEntityId ? { power_entity: options.powerEntityId } : {}),
       icon: domainOf(entityId) === "cover" ? "mdi:window-shutter" : (entityIcon(hass, entityId, entity) || "mdi:lightbulb"),
     };
   }
@@ -15185,7 +15186,14 @@ class AtzeSwitchCard extends HTMLElement {
       </ha-card>`;
     this.shadowRoot.querySelector(".control ha-icon").setAttribute("icon",icon);
     this.shadowRoot.querySelector(".name").textContent=name;
-    this.shadowRoot.querySelector(".status").textContent=!available?"Nicht verfügbar":active?"Ein":"Aus";
+    const powerState=this._config.power_entity ? this._hass?.states?.[this._config.power_entity] : null;
+    const watts=powerState ? Number(powerState.state) : NaN;
+    const unit=String(powerState?.attributes?.unit_of_measurement||"W").trim();
+    const factor=unit==="kW"?1000:unit==="mW"?0.001:unit==="W"?1:null;
+    const powerText=active && factor!==null && Number.isFinite(watts) && powerState?.state!=="unknown" && powerState?.state!=="unavailable"
+      ? " · "+new Intl.NumberFormat("de-DE",{maximumFractionDigits:1,minimumFractionDigits:1}).format(watts*factor)+" W"
+      : "";
+    this.shadowRoot.querySelector(".status").textContent=!available?"Nicht verfügbar":active?"Ein"+powerText:"Aus";
     const control=this.shadowRoot.querySelector(".control");
     control.disabled=!available;
     control.addEventListener("click",()=>this._toggle());
