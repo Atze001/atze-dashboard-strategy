@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "60808FB";
+const ATZE_TESTING_REVISION = "6004F3E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7262,6 +7262,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecast = [];
     this._weatherForecastLoading = false;
     this._roomDrag = null;
+    this._bedroomQuickOpen = false;
     this._hiddenRoomIds = [];
   }
 
@@ -9244,8 +9245,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
             <div class="room-shade"></div>
             ${room.area_id === "schlafzimmer" ? `
-              <button type="button" class="room-quick-trigger" aria-label="Schlafzimmer Quicksteuerung öffnen" title="Quicksteuerung"><ha-icon icon="mdi:tune-variant"></ha-icon></button>
-              <div class="room-quick-panel" hidden>
+              <button type="button" class="room-quick-trigger" ${this._bedroomQuickOpen ? "hidden" : ""} aria-label="Schlafzimmer Quicksteuerung öffnen" title="Quicksteuerung"><ha-icon icon="mdi:tune-variant"></ha-icon></button>
+              <div class="room-quick-panel" ${this._bedroomQuickOpen ? "" : "hidden"}>
                 <div class="room-quick-heading"><span>Schlafzimmer</span><button type="button" class="room-quick-close" aria-label="Schließen"><ha-icon icon="mdi:close"></ha-icon></button></div>
                 <div class="room-quick-controls">
                   <button type="button" data-quick-domain="light" aria-label="Lichtsteuerung" title="Licht"><ha-icon icon="mdi:lightbulb"></ha-icon></button>
@@ -10176,6 +10177,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .room-quick-trigger { position:absolute;left:12px;top:50%;transform:translateY(-50%);z-index:5;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(25,30,38,.65);backdrop-filter:blur(12px);color:white;display:grid;place-items:center;cursor:pointer; }
+        .room-quick-trigger[hidden] { display:none!important; }
         .room-quick-trigger ha-icon { --mdc-icon-size:21px; }
         .room-quick-panel[hidden] { display:none!important; }
         .room-quick-panel { position:absolute;inset:0;z-index:6;padding:15px;background:rgba(13,19,27,.88);backdrop-filter:blur(15px);display:flex;flex-direction:column;gap:12px;cursor:default; }
@@ -11278,7 +11280,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         if (room?.area_id === "schlafzimmer") {
           const panel = element.querySelector(".room-quick-panel");
-          const toggle = (open) => { panel.hidden = !open; element.querySelector(".room-quick-trigger").hidden = open; };
+          const toggle = (open) => { this._bedroomQuickOpen = open; panel.hidden = !open; element.querySelector(".room-quick-trigger").hidden = open; };
           element.querySelector(".room-quick-trigger")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); toggle(true); });
           element.querySelector(".room-quick-close")?.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); toggle(false); });
           panel?.addEventListener("click", (event) => { event.stopPropagation(); });
