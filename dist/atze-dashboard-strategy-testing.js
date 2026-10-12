@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FB948E2";
+const ATZE_TESTING_REVISION = "7F75828";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -14776,7 +14776,15 @@ class AtzeThermostatCard extends HTMLElement {
   _openService() { this._serviceOpen = true; this._lockScroll(); this._render(); }
   _lockScroll() {
     if (this._scrollCleanup) return;
-    const prevent = (event) => { if (this._serviceOpen && !event.target.closest?.(".service-dialog")) event.preventDefault(); };
+    const prevent = (event) => {
+      if (!this._serviceOpen) return;
+      // Shadow DOM retargets event.target to the host at document level.
+      // Use the composed path so touches inside the actual popup can scroll.
+      const insideDialog = (event.composedPath?.() || []).some(
+        node => node instanceof Element && node.classList?.contains("service-dialog")
+      );
+      if (!insideDialog && event.cancelable) event.preventDefault();
+    };
     document.addEventListener("touchmove", prevent, { passive:false });
     document.addEventListener("wheel", prevent, { passive:false });
     this._scrollCleanup = () => { document.removeEventListener("touchmove", prevent); document.removeEventListener("wheel", prevent); };
