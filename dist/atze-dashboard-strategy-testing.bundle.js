@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.404.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "808B7F9";
+const ATZE_TESTING_REVISION = "D2BDB81";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11064,9 +11064,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const statusGrid = this.shadowRoot.querySelector(".status-grid");
     const statusOrderKey = "atze-dashboard:home-status-order";
     let statusOrder = atzeLayoutValue(this._config, "home_status_order", []);
-    if (!statusOrder.length) {
-      try { statusOrder = JSON.parse(localStorage.getItem(statusOrderKey) || "[]"); } catch (_e) {}
-    }
+    try {
+      const locallySavedOrder = JSON.parse(localStorage.getItem(statusOrderKey) || "[]");
+      if (Array.isArray(locallySavedOrder) && locallySavedOrder.length) statusOrder = locallySavedOrder;
+    } catch (_e) {}
     if (statusGrid) {
       const tiles = [...statusGrid.querySelectorAll(".status[id]")];
       const ranks = new Map((Array.isArray(statusOrder) ? statusOrder : []).map((id, index) => [id, index]));
@@ -11084,6 +11085,37 @@ class AtzeHomeOverviewCard extends HTMLElement {
         try { localStorage.setItem(statusOrderKey, JSON.stringify(merged)); } catch (_e) {}
         saveAtzeStrategyLayout(this._hass, this._config, { home_status_order: merged });
       };
+      // iOS WebKit may show the native drag preview without dispatching drop.
+      // Commit the reorder on touch release using the element beneath the finger.
+      let touchStart = null;
+      let touchMoved = false;
+      statusGrid.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) return;
+        const tile = event.target.closest(".status[id]");
+        if (!tile || !statusGrid.contains(tile)) return;
+        touchStart = { tile, x: event.touches[0].clientX, y: event.touches[0].clientY, at: Date.now() };
+        touchMoved = false;
+      }, { passive: true });
+      statusGrid.addEventListener("touchmove", (event) => {
+        if (!touchStart || event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        if (Math.abs(touch.clientY - touchStart.y) > 14 || Math.abs(touch.clientX - touchStart.x) > 14) touchMoved = true;
+      }, { passive: true });
+      statusGrid.addEventListener("touchend", (event) => {
+        if (!touchStart) return;
+        const start = touchStart;
+        touchStart = null;
+        if (!touchMoved || Date.now() - start.at < 350) return;
+        const touch = event.changedTouches[0];
+        const target = this.shadowRoot.elementFromPoint(touch.clientX, touch.clientY)?.closest(".status[id]");
+        if (!target || target === start.tile || !statusGrid.contains(target)) return;
+        const current = [...statusGrid.querySelectorAll(".status[id]")];
+        if (current.indexOf(start.tile) < current.indexOf(target)) target.after(start.tile);
+        else target.before(start.tile);
+        suppressStatusClick = true;
+        saveStatusOrder();
+      }, { passive: true });
+
       for (const tile of statusGrid.querySelectorAll(".status[id]")) {
         tile.draggable = true;
         tile.style.touchAction = "pan-y";
