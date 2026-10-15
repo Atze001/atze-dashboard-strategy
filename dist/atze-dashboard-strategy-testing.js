@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FAF5B0A";
+const ATZE_TESTING_REVISION = "E5B90CE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7410,6 +7410,24 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     this._render();
+    // Restore only after returning from a room, never on a fresh dashboard load.
+    const saved = window.__atzeHomeReturnScroll;
+    if (saved?.path === window.location.pathname) {
+      delete window.__atzeHomeReturnScroll;
+      const restore = () => {
+        if (!this.isConnected) return;
+        const target = atzeFindScrollContainer(this);
+        const documentTarget = target === document.scrollingElement || target === document.documentElement || target === document.body;
+        const max = documentTarget
+          ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+          : Math.max(0, target.scrollHeight - target.clientHeight);
+        const top = Math.min(saved.top, max);
+        if (documentTarget) window.scrollTo({ top, behavior: "instant" });
+        else target.scrollTop = top;
+      };
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+      window.setTimeout(restore, 180);
+    }
   }
 
   disconnectedCallback() {
@@ -8154,6 +8172,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _navigate(path) {
     if (!path) return;
+
+    const scrollTarget = atzeFindScrollContainer(this);
+    const isDocument = scrollTarget === document.scrollingElement || scrollTarget === document.documentElement || scrollTarget === document.body;
+    window.__atzeHomeReturnScroll = {
+      path: window.location.pathname,
+      top: isDocument ? (window.scrollY || document.documentElement.scrollTop || 0) : scrollTarget.scrollTop,
+    };
 
     const current = window.location.pathname;
     const parts = current.split("/").filter(Boolean);
