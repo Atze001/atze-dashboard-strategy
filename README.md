@@ -13,6 +13,8 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 Version **0.406.0**
 
+Neu in v0.407.0: Beim Zurückkehren aus einer Raumansicht wird die vorherige Scrollposition auf der Hauptseite wiederhergestellt.
+
 Neu in v0.406.0: Zurück-Wischgeste mit eingeblendetem Pfeil und dynamischem Blur-Effekt während der Geste.
 
 Enthalten sind unter anderem:
