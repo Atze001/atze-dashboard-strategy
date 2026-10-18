@@ -11,7 +11,9 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.407.0**
+Version **0.408.0**
+
+Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
 Neu in v0.407.0: Beim Zurückkehren aus einer Raumansicht wird die vorherige Scrollposition auf der Hauptseite wiederhergestellt.
 
@@ -228,24 +230,20 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
-## v0.404.0
+## v0.408.0
 
-- Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
-- Schalterkarten zeigen bei zugeordnetem Leistungssensor den Verbrauch in Watt auch im ausgeschalteten Zustand; Ein/Aus-Text entfällt.
-- Anwesenheitsverlauf zeigt nur noch den Personenstatus; iCloud-Tracker und iCloud-Historie entfernt.
+- Personenanzeige erkennt neben Zuhause auch weitere Home-Assistant-Zonen (z. B. Arbeit).
+- Bekannte Zonen erscheinen grün mit ihrem hinterlegten Symbol; unterwegs bleibt grau.
 
-## v0.403.0
+## v0.407.0
 
-- Warnungen und Batterien als scrollbar gestaltete Popups in der kompakten Atze-Optik.
-- Alte eigenständige Sicherheits- und Batterieansichten aus der Dashboard-Navigation entfernt; Popup-Inhalte bleiben erhalten.
-- Raum-Sicherheitssensoren als eigene Atze-Karten mit 56 px Höhe, Glasoptik und zweispaltigem Layout.
-- Sensor-Detailansichten und Statusanzeigen bleiben erhalten.
+- Scrollposition der Hauptseite wird beim Zurückkehren aus Raumansichten wiederhergestellt.
 
-## v0.402.0
+## v0.406.0
 
-- Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.
-- Sicherheitsabfrage vor dem Zurücksetzen; andere Entitätseinstellungen, Favoriten und Raumreihenfolge bleiben erhalten.
-- Erleichtert das Bereinigen veralteter Sichtbarkeitsregeln, beispielsweise aus früheren Template-Konfigurationen.
+- Zurück-Wischgeste mit Pfeil und dynamischem Blur-Effekt.
+
+
 <!-- latest-changes:end -->
 
 ## Lizenz
