@@ -230,20 +230,24 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
-## v0.408.0
+## v0.404.0
 
-- Personenanzeige erkennt neben Zuhause auch weitere Home-Assistant-Zonen (z. B. Arbeit).
-- Bekannte Zonen erscheinen grün mit ihrem hinterlegten Symbol; unterwegs bleibt grau.
+- Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
+- Schalterkarten zeigen bei zugeordnetem Leistungssensor den Verbrauch in Watt auch im ausgeschalteten Zustand; Ein/Aus-Text entfällt.
+- Anwesenheitsverlauf zeigt nur noch den Personenstatus; iCloud-Tracker und iCloud-Historie entfernt.
 
-## v0.407.0
+## v0.403.0
 
-- Scrollposition der Hauptseite wird beim Zurückkehren aus Raumansichten wiederhergestellt.
+- Warnungen und Batterien als scrollbar gestaltete Popups in der kompakten Atze-Optik.
+- Alte eigenständige Sicherheits- und Batterieansichten aus der Dashboard-Navigation entfernt; Popup-Inhalte bleiben erhalten.
+- Raum-Sicherheitssensoren als eigene Atze-Karten mit 56 px Höhe, Glasoptik und zweispaltigem Layout.
+- Sensor-Detailansichten und Statusanzeigen bleiben erhalten.
 
-## v0.406.0
+## v0.402.0
 
-- Zurück-Wischgeste mit Pfeil und dynamischem Blur-Effekt.
-
-
+- Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.
+- Sicherheitsabfrage vor dem Zurücksetzen; andere Entitätseinstellungen, Favoriten und Raumreihenfolge bleiben erhalten.
+- Erleichtert das Bereinigen veralteter Sichtbarkeitsregeln, beispielsweise aus früheren Template-Konfigurationen.
 <!-- latest-changes:end -->
 
 ## Lizenz
