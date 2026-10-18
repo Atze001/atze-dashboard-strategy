@@ -1655,6 +1655,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const personState = this._personState(person);
     const personHome =
       String(person?.state || "").toLowerCase() === "home";
+    const personZone = !personHome && person
+      ? Object.values(this._hass?.states || {}).find((entity) =>
+          entity.entity_id?.startsWith("zone.") &&
+          [entity.entity_id, entity.entity_id.slice(5), entity.attributes?.friendly_name]
+            .some((value) => String(value || "").toLowerCase() === String(person.state || "").toLowerCase()))
+      : null;
+    const personAtKnownPlace = personHome || Boolean(personZone);
+    const personLocationIcon = personHome
+      ? "mdi:home-account"
+      : personZone
+        ? (personZone.attributes?.icon || "mdi:map-marker")
+        : "mdi:account-arrow-right-outline";
 
     const miniPeople = asArray(
       this._config.people_entities
@@ -3684,9 +3696,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
                     <div class="person-copy">
                       <div class="person-name">${personName}</div>
-                      <div class="person-state ${personHome ? "" : "away"}">
+                      <div class="person-state ${personAtKnownPlace ? "" : "away"}">
                         <ha-icon
-                          icon="${personHome ? "mdi:home-account" : "mdi:account-arrow-right-outline"}"
+                          icon="${this._escapeHtml(personLocationIcon)}"
                         ></ha-icon>
                         <span class="person-state-label">${personState}</span>
                       </div>
