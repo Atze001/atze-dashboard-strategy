@@ -1652,18 +1652,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const person = this._state(this._config.person_entity);
     const personPicture = this._personPicture(person);
     const personName = this._personName(person);
-    // Apple Home supplies the primary resident's presence independently of
-    // the Home Assistant Companion App's device tracker.
-    const appleHomePresence = this._state("input_boolean.anwesenheit_atze");
-    const useAppleHomePresence =
-      this._config.person_entity === "person.alexander_reimann" &&
-      ["on", "off"].includes(appleHomePresence?.state);
-    const personHome = useAppleHomePresence
-      ? appleHomePresence.state === "on"
-      : String(person?.state || "").toLowerCase() === "home";
-    const personState = useAppleHomePresence
-      ? (personHome ? "Zuhause" : "Abwesend")
-      : this._personState(person);
+    const personState = this._personState(person);
+    const personHome =
+      String(person?.state || "").toLowerCase() === "home";
 
     const miniPeople = asArray(
       this._config.people_entities
