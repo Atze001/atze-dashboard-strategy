@@ -11,7 +11,9 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.407.0**
+Version **0.408.0**
+
+Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
 Neu in v0.407.0: Beim Zurückkehren aus einer Raumansicht wird die vorherige Scrollposition auf der Hauptseite wiederhergestellt.
 
