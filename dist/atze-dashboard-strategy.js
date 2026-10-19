@@ -11249,36 +11249,74 @@ class AtzeHomeOverviewCard extends HTMLElement {
         try { localStorage.setItem(statusOrderKey, JSON.stringify(merged)); } catch (_e) {}
         saveAtzeStrategyLayout(this._hass, this._config, { home_status_order: merged });
       };
-      // iOS WebKit may show the native drag preview without dispatching drop.
-      // Commit the reorder on touch release using the element beneath the finger.
-      let touchStart = null;
-      let touchMoved = false;
+      // A dedicated long-press touch drag is more reliable than HTML5 drop in
+      // iOS Home Assistant WebViews. Ordinary swipes remain scroll gestures.
+      let touchDrag = null;
+      let touchTimer = null;
+      let suppressUntil = 0;
+      const tileAtPoint = (x, y) => {
+        const node = this.shadowRoot.elementFromPoint(x, y);
+        const tile = node?.closest?.(".status[id]");
+        return tile && statusGrid.contains(tile) ? tile : null;
+      };
+      const clearTouchDrag = () => {
+        if (touchTimer !== null) clearTimeout(touchTimer);
+        touchTimer = null;
+        statusGrid.querySelectorAll(".status").forEach((entry) => entry.classList.remove("dragging", "drag-over"));
+        touchDrag = null;
+      };
       statusGrid.addEventListener("touchstart", (event) => {
         if (event.touches.length !== 1) return;
-        const tile = event.target.closest(".status[id]");
-        if (!tile || !statusGrid.contains(tile)) return;
-        touchStart = { tile, x: event.touches[0].clientX, y: event.touches[0].clientY, at: Date.now() };
-        touchMoved = false;
+        const touch = event.touches[0];
+        const tile = tileAtPoint(touch.clientX, touch.clientY);
+        if (!tile) return;
+        clearTouchDrag();
+        touchDrag = { tile, x: touch.clientX, y: touch.clientY, active: false, target: null };
+        touchTimer = setTimeout(() => {
+          if (!touchDrag) return;
+          touchDrag.active = true;
+          touchDrag.tile.classList.add("dragging");
+          suppressUntil = Date.now() + 700;
+        }, 450);
       }, { passive: true });
       statusGrid.addEventListener("touchmove", (event) => {
-        if (!touchStart || event.touches.length !== 1) return;
+        if (!touchDrag || event.touches.length !== 1) return;
         const touch = event.touches[0];
-        if (Math.abs(touch.clientY - touchStart.y) > 14 || Math.abs(touch.clientX - touchStart.x) > 14) touchMoved = true;
-      }, { passive: true });
+        if (!touchDrag.active) {
+          if (Math.hypot(touch.clientX - touchDrag.x, touch.clientY - touchDrag.y) > 12) clearTouchDrag();
+          return;
+        }
+        event.preventDefault();
+        const target = tileAtPoint(touch.clientX, touch.clientY);
+        if (touchDrag.target !== target) {
+          touchDrag.target?.classList.remove("drag-over");
+          touchDrag.target = target;
+          if (target && target !== touchDrag.tile) target.classList.add("drag-over");
+        }
+      }, { passive: false });
       statusGrid.addEventListener("touchend", (event) => {
-        if (!touchStart) return;
-        const start = touchStart;
-        touchStart = null;
-        if (!touchMoved || Date.now() - start.at < 350) return;
-        const touch = event.changedTouches[0];
-        const target = this.shadowRoot.elementFromPoint(touch.clientX, touch.clientY)?.closest(".status[id]");
-        if (!target || target === start.tile || !statusGrid.contains(target)) return;
-        const current = [...statusGrid.querySelectorAll(".status[id]")];
-        if (current.indexOf(start.tile) < current.indexOf(target)) target.after(start.tile);
-        else target.before(start.tile);
-        suppressStatusClick = true;
-        saveStatusOrder();
-      }, { passive: true });
+        if (!touchDrag) return;
+        const drag = touchDrag;
+        if (drag.active) {
+          event.preventDefault();
+          suppressUntil = Date.now() + 700;
+          const touch = event.changedTouches[0];
+          const target = tileAtPoint(touch.clientX, touch.clientY) || drag.target;
+          if (target && target !== drag.tile) {
+            const current = [...statusGrid.querySelectorAll(".status[id]")];
+            if (current.indexOf(drag.tile) < current.indexOf(target)) target.after(drag.tile);
+            else target.before(drag.tile);
+            saveStatusOrder();
+          }
+        }
+        clearTouchDrag();
+      }, { passive: false });
+      statusGrid.addEventListener("touchcancel", clearTouchDrag, { passive: true });
+      statusGrid.addEventListener("click", (event) => {
+        if (Date.now() > suppressUntil) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
 
       for (const tile of statusGrid.querySelectorAll(".status[id]")) {
         tile.draggable = true;
