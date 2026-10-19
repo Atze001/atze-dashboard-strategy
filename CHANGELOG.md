@@ -1,3 +1,8 @@
+## v0.409.0
+
+- iOS: Drag-and-Drop-Sortierung der acht Status-Buttons auf der obersten Hauptseitenkarte über langes Drücken (450 ms) repariert.
+- Normales Scrollen und Tippen bleiben erhalten; die Reihenfolge wird weiterhin in `home_status_order` gespeichert.
+
 ## v0.404.0
 
 - Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
