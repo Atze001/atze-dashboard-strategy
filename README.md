@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.408.0**
+Version **0.409.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.409.0
+
+- iOS: Drag-and-Drop-Sortierung der acht Status-Buttons auf der obersten Hauptseitenkarte über langes Drücken (450 ms) repariert.
+- Normales Scrollen und Tippen bleiben erhalten; die Reihenfolge wird weiterhin in `home_status_order` gespeichert.
+
 ## v0.404.0
 
 - Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
@@ -242,12 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Alte eigenständige Sicherheits- und Batterieansichten aus der Dashboard-Navigation entfernt; Popup-Inhalte bleiben erhalten.
 - Raum-Sicherheitssensoren als eigene Atze-Karten mit 56 px Höhe, Glasoptik und zweispaltigem Layout.
 - Sensor-Detailansichten und Statusanzeigen bleiben erhalten.
-
-## v0.402.0
-
-- Einstellungen → Entitäten pro Raum: Neuer Button zum Zurücksetzen sämtlicher manueller Sichtbarkeitseinstellungen auf Auto.
-- Sicherheitsabfrage vor dem Zurücksetzen; andere Entitätseinstellungen, Favoriten und Raumreihenfolge bleiben erhalten.
-- Erleichtert das Bereinigen veralteter Sichtbarkeitsregeln, beispielsweise aus früheren Template-Konfigurationen.
 <!-- latest-changes:end -->
 
 ## Lizenz
