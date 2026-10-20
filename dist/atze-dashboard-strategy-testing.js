@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "C7502E6";
+const ATZE_TESTING_REVISION = "8CEEEBE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6651,58 +6651,54 @@ function buildAreaView(
 const ATZE_SCROLLBAR_STYLE_ID = "atze-dashboard-hide-scrollbars";
 
 function installAtzeScrollbarStyle(root) {
-  if (!root || typeof root.querySelector !== "function") return;
+  if (!root || typeof root.querySelectorAll !== "function") return;
 
-  if (!root.querySelector(`#${ATZE_SCROLLBAR_STYLE_ID}`)) {
+  // Only enter Lovelace's own component tree. The Home Assistant sidebar
+  // and its shadow roots must not inherit dashboard-specific CSS.
+  const visit = (node, insideLovelace = false) => {
+    if (!node) return;
+    const isLovelace = insideLovelace ||
+      node.localName === "ha-panel-lovelace" ||
+      node.localName === "hui-root" ||
+      node.localName === "hui-view";
+
+    if (isLovelace && node.shadowRoot) {
+      installStyle(node.shadowRoot);
+    }
+    if (node.shadowRoot) {
+      for (const child of node.shadowRoot.querySelectorAll("*")) {
+        if (child.shadowRoot) visit(child, isLovelace);
+      }
+    }
+    for (const child of node.querySelectorAll?.("*") || []) {
+      if (child.shadowRoot) visit(child, isLovelace);
+    }
+  };
+
+  const installStyle = (shadowRoot) => {
+    if (shadowRoot.querySelector(`#${ATZE_SCROLLBAR_STYLE_ID}`)) return;
     const style = document.createElement("style");
     style.id = ATZE_SCROLLBAR_STYLE_ID;
     style.textContent = `
-      :host,
-      html,
-      body,
-      * {
+      :host, * {
         scrollbar-width: none !important;
         -ms-overflow-style: none !important;
       }
-
       ::-webkit-scrollbar {
         width: 0 !important;
         height: 0 !important;
         display: none !important;
-        background: transparent !important;
-      }
-
-      ::-webkit-scrollbar-track,
-      ::-webkit-scrollbar-thumb,
-      ::-webkit-scrollbar-corner {
-        background: transparent !important;
-        display: none !important;
       }
     `;
+    shadowRoot.appendChild(style);
+  };
 
-    const target =
-      root instanceof Document
-        ? (root.head || root.documentElement)
-        : root;
-
-    target?.appendChild(style);
-  }
-
-  const elements = root.querySelectorAll("*");
-
-  for (const element of elements) {
-    if (element.shadowRoot) {
-      installAtzeScrollbarStyle(element.shadowRoot);
-    }
-  }
+  visit(root);
 }
 
 function hideAtzeDashboardScrollbars(enabled = true) {
   if (!enabled) return;
 
-  // The HA view and its nested shadow roots do not all exist at the same
-  // moment. Run a few lightweight passes so newly created Lovelace roots
-  // receive the same scrollbar rule.
   const apply = () => {
     try {
       installAtzeScrollbarStyle(document);
@@ -6717,7 +6713,6 @@ function hideAtzeDashboardScrollbars(enabled = true) {
   setTimeout(apply, 1000);
   setTimeout(apply, 2500);
 }
-
 
 function applyAtzeKioskQueryFallback(config) {
   if (config.kiosk_query_fallback === false) return;
