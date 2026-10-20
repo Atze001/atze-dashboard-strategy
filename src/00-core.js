@@ -6990,10 +6990,37 @@ function applyAtzeSidebarAccess(config) {
   const show = (event) => {
     if (event.target?.closest?.("#atze-visual-debug-panel")) return;
     const x = event.clientX, y = event.clientY;
+    const pseudoLines = [];
+    const inspected = new Set();
+    const inspectPseudo = (el, depth = 0) => {
+      if (!el || el.nodeType !== 1 || inspected.has(el) || inspected.size > 2500 || depth > 12) return;
+      inspected.add(el);
+      const rect = el.getBoundingClientRect();
+      const closeToPoint = rect.left <= x + 180 && rect.right >= x - 180 &&
+        rect.top <= y + 240 && rect.bottom >= y - 240;
+      if (closeToPoint) {
+        for (const pseudo of ["::before", "::after"]) {
+          const css = window.getComputedStyle(el, pseudo);
+          if (!css || css.content === "none" || css.content === "normal") continue;
+          pseudoLines.push(describe(el) + " " + pseudo +
+            " | content=" + css.content.slice(0, 70) +
+            " display=" + css.display + " position=" + css.position +
+            " width=" + css.width + " height=" + css.height +
+            " left=" + css.left + " top=" + css.top +
+            " bg=" + css.backgroundColor + " radius=" + css.borderRadius +
+            " opacity=" + css.opacity + " transform=" + css.transform);
+        }
+      }
+      if (el.shadowRoot) for (const child of el.shadowRoot.children) inspectPseudo(child, depth + 1);
+      for (const child of el.children) inspectPseudo(child, depth + 1);
+    };
+    inspectPseudo(document.documentElement);
     const lines = [
       "ATZE Diagnose | x=" + Math.round(x) + " y=" + Math.round(y),
       "Treffer (einschließlich Shadow DOM):",
       ...deepStack(x, y, document),
+      "Pseudoelemente in der Naehe (" + inspected.size + " Elemente geprueft):",
+      ...pseudoLines.slice(0, 70),
       "Ereignispfad:",
       ...event.composedPath().filter((el) => el?.nodeType === 1).slice(0, 16).map(describe)
     ];
