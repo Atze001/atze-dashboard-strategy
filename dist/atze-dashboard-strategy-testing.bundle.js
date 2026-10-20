@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "383C822";
+const ATZE_TESTING_REVISION = "2055C1E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7026,8 +7026,33 @@ function applyAtzeSidebarAccess(config) {
       panel = document.createElement("div");
       panel.id = "atze-visual-debug-panel";
       panel.style.cssText = "position:fixed;z-index:2147483647;left:8px;right:8px;bottom:8px;max-height:55vh;overflow:auto;background:#141414;color:#fff;border:2px solid #f0c64c;border-radius:12px;padding:12px;font:12px/1.5 monospace;box-shadow:0 8px 30px #0009";
-      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
+      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-thermo">Thermometer AUS</button><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
       document.body.appendChild(panel);
+      const thermoButton = panel.querySelector("#atze-debug-thermo");
+      const hiddenThermometers = [];
+      thermoButton.addEventListener("click", () => {
+        if (hiddenThermometers.length) {
+          for (const [el, value, priority] of hiddenThermometers) el.style.setProperty("visibility", value, priority);
+          hiddenThermometers.length = 0;
+          thermoButton.textContent = "Thermometer AUS";
+          return;
+        }
+        const seen = new Set();
+        const scan = (root) => {
+          if (!root) return;
+          for (const el of root.querySelectorAll("*")) {
+            if (seen.has(el)) continue;
+            seen.add(el);
+            if (el.matches?.("button.thermometer")) {
+              hiddenThermometers.push([el, el.style.getPropertyValue("visibility"), el.style.getPropertyPriority("visibility")]);
+              el.style.setProperty("visibility", "hidden", "important");
+            }
+            if (el.shadowRoot) scan(el.shadowRoot);
+          }
+        };
+        scan(document);
+        thermoButton.textContent = "Thermometer AN (" + hiddenThermometers.length + ")";
+      });
       const highlightButton = panel.querySelector("#atze-debug-highlight");
       const highlights = [];
       highlightButton.addEventListener("click", () => {
@@ -7103,6 +7128,8 @@ function applyAtzeSidebarAccess(config) {
         }
         for (const el of highlights) el.remove();
         highlights.length = 0;
+        for (const [el, value, priority] of hiddenThermometers) el.style.setProperty("visibility", value, priority);
+        hiddenThermometers.length = 0;
         panel.remove();
       });
       panel.querySelector("#atze-debug-copy").addEventListener("click", async () => {
