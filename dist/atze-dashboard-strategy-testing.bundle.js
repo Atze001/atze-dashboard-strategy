@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "449BD9C";
+const ATZE_TESTING_REVISION = "7D0C897";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -1179,9 +1179,6 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   };
 
   const showGestureIndicator = (progress) => {
-    // TEMPORARY DIAGNOSTIC: suppress the visual gesture indicator only.
-    // Swipe-back navigation and its event handling remain unchanged.
-    return;
     if (!state.gestureIndicator) {
       const indicator = document.createElement("div");
       indicator.setAttribute("aria-hidden", "true");
