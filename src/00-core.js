@@ -7029,8 +7029,57 @@ function applyAtzeSidebarAccess(config) {
       panel = document.createElement("div");
       panel.id = "atze-visual-debug-panel";
       panel.style.cssText = "position:fixed;z-index:2147483647;left:8px;right:8px;bottom:8px;max-height:55vh;overflow:auto;background:#141414;color:#fff;border:2px solid #f0c64c;border-radius:12px;padding:12px;font:12px/1.5 monospace;box-shadow:0 8px 30px #0009";
-      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-scrollbars">Scrollbalken AUS</button><button type="button" id="atze-debug-thermo">Thermometer AUS</button><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
+      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-scroll-motion">Scrollbewegung messen</button><button type="button" id="atze-debug-scrollbars">Scrollbalken AUS</button><button type="button" id="atze-debug-thermo">Thermometer AUS</button><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
       document.body.appendChild(panel);
+      const motionButton = panel.querySelector("#atze-debug-scroll-motion");
+      let motionSnapshot = null;
+      const collectMotionCandidates = () => {
+        const candidates = [];
+        const seen = new Set();
+        const visit = (root) => {
+          if (!root) return;
+          for (const el of root.querySelectorAll("*")) {
+            if (seen.has(el)) continue;
+            seen.add(el);
+            if (el.id === "atze-visual-debug-panel" || el.closest?.("#atze-visual-debug-panel")) continue;
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            if (rect.width >= 3 && rect.width <= 140 &&
+                rect.height >= 3 && rect.height <= 600 &&
+                rect.left >= x - 100 && rect.left <= x + 100 &&
+                rect.bottom >= -200 && rect.top <= window.innerHeight + 200 &&
+                style.display !== "none" && style.visibility !== "hidden" &&
+                Number(style.opacity) > 0) {
+              candidates.push({ el, before: { x: rect.x, y: rect.y, w: rect.width, h: rect.height }, name: describe(el) });
+            }
+            if (el.shadowRoot) visit(el.shadowRoot);
+          }
+        };
+        visit(document);
+        return candidates.slice(0, 500);
+      };
+      motionButton.addEventListener("click", () => {
+        if (!motionSnapshot) {
+          motionSnapshot = { items: collectMotionCandidates(), scrollY: window.scrollY };
+          motionButton.textContent = "Nach Scrollen vergleichen";
+          panel.querySelector("pre").textContent += "\\nScroll-Messung gestartet: " + motionSnapshot.items.length + " Kandidaten erfasst. Jetzt scrollen und erneut drücken.";
+          return;
+        }
+        const results = motionSnapshot.items.map((item) => {
+          if (!item.el.isConnected) return null;
+          const rect = item.el.getBoundingClientRect();
+          const dy = Math.round(rect.y - item.before.y);
+          const dx = Math.round(rect.x - item.before.x);
+          return { item, dx, dy, y: Math.round(rect.y), x: Math.round(rect.x) };
+        }).filter(Boolean).filter((entry) => entry.dx !== 0 || entry.dy !== 0);
+        results.sort((a,b) => Math.abs(a.x - x) - Math.abs(b.x - x));
+        panel.querySelector("pre").textContent += "\\nScroll-Messung: window.scrollY " + motionSnapshot.scrollY + " -> " + window.scrollY +
+          "; bewegte Kandidaten " + results.length + "\\n" +
+          results.slice(0, 35).map(({item,dx,dy,x,y}) =>
+            "dx=" + dx + " dy=" + dy + " jetzt x=" + x + " y=" + y + " | " + item.name).join("\\n");
+        motionSnapshot = null;
+        motionButton.textContent = "Scrollbewegung messen";
+      });
       const scrollbarButton = panel.querySelector("#atze-debug-scrollbars");
       let scrollbarStyle = null;
       scrollbarButton.addEventListener("click", () => {
@@ -7088,9 +7137,7 @@ function applyAtzeSidebarAccess(config) {
       const highlights = [];
       highlightButton.addEventListener("click", () => {
         if (highlights.length) {
-          scrollbarStyle?.remove();
-        scrollbarStyle = null;
-        for (const el of highlights) el.remove();
+          for (const el of highlights) el.remove();
           highlights.length = 0;
           highlightButton.textContent = "Rand markieren";
           return;
