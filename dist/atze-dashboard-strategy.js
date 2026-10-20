@@ -7010,7 +7010,7 @@ function applyAtzeSidebarAccess(config) {
         navigator.clipboard?.writeText(value).catch(() => {});
       });
     }
-    panel.querySelector("pre").textContent = lines.join("\\n");
+    panel.querySelector("pre").textContent = lines.join("\n");
     event.preventDefault();
     event.stopImmediatePropagation();
   };

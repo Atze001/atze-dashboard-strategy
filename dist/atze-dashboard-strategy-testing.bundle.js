@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "040407A";
+const ATZE_TESTING_REVISION = "CC4E9EC";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7007,7 +7007,7 @@ function applyAtzeSidebarAccess(config) {
         navigator.clipboard?.writeText(value).catch(() => {});
       });
     }
-    panel.querySelector("pre").textContent = lines.join("\\n");
+    panel.querySelector("pre").textContent = lines.join("\n");
     event.preventDefault();
     event.stopImmediatePropagation();
   };
