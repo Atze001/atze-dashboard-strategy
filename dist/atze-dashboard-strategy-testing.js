@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "DF95D46";
+const ATZE_TESTING_REVISION = "566551B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7031,7 +7031,7 @@ function applyAtzeSidebarAccess(config) {
       const motionButton = panel.querySelector("#atze-debug-scroll-motion");
       let motionSnapshot = null;
       const collectMotionCandidates = () => {
-        const candidates = [];
+        const items = new Map();
         const seen = new Set();
         const visit = (root) => {
           if (!root) return;
@@ -7040,40 +7040,61 @@ function applyAtzeSidebarAccess(config) {
             seen.add(el);
             if (el.id === "atze-visual-debug-panel" || el.closest?.("#atze-visual-debug-panel")) continue;
             const rect = el.getBoundingClientRect();
-            const style = window.getComputedStyle(el);
-            if (rect.width >= 3 && rect.width <= 140 &&
-                rect.height >= 3 && rect.height <= 600 &&
-                rect.left >= x - 100 && rect.left <= x + 100 &&
-                rect.bottom >= -200 && rect.top <= window.innerHeight + 200 &&
-                style.display !== "none" && style.visibility !== "hidden" &&
-                Number(style.opacity) > 0) {
-              candidates.push({ el, before: { x: rect.x, y: rect.y, w: rect.width, h: rect.height }, name: describe(el) });
+            const css = window.getComputedStyle(el);
+            // Capture the complete element hierarchy crossing the HA sidebar/content boundary.
+            // Do not filter by element size: the capsule may be painted by a large ancestor.
+            if (rect.left <= 330 && rect.right >= 245 &&
+                rect.bottom >= -300 && rect.top <= window.innerHeight + 300 &&
+                css.display !== "none") {
+              items.set(el, {
+                x: rect.x, y: rect.y, w: rect.width, h: rect.height,
+                name: describe(el)
+              });
             }
             if (el.shadowRoot) visit(el.shadowRoot);
           }
         };
         visit(document);
-        return candidates.slice(0, 500);
+        return items;
       };
       motionButton.addEventListener("click", () => {
+        const current = collectMotionCandidates();
         if (!motionSnapshot) {
-          motionSnapshot = { items: collectMotionCandidates(), scrollY: window.scrollY };
+          motionSnapshot = { items: current, scrollY: window.scrollY };
           motionButton.textContent = "Nach Scrollen vergleichen";
-          panel.querySelector("pre").textContent += "\\nScroll-Messung gestartet: " + motionSnapshot.items.length + " Kandidaten erfasst. Jetzt scrollen und erneut drücken.";
+          panel.querySelector("pre").textContent += "\nScroll-Messung gestartet: " + current.size +
+            " Rand-Elemente erfasst. Jetzt scrollen und erneut drücken.";
           return;
         }
-        const results = motionSnapshot.items.map((item) => {
-          if (!item.el.isConnected) return null;
-          const rect = item.el.getBoundingClientRect();
-          const dy = Math.round(rect.y - item.before.y);
-          const dx = Math.round(rect.x - item.before.x);
-          return { item, dx, dy, y: Math.round(rect.y), x: Math.round(rect.x) };
-        }).filter(Boolean).filter((entry) => entry.dx !== 0 || entry.dy !== 0);
-        results.sort((a,b) => Math.abs(a.x - x) - Math.abs(b.x - x));
-        panel.querySelector("pre").textContent += "\\nScroll-Messung: window.scrollY " + motionSnapshot.scrollY + " -> " + window.scrollY +
-          "; bewegte Kandidaten " + results.length + "\\n" +
-          results.slice(0, 35).map(({item,dx,dy,x,y}) =>
-            "dx=" + dx + " dy=" + dy + " jetzt x=" + x + " y=" + y + " | " + item.name).join("\\n");
+        const changes = [];
+        let removed = 0, added = 0, moved = 0, unchanged = 0;
+        for (const [el, before] of motionSnapshot.items) {
+          const after = current.get(el);
+          if (!after) {
+            removed++;
+            changes.push({ rank: 2, text: "ENTFERNT | " + before.name });
+            continue;
+          }
+          const dx = Math.round(after.x - before.x);
+          const dy = Math.round(after.y - before.y);
+          if (dx || dy) {
+            moved++;
+            changes.push({ rank: 0, text: "BEWEGT dx=" + dx + " dy=" + dy + " | " + after.name });
+          } else unchanged++;
+        }
+        for (const [el, after] of current) {
+          if (!motionSnapshot.items.has(el)) {
+            added++;
+            changes.push({ rank: 1, text: "NEU | " + after.name });
+          }
+        }
+        changes.sort((a,b) => a.rank - b.rank);
+        panel.querySelector("pre").textContent += "\nScroll-Messung: window.scrollY " +
+          motionSnapshot.scrollY + " -> " + window.scrollY +
+          " | vorher " + motionSnapshot.items.size + ", nachher " + current.size +
+          " | bewegt " + moved + ", neu " + added + ", entfernt " + removed +
+          ", unveraendert " + unchanged + "\n" +
+          changes.slice(0, 90).map(entry => entry.text).join("\n");
         motionSnapshot = null;
         motionButton.textContent = "Scrollbewegung messen";
       });
