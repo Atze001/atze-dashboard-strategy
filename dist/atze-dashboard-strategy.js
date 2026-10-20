@@ -7029,8 +7029,36 @@ function applyAtzeSidebarAccess(config) {
       panel = document.createElement("div");
       panel.id = "atze-visual-debug-panel";
       panel.style.cssText = "position:fixed;z-index:2147483647;left:8px;right:8px;bottom:8px;max-height:55vh;overflow:auto;background:#141414;color:#fff;border:2px solid #f0c64c;border-radius:12px;padding:12px;font:12px/1.5 monospace;box-shadow:0 8px 30px #0009";
-      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-thermo">Thermometer AUS</button><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
+      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-scrollbars">Scrollbalken AUS</button><button type="button" id="atze-debug-thermo">Thermometer AUS</button><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
       document.body.appendChild(panel);
+      const scrollbarButton = panel.querySelector("#atze-debug-scrollbars");
+      let scrollbarStyle = null;
+      scrollbarButton.addEventListener("click", () => {
+        if (scrollbarStyle) {
+          scrollbarStyle.remove();
+          scrollbarStyle = null;
+          scrollbarButton.textContent = "Scrollbalken AUS";
+          return;
+        }
+        scrollbarStyle = document.createElement("style");
+        scrollbarStyle.id = "atze-debug-hide-scrollbars";
+        scrollbarStyle.textContent = `
+          html, body, home-assistant, home-assistant-main, ha-drawer,
+          .layout, .app-content, ha-panel-lovelace, hui-root,
+          hui-view-container, #view {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+          html::-webkit-scrollbar, body::-webkit-scrollbar,
+          home-assistant::-webkit-scrollbar, home-assistant-main::-webkit-scrollbar,
+          ha-drawer::-webkit-scrollbar, .layout::-webkit-scrollbar,
+          .app-content::-webkit-scrollbar, ha-panel-lovelace::-webkit-scrollbar,
+          hui-root::-webkit-scrollbar, hui-view-container::-webkit-scrollbar,
+          #view::-webkit-scrollbar { display:none !important; width:0 !important; height:0 !important; }
+        `;
+        document.head.appendChild(scrollbarStyle);
+        scrollbarButton.textContent = "Scrollbalken AN";
+      });
       const thermoButton = panel.querySelector("#atze-debug-thermo");
       const hiddenThermometers = [];
       thermoButton.addEventListener("click", () => {
@@ -7060,7 +7088,9 @@ function applyAtzeSidebarAccess(config) {
       const highlights = [];
       highlightButton.addEventListener("click", () => {
         if (highlights.length) {
-          for (const el of highlights) el.remove();
+          scrollbarStyle?.remove();
+        scrollbarStyle = null;
+        for (const el of highlights) el.remove();
           highlights.length = 0;
           highlightButton.textContent = "Rand markieren";
           return;
