@@ -2164,9 +2164,27 @@ class AtzeHomeOverviewCard extends HTMLElement {
           box-sizing: border-box;
           --home-shell-bg: ${this._config?.dashboard_background_image ? "transparent" : "#111111"};
           background: var(--home-shell-bg);
+          position: relative;
+          isolation: isolate;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
+
+        ${this._config?.dashboard_background_image && (
+          String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||
+          String(this._config.dashboard_background_image).startsWith("/local/") ||
+          String(this._config.dashboard_background_image).startsWith("/api/image/serve/") ||
+          /^https?:\/\//i.test(String(this._config.dashboard_background_image))
+        ) && !/["'\\\n\r<>]/.test(String(this._config.dashboard_background_image))
+          ? `:host::before {
+              content: "";
+              position: fixed;
+              inset: 0;
+              z-index: -1;
+              pointer-events: none;
+              background: center / cover no-repeat url("${this._config.dashboard_background_image}");
+            }`
+          : ""}
 
         :host::-webkit-scrollbar,
         ha-card::-webkit-scrollbar,
@@ -3874,7 +3892,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       card.hass = this._hass;
       card.style.cssText = "position:absolute;width:0;height:0;overflow:visible;pointer-events:none;";
       const layer = document.createElement("style");
-      layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+      layer.textContent = "ha-card { background: transparent !important; box-shadow: none !important; border: 0 !important; } ha-card > :not(.service-backdrop), button.thermometer, button.info, button.target { visibility: hidden !important; } .service-backdrop, .service-backdrop * { visibility: visible !important; } .service-backdrop { z-index: 20001 !important; pointer-events: auto; }";
       card.shadowRoot?.appendChild(layer);
       this.shadowRoot.appendChild(card);
       this._homeThermostatCards.set(entityId, card);
@@ -4429,7 +4447,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           card._openService();
           // The thermostat card rerenders its shadow root when opening.
           const layer = document.createElement("style");
-          layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+          layer.textContent = "ha-card { background: transparent !important; box-shadow: none !important; border: 0 !important; } ha-card > :not(.service-backdrop), button.thermometer, button.info, button.target { visibility: hidden !important; } .service-backdrop, .service-backdrop * { visibility: visible !important; } .service-backdrop { z-index: 20001 !important; pointer-events: auto; }";
           card.shadowRoot?.appendChild(layer);
           return;
         }

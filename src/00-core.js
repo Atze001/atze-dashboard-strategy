@@ -6721,7 +6721,6 @@ function hideAtzeDashboardScrollbars(enabled = true) {
   setTimeout(apply, 2500);
 }
 
-
 function applyAtzeKioskQueryFallback(config) {
   if (config.kiosk_query_fallback === false) return;
 

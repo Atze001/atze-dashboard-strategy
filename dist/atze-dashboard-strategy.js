@@ -6721,7 +6721,6 @@ function hideAtzeDashboardScrollbars(enabled = true) {
   setTimeout(apply, 2500);
 }
 
-
 function applyAtzeKioskQueryFallback(config) {
   if (config.kiosk_query_fallback === false) return;
 
@@ -9498,9 +9497,27 @@ class AtzeHomeOverviewCard extends HTMLElement {
           box-sizing: border-box;
           --home-shell-bg: ${this._config?.dashboard_background_image ? "transparent" : "#111111"};
           background: var(--home-shell-bg);
+          position: relative;
+          isolation: isolate;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
+
+        ${this._config?.dashboard_background_image && (
+          String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||
+          String(this._config.dashboard_background_image).startsWith("/local/") ||
+          String(this._config.dashboard_background_image).startsWith("/api/image/serve/") ||
+          /^https?:\/\//i.test(String(this._config.dashboard_background_image))
+        ) && !/["'\\\n\r<>]/.test(String(this._config.dashboard_background_image))
+          ? `:host::before {
+              content: "";
+              position: fixed;
+              inset: 0;
+              z-index: -1;
+              pointer-events: none;
+              background: center / cover no-repeat url("${this._config.dashboard_background_image}");
+            }`
+          : ""}
 
         :host::-webkit-scrollbar,
         ha-card::-webkit-scrollbar,
@@ -11208,7 +11225,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       card.hass = this._hass;
       card.style.cssText = "position:absolute;width:0;height:0;overflow:visible;pointer-events:none;";
       const layer = document.createElement("style");
-      layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+      layer.textContent = "ha-card { background: transparent !important; box-shadow: none !important; border: 0 !important; } ha-card > :not(.service-backdrop), button.thermometer, button.info, button.target { visibility: hidden !important; } .service-backdrop, .service-backdrop * { visibility: visible !important; } .service-backdrop { z-index: 20001 !important; pointer-events: auto; }";
       card.shadowRoot?.appendChild(layer);
       this.shadowRoot.appendChild(card);
       this._homeThermostatCards.set(entityId, card);
@@ -11763,7 +11780,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           card._openService();
           // The thermostat card rerenders its shadow root when opening.
           const layer = document.createElement("style");
-          layer.textContent = ".service-backdrop { z-index: 20001 !important; pointer-events:auto; }";
+          layer.textContent = "ha-card { background: transparent !important; box-shadow: none !important; border: 0 !important; } ha-card > :not(.service-backdrop), button.thermometer, button.info, button.target { visibility: hidden !important; } .service-backdrop, .service-backdrop * { visibility: visible !important; } .service-backdrop { z-index: 20001 !important; pointer-events: auto; }";
           card.shadowRoot?.appendChild(layer);
           return;
         }
@@ -15841,11 +15858,16 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
     this._openEditorSections = new Set();
+    this._dashboardBackgroundStatus = "";
+    this._dashboardBackgroundError = false;
+    this._backgroundFileInput = null;
+    this._backgroundPickerActive = false;
   }
 
   set hass(value) {
     const first = !this._hass;
     this._hass = value;
+    if (this._backgroundPickerActive) return;
     if (first || this._areas.length === 0) {
       this._loadRegistries();
     } else if (this._entityVisibilityActive || this._navigationEditActive) {
@@ -15862,6 +15884,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...(config || {}) };
+    if (this._backgroundPickerActive) return;
     if (this._navigationEditActive || this._homeLayoutSelectActive) {
       this._pendingHassRender = true;
       return;
@@ -17204,7 +17227,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _render() {
-    if (!this.shadowRoot) return;
+    if (!this.shadowRoot || this._backgroundPickerActive) return;
 
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
@@ -18048,7 +18071,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                   <button class="dashboard-background-clear" type="button" style="padding:8px 12px;border-radius:10px;">Hintergrund entfernen</button>
                 </div>
                 ${this._config.dashboard_background_image ? `<img alt="Hintergrund-Vorschau" src="${this._escape(this._config.dashboard_background_image)}" style="display:block;width:100%;max-height:150px;object-fit:cover;border-radius:10px;margin-top:12px;" />` : ""}
-                <div class="dashboard-background-status" role="status" aria-live="polite" style="margin-top:8px;color:var(--secondary-text-color);font-size:12px;"></div>
+                <div class="dashboard-background-status" role="status" aria-live="polite" style="margin-top:8px;color:${this._dashboardBackgroundError ? "var(--error-color)" : "var(--secondary-text-color)"};font-size:12px;">${this._escape(this._dashboardBackgroundStatus || "")}</div>
               </div>
               ${this._toggleHtml(
                 "hide_scrollbar",
@@ -18565,9 +18588,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
 
 
-    const backgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
+    const placeholderBackgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
+    if (!this._backgroundFileInput) this._backgroundFileInput = placeholderBackgroundFile;
+    else placeholderBackgroundFile?.replaceWith(this._backgroundFileInput);
+    const backgroundFile = this._backgroundFileInput;
     const backgroundStatus = this.shadowRoot.querySelector(".dashboard-background-status");
     const setBackgroundStatus = (message, error = false) => {
+      this._dashboardBackgroundStatus = message;
+      this._dashboardBackgroundError = error;
       if (!backgroundStatus) return;
       backgroundStatus.textContent = message;
       backgroundStatus.style.color = error ? "var(--error-color)" : "var(--secondary-text-color)";
@@ -18577,12 +18605,22 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       if (value) next.dashboard_background_image = value;
       else delete next.dashboard_background_image;
       this._fireConfigChanged(next);
+      setBackgroundStatus(value ? "Hintergrundbild übernommen. Bitte Dashboard-Einstellungen speichern." : "Hintergrundbild entfernt.");
     };
-    this.shadowRoot.querySelector(".dashboard-background-pick")?.addEventListener("click", () => backgroundFile?.click());
-    backgroundFile?.addEventListener("change", async (event) => {
+    this.shadowRoot.querySelector(".dashboard-background-pick")?.addEventListener("click", () => {
+      this._backgroundPickerActive = true;
+      setBackgroundStatus("Fotoauswahl geöffnet …");
+      backgroundFile?.click();
+    });
+    backgroundFile?.addEventListener("cancel", () => {
+      this._backgroundPickerActive = false;
+      setBackgroundStatus("Fotoauswahl abgebrochen.");
+    }, { once: true });
+    backgroundFile.onchange = async (event) => {
+      this._backgroundPickerActive = false;
       const file = event.currentTarget.files?.[0];
       if (!file) return;
-      if (!file.type.startsWith("image/") && !/\\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name)) {
+      if (!file.type.startsWith("image/") && !/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name)) {
         setBackgroundStatus("Bitte eine Bilddatei auswählen.", true);
         return;
       }
@@ -18596,19 +18634,22 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             image.onerror = () => reject(new Error("Dieses Bildformat konnte nicht geöffnet werden."));
             image.src = url;
           });
-          const maxSide = 1280;
-          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
           const canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
           const ctx = canvas.getContext("2d");
           if (!ctx) throw new Error("Bildverarbeitung nicht verfügbar.");
-          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
           let data = "";
-          for (const quality of [0.7, 0.55, 0.4]) {
-            data = canvas.toDataURL("image/jpeg", quality);
+          for (const maxSide of [1280, 1024, 800, 640, 480]) {
+            const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            for (const quality of [0.7, 0.55, 0.4, 0.3]) {
+              data = canvas.toDataURL("image/jpeg", quality);
+              if (data.length <= 250000) break;
+            }
             if (data.length <= 250000) break;
           }
+          if (!data.startsWith("data:image/jpeg;base64,")) throw new Error("Das Bild konnte nicht als JPEG verarbeitet werden.");
           if (data.length > 250000) throw new Error("Das Foto ist nach dem Verkleinern noch zu groß.");
           saveBackground(data);
         } finally {
@@ -18619,7 +18660,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       } finally {
         if (backgroundFile?.isConnected) backgroundFile.value = "";
       }
-    });
+    };
     this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
