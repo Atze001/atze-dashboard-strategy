@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "5B96DD5";
+const ATZE_TESTING_REVISION = "C2B3433";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9543,6 +9543,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           border-radius: 0;
           min-height: 100vh;
           overflow: hidden;
+          /* Diagnostic: clip stray visual overflow to the home card only. */
+          overflow: clip;
         }
 
         .page {
