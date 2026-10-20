@@ -1,3 +1,9 @@
+## v0.410.0
+
+- Graue Kapsel beim Hochscrollen auf der Hauptübersicht beseitigt: automatisch eingebettete Thermostat-Karten werden visuell ausgeblendet.
+- Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
+- Temporären Diagnosecode nach erfolgreicher Fehlersuche entfernt.
+
 ## v0.409.0
 
 - iOS: Drag-and-Drop-Sortierung der acht Status-Buttons auf der obersten Hauptseitenkarte über langes Drücken (450 ms) repariert.
