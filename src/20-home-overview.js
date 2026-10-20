@@ -2213,6 +2213,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           border-radius: 0;
           min-height: 100vh;
           overflow: hidden;
+          /* Diagnostic: clip stray visual overflow to the home card only. */
+          overflow: clip;
         }
 
         .page {
