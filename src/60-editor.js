@@ -21,11 +21,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._openEditorSections = new Set();
     this._dashboardBackgroundStatus = "";
     this._dashboardBackgroundError = false;
+    this._backgroundFileInput = null;
+    this._backgroundPickerActive = false;
   }
 
   set hass(value) {
     const first = !this._hass;
     this._hass = value;
+    if (this._backgroundPickerActive) return;
     if (first || this._areas.length === 0) {
       this._loadRegistries();
     } else if (this._entityVisibilityActive || this._navigationEditActive) {
@@ -42,6 +45,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   setConfig(config) {
     this._config = { ...(config || {}) };
+    if (this._backgroundPickerActive) return;
     if (this._navigationEditActive || this._homeLayoutSelectActive) {
       this._pendingHassRender = true;
       return;
@@ -1384,7 +1388,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _render() {
-    if (!this.shadowRoot) return;
+    if (!this.shadowRoot || this._backgroundPickerActive) return;
 
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
@@ -2745,7 +2749,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
 
 
-    const backgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
+    const placeholderBackgroundFile = this.shadowRoot.querySelector(".dashboard-background-file");
+    if (!this._backgroundFileInput) this._backgroundFileInput = placeholderBackgroundFile;
+    else placeholderBackgroundFile?.replaceWith(this._backgroundFileInput);
+    const backgroundFile = this._backgroundFileInput;
     const backgroundStatus = this.shadowRoot.querySelector(".dashboard-background-status");
     const setBackgroundStatus = (message, error = false) => {
       this._dashboardBackgroundStatus = message;
@@ -2761,8 +2768,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._fireConfigChanged(next);
       setBackgroundStatus(value ? "Hintergrundbild übernommen. Bitte Dashboard-Einstellungen speichern." : "Hintergrundbild entfernt.");
     };
-    this.shadowRoot.querySelector(".dashboard-background-pick")?.addEventListener("click", () => backgroundFile?.click());
-    backgroundFile?.addEventListener("change", async (event) => {
+    this.shadowRoot.querySelector(".dashboard-background-pick")?.addEventListener("click", () => {
+      this._backgroundPickerActive = true;
+      setBackgroundStatus("Fotoauswahl geöffnet …");
+      backgroundFile?.click();
+    });
+    backgroundFile?.addEventListener("cancel", () => {
+      this._backgroundPickerActive = false;
+      setBackgroundStatus("Fotoauswahl abgebrochen.");
+    }, { once: true });
+    backgroundFile.onchange = async (event) => {
+      this._backgroundPickerActive = false;
       const file = event.currentTarget.files?.[0];
       if (!file) return;
       if (!file.type.startsWith("image/") && !/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name)) {
@@ -2805,7 +2821,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       } finally {
         if (backgroundFile?.isConnected) backgroundFile.value = "";
       }
-    });
+    };
     this.shadowRoot.querySelector(".dashboard-background-clear")?.addEventListener("click", () => saveBackground(""));
 
     for (const input of this.shadowRoot.querySelectorAll(".area-toggle")) {
