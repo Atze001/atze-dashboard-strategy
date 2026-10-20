@@ -9497,17 +9497,27 @@ class AtzeHomeOverviewCard extends HTMLElement {
           box-sizing: border-box;
           --home-shell-bg: ${this._config?.dashboard_background_image ? "transparent" : "#111111"};
           background: var(--home-shell-bg);
-          ${this._config?.dashboard_background_image && (
-            String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||
-            String(this._config.dashboard_background_image).startsWith("/local/") ||
-            String(this._config.dashboard_background_image).startsWith("/api/image/serve/") ||
-            /^https?:\/\//i.test(String(this._config.dashboard_background_image))
-          ) && !/["'\\\n\r<>]/.test(String(this._config.dashboard_background_image))
-            ? `background-image: url("${this._config.dashboard_background_image}"); background-position: center; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;`
-            : ""}
+          position: relative;
+          isolation: isolate;
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
+
+        ${this._config?.dashboard_background_image && (
+          String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||
+          String(this._config.dashboard_background_image).startsWith("/local/") ||
+          String(this._config.dashboard_background_image).startsWith("/api/image/serve/") ||
+          /^https?:\/\//i.test(String(this._config.dashboard_background_image))
+        ) && !/["'\\\n\r<>]/.test(String(this._config.dashboard_background_image))
+          ? `:host::before {
+              content: "";
+              position: fixed;
+              inset: 0;
+              z-index: -1;
+              pointer-events: none;
+              background: center / cover no-repeat url("${this._config.dashboard_background_image}");
+            }`
+          : ""}
 
         :host::-webkit-scrollbar,
         ha-card::-webkit-scrollbar,
