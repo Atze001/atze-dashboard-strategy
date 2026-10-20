@@ -1179,6 +1179,9 @@ function setupAtzeHomeSwipe(anchor, homePathProvider) {
   };
 
   const showGestureIndicator = (progress) => {
+    // TEMPORARY DIAGNOSTIC: suppress the visual gesture indicator only.
+    // Swipe-back navigation and its event handling remain unchanged.
+    return;
     if (!state.gestureIndicator) {
       const indicator = document.createElement("div");
       indicator.setAttribute("aria-hidden", "true");
