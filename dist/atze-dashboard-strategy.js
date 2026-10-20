@@ -7032,9 +7032,36 @@ function applyAtzeSidebarAccess(config) {
       panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
       document.body.appendChild(panel);
       panel.querySelector("#atze-debug-close").addEventListener("click", () => panel.remove());
-      panel.querySelector("#atze-debug-copy").addEventListener("click", () => {
+      panel.querySelector("#atze-debug-copy").addEventListener("click", async () => {
+        const button = panel.querySelector("#atze-debug-copy");
         const value = panel.querySelector("pre").textContent;
-        navigator.clipboard?.writeText(value).catch(() => {});
+        let copied = false;
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            copied = true;
+          }
+        } catch (_error) { /* Safari and insecure contexts can reject clipboard access. */ }
+        if (!copied) {
+          const field = document.createElement("textarea");
+          field.value = value;
+          field.setAttribute("readonly", "");
+          field.style.cssText = "position:fixed;left:10px;top:10px;width:1px;height:1px;opacity:0";
+          document.body.appendChild(field);
+          field.focus();
+          field.select();
+          try { copied = document.execCommand("copy"); } catch (_error) {}
+          field.remove();
+        }
+        button.textContent = copied ? "Kopiert!" : "Bitte Text markieren";
+        if (!copied) {
+          const pre = panel.querySelector("pre");
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(pre);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
       });
     }
     panel.querySelector("pre").textContent = lines.join("\n");
