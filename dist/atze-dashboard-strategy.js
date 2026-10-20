@@ -7029,8 +7029,53 @@ function applyAtzeSidebarAccess(config) {
       panel = document.createElement("div");
       panel.id = "atze-visual-debug-panel";
       panel.style.cssText = "position:fixed;z-index:2147483647;left:8px;right:8px;bottom:8px;max-height:55vh;overflow:auto;background:#141414;color:#fff;border:2px solid #f0c64c;border-radius:12px;padding:12px;font:12px/1.5 monospace;box-shadow:0 8px 30px #0009";
-      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
+      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-highlight">Rand markieren</button><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
       document.body.appendChild(panel);
+      const highlightButton = panel.querySelector("#atze-debug-highlight");
+      const highlights = [];
+      highlightButton.addEventListener("click", () => {
+        if (highlights.length) {
+          for (const el of highlights) el.remove();
+          highlights.length = 0;
+          highlightButton.textContent = "Rand markieren";
+          return;
+        }
+        const candidates = [];
+        const seen = new Set();
+        const scan = (root) => {
+          if (!root) return;
+          for (const el of root.querySelectorAll("*")) {
+            if (seen.has(el)) continue;
+            seen.add(el);
+            if (el.id === "atze-visual-debug-panel" || el.closest?.("#atze-visual-debug-panel")) continue;
+            const rect = el.getBoundingClientRect();
+            const css = window.getComputedStyle(el);
+            if (rect.width > 2 && rect.height > 3 && rect.height < 500 &&
+                rect.left <= x + 25 && rect.right >= x - 35 &&
+                rect.top <= y + 90 && rect.bottom >= y - 90 &&
+                css.display !== "none" && css.visibility !== "hidden" &&
+                Number(css.opacity) > 0) {
+              candidates.push({ el, rect, css });
+            }
+            if (el.shadowRoot) scan(el.shadowRoot);
+          }
+        };
+        scan(document);
+        candidates.sort((a, b) => (a.rect.width * a.rect.height) - (b.rect.width * b.rect.height));
+        for (const candidate of candidates.slice(0, 20)) {
+          const marker = document.createElement("div");
+          marker.style.cssText = "position:fixed;pointer-events:none;z-index:2147483645;border:2px solid #ff3b30;background:rgba(255,59,48,.13);box-sizing:border-box;";
+          marker.style.left = candidate.rect.left + "px";
+          marker.style.top = candidate.rect.top + "px";
+          marker.style.width = candidate.rect.width + "px";
+          marker.style.height = candidate.rect.height + "px";
+          document.body.appendChild(marker);
+          highlights.push(marker);
+        }
+        panel.querySelector("pre").textContent += "\\nRand-Kandidaten (" + candidates.length + "):\\n" +
+          candidates.slice(0, 30).map(({el}) => describe(el)).join("\\n");
+        highlightButton.textContent = "Markierung AUS (" + highlights.length + ")";
+      });
       const bgButton = panel.querySelector("#atze-debug-toggle-bg");
       const backgroundState = [];
       bgButton.addEventListener("click", () => {
@@ -7059,6 +7104,8 @@ function applyAtzeSidebarAccess(config) {
         for (const [el, oldValue, oldPriority] of backgroundState) {
           el.style.setProperty("visibility", oldValue, oldPriority);
         }
+        for (const el of highlights) el.remove();
+        highlights.length = 0;
         panel.remove();
       });
       panel.querySelector("#atze-debug-copy").addEventListener("click", async () => {
