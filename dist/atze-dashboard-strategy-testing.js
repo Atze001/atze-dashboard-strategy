@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "77C72A0";
+const ATZE_TESTING_REVISION = "A61F0C1";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7026,9 +7026,38 @@ function applyAtzeSidebarAccess(config) {
       panel = document.createElement("div");
       panel.id = "atze-visual-debug-panel";
       panel.style.cssText = "position:fixed;z-index:2147483647;left:8px;right:8px;bottom:8px;max-height:55vh;overflow:auto;background:#141414;color:#fff;border:2px solid #f0c64c;border-radius:12px;padding:12px;font:12px/1.5 monospace;box-shadow:0 8px 30px #0009";
-      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
+      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-toggle-bg">Hintergrund AUS</button><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
       document.body.appendChild(panel);
-      panel.querySelector("#atze-debug-close").addEventListener("click", () => panel.remove());
+      const bgButton = panel.querySelector("#atze-debug-toggle-bg");
+      const backgroundState = [];
+      bgButton.addEventListener("click", () => {
+        if (backgroundState.length) {
+          for (const [el, oldValue, oldPriority] of backgroundState) {
+            el.style.setProperty("visibility", oldValue, oldPriority);
+          }
+          backgroundState.length = 0;
+          bgButton.textContent = "Hintergrund AUS";
+          return;
+        }
+        const walk = (root) => {
+          if (!root) return;
+          for (const el of root.querySelectorAll("*")) {
+            if (el.localName === "hui-view-background") {
+              backgroundState.push([el, el.style.getPropertyValue("visibility"), el.style.getPropertyPriority("visibility")]);
+              el.style.setProperty("visibility", "hidden", "important");
+            }
+            if (el.shadowRoot) walk(el.shadowRoot);
+          }
+        };
+        walk(document);
+        bgButton.textContent = "Hintergrund AN (" + backgroundState.length + ")";
+      });
+      panel.querySelector("#atze-debug-close").addEventListener("click", () => {
+        for (const [el, oldValue, oldPriority] of backgroundState) {
+          el.style.setProperty("visibility", oldValue, oldPriority);
+        }
+        panel.remove();
+      });
       panel.querySelector("#atze-debug-copy").addEventListener("click", async () => {
         const button = panel.querySelector("#atze-debug-copy");
         const value = panel.querySelector("pre").textContent;
