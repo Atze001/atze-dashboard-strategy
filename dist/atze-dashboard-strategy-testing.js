@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.406.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "016D2D7";
+const ATZE_TESTING_REVISION = "040407A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6947,6 +6947,72 @@ function applyAtzeSidebarAccess(config) {
   setTimeout(apply, 250);
   setTimeout(apply, 1000);
 }
+
+
+/* Temporary opt-in visual element inspector for the ATZE home view.
+ * Enable with ?atze_debug=1; no dashboard behavior changes otherwise.
+ */
+(function installAtzeVisualDebug() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (window.__atzeVisualDebugInstalled) return;
+  if (new URLSearchParams(window.location.search).get("atze_debug") !== "1") return;
+  window.__atzeVisualDebugInstalled = true;
+
+  const describe = (el) => {
+    if (!el || el.nodeType !== 1) return "";
+    const rect = el.getBoundingClientRect();
+    const css = window.getComputedStyle(el);
+    const name = el.localName || el.tagName.toLowerCase();
+    const id = el.id ? "#" + el.id : "";
+    const cls = typeof el.className === "string"
+      ? "." + el.className.trim().split(/\\s+/).filter(Boolean).slice(0, 3).join(".")
+      : "";
+    return name + id + (cls === "." ? "" : cls) +
+      " | x=" + Math.round(rect.x) + " y=" + Math.round(rect.y) +
+      " w=" + Math.round(rect.width) + " h=" + Math.round(rect.height) +
+      " | position=" + css.position + " overflow=" + css.overflow +
+      " bg=" + css.backgroundColor + " radius=" + css.borderRadius +
+      " pointer=" + css.pointerEvents;
+  };
+  const deepStack = (x, y, root, depth = 0) => {
+    if (!root || depth > 8 || typeof root.elementsFromPoint !== "function") return [];
+    const elements = root.elementsFromPoint(x, y);
+    const out = [];
+    for (const el of elements.slice(0, 12)) {
+      out.push("  ".repeat(depth) + describe(el));
+      if (el.shadowRoot) out.push(...deepStack(x, y, el.shadowRoot, depth + 1));
+    }
+    return out;
+  };
+  const show = (event) => {
+    if (event.target?.closest?.("#atze-visual-debug-panel")) return;
+    const x = event.clientX, y = event.clientY;
+    const lines = [
+      "ATZE Diagnose | x=" + Math.round(x) + " y=" + Math.round(y),
+      "Treffer (einschließlich Shadow DOM):",
+      ...deepStack(x, y, document),
+      "Ereignispfad:",
+      ...event.composedPath().filter((el) => el?.nodeType === 1).slice(0, 16).map(describe)
+    ];
+    let panel = document.getElementById("atze-visual-debug-panel");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "atze-visual-debug-panel";
+      panel.style.cssText = "position:fixed;z-index:2147483647;left:8px;right:8px;bottom:8px;max-height:55vh;overflow:auto;background:#141414;color:#fff;border:2px solid #f0c64c;border-radius:12px;padding:12px;font:12px/1.5 monospace;box-shadow:0 8px 30px #0009";
+      panel.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><strong style="flex:1">ATZE Element-Diagnose</strong><button type="button" id="atze-debug-copy">Kopieren</button><button type="button" id="atze-debug-close">Schließen</button></div><pre style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0"></pre>';
+      document.body.appendChild(panel);
+      panel.querySelector("#atze-debug-close").addEventListener("click", () => panel.remove());
+      panel.querySelector("#atze-debug-copy").addEventListener("click", () => {
+        const value = panel.querySelector("pre").textContent;
+        navigator.clipboard?.writeText(value).catch(() => {});
+      });
+    }
+    panel.querySelector("pre").textContent = lines.join("\\n");
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
+  document.addEventListener("pointerdown", show, true);
+})();
 
 
 class AtzeDashboardStrategy extends HTMLElement {
