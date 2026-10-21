@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.410.0**
+Version **0.411.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.411.0
+
+- Versionsupdate für HACS: bestätigten Fix der grauen Thermostat-Kapsel auf der Hauptübersicht und Entfernung des temporären Diagnosecodes als neue Version bereitgestellt.
+- Eingebettete Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
+
 ## v0.410.0
 
 - Graue Kapsel beim Hochscrollen auf der Hauptübersicht beseitigt: automatisch eingebettete Thermostat-Karten werden visuell ausgeblendet.
@@ -240,12 +245,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - iOS: Drag-and-Drop-Sortierung der acht Status-Buttons auf der obersten Hauptseitenkarte über langes Drücken (450 ms) repariert.
 - Normales Scrollen und Tippen bleiben erhalten; die Reihenfolge wird weiterhin in `home_status_order` gespeichert.
-
-## v0.404.0
-
-- Manuelle Sicherung und Wiederherstellung der Dashboard-Konfiguration als JSON über die Einstellungen, inklusive Sicherheitsabfrage.
-- Schalterkarten zeigen bei zugeordnetem Leistungssensor den Verbrauch in Watt auch im ausgeschalteten Zustand; Ein/Aus-Text entfällt.
-- Anwesenheitsverlauf zeigt nur noch den Personenstatus; iCloud-Tracker und iCloud-Historie entfernt.
 <!-- latest-changes:end -->
 
 ## Lizenz
