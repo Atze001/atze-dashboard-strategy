@@ -1,3 +1,8 @@
+## v0.411.0
+
+- Versionsupdate für HACS: bestätigten Fix der grauen Thermostat-Kapsel auf der Hauptübersicht und Entfernung des temporären Diagnosecodes als neue Version bereitgestellt.
+- Eingebettete Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
+
 ## v0.410.0
 
 - Graue Kapsel beim Hochscrollen auf der Hauptübersicht beseitigt: automatisch eingebettete Thermostat-Karten werden visuell ausgeblendet.
