@@ -15849,6 +15849,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   setConfig(config) {
     this._config = {
+      hero_image: "/local/stromverbrauch-titelbild.webp",
       total: "sensor.gesamt_strom",
       power: "sensor.gesamt_leistung",
       year: "sensor.gesamt_strom_virtuell_jahr",
@@ -15990,6 +15991,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       <style>
         :host { display:block; min-width:0 }
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+        .energy-hero { grid-column:1/-1; width:100%; min-width:0; overflow:hidden;
+          border-radius:16px; margin:0 0 6px; background:rgba(55,58,67,.30);
+          border:1px solid var(--home-card-border,rgba(255,255,255,.10));
+          box-sizing:border-box }
+        .energy-hero img { display:block; width:100%; height:auto; aspect-ratio:1672/941;
+          object-fit:cover }
+        .energy-hero[hidden] { display:none }
         .tile { box-sizing:border-box; min-width:0; min-height:132px; padding:13px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
           border-radius:16px; background:rgba(55,58,67,.30);
@@ -16054,6 +16062,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
+        <div class="energy-hero" hidden><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"></div>
         <div class="tile total" data-period="total">
           <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
@@ -16085,6 +16094,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       }
     });
     dialog.querySelector(".dialog-reset").addEventListener("click", () => this._reset(dialog.dataset.period));
+    const hero = this.shadowRoot.querySelector(".energy-hero");
+    const heroImage = hero.querySelector("img");
+    if (this._config.hero_image) {
+      heroImage.onload = () => { hero.hidden = false; };
+      heroImage.onerror = () => { hero.hidden = true; };
+      heroImage.src = this._config.hero_image;
+    }
     const grid = this.shadowRoot.querySelector(".grid");
     for (const period of ["total", "year"]) {
       const detail = this.shadowRoot.querySelector('[data-detail="' + period + '"]');
