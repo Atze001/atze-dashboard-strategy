@@ -15995,16 +15995,19 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-section .room-heading { grid-column:1/-1; margin:0 0 1px }
         .room-section .tile.room-total { grid-column:1/-1; min-height:120px }
         .room-section .tile.period { min-height:100px }
-        .room-section .room-power { display:flex; justify-content:center; align-items:baseline; gap:5px;
-          border-top:1px solid var(--home-card-border,rgba(255,255,255,.1)); padding-top:10px }
+        .room-section .room-power { display:flex; }
         .dialog-reset[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
-        .room-power { text-align:center; font-size:15px; font-weight:600;
-          font-variant-numeric:tabular-nums }
+        .room-power { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
         .room-power .unit { font-size:11px }
         .room-wide { grid-column:1/-1 }
         .tile.period:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .head { display:flex; align-items:center; gap:7px; min-width:0 }
+        .head .live-power, .head .room-power { display:flex; align-items:baseline; justify-content:flex-end;
+          gap:4px; margin-left:auto; min-width:0; white-space:nowrap; text-align:right;
+          font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
+        .head .live-power .unit, .head .room-power .unit { font-size:11px }
+        .head .live-power[hidden] { display:none }
         .head ha-icon { --mdc-icon-size:20px; flex:none; color:var(--accent) }
         .title { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
         .value { font-size:clamp(30px,8vw,40px); font-weight:700; line-height:1.15;
@@ -16015,11 +16018,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .summary-label { color:var(--secondary-text-color); font-size:11px }
         .summary-value { font-size:clamp(28px,7vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
-        .live-power { display:flex; align-items:baseline; justify-content:center; gap:5px;
-          border-top:1px solid var(--home-card-border,rgba(255,255,255,.10)); padding-top:12px;
-          font-size:18px; font-weight:600; font-variant-numeric:tabular-nums }
-        .live-power .unit { font-size:12px }
-        .live-power[hidden] { display:none }
         .period-dialog { box-sizing:border-box; width:min(340px,calc(100vw - 36px));
           max-height:calc(100dvh - 60px); overflow:auto; margin:auto; padding:22px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:20px;
@@ -16041,7 +16039,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       </style>
       <div class="grid">
         <div class="tile total" data-period="total">
-          <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span></div>
+          <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
             <div class="summary-item" data-detail="total" role="button" tabindex="0" aria-label="Gesamtzähler Details">
               <span class="summary-label">Gesamtverbrauch</span>
@@ -16052,7 +16050,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
               <div class="summary-value"><span class="year-number"></span> <span class="unit">kWh</span></div>
             </div>
           </div>
-          <div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div>
         </div>
       </div>
       <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
@@ -16116,7 +16113,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       section.dataset.roomSection = room.key;
       section.innerHTML = `<div class="room-heading"><ha-icon></ha-icon><span></span></div>
         <div class="tile room room-total" data-room="${room.key}">
-          <div class="head"><ha-icon></ha-icon><span class="title">Stromverbrauch</span></div>
+          <div class="head"><ha-icon></ha-icon><span class="title">Stromverbrauch</span><div class="room-power"><span class="room-watts"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
             <div class="summary-item" data-room-detail="energy" tabindex="0" role="button" aria-label="Gesamtverbrauch Details">
               <span class="summary-label">Gesamtverbrauch</span>
@@ -16127,7 +16124,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
               <div class="summary-value"><span class="room-year"></span> <span class="unit">kWh</span></div>
             </div>
           </div>
-          <div class="room-power"><span class="room-watts"></span> <span class="unit">W aktuell</span></div>
         </div>`;
       section.querySelector(".room-heading ha-icon").setAttribute("icon", room.icon);
       section.querySelector(".room-heading span").textContent = room.name;
