@@ -15845,11 +15845,149 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._config = {};
     this._hass = null;
+    this._backGesture = null;
+  }
+
+  connectedCallback() {
+    if (this._backGesture) return;
+    const gesture = { id: null, x: 0, y: 0, started: 0, active: false,
+      indicator: null, blur: null, fade: null, fadeTimer: null };
+    const cleanupVisuals = () => {
+      gesture.indicator?.remove();
+      gesture.blur?.remove();
+      gesture.indicator = null;
+      gesture.blur = null;
+    };
+    const reset = () => {
+      gesture.id = null;
+      gesture.active = false;
+      cleanupVisuals();
+    };
+    const show = (progress) => {
+      if (!gesture.indicator) {
+        const indicator = document.createElement("div");
+        indicator.setAttribute("aria-hidden", "true");
+        indicator.innerHTML = '<ha-icon icon="mdi:arrow-left"></ha-icon>';
+        indicator.style.cssText = [
+          "position:fixed", "left:18px", "top:50%", "width:48px", "height:48px",
+          "border-radius:50%", "display:flex", "align-items:center", "justify-content:center",
+          "background:color-mix(in srgb, var(--primary-color, #03a9f4) 60%, transparent)",
+          "color:var(--text-primary-color, #fff)", "box-shadow:0 6px 20px rgba(0,0,0,.28)",
+          "pointer-events:none", "z-index:2147483646", "opacity:0",
+          "transform:translate(-28px,-50%) scale(.85)",
+          "transition:opacity 100ms ease, transform 100ms ease",
+        ].join(";");
+        document.body.appendChild(indicator);
+        gesture.indicator = indicator;
+        const blur = document.createElement("div");
+        blur.setAttribute("aria-hidden", "true");
+        blur.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:2147483645;backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);transition:backdrop-filter 80ms linear,-webkit-backdrop-filter 80ms linear";
+        document.body.appendChild(blur);
+        gesture.blur = blur;
+      }
+      const p = Math.max(0, Math.min(1, progress));
+      gesture.blur.style.backdropFilter = `blur(${(p * 6).toFixed(1)}px)`;
+      gesture.blur.style.webkitBackdropFilter = `blur(${(p * 6).toFixed(1)}px)`;
+      gesture.indicator.style.opacity = String(Math.min(1, p * 1.5));
+      gesture.indicator.style.transform =
+        `translate(${-28 + 28 * p}px,-50%) scale(${0.85 + 0.15 * p})`;
+    };
+    const goBack = () => {
+      const target = String(this._config?.return_path || "").trim();
+      if (target) {
+        const url = target.startsWith("/") ? target : "/" + target;
+        window.history.pushState(null, "", url);
+        window.dispatchEvent(new Event("location-changed"));
+      } else if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // Fallback for direct launches of the standalone energy dashboard.
+        window.history.pushState(null, "", "/atze-test/home");
+        window.dispatchEvent(new Event("location-changed"));
+      }
+    };
+    const onStart = (event) => {
+      if (gesture.id !== null || event.touches.length !== 1) return;
+      if (this.shadowRoot?.querySelector(".period-dialog")?.open) return;
+      const touch = event.touches[0];
+      if (touch.clientX <= 28) return;
+      if ((event.composedPath?.() || []).some(node =>
+        node instanceof HTMLElement &&
+        (["BUTTON", "INPUT", "SELECT", "TEXTAREA"].includes(node.tagName) ||
+          node.getAttribute("role") === "slider")
+      )) return;
+      gesture.id = touch.identifier;
+      gesture.x = touch.clientX;
+      gesture.y = touch.clientY;
+      gesture.started = performance.now();
+    };
+    const onMove = (event) => {
+      if (gesture.id === null) return;
+      const touch = [...event.touches].find(t => t.identifier === gesture.id);
+      if (!touch) return;
+      const dx = touch.clientX - gesture.x;
+      const dy = touch.clientY - gesture.y;
+      if (!gesture.active) {
+        if (Math.abs(dy) > 20 && Math.abs(dy) > Math.abs(dx) * 1.15) {
+          reset();
+          return;
+        }
+        if (dx <= 14 || dx < Math.abs(dy) * 1.05) return;
+        gesture.active = true;
+      }
+      show(dx / 140);
+    };
+    const onEnd = (event) => {
+      if (gesture.id === null) return;
+      const touch = [...event.changedTouches].find(t => t.identifier === gesture.id);
+      if (!touch) return;
+      const dx = touch.clientX - gesture.x;
+      const dy = touch.clientY - gesture.y;
+      const done = gesture.active && dx >= 140 && Math.abs(dy) <= 110 &&
+        dx >= Math.abs(dy) * 1.1 && performance.now() - gesture.started <= 1800;
+      reset();
+      if (done) {
+        gesture.fade?.remove();
+        const fade = document.createElement("div");
+        fade.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:var(--primary-background-color,#111827);opacity:0;transition:opacity 300ms ease-in-out";
+        document.body.appendChild(fade);
+        gesture.fade = fade;
+        requestAnimationFrame(() => { fade.style.opacity = "1"; });
+        gesture.fadeTimer = window.setTimeout(() => {
+          goBack();
+          fade.style.opacity = "0";
+          gesture.fadeTimer = window.setTimeout(() => {
+            fade.remove();
+            if (gesture.fade === fade) gesture.fade = null;
+          }, 420);
+        }, 320);
+      }
+    };
+    this.addEventListener("touchstart", onStart, { passive: true });
+    this.addEventListener("touchmove", onMove, { passive: true });
+    this.addEventListener("touchend", onEnd, { passive: true });
+    this.addEventListener("touchcancel", reset, { passive: true });
+    this._backGesture = () => {
+      this.removeEventListener("touchstart", onStart);
+      this.removeEventListener("touchmove", onMove);
+      this.removeEventListener("touchend", onEnd);
+      this.removeEventListener("touchcancel", reset);
+      window.clearTimeout(gesture.fadeTimer);
+      gesture.fade?.remove();
+      reset();
+    };
+  }
+
+  disconnectedCallback() {
+    this._backGesture?.();
+    this._backGesture = null;
   }
 
   setConfig(config) {
     this._config = {
       hero_image: "/local/stromverbrauch-titelbild.webp",
+      // Optional absolute Home Assistant route, e.g. /atze-test/home.
+      return_path: "",
       total: "sensor.gesamt_strom",
       power: "sensor.gesamt_leistung",
       year: "sensor.gesamt_strom_virtuell_jahr",
