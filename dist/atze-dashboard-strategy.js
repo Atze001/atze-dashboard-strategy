@@ -16062,7 +16062,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
-        <div class="energy-hero" hidden><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"></div>
+        <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"></div>
         <div class="tile total" data-period="total">
           <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
@@ -16097,9 +16097,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
-      heroImage.onload = () => { hero.hidden = false; };
       heroImage.onerror = () => { hero.hidden = true; };
       heroImage.src = this._config.hero_image;
+    } else {
+      hero.hidden = true;
     }
     const grid = this.shadowRoot.querySelector(".grid");
     for (const period of ["total", "year"]) {
