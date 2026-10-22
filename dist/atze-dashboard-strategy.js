@@ -15905,7 +15905,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const number = Number(state.state);
     if (!Number.isFinite(number)) return "–";
     return new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 0, maximumFractionDigits: 2,
+      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(number);
   }
 

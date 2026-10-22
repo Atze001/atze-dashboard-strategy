@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "E447B72";
+const ATZE_TESTING_REVISION = "3653CD3";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15902,7 +15902,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const number = Number(state.state);
     if (!Number.isFinite(number)) return "–";
     return new Intl.NumberFormat("de-DE", {
-      minimumFractionDigits: 0, maximumFractionDigits: 2,
+      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(number);
   }
 
