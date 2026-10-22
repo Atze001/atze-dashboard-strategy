@@ -15934,6 +15934,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this._alignHeroSticky();
     if (this._backGesture) return;
     const gesture = { id: null, x: 0, y: 0, started: 0, active: false,
       indicator: null, blur: null, fade: null, fadeTimer: null };
@@ -16205,6 +16206,29 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
+  _alignHeroSticky() {
+    // Preserve the image's initial Lovelace top inset when it sticks.
+    requestAnimationFrame(() => {
+      const hero = this.shadowRoot?.querySelector(".energy-hero");
+      if (!this.isConnected || !hero || hero.hidden) return;
+      let node = this;
+      let containerTop = 0;
+      while (node) {
+        const next = node.assignedSlot || node.parentNode;
+        node = next instanceof ShadowRoot ? next.host : next;
+        if (!(node instanceof HTMLElement)) continue;
+        const style = getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY) &&
+            node.scrollHeight > node.clientHeight + 2) {
+          containerTop = Math.max(0, node.getBoundingClientRect().top);
+          break;
+        }
+      }
+      const top = hero.getBoundingClientRect().top - containerTop;
+      hero.style.top = Math.max(0, Math.min(80, top)).toFixed(1) + "px";
+    });
+  }
+
   _render() {
     this._heroScrollCleanup?.();
     this._heroScrollCleanup = null;
@@ -16438,6 +16462,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       grid.appendChild(section);
     }
     this._update();
+    this._alignHeroSticky();
   }
 
   _update() {
