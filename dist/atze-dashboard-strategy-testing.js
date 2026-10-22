@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "93F10EB";
+const ATZE_TESTING_REVISION = "4060444";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15857,10 +15857,25 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       bedroom_power: "sensor.schlafzimmer_stromzahler_power",
       living_energy: "sensor.wohnzimmer_stromzahler_energy",
       living_power: "sensor.wohnzimmer_stromzahler_power",
-      // Optional room period counters; no default IDs are assumed.
-      living_month: null, living_day: null,
-      bedroom_month: null, bedroom_day: null,
-      kitchen_month: null, kitchen_day: null,
+      // Room utility meters, reset timestamps and manual reset scripts.
+      living_month: "sensor.wohnzimmer_strom_monat",
+      living_day: "sensor.wohnzimmer_strom_tag",
+      living_month_reset: "input_datetime.wohnzimmer_strom_reset_monat",
+      living_day_reset: "input_datetime.wohnzimmer_strom_reset_tag",
+      living_month_script: "script.wohnzimmer_strom_reset_monat",
+      living_day_script: "script.wohnzimmer_strom_reset_tag",
+      bedroom_month: "sensor.schlafzimmer_strom_monat",
+      bedroom_day: "sensor.schlafzimmer_strom_tag",
+      bedroom_month_reset: "input_datetime.schlafzimmer_strom_reset_monat",
+      bedroom_day_reset: "input_datetime.schlafzimmer_strom_reset_tag",
+      bedroom_month_script: "script.schlafzimmer_strom_reset_monat",
+      bedroom_day_script: "script.schlafzimmer_strom_reset_tag",
+      kitchen_month: "sensor.kueche_strom_monat",
+      kitchen_day: "sensor.kueche_strom_tag",
+      kitchen_month_reset: "input_datetime.kueche_strom_reset_monat",
+      kitchen_day_reset: "input_datetime.kueche_strom_reset_tag",
+      kitchen_month_script: "script.kueche_strom_reset_monat",
+      kitchen_day_script: "script.kueche_strom_reset_tag",
       year_reset: "input_datetime.gesamt_strom_reset_jahr",
       month_reset: "input_datetime.gesamt_strom_reset_monat",
       day_reset: "input_datetime.gesamt_strom_reset_tag",
