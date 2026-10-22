@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "4159855";
+const ATZE_TESTING_REVISION = "5A25500";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15843,7 +15843,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._config = {};
     this._hass = null;
     this._backGesture = null;
-    this._heroScrollCleanup = null;
   }
 
   connectedCallback() {
@@ -15979,8 +15978,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   disconnectedCallback() {
     this._backGesture?.();
     this._backGesture = null;
-    this._heroScrollCleanup?.();
-    this._heroScrollCleanup = null;
   }
 
   setConfig(config) {
@@ -16120,65 +16117,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
-  _setupHeroScroll() {
-    this._heroScrollCleanup?.();
-    this._heroScrollCleanup = null;
-    const hero = this.shadowRoot.querySelector(".energy-hero");
-    const marker = this.shadowRoot.querySelector(".energy-hero-anchor");
-    if (!hero || !marker || hero.hidden) return;
-
-    // The Lovelace scroll container can be outside multiple shadow roots.
-    // Use a fixed marker above the sticky image, not the image itself, to
-    // measure progress without causing feedback when the image shrinks.
-    let parent = this;
-    let scrollContainer = null;
-    while (parent) {
-      const nextParent = parent.assignedSlot || parent.parentNode;
-      parent = nextParent instanceof ShadowRoot ? nextParent.host : nextParent;
-      if (!(parent instanceof HTMLElement)) continue;
-      const style = getComputedStyle(parent);
-      if (/(auto|scroll)/.test(style.overflowY) &&
-          parent.scrollHeight > parent.clientHeight + 2) {
-        scrollContainer = parent;
-        break;
-      }
-    }
-
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      if (!this.isConnected || !hero.isConnected) return;
-      const viewportTop = scrollContainer ?
-        Math.max(0, scrollContainer.getBoundingClientRect().top) : 0;
-      const distance = viewportTop - marker.getBoundingClientRect().top;
-      const progress = Math.max(0, Math.min(1, distance / 150));
-      const expanded = hero.clientWidth * (860 / 1672);
-      if (!expanded) return;
-      const compact = Math.min(76, expanded);
-      const height = expanded - (expanded - compact) * progress;
-      hero.style.height = height.toFixed(1) + "px";
-      hero.style.setProperty("--hero-scroll-progress", progress.toFixed(3));
-      hero.classList.toggle("compact", progress >= 0.99);
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    // Capture scrolls also when HA replaces or nests its scrollable view.
-    window.addEventListener("scroll", schedule, true);
-    scrollContainer?.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule, { passive: true });
-    const resizeObserver = new ResizeObserver(schedule);
-    resizeObserver.observe(hero);
-    schedule();
-    this._heroScrollCleanup = () => {
-      window.removeEventListener("scroll", schedule, true);
-      scrollContainer?.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      resizeObserver.disconnect();
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }
-
   _render() {
     this._heroScrollCleanup?.();
     this._heroScrollCleanup = null;
@@ -16190,15 +16128,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       <style>
         :host { display:block; min-width:0 }
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
-        .energy-hero-anchor { height:0; pointer-events:none }
-        .energy-hero { position:sticky; top:0; z-index:3; width:100%; min-width:0;
-          overflow:hidden; height:auto; aspect-ratio:1672/860;
-          border-radius:16px; margin:0 0 16px; background:rgba(55,58,67,.30);
+        .energy-hero { position:sticky; top:0; z-index:3; grid-column:1/-1;
+          width:100%; min-width:0; overflow:hidden; border-radius:16px;
+          margin:0 0 6px; background:rgba(55,58,67,.30);
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
-          box-sizing:border-box; box-shadow:0 5px 16px rgba(0,0,0,calc(var(--hero-scroll-progress,0) * .22)) }
-        .energy-hero img { display:block; width:100%; height:100%;
+          box-sizing:border-box }
+        .energy-hero img { display:block; width:100%; aspect-ratio:1672/860;
           object-fit:cover; object-position:center top }
-        .energy-hero.compact img { object-position:center 37% }
         .energy-hero[hidden] { display:none }
         .energy-hero-error { display:none; padding:12px; font-size:12px; line-height:1.5;
           color:var(--secondary-text-color); overflow-wrap:anywhere }
@@ -16267,9 +16203,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .dialog-reset:disabled { opacity:.45; cursor:wait }
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
-      <div class="energy-hero-anchor" aria-hidden="true"></div>
-      <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
       <div class="grid">
+        <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
         <div class="tile total" data-period="total">
           <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
@@ -16414,7 +16349,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       }
       grid.appendChild(section);
     }
-    this._setupHeroScroll();
     this._update();
   }
 
