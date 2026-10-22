@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "DF896B6";
+const ATZE_TESTING_REVISION = "9E6203D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -570,6 +570,52 @@ function atzeFindScrollContainer(anchor) {
     document.scrollingElement ||
     document.documentElement
   );
+}
+
+// Keep vertical scrolling but stop iOS/WebKit rubber-band overscroll on
+// standalone energy and room views. Restore styles when the view disappears.
+function setupAtzeNoBounce(anchor) {
+  if (!anchor) return () => {};
+  const original = new Map();
+  let scrollTarget = null;
+  let frame = 0;
+  const apply = node => {
+    if (!node?.style || original.has(node)) return;
+    original.set(node, {
+      overscrollBehaviorY: node.style.overscrollBehaviorY,
+      webkitOverflowScrolling: node.style.webkitOverflowScrolling,
+    });
+    node.style.overscrollBehaviorY = "none";
+  };
+  const restore = node => {
+    const saved = original.get(node);
+    if (!saved) return;
+    node.style.overscrollBehaviorY = saved.overscrollBehaviorY;
+    node.style.webkitOverflowScrolling = saved.webkitOverflowScrolling;
+    original.delete(node);
+  };
+  const refresh = () => {
+    frame = 0;
+    if (!anchor.isConnected) return;
+    const next = atzeFindScrollContainer(anchor);
+    if (scrollTarget && scrollTarget !== next) restore(scrollTarget);
+    scrollTarget = next;
+    apply(scrollTarget);
+    apply(document.documentElement);
+    apply(document.body);
+  };
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(refresh);
+  };
+  window.addEventListener("location-changed", schedule);
+  window.addEventListener("resize", schedule);
+  schedule();
+  return () => {
+    window.removeEventListener("location-changed", schedule);
+    window.removeEventListener("resize", schedule);
+    if (frame) cancelAnimationFrame(frame);
+    for (const node of [...original.keys()]) restore(node);
+  };
 }
 
 function setupAtzePageScroll(anchor, enabled = false) {
