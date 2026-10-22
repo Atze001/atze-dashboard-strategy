@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "CFAA5F1";
+const ATZE_TESTING_REVISION = "90F4A52";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15847,6 +15847,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       total: "sensor.gesamt_strom",
+      power: null, // Configure with the Home Assistant power sensor (W).
       year: "sensor.gesamt_strom_virtuell_jahr",
       month: "sensor.gesamt_strom_virtuell_monat",
       day: "sensor.gesamt_strom_virtuell_tag",
@@ -15933,6 +15934,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .value { font-size:clamp(30px,8vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:center; width:100% }
         .unit { font-size:12px; font-weight:400; color:var(--secondary-text-color) }
+        .power { display:flex; align-items:baseline; justify-content:center; gap:5px;
+          font-size:18px; font-weight:600; line-height:1.15; font-variant-numeric:tabular-nums;
+          overflow-wrap:anywhere; text-align:center }
+        .power .unit { font-size:12px }
+        .power[hidden] { display:none }
         .foot { margin-top:auto; min-height:24px; display:flex; align-items:center;
           justify-content:space-between; gap:4px; min-width:0 }
         .caption { font-size:10px; color:var(--secondary-text-color); line-height:1.3;
@@ -15953,6 +15959,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       tile.style.setProperty("--accent", card.tone);
       tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
         <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>
+        ${card.key === "total" ? '<div class="power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div>' : ""}
         <div class="foot"><span class="caption"></span></div>`;
       tile.dataset.period = card.key;
       tile.querySelector("ha-icon").setAttribute("icon", card.icon);
@@ -15981,6 +15988,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
       if (!tile) continue;
       tile.querySelector(".number").textContent = this._value(this._config[period]);
+      if (period === "total") {
+        const power = tile.querySelector(".power");
+        const powerEntity = this._config.power;
+        power.hidden = !powerEntity;
+        if (powerEntity) power.querySelector(".power-number").textContent = this._value(powerEntity);
+      }
       const caption = period === "total"
         ? "Gesamter Zählerstand"
         : this._resetLabel(this._config[period + "_reset"]);
