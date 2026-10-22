@@ -16395,8 +16395,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     topMask.setAttribute("aria-hidden", "true");
     topMask.style.cssText = [
       "position:fixed", "inset:0 0 auto 0",
-      `height:${pinnedTop.toFixed(1)}px`, "pointer-events:none",
-      "background:var(--primary-background-color,#000)", "z-index:29"
+      `height:${(pinnedTop + 2).toFixed(1)}px`, "pointer-events:none",
+      "background:#000", "z-index:2147483600"
     ].join(";");
     document.body.appendChild(topMask);
     let frame = 0;
@@ -16414,7 +16414,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       hero.style.width = width.toFixed(1) + "px";
       hero.style.height = height.toFixed(1) + "px";
       hero.style.margin = "0";
-      hero.style.zIndex = "30";
+      hero.style.zIndex = "2147483601";
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     window.addEventListener("resize", schedule, { passive:true });
