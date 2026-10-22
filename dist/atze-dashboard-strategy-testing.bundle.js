@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "662AB21";
+const ATZE_TESTING_REVISION = "1B0370A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15851,6 +15851,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       year: "sensor.gesamt_strom_virtuell_jahr",
       month: "sensor.gesamt_strom_virtuell_monat",
       day: "sensor.gesamt_strom_virtuell_tag",
+      kitchen_energy: "sensor.kuche_stromzahler_energy",
+      kitchen_power: "sensor.kuche_stromzahler_power",
+      bedroom_energy: "sensor.schlafzimmer_stromzahler_energy",
+      bedroom_power: "sensor.schlafzimmer_stromzahler_power",
+      living_energy: "sensor.wohnzimmer_stromzahler_energy",
+      living_power: "sensor.wohnzimmer_stromzahler_power",
       year_reset: "input_datetime.gesamt_strom_reset_jahr",
       month_reset: "input_datetime.gesamt_strom_reset_monat",
       day_reset: "input_datetime.gesamt_strom_reset_tag",
@@ -15946,6 +15952,15 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           color:var(--primary-text-color); display:flex; flex-direction:column; gap:10px }
         .tile.total { grid-column:1 / -1; --accent:#ffb900 }
         .tile.period { min-height:105px; cursor:pointer }
+        .room-heading { grid-column:1/-1; margin:12px 0 0; display:flex; align-items:center;
+          gap:8px; font-size:15px; font-weight:650; color:var(--primary-text-color) }
+        .room-heading ha-icon { --mdc-icon-size:20px; color:var(--secondary-text-color) }
+        .tile.room { min-height:115px; gap:12px; cursor:pointer }
+        .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
+        .room-power { text-align:center; font-size:15px; font-weight:600;
+          font-variant-numeric:tabular-nums }
+        .room-power .unit { font-size:11px }
+        .room-wide { grid-column:1/-1 }
         .tile.period:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .head { display:flex; align-items:center; gap:7px; min-width:0 }
         .head ha-icon { --mdc-icon-size:20px; flex:none; color:var(--accent) }
@@ -16048,6 +16063,38 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       });
       grid.appendChild(tile);
     }
+    const roomHeading = document.createElement("div");
+    roomHeading.className = "room-heading";
+    roomHeading.innerHTML = '<ha-icon icon="mdi:home-outline"></ha-icon><span>Räume</span>';
+    grid.appendChild(roomHeading);
+    const rooms = [
+      { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
+      { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
+      { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
+    ];
+    for (const room of rooms) {
+      const tile = document.createElement("div");
+      tile.className = "tile room" + (room.key === "kitchen" ? " room-wide" : "");
+      tile.dataset.room = room.key;
+      tile.tabIndex = 0;
+      tile.setAttribute("role", "button");
+      tile.setAttribute("aria-label", room.name + " – Stromzähler Details");
+      tile.style.setProperty("--accent", room.tone);
+      tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
+        <div class="value"><span class="room-energy"></span> <span class="unit">kWh</span></div>
+        <div class="room-power"><span class="room-watts"></span> <span class="unit">W aktuell</span></div>`;
+      tile.querySelector("ha-icon").setAttribute("icon", room.icon);
+      tile.querySelector(".title").textContent = room.name;
+      const open = () => this._details(this._config[room.key + "_energy"]);
+      tile.addEventListener("click", open);
+      tile.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+      grid.appendChild(tile);
+    }
     this._update();
   }
 
@@ -16064,6 +16111,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       tile.querySelector(".number").textContent = this._value(this._config[period]);
     }
     this._updatePeriodDialog();
+    for (const room of ["living", "bedroom", "kitchen"]) {
+      const tile = this.shadowRoot.querySelector('[data-room="' + room + '"]');
+      if (!tile) continue;
+      tile.querySelector(".room-energy").textContent = this._value(this._config[room + "_energy"]);
+      tile.querySelector(".room-watts").textContent = this._value(this._config[room + "_power"]);
+    }
   }
 }
 
