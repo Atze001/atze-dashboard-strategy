@@ -8,6 +8,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     this._scrollTopCleanup = null;
     this._homeSwipeCleanup = null;
     this._stickyHeaderCleanup = null;
+    this._noBounceCleanup = null;
   }
 
   setConfig(config) {
@@ -48,6 +49,9 @@ class AtzeRoomNavHeader extends HTMLElement {
     if (!this._stickyHeaderCleanup) {
       this._stickyHeaderCleanup = this._setupStickyHeader();
     }
+    if (!this._noBounceCleanup) {
+      this._noBounceCleanup = setupAtzeNoBounce(this);
+    }
 
     this._render();
   }
@@ -61,6 +65,8 @@ class AtzeRoomNavHeader extends HTMLElement {
 
     this._stickyHeaderCleanup?.();
     this._stickyHeaderCleanup = null;
+    this._noBounceCleanup?.();
+    this._noBounceCleanup = null;
   }
 
   _setupStickyHeader() {
