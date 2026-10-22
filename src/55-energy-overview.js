@@ -48,7 +48,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     if (!Number.isFinite(date.getTime())) return "Noch nicht erfasst";
     return new Intl.DateTimeFormat("de-DE", {
       day: "2-digit", month: "2-digit", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
     }).format(date);
   }
 
@@ -148,7 +147,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       tile.querySelector(".number").textContent = this._value(this._config[period]);
       const caption = period === "total"
         ? "Gesamter Zählerstand"
-        : "Reset: " + this._resetLabel(this._config[period + "_reset"]);
+        : this._resetLabel(this._config[period + "_reset"]);
       tile.querySelector(".caption").textContent = caption;
     }
   }
