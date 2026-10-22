@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1F59960";
+const ATZE_TESTING_REVISION = "BA21BA3";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13310,7 +13310,6 @@ class AtzeRoomNavHeader extends HTMLElement {
     let pinned = false;
     let frame = 0;
     let originalStyles = null;
-    let hostTop = null;
 
     const release = () => {
       if (!pinned) return;
@@ -13335,7 +13334,7 @@ class AtzeRoomNavHeader extends HTMLElement {
       }
       const rect = (pinned ? placeholder : this).getBoundingClientRect();
       // Preserve the header's location in the document while it is pinned.
-      if (!pinned && rect.top < 0 && rect.bottom > 0) {
+      if (!pinned && rect.top < 0) {
         originalStyles = {
           position: this.style.position,
           top: this.style.top,

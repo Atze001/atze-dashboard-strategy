@@ -13313,7 +13313,6 @@ class AtzeRoomNavHeader extends HTMLElement {
     let pinned = false;
     let frame = 0;
     let originalStyles = null;
-    let hostTop = null;
 
     const release = () => {
       if (!pinned) return;
@@ -13338,7 +13337,7 @@ class AtzeRoomNavHeader extends HTMLElement {
       }
       const rect = (pinned ? placeholder : this).getBoundingClientRect();
       // Preserve the header's location in the document while it is pinned.
-      if (!pinned && rect.top < 0 && rect.bottom > 0) {
+      if (!pinned && rect.top < 0) {
         originalStyles = {
           position: this.style.position,
           top: this.style.top,
