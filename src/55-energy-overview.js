@@ -9,11 +9,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._backGesture = null;
     this._heroTopMaskCleanup = null;
     this._noBounceCleanup = null;
+    this._energyEdgeCleanup = null;
   }
 
   connectedCallback() {
     this._alignHeroSticky();
     if (!this._noBounceCleanup) this._noBounceCleanup = setupAtzeNoBounce(this);
+    if (!this._energyEdgeCleanup) this._energyEdgeCleanup = this._limitEnergyOverscroll();
     if (this._backGesture) return;
     const gesture = { id: null, x: 0, y: 0, started: 0, active: false,
       indicator: null, blur: null, fade: null, fadeTimer: null };
@@ -150,6 +152,63 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._heroTopMaskCleanup = null;
     this._noBounceCleanup?.();
     this._noBounceCleanup = null;
+    this._energyEdgeCleanup?.();
+    this._energyEdgeCleanup = null;
+  }
+
+  _limitEnergyOverscroll() {
+    // iOS WebViews may ignore overscroll-behavior on Lovelace's parent
+    // scroller. Block only outward vertical drags at its boundaries.
+    let startX = 0;
+    let startY = 0;
+    let lastY = 0;
+    let tracking = false;
+    const scrollElement = () => atzeFindScrollContainer(this);
+    const onStart = event => {
+      if (event.touches.length !== 1) { tracking = false; return; }
+      if (this.shadowRoot?.querySelector(".period-dialog")?.open) {
+        tracking = false;
+        return;
+      }
+      const touch = event.touches[0];
+      startX = touch.clientX;
+      startY = lastY = touch.clientY;
+      tracking = true;
+    };
+    const onMove = event => {
+      if (!tracking || event.touches.length !== 1 || !event.cancelable) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      const stepY = touch.clientY - lastY;
+      lastY = touch.clientY;
+      // Leave horizontal navigation and diagonal gestures alone.
+      if (Math.abs(dy) < 6 || Math.abs(dy) <= Math.abs(dx) * 1.15) return;
+      const target = scrollElement();
+      if (!target) return;
+      const documentScroll = target === document.scrollingElement ||
+        target === document.documentElement || target === document.body;
+      const top = documentScroll
+        ? (window.scrollY || document.documentElement.scrollTop || 0)
+        : target.scrollTop;
+      const max = documentScroll
+        ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+        : Math.max(0, target.scrollHeight - target.clientHeight);
+      if ((top <= 1 && stepY > 0) || (top >= max - 1 && stepY < 0)) {
+        event.preventDefault();
+      }
+    };
+    const onEnd = () => { tracking = false; };
+    this.addEventListener("touchstart", onStart, { passive: true, capture: true });
+    this.addEventListener("touchmove", onMove, { passive: false, capture: true });
+    this.addEventListener("touchend", onEnd, { passive: true, capture: true });
+    this.addEventListener("touchcancel", onEnd, { passive: true, capture: true });
+    return () => {
+      this.removeEventListener("touchstart", onStart, true);
+      this.removeEventListener("touchmove", onMove, true);
+      this.removeEventListener("touchend", onEnd, true);
+      this.removeEventListener("touchcancel", onEnd, true);
+    };
   }
 
   setConfig(config) {
