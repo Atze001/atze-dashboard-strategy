@@ -159,6 +159,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .energy-hero img { display:block; width:100%; height:auto; aspect-ratio:1672/941;
           object-fit:cover }
         .energy-hero[hidden] { display:none }
+        .energy-hero-error { display:none; padding:12px; font-size:12px; line-height:1.5;
+          color:var(--secondary-text-color); overflow-wrap:anywhere }
+        .energy-hero.failed img { display:none }
+        .energy-hero.failed .energy-hero-error { display:block }
         .tile { box-sizing:border-box; min-width:0; min-height:132px; padding:13px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
           border-radius:16px; background:rgba(55,58,67,.30);
@@ -223,7 +227,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
-        <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"></div>
+        <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
         <div class="tile total" data-period="total">
           <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
@@ -258,8 +262,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
-      heroImage.onerror = () => { hero.hidden = true; };
-      heroImage.src = this._config.hero_image;
+      heroImage.onload = () => { hero.classList.remove("failed"); };
+      heroImage.onerror = () => {
+        hero.classList.add("failed");
+        hero.querySelector(".energy-hero-error").textContent =
+          "Titelbild konnte nicht geladen werden: " + heroImage.src;
+      };
+      const separator = this._config.hero_image.includes("?") ? "&" : "?";
+      heroImage.src = this._config.hero_image + separator + "atze_image=2";
     } else {
       hero.hidden = true;
     }
