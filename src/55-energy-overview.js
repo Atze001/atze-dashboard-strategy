@@ -76,6 +76,24 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }
   }
 
+  _openPeriod(period) {
+    const dialog = this.shadowRoot.querySelector(".period-dialog");
+    if (!dialog || !["month", "day"].includes(period)) return;
+    dialog.dataset.period = period;
+    dialog.querySelector(".dialog-title").textContent = period === "month" ? "Monat" : "Tag";
+    this._updatePeriodDialog();
+    if (!dialog.open) dialog.showModal();
+  }
+
+  _updatePeriodDialog() {
+    const dialog = this.shadowRoot?.querySelector(".period-dialog");
+    if (!dialog?.dataset.period) return;
+    const period = dialog.dataset.period;
+    dialog.querySelector(".dialog-date").textContent = this._resetLabel(this._config[period + "_reset"]);
+    dialog.querySelector(".dialog-value").textContent = this._value(this._config[period]);
+    dialog.querySelector(".dialog-reset").dataset.reset = period;
+  }
+
   _render() {
     const cards = [
       { key: "month", title: "Monat", icon: "mdi:calendar-month", tone: "#30d158", reset: "month_reset", action: true },
@@ -91,16 +109,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           backdrop-filter:blur(10px) saturate(1.2); -webkit-backdrop-filter:blur(10px) saturate(1.2);
           color:var(--primary-text-color); display:flex; flex-direction:column; gap:10px }
         .tile.total { grid-column:1 / -1; --accent:#ffb900 }
+        .tile.period { min-height:105px; cursor:pointer }
+        .tile.period:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .head { display:flex; align-items:center; gap:7px; min-width:0 }
         .head ha-icon { --mdc-icon-size:20px; flex:none; color:var(--accent) }
         .title { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
         .value { font-size:clamp(30px,8vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:center; width:100% }
         .unit { font-size:12px; font-weight:400; color:var(--secondary-text-color) }
-        .foot { margin-top:auto; min-height:24px; display:flex; align-items:center;
-          justify-content:space-between; gap:4px; min-width:0 }
-        .caption { font-size:10px; color:var(--secondary-text-color); line-height:1.3;
-          overflow-wrap:anywhere; min-width:0 }
         .summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:5px 0 }
         .summary-item { min-width:0; display:flex; flex-direction:column; align-items:center; gap:7px }
         .summary-label { color:var(--secondary-text-color); font-size:11px }
@@ -111,12 +127,23 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           font-size:18px; font-weight:600; font-variant-numeric:tabular-nums }
         .live-power .unit { font-size:12px }
         .live-power[hidden] { display:none }
-        .reset { appearance:none; display:grid; place-items:center; flex:0 0 28px;
-          width:28px; height:28px; border-radius:9px; border:1px solid var(--home-card-border,rgba(255,255,255,.12));
-          background:rgba(118,118,128,.20); color:var(--primary-text-color); cursor:pointer }
-        .reset ha-icon { --mdc-icon-size:17px }
-        .reset:disabled { opacity:.45; cursor:wait }
-        .reset:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
+        .period-dialog { box-sizing:border-box; width:min(340px,calc(100vw - 36px));
+          max-height:calc(100dvh - 60px); overflow:auto; margin:auto; padding:22px;
+          border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:20px;
+          background:var(--card-background-color,#202126); color:var(--primary-text-color);
+          box-shadow:0 18px 50px rgba(0,0,0,.45) }
+        .period-dialog::backdrop { background:rgba(0,0,0,.62); backdrop-filter:blur(4px) }
+        .dialog-title { font-size:18px; font-weight:650; margin-bottom:18px }
+        .dialog-value-line { text-align:center; margin-bottom:20px; font-weight:700; font-size:32px }
+        .dialog-meta { display:flex; align-items:center; justify-content:space-between; gap:10px;
+          font-size:12px; color:var(--secondary-text-color) }
+        .dialog-date { margin-top:5px; color:var(--primary-text-color); font-size:14px }
+        .dialog-reset { appearance:none; display:flex; align-items:center; gap:7px;
+          padding:9px 12px; border-radius:10px; cursor:pointer;
+          border:1px solid var(--home-card-border,rgba(255,255,255,.16));
+          background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
+        .dialog-reset ha-icon { --mdc-icon-size:18px }
+        .dialog-reset:disabled { opacity:.45; cursor:wait }
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
@@ -134,7 +161,24 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           </div>
           <div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div>
         </div>
-      </div>`;
+      </div>
+      <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
+        <div class="dialog-title" id="energy-period-dialog-title"></div>
+        <div class="dialog-value-line"><span class="dialog-value"></span> <span class="unit">kWh</span></div>
+        <div class="dialog-meta">
+          <div><div>Zurückgesetzt am</div><div class="dialog-date"></div></div>
+          <button class="dialog-reset" type="button"><ha-icon icon="mdi:restart"></ha-icon>Zurücksetzen</button>
+        </div>
+      </dialog>`;
+    const dialog = this.shadowRoot.querySelector(".period-dialog");
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) {
+        const bounds = dialog.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right ||
+            event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+      }
+    });
+    dialog.querySelector(".dialog-reset").addEventListener("click", () => this._reset(dialog.dataset.period));
     const grid = this.shadowRoot.querySelector(".grid");
     for (const period of ["total", "year"]) {
       const detail = this.shadowRoot.querySelector('[data-detail="' + period + '"]');
@@ -149,27 +193,23 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }
     for (const card of cards) {
       const tile = document.createElement("div");
-      tile.className = "tile";
+      tile.className = "tile period";
+      tile.tabIndex = 0;
+      tile.setAttribute("role", "button");
+      tile.setAttribute("aria-label", card.title + " – Optionen öffnen");
       tile.style.setProperty("--accent", card.tone);
       tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
-        <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>
-        <div class="foot"><span class="caption"></span></div>`;
+        <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>`;
       tile.dataset.period = card.key;
       tile.querySelector("ha-icon").setAttribute("icon", card.icon);
       tile.querySelector(".title").textContent = card.title;
-      if (card.action) {
-        const button = document.createElement("button");
-        button.className = "reset";
-        button.type = "button";
-        button.dataset.reset = card.key;
-        button.setAttribute("aria-label", card.title + " zurücksetzen");
-        const icon = document.createElement("ha-icon");
-        icon.setAttribute("icon", "mdi:restart");
-        button.appendChild(icon);
-        button.addEventListener("click", () => this._reset(card.key));
-        tile.querySelector(".foot").appendChild(button);
-      }
-      tile.querySelector(".head").addEventListener("click", () => this._details(this._config[card.key]));
+      tile.addEventListener("click", () => this._openPeriod(card.key));
+      tile.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          this._openPeriod(card.key);
+        }
+      });
       grid.appendChild(tile);
     }
     this._update();
@@ -186,8 +226,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     for (const period of ["month", "day"]) {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
       tile.querySelector(".number").textContent = this._value(this._config[period]);
-      tile.querySelector(".caption").textContent = this._resetLabel(this._config[period + "_reset"]);
     }
+    this._updatePeriodDialog();
   }
 }
 
