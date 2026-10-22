@@ -15863,6 +15863,15 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       living_energy: "sensor.wohnzimmer_stromzahler_energy",
       living_power: "sensor.wohnzimmer_stromzahler_power",
       living_year: "sensor.wohnzimmer_strom_jahr",
+      washer_energy: "sensor.waschmaschine_steckdose_energie",
+      washer_power: "sensor.waschmaschine_steckdose_leistung",
+      washer_year: "sensor.waschmaschine_strom_jahr",
+      washer_month: "sensor.waschmaschine_strom_monat",
+      washer_day: "sensor.waschmaschine_strom_tag",
+      washer_month_reset: "input_datetime.waschmaschine_strom_reset_monat",
+      washer_day_reset: "input_datetime.waschmaschine_strom_reset_tag",
+      washer_month_script: "script.waschmaschine_strom_reset_monat",
+      washer_day_script: "script.waschmaschine_strom_reset_tag",
       // Room utility meters, reset timestamps and manual reset scripts.
       living_month: "sensor.wohnzimmer_strom_monat",
       living_day: "sensor.wohnzimmer_strom_tag",
@@ -15946,10 +15955,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   _openPeriod(period) {
     const dialog = this.shadowRoot.querySelector(".period-dialog");
     const valid = ["month", "day", "living_month", "living_day",
-      "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day"];
+      "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day",
+      "washer_month", "washer_day"];
     if (!dialog || !valid.includes(period)) return;
     dialog.dataset.period = period;
-    const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche" };
+    const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche", washer: "Waschmaschine" };
     const [room, span] = period.includes("_") ? period.split("_") : [null, period];
     dialog.querySelector(".dialog-title").textContent =
       (room ? roomLabels[room] + " · " : "") + (span === "month" ? "Monat" : "Tag");
@@ -16106,6 +16116,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
       { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
       { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
+      { key: "washer", name: "Waschmaschine", icon: "mdi:washing-machine", tone: "#26b9cc" },
     ];
     for (const room of rooms) {
       const section = document.createElement("section");
@@ -16183,7 +16194,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       tile.querySelector(".number").textContent = this._value(this._config[period]);
     }
     this._updatePeriodDialog();
-    for (const room of ["living", "bedroom", "kitchen"]) {
+    for (const room of ["living", "bedroom", "kitchen", "washer"]) {
       const tile = this.shadowRoot.querySelector('[data-room="' + room + '"]');
       if (!tile) continue;
       tile.querySelector(".room-energy").textContent = this._value(this._config[room + "_energy"]);
