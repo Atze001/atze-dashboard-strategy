@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "A359894";
+const ATZE_TESTING_REVISION = "D05BE1E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15997,10 +15997,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._hass = null;
     this._backGesture = null;
     this._heroTopMaskCleanup = null;
+    this._noBounceCleanup = null;
   }
 
   connectedCallback() {
     this._alignHeroSticky();
+    if (!this._noBounceCleanup) this._noBounceCleanup = setupAtzeNoBounce(this);
     if (this._backGesture) return;
     const gesture = { id: null, x: 0, y: 0, started: 0, active: false,
       indicator: null, blur: null, fade: null, fadeTimer: null };
@@ -16135,6 +16137,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._backGesture = null;
     this._heroTopMaskCleanup?.();
     this._heroTopMaskCleanup = null;
+    this._noBounceCleanup?.();
+    this._noBounceCleanup = null;
   }
 
   setConfig(config) {
