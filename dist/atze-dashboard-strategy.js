@@ -15856,10 +15856,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       day: "sensor.gesamt_strom_virtuell_tag",
       kitchen_energy: "sensor.kuche_stromzahler_energy",
       kitchen_power: "sensor.kuche_stromzahler_power",
+      kitchen_year: "sensor.kueche_strom_jahr",
       bedroom_energy: "sensor.schlafzimmer_stromzahler_energy",
       bedroom_power: "sensor.schlafzimmer_stromzahler_power",
+      bedroom_year: "sensor.schlafzimmer_strom_jahr",
       living_energy: "sensor.wohnzimmer_stromzahler_energy",
       living_power: "sensor.wohnzimmer_stromzahler_power",
+      living_year: "sensor.wohnzimmer_strom_jahr",
       // Room utility meters, reset timestamps and manual reset scripts.
       living_month: "sensor.wohnzimmer_strom_monat",
       living_day: "sensor.wohnzimmer_strom_tag",
@@ -16113,8 +16116,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       section.dataset.roomSection = room.key;
       section.innerHTML = `<div class="room-heading"><ha-icon></ha-icon><span></span></div>
         <div class="tile room room-total" data-room="${room.key}">
-          <div class="head"><ha-icon></ha-icon><span class="title">Gesamtverbrauch</span></div>
-          <div class="value"><span class="room-energy"></span> <span class="unit">kWh</span></div>
+          <div class="head"><ha-icon></ha-icon><span class="title">Stromverbrauch</span></div>
+          <div class="summary">
+            <div class="summary-item" data-room-detail="energy" tabindex="0" role="button" aria-label="Gesamtverbrauch Details">
+              <span class="summary-label">Gesamtverbrauch</span>
+              <div class="summary-value"><span class="room-energy"></span> <span class="unit">kWh</span></div>
+            </div>
+            <div class="summary-item" data-room-detail="year" tabindex="0" role="button" aria-label="Jahresverbrauch Details">
+              <span class="summary-label">Dieses Jahr</span>
+              <div class="summary-value"><span class="room-year"></span> <span class="unit">kWh</span></div>
+            </div>
+          </div>
           <div class="room-power"><span class="room-watts"></span> <span class="unit">W aktuell</span></div>
         </div>`;
       section.querySelector(".room-heading ha-icon").setAttribute("icon", room.icon);
@@ -16122,17 +16134,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       section.querySelector(".room-total").style.setProperty("--accent", room.tone);
       section.querySelector(".room-total .head ha-icon").setAttribute("icon", "mdi:lightning-bolt");
       const total = section.querySelector(".room-total");
-      total.tabIndex = 0;
-      total.setAttribute("role", "button");
-      total.setAttribute("aria-label", room.name + " – Stromzähler Details");
-      const openTotal = () => this._details(this._config[room.key + "_energy"]);
-      total.addEventListener("click", openTotal);
-      total.addEventListener("keydown", event => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openTotal();
-        }
-      });
+      for (const metric of ["energy", "year"]) {
+        const detail = total.querySelector('[data-room-detail="' + metric + '"]');
+        const open = () => this._details(this._config[room.key + "_" + metric]);
+        detail.addEventListener("click", open);
+        detail.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            open();
+          }
+        });
+      }
       for (const period of ["month", "day"]) {
         const periodKey = room.key + "_" + period;
         const tile = document.createElement("div");
@@ -16179,6 +16191,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       const tile = this.shadowRoot.querySelector('[data-room="' + room + '"]');
       if (!tile) continue;
       tile.querySelector(".room-energy").textContent = this._value(this._config[room + "_energy"]);
+      tile.querySelector(".room-year").textContent = this._value(this._config[room + "_year"]);
       tile.querySelector(".room-watts").textContent = this._value(this._config[room + "_power"]);
       for (const period of ["month", "day"]) {
         const key = room + "_" + period;
