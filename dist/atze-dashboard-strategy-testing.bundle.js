@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "70AC139";
+const ATZE_TESTING_REVISION = "4159855";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16133,8 +16133,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     let parent = this;
     let scrollContainer = null;
     while (parent) {
-      parent = parent.assignedSlot || parent.parentNode ||
-        (parent.getRootNode?.() instanceof ShadowRoot ? parent.getRootNode().host : null);
+      const nextParent = parent.assignedSlot || parent.parentNode;
+      parent = nextParent instanceof ShadowRoot ? nextParent.host : nextParent;
       if (!(parent instanceof HTMLElement)) continue;
       const style = getComputedStyle(parent);
       if (/(auto|scroll)/.test(style.overflowY) &&
