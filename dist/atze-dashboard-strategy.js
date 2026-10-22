@@ -15917,8 +15917,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   _render() {
     const cards = [
-      { key: "total", title: "Gesamtstrom", icon: "mdi:lightning-bolt", tone: "#ffb900", subtitle: "Gesamter Zählerstand" },
-      { key: "year", title: "Jahr", icon: "mdi:calendar", tone: "#64b5f6", reset: "year_reset" },
       { key: "month", title: "Monat", icon: "mdi:calendar-month", tone: "#30d158", reset: "month_reset", action: true },
       { key: "day", title: "Tag", icon: "mdi:calendar-today", tone: "#ff9f0a", reset: "day_reset", action: true },
     ];
@@ -15931,38 +15929,71 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           border-radius:16px; background:rgba(55,58,67,.30);
           backdrop-filter:blur(10px) saturate(1.2); -webkit-backdrop-filter:blur(10px) saturate(1.2);
           color:var(--primary-text-color); display:flex; flex-direction:column; gap:10px }
+        .tile.total { grid-column:1 / -1; --accent:#ffb900 }
         .head { display:flex; align-items:center; gap:7px; min-width:0 }
         .head ha-icon { --mdc-icon-size:20px; flex:none; color:var(--accent) }
         .title { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
         .value { font-size:clamp(30px,8vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:center; width:100% }
         .unit { font-size:12px; font-weight:400; color:var(--secondary-text-color) }
-        .power { display:flex; align-items:baseline; justify-content:center; gap:5px;
-          font-size:18px; font-weight:600; line-height:1.15; font-variant-numeric:tabular-nums;
-          overflow-wrap:anywhere; text-align:center }
-        .power .unit { font-size:12px }
-        .power[hidden] { display:none }
         .foot { margin-top:auto; min-height:24px; display:flex; align-items:center;
           justify-content:space-between; gap:4px; min-width:0 }
         .caption { font-size:10px; color:var(--secondary-text-color); line-height:1.3;
           overflow-wrap:anywhere; min-width:0 }
+        .summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:5px 0 }
+        .summary-item { min-width:0; display:flex; flex-direction:column; align-items:center; gap:7px }
+        .summary-label { color:var(--secondary-text-color); font-size:11px }
+        .summary-value { font-size:clamp(28px,7vw,40px); font-weight:700; line-height:1.15;
+          font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
+        .year-date { font-size:10px; color:var(--secondary-text-color) }
+        .live-power { display:flex; align-items:baseline; justify-content:center; gap:5px;
+          border-top:1px solid var(--home-card-border,rgba(255,255,255,.10)); padding-top:12px;
+          font-size:18px; font-weight:600; font-variant-numeric:tabular-nums }
+        .live-power .unit { font-size:12px }
+        .live-power[hidden] { display:none }
         .reset { appearance:none; display:grid; place-items:center; flex:0 0 28px;
           width:28px; height:28px; border-radius:9px; border:1px solid var(--home-card-border,rgba(255,255,255,.12));
           background:rgba(118,118,128,.20); color:var(--primary-text-color); cursor:pointer }
         .reset ha-icon { --mdc-icon-size:17px }
         .reset:disabled { opacity:.45; cursor:wait }
         .reset:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
-        @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} }
+        @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
-      <div class="grid"></div>`;
+      <div class="grid">
+        <div class="tile total" data-period="total">
+          <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span></div>
+          <div class="summary">
+            <div class="summary-item" data-detail="total" role="button" tabindex="0" aria-label="Gesamtzähler Details">
+              <span class="summary-label">Gesamtverbrauch</span>
+              <div class="summary-value"><span class="total-number"></span> <span class="unit">kWh</span></div>
+            </div>
+            <div class="summary-item" data-detail="year" role="button" tabindex="0" aria-label="Jahresverbrauch Details">
+              <span class="summary-label">Dieses Jahr</span>
+              <div class="summary-value"><span class="year-number"></span> <span class="unit">kWh</span></div>
+              <span class="year-date"></span>
+            </div>
+          </div>
+          <div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div>
+        </div>
+      </div>`;
     const grid = this.shadowRoot.querySelector(".grid");
+    for (const period of ["total", "year"]) {
+      const detail = this.shadowRoot.querySelector('[data-detail="' + period + '"]');
+      const open = () => this._details(this._config[period]);
+      detail.addEventListener("click", open);
+      detail.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      });
+    }
     for (const card of cards) {
       const tile = document.createElement("div");
       tile.className = "tile";
       tile.style.setProperty("--accent", card.tone);
       tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
         <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>
-        ${card.key === "total" ? '<div class="power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div>' : ""}
         <div class="foot"><span class="caption"></span></div>`;
       tile.dataset.period = card.key;
       tile.querySelector("ha-icon").setAttribute("icon", card.icon);
@@ -15987,20 +16018,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   _update() {
     if (!this.shadowRoot?.querySelector(".grid")) return;
-    for (const period of ["total", "year", "month", "day"]) {
+    const total = this.shadowRoot.querySelector('[data-period="total"]');
+    total.querySelector(".total-number").textContent = this._value(this._config.total);
+    total.querySelector(".year-number").textContent = this._value(this._config.year);
+    total.querySelector(".year-date").textContent = this._resetLabel(this._config.year_reset);
+    const power = total.querySelector(".live-power");
+    power.hidden = !this._config.power;
+    if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
+    for (const period of ["month", "day"]) {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
-      if (!tile) continue;
       tile.querySelector(".number").textContent = this._value(this._config[period]);
-      if (period === "total") {
-        const power = tile.querySelector(".power");
-        const powerEntity = this._config.power;
-        power.hidden = !powerEntity;
-        if (powerEntity) power.querySelector(".power-number").textContent = this._value(powerEntity);
-      }
-      const caption = period === "total"
-        ? "Gesamter Zählerstand"
-        : this._resetLabel(this._config[period + "_reset"]);
-      tile.querySelector(".caption").textContent = caption;
+      tile.querySelector(".caption").textContent = this._resetLabel(this._config[period + "_reset"]);
     }
   }
 }
