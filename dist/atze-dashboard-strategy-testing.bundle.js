@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9E6203D";
+const ATZE_TESTING_REVISION = "A359894";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13291,6 +13291,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     this._scrollTopCleanup = null;
     this._homeSwipeCleanup = null;
     this._stickyHeaderCleanup = null;
+    this._noBounceCleanup = null;
   }
 
   setConfig(config) {
@@ -13331,6 +13332,9 @@ class AtzeRoomNavHeader extends HTMLElement {
     if (!this._stickyHeaderCleanup) {
       this._stickyHeaderCleanup = this._setupStickyHeader();
     }
+    if (!this._noBounceCleanup) {
+      this._noBounceCleanup = setupAtzeNoBounce(this);
+    }
 
     this._render();
   }
@@ -13344,6 +13348,8 @@ class AtzeRoomNavHeader extends HTMLElement {
 
     this._stickyHeaderCleanup?.();
     this._stickyHeaderCleanup = null;
+    this._noBounceCleanup?.();
+    this._noBounceCleanup = null;
   }
 
   _setupStickyHeader() {
