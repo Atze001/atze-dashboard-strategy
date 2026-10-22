@@ -19115,7 +19115,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         container.appendChild(label);
         selector.hass = this._hass;
         selector.selector = { entity: {
-          filter: { domain, ...(units ? { unit_of_measurement: units } : {}) },
+          filter: { domain,
+            ...(units ? { unit_of_measurement: units } : {}),
+            ...(role === "presence" ? { device_class: ["motion", "occupancy", "presence"] } : {}),
+          },
         } };
         selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
         selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);

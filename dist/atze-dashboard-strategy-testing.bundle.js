@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "925E5E2";
+const ATZE_TESTING_REVISION = "761CAE4";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -19112,7 +19112,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         container.appendChild(label);
         selector.hass = this._hass;
         selector.selector = { entity: {
-          filter: { domain, ...(units ? { unit_of_measurement: units } : {}) },
+          filter: { domain,
+            ...(units ? { unit_of_measurement: units } : {}),
+            ...(role === "presence" ? { device_class: ["motion", "occupancy", "presence"] } : {}),
+          },
         } };
         selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
         selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
