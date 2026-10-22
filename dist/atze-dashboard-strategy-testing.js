@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "AE67175";
+const ATZE_TESTING_REVISION = "0462294";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15993,7 +15993,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           backdrop-filter:blur(10px) saturate(1.2); -webkit-backdrop-filter:blur(10px) saturate(1.2);
           color:var(--primary-text-color); display:flex; flex-direction:column; gap:10px }
         .tile.total { grid-column:1 / -1; --accent:#ffb900 }
-        .tile.period { min-height:105px; cursor:pointer }
+        .tile.period { min-height:68px; cursor:pointer; justify-content:center; gap:0 }
+        .tile.period .head { width:100% }
+        .period-value { margin-left:auto; min-width:0; display:flex; align-items:baseline;
+          justify-content:flex-end; gap:4px; font-size:clamp(16px,4.5vw,22px);
+          line-height:1.2; font-weight:700; font-variant-numeric:tabular-nums;
+          text-align:right; overflow-wrap:anywhere }
+        .period-value .unit { font-size:11px; white-space:nowrap }
         .room-heading { grid-column:1/-1; margin:12px 0 0; display:flex; align-items:center;
           gap:8px; font-size:15px; font-weight:650; color:var(--primary-text-color) }
         .room-heading ha-icon { --mdc-icon-size:20px; color:var(--secondary-text-color) }
@@ -16001,7 +16007,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-section { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px }
         .room-section .room-heading { grid-column:1/-1; margin:0 0 1px }
         .room-section .tile.room-total { grid-column:1/-1; min-height:120px }
-        .room-section .tile.period { min-height:100px }
+        .room-section .tile.period { min-height:68px }
         .room-section .room-power { display:flex; }
         .dialog-reset[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
@@ -16095,8 +16101,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       tile.setAttribute("role", "button");
       tile.setAttribute("aria-label", card.title + " – Optionen öffnen");
       tile.style.setProperty("--accent", card.tone);
-      tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
-        <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>`;
+      tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span>
+          <span class="period-value"><span class="number"></span> <span class="unit">kWh</span></span></div>`;
       tile.dataset.period = card.key;
       tile.querySelector("ha-icon").setAttribute("icon", card.icon);
       tile.querySelector(".title").textContent = card.title;
@@ -16159,8 +16165,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         tile.setAttribute("aria-label", room.name + " " +
           (period === "month" ? "Monat" : "Tag") + " – Optionen öffnen");
         tile.style.setProperty("--accent", period === "month" ? "#30d158" : "#ff9f0a");
-        tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
-          <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>`;
+        tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span>
+          <span class="period-value"><span class="number"></span> <span class="unit">kWh</span></span></div>`;
         tile.querySelector("ha-icon").setAttribute("icon",
           period === "month" ? "mdi:calendar-month" : "mdi:calendar-today");
         tile.querySelector(".title").textContent = period === "month" ? "Monat" : "Tag";
