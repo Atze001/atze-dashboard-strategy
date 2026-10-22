@@ -15934,8 +15934,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .head { display:flex; align-items:center; gap:7px; min-width:0 }
         .head ha-icon { --mdc-icon-size:20px; flex:none; color:var(--accent) }
         .title { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
-        .value { font-size:clamp(21px,5vw,30px); font-weight:700; line-height:1.15;
-          font-variant-numeric:tabular-nums; overflow-wrap:anywhere }
+        .value { font-size:clamp(30px,8vw,40px); font-weight:700; line-height:1.15;
+          font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:center; width:100% }
         .unit { font-size:12px; font-weight:400; color:var(--secondary-text-color) }
         .foot { margin-top:auto; min-height:24px; display:flex; align-items:center;
           justify-content:space-between; gap:4px; min-width:0 }
