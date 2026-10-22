@@ -16382,6 +16382,23 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     placeholder.className = "energy-hero-placeholder";
     placeholder.setAttribute("aria-hidden", "true");
     grid.insertBefore(placeholder, hero);
+    // The ATZE iOS app runs edge-to-edge. WKWebView can report a zero
+    // safe-area inset despite the Dynamic Island, so provide an iPhone floor.
+    const safeProbe = document.createElement("div");
+    safeProbe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top, 0px)";
+    document.body.appendChild(safeProbe);
+    const safeInset = parseFloat(getComputedStyle(safeProbe).paddingTop) || 0;
+    safeProbe.remove();
+    const isIPhone = /iPhone/i.test(navigator.userAgent);
+    const pinnedTop = Math.max(safeInset, isIPhone ? 62 : 0);
+    const topMask = document.createElement("div");
+    topMask.setAttribute("aria-hidden", "true");
+    topMask.style.cssText = [
+      "position:fixed", "inset:0 0 auto 0",
+      `height:${pinnedTop.toFixed(1)}px`, "pointer-events:none",
+      "background:var(--primary-background-color,#000)", "z-index:29"
+    ].join(";");
+    document.body.appendChild(topMask);
     let frame = 0;
     const update = () => {
       frame = 0;
@@ -16392,7 +16409,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       const height = width * 860 / 1672;
       placeholder.style.height = height.toFixed(1) + "px";
       hero.style.position = "fixed";
-      hero.style.top = "0px";
+      hero.style.top = pinnedTop.toFixed(1) + "px";
       hero.style.left = rect.left.toFixed(1) + "px";
       hero.style.width = width.toFixed(1) + "px";
       hero.style.height = height.toFixed(1) + "px";
@@ -16408,6 +16425,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       window.removeEventListener("scroll", schedule, true);
       if (frame) cancelAnimationFrame(frame);
       placeholder.remove();
+      topMask.remove();
       hero.style.removeProperty("position");
       hero.style.removeProperty("top");
       hero.style.removeProperty("left");
