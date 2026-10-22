@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "BA21BA3";
+const ATZE_TESTING_REVISION = "E7FD913";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13333,8 +13333,11 @@ class AtzeRoomNavHeader extends HTMLElement {
         parent.insertBefore(placeholder, this);
       }
       const rect = (pinned ? placeholder : this).getBoundingClientRect();
-      // Preserve the header's location in the document while it is pinned.
-      if (!pinned && rect.top < 0) {
+      // Pin as soon as the header enters the viewport, including at initial
+      // page load, so it never slides upward before becoming fixed.
+      // Do not pin cached/offscreen subviews.
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      if (!pinned && rect.bottom > 0 && rect.top < viewportHeight) {
         originalStyles = {
           position: this.style.position,
           top: this.style.top,
@@ -13345,19 +13348,16 @@ class AtzeRoomNavHeader extends HTMLElement {
         placeholder.style.cssText =
           `display:block;height:${rect.height}px;width:100%;pointer-events:none`;
         this.style.position = "fixed";
-        this.style.top = "0px";
+        this.style.top = `${Math.max(0, rect.top)}px`;
         this.style.left = `${rect.left}px`;
         this.style.width = `${rect.width}px`;
         this.style.zIndex = "30";
         pinned = true;
       } else if (pinned) {
-        if (rect.top >= 0) {
-          release();
-        } else {
-          this.style.left = `${rect.left}px`;
-          this.style.width = `${rect.width}px`;
-          placeholder.style.height = `${this.getBoundingClientRect().height}px`;
-        }
+        // Keep the original screen position even while scrolling upwards.
+        this.style.left = `${rect.left}px`;
+        this.style.width = `${rect.width}px`;
+        placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
     };
     const schedule = () => {
