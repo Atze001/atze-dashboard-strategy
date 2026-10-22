@@ -7,13 +7,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._config = {};
     this._hass = null;
     this._backGesture = null;
-    this._heroTopMaskCleanup = null;
+    this._heroPinCleanup = null;
     this._noBounceCleanup = null;
     this._energyEdgeCleanup = null;
   }
 
   connectedCallback() {
-    this._alignHeroSticky();
+    this._pinHero();
     if (!this._noBounceCleanup) this._noBounceCleanup = setupAtzeNoBounce(this);
     if (!this._energyEdgeCleanup) this._energyEdgeCleanup = this._limitEnergyOverscroll();
     if (this._backGesture) return;
@@ -148,8 +148,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   disconnectedCallback() {
     this._backGesture?.();
     this._backGesture = null;
-    this._heroTopMaskCleanup?.();
-    this._heroTopMaskCleanup = null;
+    this._heroPinCleanup?.();
+    this._heroPinCleanup = null;
     this._noBounceCleanup?.();
     this._noBounceCleanup = null;
     this._energyEdgeCleanup?.();
@@ -377,83 +377,58 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
-  _setupHeroTopMask() {
-    this._heroTopMaskCleanup?.();
-    this._heroTopMaskCleanup = null;
+  _pinHero() {
+    this._heroPinCleanup?.();
+    this._heroPinCleanup = null;
     const hero = this.shadowRoot?.querySelector(".energy-hero");
-    if (!hero || hero.hidden) return;
-    const mask = document.createElement("div");
-    mask.setAttribute("aria-hidden", "true");
-    mask.style.cssText = [
-      "position:fixed", "top:0", "left:0", "right:0",
-      "height:0", "display:none", "pointer-events:none",
-      "z-index:29", "background:var(--primary-background-color,#000)"
-    ].join(";");
-    document.body.appendChild(mask);
+    const grid = this.shadowRoot?.querySelector(".grid");
+    if (!hero || !grid || hero.hidden || !this.isConnected) return;
+    // Retain the full image's space in the grid while its visual sits at
+    // the very top of the screen. Never derive a sticky offset from a
+    // scrolling element: that caused the image to float across data cards.
+    const placeholder = document.createElement("div");
+    placeholder.className = "energy-hero-placeholder";
+    placeholder.setAttribute("aria-hidden", "true");
+    grid.insertBefore(placeholder, hero);
     let frame = 0;
     const update = () => {
       frame = 0;
-      if (!this.isConnected || !hero.isConnected || hero.hidden) {
-        mask.style.display = "none";
-        return;
-      }
-      let node = this;
-      let scrollOffset = 0;
-      while (node) {
-        const next = node.assignedSlot || node.parentNode;
-        node = next instanceof ShadowRoot ? next.host : next;
-        if (!(node instanceof HTMLElement)) continue;
-        const style = getComputedStyle(node);
-        if (/(auto|scroll)/.test(style.overflowY) &&
-            node.scrollHeight > node.clientHeight + 2) {
-          scrollOffset = node.scrollTop;
-          break;
-        }
-      }
-      const height = Math.max(0, hero.getBoundingClientRect().top);
-      mask.style.height = height.toFixed(1) + "px";
-      mask.style.display = scrollOffset > 1 && height > 0 ? "block" : "none";
+      if (!this.isConnected || !hero.isConnected) return;
+      const rect = placeholder.getBoundingClientRect();
+      const width = rect.width;
+      if (width <= 0) return;
+      const height = width * 860 / 1672;
+      placeholder.style.height = height.toFixed(1) + "px";
+      hero.style.position = "fixed";
+      hero.style.top = "0px";
+      hero.style.left = rect.left.toFixed(1) + "px";
+      hero.style.width = width.toFixed(1) + "px";
+      hero.style.height = height.toFixed(1) + "px";
+      hero.style.margin = "0";
+      hero.style.zIndex = "30";
     };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    window.addEventListener("scroll", schedule, true);
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     window.addEventListener("resize", schedule, { passive:true });
+    window.addEventListener("scroll", schedule, true);
     schedule();
-    this._heroTopMaskCleanup = () => {
-      window.removeEventListener("scroll", schedule, true);
+    this._heroPinCleanup = () => {
       window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
       if (frame) cancelAnimationFrame(frame);
-      mask.remove();
+      placeholder.remove();
+      hero.style.removeProperty("position");
+      hero.style.removeProperty("top");
+      hero.style.removeProperty("left");
+      hero.style.removeProperty("width");
+      hero.style.removeProperty("height");
+      hero.style.removeProperty("margin");
+      hero.style.removeProperty("z-index");
     };
-  }
-
-  _alignHeroSticky() {
-    // Preserve the image's initial Lovelace top inset when it sticks.
-    requestAnimationFrame(() => {
-      const hero = this.shadowRoot?.querySelector(".energy-hero");
-      if (!this.isConnected || !hero || hero.hidden) return;
-      let node = this;
-      let containerTop = 0;
-      while (node) {
-        const next = node.assignedSlot || node.parentNode;
-        node = next instanceof ShadowRoot ? next.host : next;
-        if (!(node instanceof HTMLElement)) continue;
-        const style = getComputedStyle(node);
-        if (/(auto|scroll)/.test(style.overflowY) &&
-            node.scrollHeight > node.clientHeight + 2) {
-          containerTop = Math.max(0, node.getBoundingClientRect().top);
-          break;
-        }
-      }
-      const top = hero.getBoundingClientRect().top - containerTop;
-      hero.style.top = Math.max(0, Math.min(80, top)).toFixed(1) + "px";
-    });
   }
 
   _render() {
-    this._heroScrollCleanup?.();
-    this._heroScrollCleanup = null;
+    this._heroPinCleanup?.();
+    this._heroPinCleanup = null;
     const cards = [
       { key: "month", title: "Monat", icon: "mdi:calendar-month", tone: "#30d158", reset: "month_reset", action: true },
       { key: "day", title: "Tag", icon: "mdi:calendar-today", tone: "#ff9f0a", reset: "day_reset", action: true },
@@ -462,7 +437,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       <style>
         :host { display:block; min-width:0 }
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
-        .energy-hero { position:sticky; top:0; z-index:3; grid-column:1/-1;
+        .energy-hero-placeholder { grid-column:1/-1; width:100%; min-width:0 }
+        .energy-hero { grid-column:1/-1;
           width:100%; min-width:0; overflow:hidden; border-radius:16px;
           margin:0 0 6px; background:rgba(55,58,67,.30);
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
@@ -684,8 +660,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       grid.appendChild(section);
     }
     this._update();
-    this._alignHeroSticky();
-    this._setupHeroTopMask();
+    this._pinHero();
   }
 
   _update() {
