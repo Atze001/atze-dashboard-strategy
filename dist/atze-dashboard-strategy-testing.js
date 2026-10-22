@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B0A21D9";
+const ATZE_TESTING_REVISION = "999B2F5";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15991,14 +15991,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._hass = null;
     this._backGesture = null;
     this._heroPinCleanup = null;
-    this._noBounceCleanup = null;
-    this._energyEdgeCleanup = null;
   }
 
   connectedCallback() {
     this._pinHero();
-    if (!this._noBounceCleanup) this._noBounceCleanup = setupAtzeNoBounce(this);
-    if (!this._energyEdgeCleanup) this._energyEdgeCleanup = this._limitEnergyOverscroll();
     if (this._backGesture) return;
     const gesture = { id: null, x: 0, y: 0, started: 0, active: false,
       indicator: null, blur: null, fade: null, fadeTimer: null };
@@ -16133,94 +16129,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._backGesture = null;
     this._heroPinCleanup?.();
     this._heroPinCleanup = null;
-    this._noBounceCleanup?.();
-    this._noBounceCleanup = null;
-    this._energyEdgeCleanup?.();
-    this._energyEdgeCleanup = null;
-  }
-
-  _limitEnergyOverscroll() {
-    // The Lovelace view owns the scrolling, not this card. Listen at the
-    // document level so gestures starting on other view elements are covered.
-    // Only cancel outward vertical movement at the real scroll boundary.
-    let startX = 0;
-    let startY = 0;
-    let previousY = 0;
-    let tracking = false;
-    let scrollTarget = null;
-    const route = window.location.pathname;
-    const isDocumentScroll = target =>
-      !target || target === document.scrollingElement ||
-      target === document.documentElement || target === document.body;
-    const scrollMetrics = target => {
-      if (isDocumentScroll(target)) {
-        return {
-          top: window.scrollY || document.documentElement.scrollTop || 0,
-          max: Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
-        };
-      }
-      return {
-        top: target.scrollTop,
-        max: Math.max(0, target.scrollHeight - target.clientHeight),
-      };
-    };
-    const onStart = event => {
-      tracking = false;
-      if (!this.isConnected || window.location.pathname !== route ||
-          event.touches.length !== 1 || !this.getClientRects().length ||
-          this.shadowRoot?.querySelector(".period-dialog")?.open) return;
-      const path = event.composedPath?.() || [];
-      // Do not interfere with HA popups, sliders or nested dialogs.
-      if (path.some(node =>
-        node instanceof HTMLElement &&
-        (node.tagName === "DIALOG" ||
-         node.getAttribute("role") === "dialog" ||
-         node.classList?.contains("mdc-dialog") ||
-         node.classList?.contains("ha-dialog"))
-      )) return;
-      const view = path.find(node => node instanceof HTMLElement &&
-        ["HUI-VIEW", "HUI-SECTIONS-VIEW", "HUI-PANEL-VIEW", "HUI-MASONRY-VIEW"].includes(node.tagName));
-      // Match the current view rather than affecting another cached subview.
-      const thisView = (() => {
-        let node = this;
-        while (node) {
-          if (node instanceof HTMLElement &&
-              ["HUI-VIEW", "HUI-SECTIONS-VIEW", "HUI-PANEL-VIEW", "HUI-MASONRY-VIEW"].includes(node.tagName)) return node;
-          node = atzeComposedParent(node);
-        }
-        return null;
-      })();
-      if (view && thisView && view !== thisView) return;
-      scrollTarget = atzeFindScrollContainer(this);
-      const touch = event.touches[0];
-      startX = touch.clientX;
-      startY = previousY = touch.clientY;
-      tracking = true;
-    };
-    const onMove = event => {
-      if (!tracking || event.touches.length !== 1 || !event.cancelable) return;
-      const touch = event.touches[0];
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-      const stepY = touch.clientY - previousY;
-      previousY = touch.clientY;
-      // Preserve the horizontal ATZE swipe-back gesture.
-      if (Math.abs(dy) < 5 || Math.abs(dy) <= Math.abs(dx) * 1.15) return;
-      const { top, max } = scrollMetrics(scrollTarget);
-      if ((top <= 1 && stepY > 0) ||
-          (top >= max - 1 && stepY < 0)) event.preventDefault();
-    };
-    const onEnd = () => { tracking = false; scrollTarget = null; };
-    document.addEventListener("touchstart", onStart, { passive:true, capture:true });
-    document.addEventListener("touchmove", onMove, { passive:false, capture:true });
-    document.addEventListener("touchend", onEnd, { passive:true, capture:true });
-    document.addEventListener("touchcancel", onEnd, { passive:true, capture:true });
-    return () => {
-      document.removeEventListener("touchstart", onStart, true);
-      document.removeEventListener("touchmove", onMove, true);
-      document.removeEventListener("touchend", onEnd, true);
-      document.removeEventListener("touchcancel", onEnd, true);
-    };
   }
 
   setConfig(config) {
