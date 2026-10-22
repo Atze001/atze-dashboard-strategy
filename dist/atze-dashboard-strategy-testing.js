@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8652B8A";
+const ATZE_TESTING_REVISION = "9A0C6C1";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16396,6 +16396,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       "background:#000", "z-index:2147483600"
     ].join(";");
     document.body.appendChild(topMask);
+    // A full-width band behind the image also covers the narrow left/right
+    // gutters. The image itself remains above the band.
+    const heroBandMask = document.createElement("div");
+    heroBandMask.setAttribute("aria-hidden", "true");
+    heroBandMask.style.cssText = [
+      "position:fixed", "left:0", "right:0",
+      `top:${pinnedTop.toFixed(1)}px`,
+      "height:0", "pointer-events:none",
+      "background:#000", "z-index:2147483600"
+    ].join(";");
+    document.body.appendChild(heroBandMask);
     let frame = 0;
     const update = () => {
       frame = 0;
@@ -16405,6 +16416,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       if (width <= 0) return;
       const height = width * 860 / 1672;
       placeholder.style.height = height.toFixed(1) + "px";
+      heroBandMask.style.height = (height + 2).toFixed(1) + "px";
       hero.style.position = "fixed";
       hero.style.top = pinnedTop.toFixed(1) + "px";
       hero.style.left = rect.left.toFixed(1) + "px";
@@ -16423,6 +16435,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       if (frame) cancelAnimationFrame(frame);
       placeholder.remove();
       topMask.remove();
+      heroBandMask.remove();
       hero.style.removeProperty("position");
       hero.style.removeProperty("top");
       hero.style.removeProperty("left");
