@@ -2708,13 +2708,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       container.dataset.initialised = "true";
       const areaId = panel.dataset.primaryArea;
       const roles = [
-        ["temperature", "Temperatur", "sensor"],
-        ["humidity", "Luftfeuchtigkeit", "sensor"],
-        ["presence", "Präsenz / Bewegung", "binary_sensor"],
-        ["energy", "Stromverbrauch (kWh)", "sensor"],
-        ["power", "Aktuelle Leistung (W)", "sensor"],
+        ["temperature", "Temperatur", "sensor", ["°C", "°F", "K"]],
+        ["humidity", "Luftfeuchtigkeit", "sensor", ["%"]],
+        ["presence", "Präsenz / Bewegung", "binary_sensor", null],
+        ["energy", "Stromverbrauch (kWh)", "sensor", ["kWh"]],
+        ["power", "Aktuelle Leistung (W)", "sensor", ["W"]],
       ];
-      for (const [role, title, domain] of roles) {
+      for (const [role, title, domain, units] of roles) {
         const label = document.createElement("label");
         label.className = "primary-field";
         const caption = document.createElement("span");
@@ -2725,7 +2725,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         label.appendChild(selector);
         container.appendChild(label);
         selector.hass = this._hass;
-        selector.selector = { entity: { domain } };
+        selector.selector = { entity: {
+          filter: { domain, ...(units ? { unit_of_measurement: units } : {}) },
+        } };
         selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
         selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
         selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
