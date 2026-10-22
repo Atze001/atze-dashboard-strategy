@@ -7,6 +7,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     this._hass = null;
     this._scrollTopCleanup = null;
     this._homeSwipeCleanup = null;
+    this._stickyHeaderCleanup = null;
   }
 
   setConfig(config) {
@@ -44,6 +45,10 @@ class AtzeRoomNavHeader extends HTMLElement {
         );
     }
 
+    if (!this._stickyHeaderCleanup) {
+      this._stickyHeaderCleanup = this._setupStickyHeader();
+    }
+
     this._render();
   }
 
@@ -53,6 +58,87 @@ class AtzeRoomNavHeader extends HTMLElement {
 
     this._homeSwipeCleanup?.();
     this._homeSwipeCleanup = null;
+
+    this._stickyHeaderCleanup?.();
+    this._stickyHeaderCleanup = null;
+  }
+
+  _setupStickyHeader() {
+    // A Lovelace card's own sticky position cannot extend beyond its
+    // short card wrapper. Pin the entire header while keeping its layout
+    // slot in place, so the rest of the room view scrolls normally.
+    const placeholder = document.createElement("div");
+    placeholder.setAttribute("aria-hidden", "true");
+    placeholder.style.cssText = "display:none;pointer-events:none";
+    let pinned = false;
+    let frame = 0;
+    let originalStyles = null;
+    let hostTop = null;
+
+    const release = () => {
+      if (!pinned) return;
+      pinned = false;
+      Object.assign(this.style, originalStyles);
+      originalStyles = null;
+      placeholder.style.display = "none";
+    };
+    const update = () => {
+      frame = 0;
+      if (!this.isConnected || !this._config) return;
+      const hasImage = Boolean(this.shadowRoot?.querySelector("ha-card.has-background"));
+      if (!hasImage) {
+        release();
+        return;
+      }
+      const parent = this.parentNode;
+      if (!parent) return;
+      if (placeholder.parentNode !== parent) {
+        release();
+        parent.insertBefore(placeholder, this);
+      }
+      const rect = (pinned ? placeholder : this).getBoundingClientRect();
+      // Preserve the header's location in the document while it is pinned.
+      if (!pinned && rect.top < 0 && rect.bottom > 0) {
+        originalStyles = {
+          position: this.style.position,
+          top: this.style.top,
+          left: this.style.left,
+          width: this.style.width,
+          zIndex: this.style.zIndex,
+        };
+        placeholder.style.cssText =
+          `display:block;height:${rect.height}px;width:100%;pointer-events:none`;
+        this.style.position = "fixed";
+        this.style.top = "0px";
+        this.style.left = `${rect.left}px`;
+        this.style.width = `${rect.width}px`;
+        this.style.zIndex = "30";
+        pinned = true;
+      } else if (pinned) {
+        if (rect.top >= 0) {
+          release();
+        } else {
+          this.style.left = `${rect.left}px`;
+          this.style.width = `${rect.width}px`;
+          placeholder.style.height = `${this.getBoundingClientRect().height}px`;
+        }
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("location-changed", schedule);
+    schedule();
+    return () => {
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("location-changed", schedule);
+      if (frame) window.cancelAnimationFrame(frame);
+      release();
+      placeholder.remove();
+    };
   }
 
   getCardSize() {
