@@ -297,8 +297,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     let parent = this;
     let scrollContainer = null;
     while (parent) {
-      parent = parent.assignedSlot || parent.parentNode ||
-        (parent.getRootNode?.() instanceof ShadowRoot ? parent.getRootNode().host : null);
+      const nextParent = parent.assignedSlot || parent.parentNode;
+      parent = nextParent instanceof ShadowRoot ? nextParent.host : nextParent;
       if (!(parent instanceof HTMLElement)) continue;
       const style = getComputedStyle(parent);
       if (/(auto|scroll)/.test(style.overflowY) &&
