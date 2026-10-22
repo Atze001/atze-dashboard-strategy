@@ -16421,11 +16421,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     if (this._backgroundPickerActive) return;
     if (first || this._areas.length === 0) {
       this._loadRegistries();
-    } else if (this._entityVisibilityActive || this._navigationEditActive) {
-      this._pendingHassRender = true;
-    } else {
-      this._render();
     }
+    // Live state updates are frequent. The editor uses registries and its own
+    // saved configuration, so rebuilding all selectors on every update is unnecessary.
 
   }
 
@@ -17807,12 +17805,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           <span>${this._escape(area.name || area.area_id)}</span></span>
           <span class="entity-summary-end"><span class="entity-count">${sensorRoles.filter(([key]) => values[key]).length}/5</span>
           <ha-icon class="entity-chevron" icon="mdi:chevron-right"></ha-icon></span></summary>
-          <div class="primary-fields">
-          ${sensorRoles.map(([key, title, domain]) => `<label class="primary-field">
-            <span>${title}</span><ha-selector class="primary-selector"
-            data-area="${this._escape(area.area_id)}" data-role="${key}" data-domain="${domain}"></ha-selector>
-          </label>`).join("")}
-          </div></details>`;
+          <div class="primary-fields"></div></details>`;
       }).join("");
 
     const entityAreaPanels =
@@ -19096,44 +19089,77 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
     };
 
+    // Build expensive Home Assistant selectors only when a room is opened.
+    const initialisePrimaryArea = panel => {
+      if (!panel.open || !panel.isConnected) return;
+      const container = panel.querySelector(".primary-fields");
+      if (!container || container.dataset.initialised === "true") return;
+      container.dataset.initialised = "true";
+      const areaId = panel.dataset.primaryArea;
+      const roles = [
+        ["temperature", "Temperatur", "sensor"],
+        ["humidity", "Luftfeuchtigkeit", "sensor"],
+        ["presence", "Präsenz / Bewegung", "binary_sensor"],
+        ["energy", "Stromverbrauch (kWh)", "sensor"],
+        ["power", "Aktuelle Leistung (W)", "sensor"],
+      ];
+      for (const [role, title, domain] of roles) {
+        const label = document.createElement("label");
+        label.className = "primary-field";
+        const caption = document.createElement("span");
+        caption.textContent = title;
+        label.appendChild(caption);
+        const selector = document.createElement("ha-selector");
+        selector.className = "primary-selector";
+        label.appendChild(selector);
+        container.appendChild(label);
+        selector.hass = this._hass;
+        selector.selector = { entity: { domain } };
+        selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
+        selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
+        selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
+        selector.addEventListener("value-changed", event => {
+          event.stopPropagation();
+          const value = String(event.detail?.value || "").trim();
+          const overrides = { ...(this._config.area_overrides || {}) };
+          const area = { ...(overrides[areaId] || {}) };
+          const primary = { ...(area.primary_sensors || {}) };
+          if ((primary[role] || "") === value) return;
+          if (value) primary[role] = value;
+          else delete primary[role];
+          if (Object.keys(primary).length) area.primary_sensors = primary;
+          else delete area.primary_sensors;
+          if (Object.keys(area).length) overrides[areaId] = area;
+          else delete overrides[areaId];
+          const next = { ...this._config };
+          if (Object.keys(overrides).length) next.area_overrides = overrides;
+          else delete next.area_overrides;
+          this._config = next;
+          panel.querySelector(".entity-count").textContent =
+            roles.filter(([key]) => primary[key]).length + "/5";
+          this.dispatchEvent(new CustomEvent("config-changed", {
+            detail: { config: next }, bubbles: true, composed: true,
+          }));
+          this._navigationEditActive = false;
+        });
+      }
+    };
     for (const panel of this.shadowRoot.querySelectorAll(".primary-area")) {
       panel.addEventListener("toggle", () => {
-        if (panel.open) this._openPrimaryAreaIds.add(panel.dataset.primaryArea);
-        else this._openPrimaryAreaIds.delete(panel.dataset.primaryArea);
-      });
-    }
-    for (const selector of this.shadowRoot.querySelectorAll(".primary-selector")) {
-      const areaId = selector.dataset.area, role = selector.dataset.role;
-      selector.hass = this._hass;
-      selector.selector = { entity: { domain: selector.dataset.domain } };
-      selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
-      selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
-      selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
-      selector.addEventListener("value-changed", event => {
-        event.stopPropagation();
-        const value = String(event.detail?.value || "").trim();
-        const overrides = { ...(this._config.area_overrides || {}) };
-        const area = { ...(overrides[areaId] || {}) };
-        const primary = { ...(area.primary_sensors || {}) };
-        if (value) primary[role] = value;
-        else delete primary[role];
-        if (Object.keys(primary).length) area.primary_sensors = primary;
-        else delete area.primary_sensors;
-        if (Object.keys(area).length) overrides[areaId] = area;
-        else delete overrides[areaId];
-        const next = { ...this._config };
-        if (Object.keys(overrides).length) next.area_overrides = overrides;
-        else delete next.area_overrides;
-        this._config = next;
-        this.dispatchEvent(new CustomEvent("config-changed", {
-          detail: { config: next }, bubbles: true, composed: true,
-        }));
-        window.setTimeout(() => {
+        if (panel.open) {
+          this._openPrimaryAreaIds.add(panel.dataset.primaryArea);
+          initialisePrimaryArea(panel);
+        } else {
+          this._openPrimaryAreaIds.delete(panel.dataset.primaryArea);
+          const container = panel.querySelector(".primary-fields");
+          if (container) {
+            container.replaceChildren();
+            delete container.dataset.initialised;
+          }
           this._navigationEditActive = false;
-          this._pendingHassRender = false;
-          this._render();
-        }, 250);
+        }
       });
+      if (panel.open) initialisePrimaryArea(panel);
     }
     for (const input of this.shadowRoot.querySelectorAll(".navigation-field")) {
       input.addEventListener("focus", () => { this._navigationEditActive = true; });
