@@ -69,6 +69,14 @@ class AtzeRoomNavHeader extends HTMLElement {
     // slot in place, so the rest of the room view scrolls normally.
     const placeholder = document.createElement("div");
     placeholder.setAttribute("aria-hidden", "true");
+    const topMask = document.createElement("div");
+    topMask.setAttribute("aria-hidden", "true");
+    topMask.style.cssText = [
+      "position:fixed", "top:0", "left:0", "right:0", "height:0",
+      "pointer-events:none", "z-index:29", "display:none",
+      "background:var(--primary-background-color,#000)"
+    ].join(";");
+    document.body.appendChild(topMask);
     placeholder.style.cssText = "display:none;pointer-events:none";
     let pinned = false;
     let frame = 0;
@@ -80,6 +88,7 @@ class AtzeRoomNavHeader extends HTMLElement {
       Object.assign(this.style, originalStyles);
       originalStyles = null;
       placeholder.style.display = "none";
+      topMask.style.display = "none";
     };
     const update = () => {
       frame = 0;
@@ -122,6 +131,12 @@ class AtzeRoomNavHeader extends HTMLElement {
         this.style.width = `${rect.width}px`;
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
+      if (pinned) {
+        // Hide content that scrolls through the gap above the pinned image.
+        const maskHeight = Math.max(0, this.getBoundingClientRect().top);
+        topMask.style.height = `${maskHeight}px`;
+        topMask.style.display = maskHeight > 0 ? "block" : "none";
+      }
     };
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
@@ -137,6 +152,7 @@ class AtzeRoomNavHeader extends HTMLElement {
       if (frame) window.cancelAnimationFrame(frame);
       release();
       placeholder.remove();
+      topMask.remove();
     };
   }
 
