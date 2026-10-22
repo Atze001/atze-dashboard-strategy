@@ -156,7 +156,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           border-radius:16px; margin:0 0 6px; background:rgba(55,58,67,.30);
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
           box-sizing:border-box }
-        .energy-hero img { display:block; width:100%; aspect-ratio:1672/760;
+        .energy-hero img { display:block; width:100%; aspect-ratio:1672/860;
           object-fit:cover; object-position:center top }
         .energy-hero[hidden] { display:none }
         .energy-hero-error { display:none; padding:12px; font-size:12px; line-height:1.5;
