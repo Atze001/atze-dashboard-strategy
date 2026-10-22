@@ -15860,6 +15860,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       bedroom_power: "sensor.schlafzimmer_stromzahler_power",
       living_energy: "sensor.wohnzimmer_stromzahler_energy",
       living_power: "sensor.wohnzimmer_stromzahler_power",
+      // Optional room period counters; no default IDs are assumed.
+      living_month: null, living_day: null,
+      bedroom_month: null, bedroom_day: null,
+      kitchen_month: null, kitchen_day: null,
       year_reset: "input_datetime.gesamt_strom_reset_jahr",
       month_reset: "input_datetime.gesamt_strom_reset_monat",
       day_reset: "input_datetime.gesamt_strom_reset_tag",
@@ -15907,7 +15911,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   async _reset(period) {
     const scriptId = this._config[period + "_script"];
     if (!scriptId) return;
-    const title = period === "month" ? "Monats" : "Tages";
+    const title = period.endsWith("month") ? "Monats" : "Tages";
     if (!window.confirm(title + "verbrauch wirklich auf 0 kWh zurücksetzen?")) return;
     const button = this.shadowRoot.querySelector('[data-reset="' + period + '"]');
     if (button) button.disabled = true;
@@ -15923,9 +15927,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   _openPeriod(period) {
     const dialog = this.shadowRoot.querySelector(".period-dialog");
-    if (!dialog || !["month", "day"].includes(period)) return;
+    const valid = ["month", "day", "living_month", "living_day",
+      "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day"];
+    if (!dialog || !valid.includes(period)) return;
     dialog.dataset.period = period;
-    dialog.querySelector(".dialog-title").textContent = period === "month" ? "Monat" : "Tag";
+    const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche" };
+    const [room, span] = period.includes("_") ? period.split("_") : [null, period];
+    dialog.querySelector(".dialog-title").textContent =
+      (room ? roomLabels[room] + " · " : "") + (span === "month" ? "Monat" : "Tag");
     this._updatePeriodDialog();
     if (!dialog.open) dialog.showModal();
   }
@@ -15934,9 +15943,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const dialog = this.shadowRoot?.querySelector(".period-dialog");
     if (!dialog?.dataset.period) return;
     const period = dialog.dataset.period;
-    dialog.querySelector(".dialog-date").textContent = this._resetLabel(this._config[period + "_reset"]);
+    const resetEntity = this._config[period + "_reset"];
+    dialog.querySelector(".dialog-date").textContent = resetEntity
+      ? this._resetLabel(resetEntity) : "Nicht eingerichtet";
     dialog.querySelector(".dialog-value").textContent = this._value(this._config[period]);
-    dialog.querySelector(".dialog-reset").dataset.reset = period;
+    const resetButton = dialog.querySelector(".dialog-reset");
+    resetButton.dataset.reset = period;
+    resetButton.hidden = !this._config[period + "_script"];
+    dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
   _render() {
@@ -15958,7 +15972,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-heading { grid-column:1/-1; margin:12px 0 0; display:flex; align-items:center;
           gap:8px; font-size:15px; font-weight:650; color:var(--primary-text-color) }
         .room-heading ha-icon { --mdc-icon-size:20px; color:var(--secondary-text-color) }
-        .tile.room { min-height:115px; gap:12px; cursor:pointer }
+        .tile.room { min-height:115px; gap:12px }
+        .room-section { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px }
+        .room-section .room-heading { grid-column:1/-1; margin:0 0 1px }
+        .room-section .tile.room-total { grid-column:1/-1; min-height:120px }
+        .room-section .tile.period { min-height:100px }
+        .room-section .room-power { display:flex; justify-content:center; align-items:baseline; gap:5px;
+          border-top:1px solid var(--home-card-border,rgba(255,255,255,.1)); padding-top:10px }
+        .dialog-reset[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .room-power { text-align:center; font-size:15px; font-weight:600;
           font-variant-numeric:tabular-nums }
@@ -16066,37 +16087,62 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       });
       grid.appendChild(tile);
     }
-    const roomHeading = document.createElement("div");
-    roomHeading.className = "room-heading";
-    roomHeading.innerHTML = '<ha-icon icon="mdi:home-outline"></ha-icon><span>Räume</span>';
-    grid.appendChild(roomHeading);
     const rooms = [
       { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
       { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
       { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
     ];
     for (const room of rooms) {
-      const tile = document.createElement("div");
-      tile.className = "tile room" + (room.key === "kitchen" ? " room-wide" : "");
-      tile.dataset.room = room.key;
-      tile.tabIndex = 0;
-      tile.setAttribute("role", "button");
-      tile.setAttribute("aria-label", room.name + " – Stromzähler Details");
-      tile.style.setProperty("--accent", room.tone);
-      tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
-        <div class="value"><span class="room-energy"></span> <span class="unit">kWh</span></div>
-        <div class="room-power"><span class="room-watts"></span> <span class="unit">W aktuell</span></div>`;
-      tile.querySelector("ha-icon").setAttribute("icon", room.icon);
-      tile.querySelector(".title").textContent = room.name;
-      const open = () => this._details(this._config[room.key + "_energy"]);
-      tile.addEventListener("click", open);
-      tile.addEventListener("keydown", (event) => {
+      const section = document.createElement("section");
+      section.className = "room-section";
+      section.dataset.roomSection = room.key;
+      section.innerHTML = `<div class="room-heading"><ha-icon></ha-icon><span></span></div>
+        <div class="tile room room-total" data-room="${room.key}">
+          <div class="head"><ha-icon></ha-icon><span class="title">Gesamtverbrauch</span></div>
+          <div class="value"><span class="room-energy"></span> <span class="unit">kWh</span></div>
+          <div class="room-power"><span class="room-watts"></span> <span class="unit">W aktuell</span></div>
+        </div>`;
+      section.querySelector(".room-heading ha-icon").setAttribute("icon", room.icon);
+      section.querySelector(".room-heading span").textContent = room.name;
+      section.querySelector(".room-total").style.setProperty("--accent", room.tone);
+      section.querySelector(".room-total .head ha-icon").setAttribute("icon", "mdi:lightning-bolt");
+      const total = section.querySelector(".room-total");
+      total.tabIndex = 0;
+      total.setAttribute("role", "button");
+      total.setAttribute("aria-label", room.name + " – Stromzähler Details");
+      const openTotal = () => this._details(this._config[room.key + "_energy"]);
+      total.addEventListener("click", openTotal);
+      total.addEventListener("keydown", event => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          open();
+          openTotal();
         }
       });
-      grid.appendChild(tile);
+      for (const period of ["month", "day"]) {
+        const periodKey = room.key + "_" + period;
+        const tile = document.createElement("div");
+        tile.className = "tile period";
+        tile.dataset.roomPeriod = periodKey;
+        tile.tabIndex = 0;
+        tile.setAttribute("role", "button");
+        tile.setAttribute("aria-label", room.name + " " +
+          (period === "month" ? "Monat" : "Tag") + " – Optionen öffnen");
+        tile.style.setProperty("--accent", period === "month" ? "#30d158" : "#ff9f0a");
+        tile.innerHTML = `<div class="head"><ha-icon></ha-icon><span class="title"></span></div>
+          <div class="value"><span class="number"></span> <span class="unit">kWh</span></div>`;
+        tile.querySelector("ha-icon").setAttribute("icon",
+          period === "month" ? "mdi:calendar-month" : "mdi:calendar-today");
+        tile.querySelector(".title").textContent = period === "month" ? "Monat" : "Tag";
+        tile.addEventListener("click", () => this._openPeriod(periodKey));
+        tile.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            this._openPeriod(periodKey);
+          }
+        });
+        section.appendChild(tile);
+      }
+      grid.appendChild(section);
     }
     this._update();
   }
@@ -16119,6 +16165,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       if (!tile) continue;
       tile.querySelector(".room-energy").textContent = this._value(this._config[room + "_energy"]);
       tile.querySelector(".room-watts").textContent = this._value(this._config[room + "_power"]);
+      for (const period of ["month", "day"]) {
+        const key = room + "_" + period;
+        const periodTile = this.shadowRoot.querySelector('[data-room-period="' + key + '"]');
+        periodTile.querySelector(".number").textContent =
+          this._config[key] ? this._value(this._config[key]) : "–";
+      }
     }
   }
 }
