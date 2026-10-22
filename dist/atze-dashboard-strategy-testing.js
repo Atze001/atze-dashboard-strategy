@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "FF518EF";
+const ATZE_TESTING_REVISION = "DF896B6";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15944,6 +15944,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._config = {};
     this._hass = null;
     this._backGesture = null;
+    this._heroTopMaskCleanup = null;
   }
 
   connectedCallback() {
@@ -16080,6 +16081,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   disconnectedCallback() {
     this._backGesture?.();
     this._backGesture = null;
+    this._heroTopMaskCleanup?.();
+    this._heroTopMaskCleanup = null;
   }
 
   setConfig(config) {
@@ -16217,6 +16220,57 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     resetButton.dataset.reset = period;
     resetButton.hidden = !this._config[period + "_script"];
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
+  }
+
+  _setupHeroTopMask() {
+    this._heroTopMaskCleanup?.();
+    this._heroTopMaskCleanup = null;
+    const hero = this.shadowRoot?.querySelector(".energy-hero");
+    if (!hero || hero.hidden) return;
+    const mask = document.createElement("div");
+    mask.setAttribute("aria-hidden", "true");
+    mask.style.cssText = [
+      "position:fixed", "top:0", "left:0", "right:0",
+      "height:0", "display:none", "pointer-events:none",
+      "z-index:29", "background:var(--primary-background-color,#000)"
+    ].join(";");
+    document.body.appendChild(mask);
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      if (!this.isConnected || !hero.isConnected || hero.hidden) {
+        mask.style.display = "none";
+        return;
+      }
+      let node = this;
+      let scrollOffset = 0;
+      while (node) {
+        const next = node.assignedSlot || node.parentNode;
+        node = next instanceof ShadowRoot ? next.host : next;
+        if (!(node instanceof HTMLElement)) continue;
+        const style = getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY) &&
+            node.scrollHeight > node.clientHeight + 2) {
+          scrollOffset = node.scrollTop;
+          break;
+        }
+      }
+      const height = Math.max(0, hero.getBoundingClientRect().top);
+      mask.style.height = height.toFixed(1) + "px";
+      mask.style.display = scrollOffset > 1 && height > 0 ? "block" : "none";
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule, { passive:true });
+    schedule();
+    this._heroTopMaskCleanup = () => {
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      if (frame) cancelAnimationFrame(frame);
+      mask.remove();
+    };
   }
 
   _alignHeroSticky() {
@@ -16476,6 +16530,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }
     this._update();
     this._alignHeroSticky();
+    this._setupHeroTopMask();
   }
 
   _update() {
