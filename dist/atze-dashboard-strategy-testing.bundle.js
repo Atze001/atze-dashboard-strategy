@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0462294";
+const ATZE_TESTING_REVISION = "6296BF7";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15992,8 +15992,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           border-radius:16px; background:rgba(55,58,67,.30);
           backdrop-filter:blur(10px) saturate(1.2); -webkit-backdrop-filter:blur(10px) saturate(1.2);
           color:var(--primary-text-color); display:flex; flex-direction:column; gap:10px }
-        .tile.total { grid-column:1 / -1; --accent:#ffb900 }
-        .tile.period { min-height:68px; cursor:pointer; justify-content:center; gap:0 }
+        .tile.total { grid-column:1 / -1; --accent:#ffb900; min-height:108px; padding-top:10px; padding-bottom:10px; gap:6px }
+        .tile.period { min-height:54px; padding-top:8px; padding-bottom:8px; cursor:pointer; justify-content:center; gap:0 }
         .tile.period .head { width:100% }
         .period-value { margin-left:auto; min-width:0; display:flex; align-items:baseline;
           justify-content:flex-end; gap:4px; font-size:clamp(16px,4.5vw,22px);
@@ -16003,11 +16003,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-heading { grid-column:1/-1; margin:12px 0 0; display:flex; align-items:center;
           gap:8px; font-size:15px; font-weight:650; color:var(--primary-text-color) }
         .room-heading ha-icon { --mdc-icon-size:20px; color:var(--secondary-text-color) }
-        .tile.room { min-height:115px; gap:12px }
+        .tile.room { min-height:108px; gap:6px; padding-top:10px; padding-bottom:10px }
         .room-section { grid-column:1/-1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px }
         .room-section .room-heading { grid-column:1/-1; margin:0 0 1px }
-        .room-section .tile.room-total { grid-column:1/-1; min-height:120px }
-        .room-section .tile.period { min-height:68px }
+        .room-section .tile.room-total { grid-column:1/-1; min-height:108px }
+        .room-section .tile.period { min-height:54px }
         .room-section .room-power { display:flex; }
         .dialog-reset[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
@@ -16026,8 +16026,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .value { font-size:clamp(30px,8vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:center; width:100% }
         .unit { font-size:12px; font-weight:400; color:var(--secondary-text-color) }
-        .summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:5px 0 }
-        .summary-item { min-width:0; display:flex; flex-direction:column; align-items:center; gap:7px }
+        .summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:1px 0 }
+        .summary-item { min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px }
         .summary-label { color:var(--secondary-text-color); font-size:11px }
         .summary-value { font-size:clamp(28px,7vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
