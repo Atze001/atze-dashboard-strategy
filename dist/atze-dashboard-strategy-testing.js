@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "EC21CFE";
+const ATZE_TESTING_REVISION = "AE5B41D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15942,7 +15942,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .summary-label { color:var(--secondary-text-color); font-size:11px }
         .summary-value { font-size:clamp(28px,7vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
-        .year-date { font-size:10px; color:var(--secondary-text-color) }
         .live-power { display:flex; align-items:baseline; justify-content:center; gap:5px;
           border-top:1px solid var(--home-card-border,rgba(255,255,255,.10)); padding-top:12px;
           font-size:18px; font-weight:600; font-variant-numeric:tabular-nums }
@@ -15967,7 +15966,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
             <div class="summary-item" data-detail="year" role="button" tabindex="0" aria-label="Jahresverbrauch Details">
               <span class="summary-label">Dieses Jahr</span>
               <div class="summary-value"><span class="year-number"></span> <span class="unit">kWh</span></div>
-              <span class="year-date"></span>
             </div>
           </div>
           <div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div>
@@ -16018,7 +16016,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const total = this.shadowRoot.querySelector('[data-period="total"]');
     total.querySelector(".total-number").textContent = this._value(this._config.total);
     total.querySelector(".year-number").textContent = this._value(this._config.year);
-    total.querySelector(".year-date").textContent = this._resetLabel(this._config.year_reset);
     const power = total.querySelector(".live-power");
     power.hidden = !this._config.power;
     if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
