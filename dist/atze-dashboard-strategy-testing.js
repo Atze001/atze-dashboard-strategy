@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "90F4A52";
+const ATZE_TESTING_REVISION = "1B7FC6F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -15847,7 +15847,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       total: "sensor.gesamt_strom",
-      power: null, // Configure with the Home Assistant power sensor (W).
+      power: "sensor.gesamt_leistung",
       year: "sensor.gesamt_strom_virtuell_jahr",
       month: "sensor.gesamt_strom_virtuell_monat",
       day: "sensor.gesamt_strom_virtuell_tag",

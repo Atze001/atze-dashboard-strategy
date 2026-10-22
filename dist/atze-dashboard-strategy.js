@@ -15850,7 +15850,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       total: "sensor.gesamt_strom",
-      power: null, // Configure with the Home Assistant power sensor (W).
+      power: "sensor.gesamt_leistung",
       year: "sensor.gesamt_strom_virtuell_jahr",
       month: "sensor.gesamt_strom_virtuell_monat",
       day: "sensor.gesamt_strom_virtuell_tag",
