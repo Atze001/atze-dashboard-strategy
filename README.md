@@ -230,6 +230,14 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.412.0
+
+- Strom-Dashboard mit eigener Energieübersicht und fixiertem Titelbild; Abdeckungen verhindern beim Scrollen sichtbare Karten oberhalb und seitlich des Bildes.
+- Raumansichten mit fixierten Titelbildern und Scroll-Abdeckung.
+- Manuell auswählbare Hauptsensoren je Raum in den Dashboard-Einstellungen; flüssigere Einstellungsansicht und gezielte Sensorfilter.
+- JSON-Konfigurationssicherung in ATZE Home über native iOS-Dateifreigabe; normaler Download im Browser bleibt erhalten.
+- Nicht mehr verwendete JavaScript-Bounce-Sperren bereinigt. Das native Scrollverhalten wird in der ATZE Home App gesteuert.
+
 ## v0.411.0
 
 - Versionsupdate für HACS: bestätigten Fix der grauen Thermostat-Kapsel auf der Hauptübersicht und Entfernung des temporären Diagnosecodes als neue Version bereitgestellt.
@@ -240,11 +248,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Graue Kapsel beim Hochscrollen auf der Hauptübersicht beseitigt: automatisch eingebettete Thermostat-Karten werden visuell ausgeblendet.
 - Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
 - Temporären Diagnosecode nach erfolgreicher Fehlersuche entfernt.
-
-## v0.409.0
-
-- iOS: Drag-and-Drop-Sortierung der acht Status-Buttons auf der obersten Hauptseitenkarte über langes Drücken (450 ms) repariert.
-- Normales Scrollen und Tippen bleiben erhalten; die Reihenfolge wird weiterhin in `home_status_order` gespeichert.
 <!-- latest-changes:end -->
 
 ## Lizenz
