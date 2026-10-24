@@ -4697,6 +4697,16 @@ const DEFAULT_HOME_CONTROL_CENTER_IMAGE = new URL(
   ATZE_ASSET_BASE_URL
 ).href;
 
+// Explicit per-room selections take precedence over automatic detection.
+// Unavailable selections stay selected (and recover automatically), rather than
+// silently showing a different sensor instead.
+function configuredRoomSensor(hass, areaOverride, role, automatic = null) {
+  const chosen = areaOverride?.primary_sensors?.[role];
+  if (typeof chosen !== "string" || !chosen.trim()) return automatic;
+  const domain = role === "presence" ? "binary_sensor" : "sensor";
+  return domainOf(chosen) === domain ? chosen : automatic;
+}
+
 function bestEnvironmentEntity(
   hass,
   entities,
@@ -5668,7 +5678,7 @@ function buildHomeOverviewView(
     const path = override.path || slugify(name);
     const icon = override.icon || area.icon || "mdi:home-outline";
 
-    const temperature = bestEnvironmentEntity(
+    const automaticTemperature = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5677,7 +5687,7 @@ function buildHomeOverviewView(
       "temperature"
     );
 
-    const humidity = bestEnvironmentEntity(
+    const automaticHumidity = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5686,7 +5696,7 @@ function buildHomeOverviewView(
       "humidity"
     );
 
-    const power = bestEnvironmentEntity(
+    const automaticPower = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5704,7 +5714,7 @@ function buildHomeOverviewView(
       "illuminance"
     );
 
-    const occupancy = bestBinaryEntity(
+    const automaticOccupancy = bestBinaryEntity(
       hass,
       areaEntities,
       config,
@@ -5712,6 +5722,12 @@ function buildHomeOverviewView(
       popupMap,
       "occupancy"
     );
+
+    const temperature = configuredRoomSensor(hass, override, "temperature", automaticTemperature);
+    const humidity = configuredRoomSensor(hass, override, "humidity", automaticHumidity);
+    const power = configuredRoomSensor(hass, override, "power", automaticPower);
+    const energy = configuredRoomSensor(hass, override, "energy");
+    const occupancy = configuredRoomSensor(hass, override, "presence", automaticOccupancy);
 
     const motionInterrupter = occupancy
       ? roomMotionInterrupterEntity(
@@ -5855,6 +5871,7 @@ function buildHomeOverviewView(
       temperature,
       humidity,
       power,
+      energy,
       illuminance,
       occupancy,
       motion_interrupter: motionInterrupter,
