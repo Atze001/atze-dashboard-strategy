@@ -9331,17 +9331,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ? this._formatted(room.illuminance)
             : "";
 
-        const roomPrimaryMetric = power || illuminance;
-        const roomPrimaryMetricLabel = power
-          ? "Leistung"
-          : "Helligkeit";
-        const roomPrimaryMetricIcon = power
-          ? "mdi:lightning-bolt"
-          : "mdi:white-balance-sunny";
+        const energyState = room.energy ? this._state(room.energy) : null;
+        const energy = energyState &&
+          !["unknown", "unavailable"].includes(String(energyState.state || "").toLowerCase())
+            ? this._formatted(room.energy) : "";
+        const roomPrimaryMetric = power || energy || illuminance;
+        const roomPrimaryMetricLabel = power ? "Leistung" : energy ? "Verbrauch" : "Helligkeit";
+        const roomPrimaryMetricIcon = power ? "mdi:lightning-bolt" : energy ? "mdi:lightning-bolt-circle" : "mdi:white-balance-sunny";
         const roomPrimaryMetricMoreInfoEntity =
-          !power && illuminance
-            ? "input_number.lichtschwelle"
-            : "";
+          !power && !energy && illuminance ? "input_number.lichtschwelle" : "";
+        const roomMetricHtml = [
+          roomPrimaryMetric ? `<ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon><span>${this._escapeHtml(roomPrimaryMetric)}</span>` : "",
+          // If the user selected energy and power, both readings belong on
+          // the room card rather than silently discarding the energy sensor.
+          power && energy ? `<ha-icon icon="mdi:lightning-bolt-circle"></ha-icon><span>${this._escapeHtml(energy)}</span>` : "",
+        ].filter(Boolean).join("");
 
         const occupancyState = room.occupancy
           ? this._isActive(this._state(room.occupancy))
@@ -9380,7 +9384,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
-            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : "", room.power && power ? `<span><ha-icon icon="mdi:lightning-bolt"></ha-icon>${this._escapeHtml(power)}</span>` : "", room.energy && energy ? `<span><ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>${this._escapeHtml(energy)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : "", room.power && power ? `<span><ha-icon icon="mdi:lightning-bolt"></ha-icon>${this._escapeHtml(power)}</span>` : "", room.energy && energy ? `<span><ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>${this._escapeHtml(energy)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -9422,8 +9426,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                         : ""
                     }
                   >
-                    <ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon>
-                    <span>${roomPrimaryMetric}</span>
+                    ${roomMetricHtml}
                   </div>
                 `
                 : ""
@@ -10458,6 +10461,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-yellow);
         }
 
+        .room-power:has(ha-icon:nth-of-type(2)) {
+          gap: 6px;
+          padding-right: 10px;
+          font-size: 12px;
+        }
         .room-power.clickable {
           cursor: pointer;
         }
