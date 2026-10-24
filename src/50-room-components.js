@@ -7,6 +7,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     this._hass = null;
     this._scrollTopCleanup = null;
     this._homeSwipeCleanup = null;
+    this._stickyHeaderCleanup = null;
   }
 
   setConfig(config) {
@@ -44,6 +45,10 @@ class AtzeRoomNavHeader extends HTMLElement {
         );
     }
 
+    if (!this._stickyHeaderCleanup) {
+      this._stickyHeaderCleanup = this._setupStickyHeader();
+    }
+
     this._render();
   }
 
@@ -53,6 +58,102 @@ class AtzeRoomNavHeader extends HTMLElement {
 
     this._homeSwipeCleanup?.();
     this._homeSwipeCleanup = null;
+
+    this._stickyHeaderCleanup?.();
+    this._stickyHeaderCleanup = null;
+  }
+
+  _setupStickyHeader() {
+    // A Lovelace card's own sticky position cannot extend beyond its
+    // short card wrapper. Pin the entire header while keeping its layout
+    // slot in place, so the rest of the room view scrolls normally.
+    const placeholder = document.createElement("div");
+    placeholder.setAttribute("aria-hidden", "true");
+    const topMask = document.createElement("div");
+    topMask.setAttribute("aria-hidden", "true");
+    topMask.style.cssText = [
+      "position:fixed", "top:0", "left:0", "right:0", "height:0",
+      "pointer-events:none", "z-index:29", "display:none",
+      "background:var(--primary-background-color,#000)"
+    ].join(";");
+    document.body.appendChild(topMask);
+    placeholder.style.cssText = "display:none;pointer-events:none";
+    let pinned = false;
+    let frame = 0;
+    let originalStyles = null;
+
+    const release = () => {
+      if (!pinned) return;
+      pinned = false;
+      Object.assign(this.style, originalStyles);
+      originalStyles = null;
+      placeholder.style.display = "none";
+      topMask.style.display = "none";
+    };
+    const update = () => {
+      frame = 0;
+      if (!this.isConnected || !this._config) return;
+      const hasImage = Boolean(this.shadowRoot?.querySelector("ha-card.has-background"));
+      if (!hasImage) {
+        release();
+        return;
+      }
+      const parent = this.parentNode;
+      if (!parent) return;
+      if (placeholder.parentNode !== parent) {
+        release();
+        parent.insertBefore(placeholder, this);
+      }
+      const rect = (pinned ? placeholder : this).getBoundingClientRect();
+      // Pin as soon as the header enters the viewport, including at initial
+      // page load, so it never slides upward before becoming fixed.
+      // Do not pin cached/offscreen subviews.
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      if (!pinned && rect.bottom > 0 && rect.top < viewportHeight) {
+        originalStyles = {
+          position: this.style.position,
+          top: this.style.top,
+          left: this.style.left,
+          width: this.style.width,
+          zIndex: this.style.zIndex,
+        };
+        placeholder.style.cssText =
+          `display:block;height:${rect.height}px;width:100%;pointer-events:none`;
+        this.style.position = "fixed";
+        this.style.top = `${Math.max(0, rect.top)}px`;
+        this.style.left = `${rect.left}px`;
+        this.style.width = `${rect.width}px`;
+        this.style.zIndex = "30";
+        pinned = true;
+      } else if (pinned) {
+        // Keep the original screen position even while scrolling upwards.
+        this.style.left = `${rect.left}px`;
+        this.style.width = `${rect.width}px`;
+        placeholder.style.height = `${this.getBoundingClientRect().height}px`;
+      }
+      if (pinned) {
+        // Hide content that scrolls through the gap above the pinned image.
+        const maskHeight = Math.max(0, this.getBoundingClientRect().top);
+        topMask.style.height = `${maskHeight}px`;
+        topMask.style.display = maskHeight > 0 ? "block" : "none";
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("location-changed", schedule);
+    schedule();
+    return () => {
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("location-changed", schedule);
+      if (frame) window.cancelAnimationFrame(frame);
+      release();
+      placeholder.remove();
+      topMask.remove();
+    };
   }
 
   getCardSize() {

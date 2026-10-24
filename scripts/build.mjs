@@ -10,6 +10,7 @@ const sources = [
   "src/30-security-overview.js",
   "src/40-maintenance-overview.js",
   "src/50-room-components.js",
+  "src/55-energy-overview.js",
   "src/60-editor.js",
 ];
 

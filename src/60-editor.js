@@ -18,6 +18,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._favoriteFilter = "";
     this._pendingCustomPageValues = new Map();
     this._openEntityAreaIds = new Set();
+    this._openPrimaryAreaIds = new Set();
     this._openEditorSections = new Set();
     this._dashboardBackgroundStatus = "";
     this._dashboardBackgroundError = false;
@@ -31,11 +32,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     if (this._backgroundPickerActive) return;
     if (first || this._areas.length === 0) {
       this._loadRegistries();
-    } else if (this._entityVisibilityActive || this._navigationEditActive) {
-      this._pendingHassRender = true;
-    } else {
-      this._render();
     }
+    // Live state updates are frequent. The editor uses registries and its own
+    // saved configuration, so rebuilding all selectors on every update is unnecessary.
 
   }
 
@@ -57,6 +56,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     // Reset only on opening the editor, not on config or state updates.
     this._openEditorSections.clear();
     this._openEntityAreaIds.clear();
+    this._openPrimaryAreaIds.clear();
     this._entityFilter = "";
     this._favoriteFilter = "";
     this._pendingCustomPageValues.clear();
@@ -184,21 +184,36 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _exportDashboardBackup() {
-    const backup = {
-      format: "atze-dashboard-config",
-      schema_version: 1,
-      exported_at: new Date().toISOString(),
-      config: JSON.parse(JSON.stringify(this._config)),
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "atze-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    try {
+      const backup = {
+        format: "atze-dashboard-config",
+        schema_version: 1,
+        exported_at: new Date().toISOString(),
+        config: JSON.parse(JSON.stringify(this._config)),
+      };
+      const contents = JSON.stringify(backup, null, 2);
+      const filename = "atze-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+
+      // WKWebView does not reliably handle synthetic Blob downloads.
+      // ATZE Home provides a native iOS share sheet for saving the JSON file.
+      const nativeExport = window.webkit?.messageHandlers?.atzeBackupExport;
+      if (nativeExport && typeof nativeExport.postMessage === "function") {
+        nativeExport.postMessage({ filename, contents });
+        return;
+      }
+
+      const blob = new Blob([contents], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      window.alert("Export fehlgeschlagen: " + (error?.message || String(error)));
+    }
   }
 
   async _importDashboardBackup(file) {
@@ -1399,6 +1414,26 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       .map(({ page, index }) => this._customPageHtml(page, index))
       .join("");
 
+    const sensorRoles = [
+      ["temperature", "Temperatur", "sensor"],
+      ["humidity", "Luftfeuchtigkeit", "sensor"],
+      ["presence", "Präsenz / Bewegung", "binary_sensor"],
+      ["energy", "Stromverbrauch (kWh)", "sensor"],
+      ["power", "Aktuelle Leistung (W)", "sensor"],
+    ];
+    const primarySensorHtml = this._eligibleAreas()
+      .filter(area => selected.has(area.area_id))
+      .map(area => {
+        const values = this._config.area_overrides?.[area.area_id]?.primary_sensors || {};
+        return `<details class="entity-area primary-area" data-primary-area="${this._escape(area.area_id)}"
+          ${this._openPrimaryAreaIds.has(area.area_id) ? "open" : ""}>
+          <summary><span class="entity-summary-main"><ha-icon icon="${this._escape(area.icon || "mdi:home-outline")}"></ha-icon>
+          <span>${this._escape(area.name || area.area_id)}</span></span>
+          <span class="entity-summary-end"><span class="entity-count">${sensorRoles.filter(([key]) => values[key]).length}/5</span>
+          <ha-icon class="entity-chevron" icon="mdi:chevron-right"></ha-icon></span></summary>
+          <div class="primary-fields"></div></details>`;
+      }).join("");
+
     const entityAreaPanels =
       this._eligibleAreas()
         .filter((area) =>
@@ -1578,6 +1613,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           background: rgba(10, 12, 16, 0.72);
         }
 
+        .primary-fields { display:grid; gap:12px; padding:14px 16px; }
+        .primary-field { display:grid; gap:6px; min-width:0; font-size:13px; }
+        .primary-selector { width:100%; min-width:0; }
+        .primary-area { margin-bottom:8px; }
         .editor-version {
           padding: 0 4px 2px;
           color: var(--secondary-text-color);
@@ -2465,6 +2504,21 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           </div>
         </details>
 
+        <details class="panel editor-section" data-editor-section="primary-sensors"
+          ${this._openEditorSections.has("primary-sensors") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:tune-vertical"></ha-icon>
+            <span class="editor-section-summary-title">Hauptsensoren</span></span>
+            <ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon>
+          </summary>
+          <div class="editor-section-body">
+            <div class="editor-section-help">Wähle für jeden Raum die Hauptsensoren. Ohne Auswahl
+              gilt weiterhin die automatische Erkennung. Diese Zuordnungen werden zunächst nur
+              gespeichert; die bisherigen Karten bleiben unverändert.</div>
+            ${this._loading ? '<div class="loading">Bereiche werden geladen …</div>' :
+              (primarySensorHtml || '<div class="loading">Keine ausgewählten Räume gefunden.</div>')}
+          </div>
+        </details>
         <details class="panel editor-section" data-editor-section="name-filters" ${this._openEditorSections.has("name-filters") ? "open" : ""}>
           <summary><span class="editor-section-summary-main"><ha-icon icon="mdi:filter-cog-outline"></ha-icon><span class="editor-section-summary-title">Namensfilter / Zuordnung</span></span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
           <div class="editor-section-body">
@@ -2661,6 +2715,83 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
     };
 
+    // Build expensive Home Assistant selectors only when a room is opened.
+    const initialisePrimaryArea = panel => {
+      if (!panel.open || !panel.isConnected) return;
+      const container = panel.querySelector(".primary-fields");
+      if (!container || container.dataset.initialised === "true") return;
+      container.dataset.initialised = "true";
+      const areaId = panel.dataset.primaryArea;
+      const roles = [
+        ["temperature", "Temperatur", "sensor", ["°C", "°F", "K"]],
+        ["humidity", "Luftfeuchtigkeit", "sensor", ["%"]],
+        ["presence", "Präsenz / Bewegung", "binary_sensor", null],
+        ["energy", "Stromverbrauch (kWh)", "sensor", ["kWh"]],
+        ["power", "Aktuelle Leistung (W)", "sensor", ["W"]],
+      ];
+      for (const [role, title, domain, units] of roles) {
+        const label = document.createElement("label");
+        label.className = "primary-field";
+        const caption = document.createElement("span");
+        caption.textContent = title;
+        label.appendChild(caption);
+        const selector = document.createElement("ha-selector");
+        selector.className = "primary-selector";
+        label.appendChild(selector);
+        container.appendChild(label);
+        selector.hass = this._hass;
+        selector.selector = { entity: {
+          filter: { domain,
+            ...(units ? { unit_of_measurement: units } : {}),
+            ...(role === "presence" ? { device_class: ["motion", "occupancy", "presence"] } : {}),
+          },
+        } };
+        selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
+        selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
+        selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
+        selector.addEventListener("value-changed", event => {
+          event.stopPropagation();
+          const value = String(event.detail?.value || "").trim();
+          const overrides = { ...(this._config.area_overrides || {}) };
+          const area = { ...(overrides[areaId] || {}) };
+          const primary = { ...(area.primary_sensors || {}) };
+          if ((primary[role] || "") === value) return;
+          if (value) primary[role] = value;
+          else delete primary[role];
+          if (Object.keys(primary).length) area.primary_sensors = primary;
+          else delete area.primary_sensors;
+          if (Object.keys(area).length) overrides[areaId] = area;
+          else delete overrides[areaId];
+          const next = { ...this._config };
+          if (Object.keys(overrides).length) next.area_overrides = overrides;
+          else delete next.area_overrides;
+          this._config = next;
+          panel.querySelector(".entity-count").textContent =
+            roles.filter(([key]) => primary[key]).length + "/5";
+          this.dispatchEvent(new CustomEvent("config-changed", {
+            detail: { config: next }, bubbles: true, composed: true,
+          }));
+          this._navigationEditActive = false;
+        });
+      }
+    };
+    for (const panel of this.shadowRoot.querySelectorAll(".primary-area")) {
+      panel.addEventListener("toggle", () => {
+        if (panel.open) {
+          this._openPrimaryAreaIds.add(panel.dataset.primaryArea);
+          initialisePrimaryArea(panel);
+        } else {
+          this._openPrimaryAreaIds.delete(panel.dataset.primaryArea);
+          const container = panel.querySelector(".primary-fields");
+          if (container) {
+            container.replaceChildren();
+            delete container.dataset.initialised;
+          }
+          this._navigationEditActive = false;
+        }
+      });
+      if (panel.open) initialisePrimaryArea(panel);
+    }
     for (const input of this.shadowRoot.querySelectorAll(".navigation-field")) {
       input.addEventListener("focus", () => { this._navigationEditActive = true; });
       input.addEventListener("pointerdown", () => { this._navigationEditActive = true; });
