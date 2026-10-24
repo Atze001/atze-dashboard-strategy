@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.412.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "D749A99";
+const ATZE_TESTING_REVISION = "C091BE7";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10168,6 +10168,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .custom-page-link:active {
           transform: scale(0.97);
         }
+        .custom-page-link.dragging {
+          opacity: 0.55;
+          transform: scale(0.96);
+        }
+        .custom-page-link.drag-over {
+          outline: 2px solid var(--primary-color, #03a9f4);
+          outline-offset: 2px;
+        }
 
         .custom-page-link ha-icon {
           width: 23px;
@@ -11513,6 +11521,135 @@ class AtzeHomeOverviewCard extends HTMLElement {
       (element) => element.dataset.entityId,
       "atze-dashboard:favorite-order"
     );
+
+    // Navigation pills: long-press to reorder on iOS, native drag on desktop.
+    // Keep the order in the strategy layout, not just in this device's browser.
+    const navigationBar = this.shadowRoot.querySelector(".custom-page-links");
+    if (navigationBar) {
+      const navSelector = ".custom-page-link";
+      const navKey = (element) => element.dataset.navigationPath
+        ? "navigation:" + element.dataset.navigationPath
+        : element.dataset.path
+          ? "page:" + element.dataset.path
+          : element.dataset.popupHash
+            ? "popup:" + element.dataset.popupHash : "";
+      const storageKey = "atze-dashboard:home-navigation-order";
+      let navOrder = atzeLayoutValue(this._config, "home_navigation_order", []);
+      if (!navOrder.length) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          if (Array.isArray(saved)) navOrder = saved;
+        } catch (_error) {}
+      }
+      const navEntries = [...navigationBar.querySelectorAll(navSelector)];
+      const navRanks = new Map(navOrder.map((key, index) => [key, index]));
+      navEntries.sort((left, right) =>
+        (navRanks.get(navKey(left)) ?? navOrder.length + navEntries.indexOf(left)) -
+        (navRanks.get(navKey(right)) ?? navOrder.length + navEntries.indexOf(right))
+      ).forEach((entry) => navigationBar.appendChild(entry));
+
+      const entries = () => [...navigationBar.querySelectorAll(navSelector)];
+      const saveOrder = () => {
+        const visible = entries().map(navKey).filter(Boolean);
+        const merged = [...visible, ...navOrder.filter((key) => !visible.includes(key))];
+        navOrder = merged;
+        try { localStorage.setItem(storageKey, JSON.stringify(merged)); } catch (_error) {}
+        saveAtzeStrategyLayout(this._hass, this._config, { home_navigation_order: merged });
+      };
+      const moveBeforeOrAfter = (source, target) => {
+        if (!source || !target || source === target) return false;
+        const current = entries();
+        if (current.indexOf(source) < current.indexOf(target)) target.after(source);
+        else target.before(source);
+        saveOrder();
+        return true;
+      };
+      let dragged = null;
+      let touchDrag = null;
+      let touchTimer = null;
+      let suppressUntil = 0;
+      const atPoint = (x, y) => {
+        const found = this.shadowRoot.elementFromPoint(x, y)?.closest?.(navSelector);
+        return found && navigationBar.contains(found) ? found : null;
+      };
+      const resetTouch = () => {
+        if (touchTimer !== null) clearTimeout(touchTimer);
+        touchTimer = null;
+        entries().forEach((entry) => entry.classList.remove("dragging", "drag-over"));
+        touchDrag = null;
+      };
+      navigationBar.addEventListener("touchstart", (event) => {
+        if (event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        const source = atPoint(touch.clientX, touch.clientY);
+        if (!source) return;
+        resetTouch();
+        touchDrag = { source, x: touch.clientX, y: touch.clientY, active: false, target: null };
+        touchTimer = setTimeout(() => {
+          if (!touchDrag) return;
+          touchDrag.active = true;
+          touchDrag.source.classList.add("dragging");
+          suppressUntil = Date.now() + 700;
+        }, 450);
+      }, { passive: true });
+      navigationBar.addEventListener("touchmove", (event) => {
+        if (!touchDrag || event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        if (!touchDrag.active) {
+          if (Math.hypot(touch.clientX - touchDrag.x, touch.clientY - touchDrag.y) > 12) resetTouch();
+          return;
+        }
+        event.preventDefault();
+        const target = atPoint(touch.clientX, touch.clientY);
+        if (target !== touchDrag.target) {
+          touchDrag.target?.classList.remove("drag-over");
+          touchDrag.target = target;
+          if (target && target !== touchDrag.source) target.classList.add("drag-over");
+        }
+      }, { passive: false });
+      navigationBar.addEventListener("touchend", (event) => {
+        if (!touchDrag) return;
+        const drag = touchDrag;
+        if (drag.active) {
+          event.preventDefault();
+          suppressUntil = Date.now() + 700;
+          const touch = event.changedTouches[0];
+          moveBeforeOrAfter(drag.source, atPoint(touch.clientX, touch.clientY) || drag.target);
+        }
+        resetTouch();
+      }, { passive: false });
+      navigationBar.addEventListener("touchcancel", resetTouch, { passive: true });
+      navigationBar.addEventListener("click", (event) => {
+        if (Date.now() >= suppressUntil) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }, true);
+      for (const entry of entries()) {
+        entry.draggable = true;
+        entry.style.touchAction = "pan-y";
+        entry.addEventListener("dragstart", (event) => {
+          dragged = entry;
+          entry.classList.add("dragging");
+          event.dataTransfer?.setData("text/plain", navKey(entry));
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        });
+        entry.addEventListener("dragover", (event) => {
+          if (!dragged || dragged === entry) return;
+          event.preventDefault();
+          entry.classList.add("drag-over");
+        });
+        entry.addEventListener("dragleave", () => entry.classList.remove("drag-over"));
+        entry.addEventListener("drop", (event) => {
+          event.preventDefault();
+          moveBeforeOrAfter(dragged, entry);
+          suppressUntil = Date.now() + 700;
+        });
+        entry.addEventListener("dragend", () => {
+          dragged = null;
+          entries().forEach((item) => item.classList.remove("dragging", "drag-over"));
+        });
+      }
+    }
 
     this.shadowRoot
       .querySelectorAll(".custom-page-link[data-navigation-path]")
