@@ -3282,6 +3282,7 @@ function selectEnvironmentBadges(
       : ["temperature", "humidity", "illuminance", "power"];
 
   for (const deviceClass of requestedClasses) {
+    const configured = configuredRoomSensor(hass, areaOverride, deviceClass);
     const candidates = entities
       .filter((entity) => {
         if (shouldHideExactEntity(config, entity.entity_id)) return false;
@@ -3299,10 +3300,8 @@ function selectEnvironmentBadges(
           environmentBadgeScore(hass, a, area, deviceClass)
       );
 
-    if (!candidates.length) continue;
-
-    const selected = candidates[0];
-    const entityId = selected.entity_id;
+    const entityId = configured || candidates[0]?.entity_id;
+    if (!entityId || !hass.states[entityId]) continue;
 
     const badge = {
       type: "custom:atze-status-badge-v1",
@@ -3333,15 +3332,40 @@ function selectEnvironmentBadges(
     entityIds.add(entityId);
   }
 
+  // Energy consumption is an optional fifth primary metric. It is shown
+  // only when explicitly selected, preserving the existing automatic badges.
+  const selectedEnergy = configuredRoomSensor(hass, areaOverride, "energy");
+  if (selectedEnergy && hass.states[selectedEnergy] && !entityIds.has(selectedEnergy)) {
+    const energyBadge = {
+      type: "custom:atze-status-badge-v1",
+      entity: selectedEnergy,
+      inactive_icon_color: "#FFD60A",
+      active_icon_color: "#FFD60A",
+    };
+    const badgeOverride = getOverride(config.entity_overrides, selectedEnergy);
+    if (badgeOverride.badge_name) energyBadge.name = badgeOverride.badge_name;
+    if (badgeOverride.badge_icon) energyBadge.icon = badgeOverride.badge_icon;
+    badges.push(energyBadge);
+    entityIds.add(selectedEnergy);
+  }
+
   if (config.occupancy_badge !== false) {
-    const occupancy = selectBinaryBadge(
-      hass,
-      entities,
-      config,
-      area,
-      popupMap,
-      "occupancy"
-    );
+    const chosenPresence = configuredRoomSensor(hass, areaOverride, "presence");
+    const occupancy = chosenPresence && hass.states[chosenPresence]
+      ? { entityId: chosenPresence, badge: {
+          type: "custom:atze-status-badge-v1",
+          entity: chosenPresence,
+          inactive_icon_color: "#30D158",
+          active_icon_color: "#30D158",
+        } }
+      : selectBinaryBadge(
+          hass,
+          entities,
+          config,
+          area,
+          popupMap,
+          "occupancy"
+        );
 
     if (occupancy) {
       const manualOccupancyBadge =
