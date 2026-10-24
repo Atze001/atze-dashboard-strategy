@@ -1,3 +1,8 @@
+## v0.413.0
+
+- Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.
+- Die gewählte Reihenfolge wird dauerhaft in der Dashboard-Konfiguration gespeichert; normale Navigation und zentrierte Darstellung bleiben erhalten.
+
 ## v0.412.0
 
 - Strom-Dashboard mit eigener Energieübersicht und fixiertem Titelbild; Abdeckungen verhindern beim Scrollen sichtbare Karten oberhalb und seitlich des Bildes.
