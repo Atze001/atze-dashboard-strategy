@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.412.0**
+Version **0.413.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.413.0
+
+- Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.
+- Die gewählte Reihenfolge wird dauerhaft in der Dashboard-Konfiguration gespeichert; normale Navigation und zentrierte Darstellung bleiben erhalten.
+
 ## v0.412.0
 
 - Strom-Dashboard mit eigener Energieübersicht und fixiertem Titelbild; Abdeckungen verhindern beim Scrollen sichtbare Karten oberhalb und seitlich des Bildes.
@@ -242,12 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Versionsupdate für HACS: bestätigten Fix der grauen Thermostat-Kapsel auf der Hauptübersicht und Entfernung des temporären Diagnosecodes als neue Version bereitgestellt.
 - Eingebettete Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
-
-## v0.410.0
-
-- Graue Kapsel beim Hochscrollen auf der Hauptübersicht beseitigt: automatisch eingebettete Thermostat-Karten werden visuell ausgeblendet.
-- Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
-- Temporären Diagnosecode nach erfolgreicher Fehlersuche entfernt.
 <!-- latest-changes:end -->
 
 ## Lizenz
