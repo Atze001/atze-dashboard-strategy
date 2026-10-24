@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.411.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "999B2F5";
+const ATZE_TESTING_REVISION = "BFCC44F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16806,21 +16806,36 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   _exportDashboardBackup() {
-    const backup = {
-      format: "atze-dashboard-config",
-      schema_version: 1,
-      exported_at: new Date().toISOString(),
-      config: JSON.parse(JSON.stringify(this._config)),
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "atze-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    try {
+      const backup = {
+        format: "atze-dashboard-config",
+        schema_version: 1,
+        exported_at: new Date().toISOString(),
+        config: JSON.parse(JSON.stringify(this._config)),
+      };
+      const contents = JSON.stringify(backup, null, 2);
+      const filename = "atze-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+
+      // WKWebView does not reliably handle synthetic Blob downloads.
+      // ATZE Home provides a native iOS share sheet for saving the JSON file.
+      const nativeExport = window.webkit?.messageHandlers?.atzeBackupExport;
+      if (nativeExport && typeof nativeExport.postMessage === "function") {
+        nativeExport.postMessage({ filename, contents });
+        return;
+      }
+
+      const blob = new Blob([contents], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      window.alert("Export fehlgeschlagen: " + (error?.message || String(error)));
+    }
   }
 
   async _importDashboardBackup(file) {
