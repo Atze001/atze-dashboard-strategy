@@ -18330,6 +18330,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0 &&
       individualIndex < individual.length;
     const setup = { ...(isIndividual ? individual[individualIndex] : this._config.energy_setup || {}) };
+    if (key === "total" && setup.total !== value &&
+        ["year", "month", "day"].some(period => setup[period])) {
+      if (!window.confirm("Anderen kWh-Quellsensor wählen?\\n" +
+          "Die bisherigen Zähler-Zuordnungen werden aus diesem Eintrag gelöst.\\n" +
+          "Die Helfer und Verbrauchswerte in Home Assistant bleiben erhalten.")) {
+        this._render();
+        return;
+      }
+      delete setup.year;
+      delete setup.month;
+      delete setup.day;
+    }
     if (value) setup[key] = value;
     else delete setup[key];
     const next = { ...this._config };
