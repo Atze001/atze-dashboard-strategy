@@ -2373,13 +2373,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
           font-weight: 800;
           letter-spacing: 0.12em;
           line-height: 1.2;
-          pointer-events: none;
+          cursor: pointer;
+          font: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
           backdrop-filter: blur(8px);
         }
 
-        .testing-build-badge.update-available {
-          pointer-events: auto;
-          cursor: pointer;
+        .testing-build-badge:disabled { opacity: .65; cursor: wait; }
+        .testing-build-badge:focus-visible {
+          outline: 2px solid white;
+          outline-offset: 3px;
         }
 
         .hero {
@@ -3693,7 +3698,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"} ${outdoorIlluminanceAvailable ? "has-outdoor-illuminance" : ""}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
+            ${ATZE_TESTING_BUILD ? `<button class="testing-build-badge" id="testing-build-badge" type="button" title="Aktuelles Testing-Build laden" aria-label="Aktuelles Testing-Build laden">TESTING · ${ATZE_TESTING_REVISION || "DEV"} · ↻ Laden</button>` : ""}
             ${outdoorIlluminanceAvailable ? `
               <div
                 class="outdoor-illuminance-badge"
@@ -4433,6 +4438,32 @@ class AtzeHomeOverviewCard extends HTMLElement {
         "click",
         () => this._openHomeAssistantUpdate()
       );
+
+    this.shadowRoot.querySelector("#testing-build-badge")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
+      button.disabled = true;
+      const previousLabel = button.textContent;
+      button.textContent = "TESTING · Prüfe Build …";
+      try {
+        const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error("Versionsdatei nicht erreichbar");
+        const revision = (await response.text()).trim().toUpperCase();
+        if (!/^[A-F0-9]{7}$/.test(revision)) throw new Error("Ungültige Versionskennung");
+
+        // A full document navigation resets already registered custom elements.
+        // Home Assistant login, local storage and dashboard configuration stay intact.
+        sessionStorage.setItem("atze-testing:return-url", location.pathname + location.search + location.hash);
+        const url = new URL(location.href);
+        url.searchParams.set("atze_testing_refresh", revision + "-" + Date.now());
+        location.replace(url.href);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = previousLabel;
+        console.error("ATZE Testing: Build konnte nicht geladen werden", error);
+        alert("Testing-Build konnte nicht geladen werden. Bitte die Verbindung und den GitHub-Actions-Build prüfen.");
+      }
+    });
 
 
     const kioskClock =
