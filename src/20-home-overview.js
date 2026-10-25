@@ -4622,6 +4622,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 }
 
+// The testing loader uses this marker to detect an older, already registered
+// custom element. Web Components cannot be redefined in a running document.
+AtzeHomeOverviewCard.testingRevision = ATZE_TESTING_REVISION;
 if (!customElements.get("atze-home-overview-card")) {
   customElements.define(
     "atze-home-overview-card",
