@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "517F7FB";
+const ATZE_TESTING_REVISION = "4B6A00F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -18296,15 +18296,15 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           throw Error("Home Assistant hat die Anlage nicht bestätigt (" + result.type + ")");
         }
         // Match by the new config entry ID, never guess an entity ID.
-        const entryId = result.result?.entry_id;
+        const entryId = result.result?.entry_id || result.entry_id;
         let found = null;
         for (let attempt = 0; attempt < 6 && !found; attempt++) {
           const entries = await this._hass.callWS({ type: "config/entity_registry/list" });
           found = entries.find(e => e.config_entry_id === entryId &&
-            e.domain === "sensor" && !e.disabled_by)?.entity_id;
+            e.entity_id?.startsWith("sensor.") && !e.disabled_by)?.entity_id;
           if (!found) await new Promise(resolve => setTimeout(resolve, 500));
         }
-        if (!found) throw Error("Helfer angelegt, Entität noch nicht erkannt. Bitte unten zuordnen.");
+        if (!found) throw Error("Helfer wurde angelegt, aber die Entität ist noch nicht erkannt. Bitte über die Auswahlliste zuordnen.");
         setup[key] = found;
         this._config = { ...this._config, energy_setup: { ...setup } };
         this.dispatchEvent(new CustomEvent("config-changed", {
