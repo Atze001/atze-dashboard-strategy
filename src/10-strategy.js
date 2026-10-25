@@ -303,6 +303,17 @@ class AtzeDashboardStrategy extends HTMLElement {
       ? "strom-atze"
       : "strom";
     const energySetup = config.energy_setup || {};
+    const primaryEnergyMeters = filteredAreas.flatMap(area => {
+      const primary = getOverride(config.area_overrides, area.area_id).primary_sensors || {};
+      if (!primary.energy) return [];
+      return [{
+        name: area.name || area.area_id,
+        icon: area.icon || "mdi:home-outline",
+        total: primary.energy,
+        power: primary.power || "",
+      }];
+    });
+    const individualEnergyMeters = (config.energy_individual || []).filter(item => item?.total);
     const energyCard = {
       type: ATZE_TESTING_BUILD
         ? "custom:atze-energy-overview-card-testing"
@@ -317,7 +328,11 @@ class AtzeDashboardStrategy extends HTMLElement {
       month_reset: "",
       day_reset: "",
       native_utility_meters: true,
-      individual_meters: (config.energy_individual || []).filter(item => item?.total),
+      individual_meters: [
+        ...primaryEnergyMeters,
+        ...individualEnergyMeters.filter(item =>
+          !primaryEnergyMeters.some(primary => primary.total === item.total)),
+      ],
       return_path: config.home_path || "home",
     };
     const energyView = {

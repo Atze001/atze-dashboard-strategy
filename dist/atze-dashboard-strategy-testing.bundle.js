@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "364BEC0";
+const ATZE_TESTING_REVISION = "BC19288";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7328,6 +7328,17 @@ class AtzeDashboardStrategy extends HTMLElement {
       ? "strom-atze"
       : "strom";
     const energySetup = config.energy_setup || {};
+    const primaryEnergyMeters = filteredAreas.flatMap(area => {
+      const primary = getOverride(config.area_overrides, area.area_id).primary_sensors || {};
+      if (!primary.energy) return [];
+      return [{
+        name: area.name || area.area_id,
+        icon: area.icon || "mdi:home-outline",
+        total: primary.energy,
+        power: primary.power || "",
+      }];
+    });
+    const individualEnergyMeters = (config.energy_individual || []).filter(item => item?.total);
     const energyCard = {
       type: ATZE_TESTING_BUILD
         ? "custom:atze-energy-overview-card-testing"
@@ -7342,7 +7353,11 @@ class AtzeDashboardStrategy extends HTMLElement {
       month_reset: "",
       day_reset: "",
       native_utility_meters: true,
-      individual_meters: (config.energy_individual || []).filter(item => item?.total),
+      individual_meters: [
+        ...primaryEnergyMeters,
+        ...individualEnergyMeters.filter(item =>
+          !primaryEnergyMeters.some(primary => primary.total === item.total)),
+      ],
       return_path: config.home_path || "home",
     };
     const energyView = {
@@ -16351,53 +16366,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       hero_image: "/local/stromverbrauch-titelbild.webp",
       // Optional absolute Home Assistant route, e.g. /atze-test/home.
       return_path: "",
-      total: "sensor.gesamt_strom",
-      power: "sensor.gesamt_leistung",
-      year: "sensor.gesamt_strom_virtuell_jahr",
-      month: "sensor.gesamt_strom_virtuell_monat",
-      day: "sensor.gesamt_strom_virtuell_tag",
-      kitchen_energy: "sensor.kuche_stromzahler_energy",
-      kitchen_power: "sensor.kuche_stromzahler_power",
-      kitchen_year: "sensor.kueche_strom_jahr",
-      bedroom_energy: "sensor.schlafzimmer_stromzahler_energy",
-      bedroom_power: "sensor.schlafzimmer_stromzahler_power",
-      bedroom_year: "sensor.schlafzimmer_strom_jahr",
-      living_energy: "sensor.wohnzimmer_stromzahler_energy",
-      living_power: "sensor.wohnzimmer_stromzahler_power",
-      living_year: "sensor.wohnzimmer_strom_jahr",
-      washer_energy: "sensor.waschmaschine_steckdose_energie",
-      washer_power: "sensor.waschmaschine_steckdose_leistung",
-      washer_year: "sensor.waschmaschine_strom_jahr",
-      washer_month: "sensor.waschmaschine_strom_monat",
-      washer_day: "sensor.waschmaschine_strom_tag",
-      washer_month_reset: "input_datetime.waschmaschine_strom_reset_monat",
-      washer_day_reset: "input_datetime.waschmaschine_strom_reset_tag",
-      washer_month_script: "script.waschmaschine_strom_reset_monat",
-      washer_day_script: "script.waschmaschine_strom_reset_tag",
-      // Room utility meters, reset timestamps and manual reset scripts.
-      living_month: "sensor.wohnzimmer_strom_monat",
-      living_day: "sensor.wohnzimmer_strom_tag",
-      living_month_reset: "input_datetime.wohnzimmer_strom_reset_monat",
-      living_day_reset: "input_datetime.wohnzimmer_strom_reset_tag",
-      living_month_script: "script.wohnzimmer_strom_reset_monat",
-      living_day_script: "script.wohnzimmer_strom_reset_tag",
-      bedroom_month: "sensor.schlafzimmer_strom_monat",
-      bedroom_day: "sensor.schlafzimmer_strom_tag",
-      bedroom_month_reset: "input_datetime.schlafzimmer_strom_reset_monat",
-      bedroom_day_reset: "input_datetime.schlafzimmer_strom_reset_tag",
-      bedroom_month_script: "script.schlafzimmer_strom_reset_monat",
-      bedroom_day_script: "script.schlafzimmer_strom_reset_tag",
-      kitchen_month: "sensor.kueche_strom_monat",
-      kitchen_day: "sensor.kueche_strom_tag",
-      kitchen_month_reset: "input_datetime.kueche_strom_reset_monat",
-      kitchen_day_reset: "input_datetime.kueche_strom_reset_tag",
-      kitchen_month_script: "script.kueche_strom_reset_monat",
-      kitchen_day_script: "script.kueche_strom_reset_tag",
-      year_reset: "input_datetime.gesamt_strom_reset_jahr",
-      month_reset: "input_datetime.gesamt_strom_reset_monat",
-      day_reset: "input_datetime.gesamt_strom_reset_tag",
-      month_script: "script.gesamt_strom_reset_monat",
-      day_script: "script.gesamt_strom_reset_tag",
+      total: "",
+      power: "",
+      year: "",
+      month: "",
+      day: "",
+      individual_meters: [],
       ...config,
     };
     this._render();
@@ -16433,24 +16407,16 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   _roomDefinitions() {
     const configured = Array.isArray(this._config.individual_meters)
       ? this._config.individual_meters.filter(item => item?.total) : [];
-    if (configured.length) {
-      return configured.map((item, index) => ({
+    return configured.map((item, index) => ({
         key: "meter" + index,
         name: item.name ||
           this._hass?.states?.[item.total]?.attributes?.friendly_name ||
           item.total.replace(/^sensor\./, "").replaceAll("_", " "),
-        icon: "mdi:lightning-bolt",
+        icon: item.icon || "mdi:lightning-bolt",
         tone: ["#64b5f6", "#ae86ed", "#30d158", "#26b9cc"][index % 4],
         energy: item.total, year: item.year, month: item.month,
         day: item.day, power: item.power || "",
       }));
-    }
-    return [
-      { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
-      { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
-      { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
-      { key: "washer", name: "Waschmaschine", icon: "mdi:washing-machine", tone: "#26b9cc" },
-    ];
   }
 
   _roomEntity(room, key) {
@@ -16619,6 +16585,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       <style>
         :host { display:block; min-width:0 }
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+        .tile[hidden] { display:none }
         .energy-hero-placeholder { grid-column:1/-1; width:100%; min-width:0 }
         .energy-hero { grid-column:1/-1;
           width:100%; min-width:0; overflow:hidden; border-radius:16px;
@@ -16743,6 +16710,15 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       hero.hidden = true;
     }
     const grid = this.shadowRoot.querySelector(".grid");
+    const hasTotal = Boolean(this._config.total);
+    grid.querySelector(".tile.total").hidden = !hasTotal;
+    if (!hasTotal && !this._roomDefinitions().length) {
+      const empty = document.createElement("div");
+      empty.className = "energy-empty";
+      empty.style.cssText = "grid-column:1/-1;padding:24px 16px;text-align:center;color:var(--secondary-text-color);";
+      empty.textContent = "Noch keine Stromsensoren eingerichtet. Wähle einen Gesamtstromsensor oder Energie-Hauptsensor in den Einstellungen.";
+      grid.appendChild(empty);
+    }
     for (const period of ["total", "year"]) {
       const detail = this.shadowRoot.querySelector('[data-detail="' + period + '"]');
       const open = () => this._details(this._config[period]);
@@ -16755,6 +16731,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       });
     }
     for (const card of cards) {
+      if (!hasTotal) continue;
       const tile = document.createElement("div");
       tile.className = "tile period";
       tile.tabIndex = 0;
@@ -16848,13 +16825,16 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   _update() {
     if (!this.shadowRoot?.querySelector(".grid")) return;
     const total = this.shadowRoot.querySelector('[data-period="total"]');
-    total.querySelector(".total-number").textContent = this._value(this._config.total);
-    total.querySelector(".year-number").textContent = this._value(this._config.year);
-    const power = total.querySelector(".live-power");
-    power.hidden = !this._config.power;
-    if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
+    if (this._config.total) {
+      total.querySelector(".total-number").textContent = this._value(this._config.total);
+      total.querySelector(".year-number").textContent = this._value(this._config.year);
+      const power = total.querySelector(".live-power");
+      power.hidden = !this._config.power;
+      if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
+    }
     for (const period of ["month", "day"]) {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
+      if (!tile) continue;
       tile.querySelector(".number").textContent = this._value(this._config[period]);
     }
     this._updatePeriodDialog();
@@ -19685,8 +19665,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           </summary>
           <div class="editor-section-body">
             <div class="editor-section-help">Wähle für jeden Raum die Hauptsensoren. Ohne Auswahl
-              gilt weiterhin die automatische Erkennung. Diese Zuordnungen werden zunächst nur
-              gespeichert; die bisherigen Karten bleiben unverändert.</div>
+              gilt in den Raumansichten weiterhin die automatische Erkennung. Für die Stromseite
+              werden nur Räume mit ausdrücklich ausgewähltem Energie-Hauptsensor übernommen.</div>
             ${this._loading ? '<div class="loading">Bereiche werden geladen …</div>' :
               (primarySensorHtml || '<div class="loading">Keine ausgewählten Räume gefunden.</div>')}
           </div>

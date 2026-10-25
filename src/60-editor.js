@@ -2800,8 +2800,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           </summary>
           <div class="editor-section-body">
             <div class="editor-section-help">Wähle für jeden Raum die Hauptsensoren. Ohne Auswahl
-              gilt weiterhin die automatische Erkennung. Diese Zuordnungen werden zunächst nur
-              gespeichert; die bisherigen Karten bleiben unverändert.</div>
+              gilt in den Raumansichten weiterhin die automatische Erkennung. Für die Stromseite
+              werden nur Räume mit ausdrücklich ausgewähltem Energie-Hauptsensor übernommen.</div>
             ${this._loading ? '<div class="loading">Bereiche werden geladen …</div>' :
               (primarySensorHtml || '<div class="loading">Keine ausgewählten Räume gefunden.</div>')}
           </div>
