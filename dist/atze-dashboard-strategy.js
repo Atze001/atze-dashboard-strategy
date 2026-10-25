@@ -18789,7 +18789,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         .primary-fields { display:grid; gap:12px; padding:14px 16px; }
         .primary-field { display:grid; gap:6px; min-width:0; font-size:13px; }
+        .primary-field-controls { display:flex; align-items:center; gap:8px; min-width:0; }
         .primary-selector { width:100%; min-width:0; }
+        .primary-clear { flex:none; padding:9px 10px; border:1px solid var(--divider-color, #555); border-radius:9px; background:transparent; color:var(--primary-text-color); cursor:pointer; }
+        .primary-clear:disabled { opacity:.35; cursor:default; }
         .primary-area { margin-bottom:8px; }
         .editor-version {
           padding: 0 4px 2px;
@@ -19977,14 +19980,22 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         ["power", "Aktuelle Leistung (W)", "sensor", ["W"]],
       ];
       for (const [role, title, domain, units] of roles) {
-        const label = document.createElement("label");
+        const label = document.createElement("div");
         label.className = "primary-field";
         const caption = document.createElement("span");
         caption.textContent = title;
         label.appendChild(caption);
+        const controls = document.createElement("div");
+        controls.className = "primary-field-controls";
         const selector = document.createElement("ha-selector");
         selector.className = "primary-selector";
-        label.appendChild(selector);
+        const clearButton = document.createElement("button");
+        clearButton.type = "button";
+        clearButton.className = "primary-clear";
+        clearButton.textContent = "Löschen";
+        clearButton.setAttribute("aria-label", `${title} für diesen Raum zurücksetzen`);
+        controls.append(selector, clearButton);
+        label.appendChild(controls);
         container.appendChild(label);
         selector.hass = this._hass;
         selector.selector = { entity: {
@@ -19994,11 +20005,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           },
         } };
         selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
+        clearButton.disabled = !selector.value;
         selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
         selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
-        selector.addEventListener("value-changed", event => {
-          event.stopPropagation();
-          const value = String(event.detail?.value || "").trim();
+        const setPrimarySensor = value => {
           const overrides = { ...(this._config.area_overrides || {}) };
           const area = { ...(overrides[areaId] || {}) };
           const primary = { ...(area.primary_sensors || {}) };
@@ -20013,13 +20023,20 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           if (Object.keys(overrides).length) next.area_overrides = overrides;
           else delete next.area_overrides;
           this._config = next;
+          clearButton.disabled = !value;
+          if (!value) selector.value = "";
           panel.querySelector(".entity-count").textContent =
             roles.filter(([key]) => primary[key]).length + "/5";
           this.dispatchEvent(new CustomEvent("config-changed", {
             detail: { config: next }, bubbles: true, composed: true,
           }));
           this._navigationEditActive = false;
+        };
+        selector.addEventListener("value-changed", event => {
+          event.stopPropagation();
+          setPrimarySensor(String(event.detail?.value || "").trim());
         });
+        clearButton.addEventListener("click", () => setPrimarySensor(""));
       }
     };
     for (const panel of this.shadowRoot.querySelectorAll(".primary-area")) {
