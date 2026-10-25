@@ -7327,7 +7327,9 @@ class AtzeDashboardStrategy extends HTMLElement {
     const customPageViews = buildCustomPageViews(config);
     // The energy overview is a native Strategy page, independent of a
     // separately maintained Lovelace dashboard.
-    const energyPath = "strom";
+    const energyPath = customPageViews.some(view => view.path === "strom")
+      ? "strom-atze"
+      : "strom";
     const energySetup = config.energy_setup || {};
     const energyCard = {
       type: ATZE_TESTING_BUILD
