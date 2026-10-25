@@ -1498,13 +1498,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   }
 
   async _createEnergyMeters(status) {
+    if (this._creatingEnergyMeters) return;
     const setup = { ...(this._config.energy_setup || {}) };
     const source = setup.total;
     const attributes = this._hass?.states?.[source]?.attributes;
     if (!source || attributes?.device_class !== "energy" ||
-        !["kWh"].includes(attributes?.unit_of_measurement) ||
+        attributes?.unit_of_measurement !== "kWh" ||
         !["total", "total_increasing"].includes(attributes?.state_class)) {
-      status.textContent = "Bitte zuerst einen gültigen fortlaufenden Energie-Quellsensor auswählen.";
+      status.textContent = "Bitte zuerst einen gültigen fortlaufenden kWh-Sensor auswählen.";
       return;
     }
     const missing = ["year", "month", "day"].filter(key => !setup[key]);
@@ -1512,50 +1513,88 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       status.textContent = "Alle drei Zähler sind bereits zugeordnet.";
       return;
     }
-    if (!window.confirm(missing.length + " neue Utility-Meter-Helfer für " +
-        source + " anlegen? Bestehende Zähler bleiben unverändert.")) return;
+    if (!window.confirm(missing.length + " fehlende Utility-Meter-Helfer für " +
+        source + " anlegen? Bereits vorhandene Helfer bleiben unverändert.")) return;
+
+    const button = this.shadowRoot.querySelector("#energy-create-meters");
     const names = { year: "Jahr", month: "Monat", day: "Tag" };
     const sourceLabel = attributes.friendly_name || source;
-    status.textContent = "Helfer werden erstellt …";
-    for (const key of missing) {
-      try {
+    const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
+    this._creatingEnergyMeters = true;
+    if (button) button.disabled = true;
+    try {
+      for (const key of missing) {
         const name = "ATZE " + sourceLabel + " " + names[key];
-        const init = await this._hass.callWS({
-          type: "config_entries/flow/init", handler: "utility_meter"
-        });
-        if (init.type !== "form" || !init.flow_id) throw Error("Einrichtungsdialog nicht verfügbar");
-        const result = await this._hass.callWS({
-          type: "config_entries/flow/configure", flow_id: init.flow_id,
-          user_input: { name, source, cycle: key === "year" ? "yearly" : "none",
+        status.textContent = names[key] + ": Prüfe vorhandene Helfer …";
+        const before = await registry();
+        const alreadyNamed = before.filter(e => !e.disabled_by &&
+          e.entity_id?.startsWith("sensor.") &&
+          (e.name === name || e.original_name === name));
+        if (alreadyNamed.length) {
+          status.textContent = name + " existiert bereits. Bitte zuerst im Feld " +
+            names[key] + " zuordnen, damit kein doppelter Helfer entsteht.";
+          return;
+        }
+        status.textContent = names[key] + ": Erstelle Home-Assistant-Helfer …";
+        // The official HA config-entry flows use authenticated REST endpoints,
+        // not config_entries/flow/init/configure WebSocket commands.
+        const init = await this._hass.callApi("POST",
+          "config/config_entries/flow", { handler: "utility_meter" });
+        if (init.type !== "form" || !init.flow_id) {
+          throw Error("Home Assistant hat keinen Utility-Meter-Konfigurationsdialog geöffnet");
+        }
+        const result = await this._hass.callApi("POST",
+          "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
+          { name, source, cycle: key === "year" ? "yearly" : "none",
             offset: 0, tariffs: [], net_consumption: false,
-            delta_values: false, periodically_resetting: true }
-        });
+            delta_values: false, periodically_resetting: true });
         if (result.type !== "create_entry") {
-          throw Error("Home Assistant hat die Anlage nicht bestätigt (" + result.type + ")");
+          const errors = result.errors ? JSON.stringify(result.errors) : "";
+          throw Error("Home Assistant hat den Helfer nicht angelegt (" +
+            (result.type || "unbekannt") + (errors ? ": " + errors : "") + ")");
         }
-        // Match by the new config entry ID, never guess an entity ID.
-        const entryId = result.result?.entry_id || result.entry_id;
-        let found = null;
-        for (let attempt = 0; attempt < 6 && !found; attempt++) {
-          const entries = await this._hass.callWS({ type: "config/entity_registry/list" });
-          found = entries.find(e => e.config_entry_id === entryId &&
-            e.entity_id?.startsWith("sensor.") && !e.disabled_by)?.entity_id;
-          if (!found) await new Promise(resolve => setTimeout(resolve, 500));
+        // HA's REST config-flow result intentionally omits the config entry ID.
+        // Compare the entity registry before and after creation, instead of
+        // guessing the entity ID from a slug or the friendly name.
+        const previousIds = new Set(before.map(e => e.entity_id));
+        let created = null;
+        for (let attempt = 0; attempt < 12 && !created; attempt++) {
+          const after = await registry();
+          const candidates = after.filter(e => !e.disabled_by &&
+            e.entity_id?.startsWith("sensor.") && !previousIds.has(e.entity_id));
+          if (candidates.length === 1) created = candidates[0].entity_id;
+          else if (candidates.length > 1) {
+            const named = candidates.filter(e =>
+              e.name === name || e.original_name === name);
+            if (named.length === 1) created = named[0].entity_id;
+          }
+          if (!created) await new Promise(resolve => setTimeout(resolve, 500));
         }
-        if (!found) throw Error("Helfer wurde angelegt, aber die Entität ist noch nicht erkannt. Bitte über die Auswahlliste zuordnen.");
-        setup[key] = found;
+        if (!created) {
+          status.textContent = name + " wurde von Home Assistant angelegt, " +
+            "aber die Entität konnte nicht eindeutig zugeordnet werden. " +
+            "Bitte den Helfer unter Geräte & Dienste → Helfer prüfen und zuordnen. " +
+            "Nicht erneut auf Anlegen klicken.";
+          return;
+        }
+        setup[key] = created;
         this._config = { ...this._config, energy_setup: { ...setup } };
         this.dispatchEvent(new CustomEvent("config-changed", {
           detail: { config: this._config }, bubbles: true, composed: true
         }));
-        status.textContent = names[key] + " angelegt: " + found;
-      } catch (error) {
-        status.textContent = "Bei " + names[key] + ": " + (error?.message || error) +
-          ". Bereits angelegte Helfer bleiben erhalten. Vor erneutem Versuch prüfen.";
-        return;
+        status.textContent = names[key] + " erstellt: " + created;
       }
+      // Refresh selectors once all three meters are linked.
+      this._fireConfigChanged({ ...this._config, energy_setup: setup });
+    } catch (error) {
+      status.textContent = "Einrichtung abgebrochen: " + (error?.message || error) +
+        ". Bitte Home Assistant → Geräte & Dienste → Helfer kontrollieren, " +
+        "bevor du es erneut versuchst.";
+      console.error("ATZE Strom: Utility-Meter-Einrichtung fehlgeschlagen", error);
+    } finally {
+      this._creatingEnergyMeters = false;
+      if (button?.isConnected) button.disabled = false;
     }
-    this._fireConfigChanged({ ...this._config, energy_setup: setup });
   }
 
   async _calibrateEnergyMeter(key, value, status) {
