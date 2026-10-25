@@ -7331,6 +7331,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       ? "strom-atze"
       : "strom";
     const energySetup = config.energy_setup || {};
+    const individualEnergyMeters = (config.energy_individual || []).filter(item => item?.total);
     const primaryEnergyMeters = filteredAreas.flatMap(area => {
       const primary = getOverride(config.area_overrides, area.area_id).primary_sensors || {};
       if (!primary.energy) return [];
@@ -7339,9 +7340,14 @@ class AtzeDashboardStrategy extends HTMLElement {
         icon: area.icon || "mdi:home-outline",
         total: primary.energy,
         power: primary.power || "",
+        ...(() => {
+          const meters = getOverride(config.area_overrides, area.area_id).energy_meters || {};
+          const matched = meters.total === primary.energy
+            ? meters : individualEnergyMeters.find(item => item.total === primary.energy) || {};
+          return { year: matched.year || "", month: matched.month || "", day: matched.day || "" };
+        })(),
       }];
     });
-    const individualEnergyMeters = (config.energy_individual || []).filter(item => item?.total);
     const energyCard = {
       type: ATZE_TESTING_BUILD
         ? "custom:atze-energy-overview-card-testing"
@@ -16958,6 +16964,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._dashboardBackgroundError = false;
     this._backgroundFileInput = null;
     this._backgroundPickerActive = false;
+    this._energyEnsureQueue = Promise.resolve();
+    this._energyMigrationStarted = false;
   }
 
   set hass(value) {
@@ -16996,6 +17004,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingCustomPageValues.clear();
     this._entityVisibilityActive = false;
     this._pendingHassRender = false;
+    this._energyMigrationStarted = false;
     this._loadRegistries();
     this._render();
   }
@@ -17033,6 +17042,20 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._labels = labels || [];
       this._devices = devices || [];
       this._entities = entities || [];
+      if (!this._energyMigrationStarted) {
+        this._energyMigrationStarted = true;
+        // Existing selections predate automatic provisioning. Reconcile them
+        // once when Settings opens; preserve all assigned helpers and values.
+        const setup = this._config.energy_setup;
+        if (setup?.total) this._queueEnergyMeters({ kind: "total", source: setup.total });
+        (this._config.energy_individual || []).forEach((item, index) => {
+          if (item?.total) this._queueEnergyMeters({ kind: "individual", index, source: item.total });
+        });
+        for (const [areaId, override] of Object.entries(this._config.area_overrides || {})) {
+          const source = override?.primary_sensors?.energy;
+          if (source) this._queueEnergyMeters({ kind: "area", areaId, source });
+        }
+      }
     } catch (_error) {
       this._areas = [];
       this._labels = [];
@@ -18399,6 +18422,11 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     } else if (Object.keys(setup).length) next.energy_setup = setup;
     else delete next.energy_setup;
     this._fireConfigChanged(next);
+    if (key === "total" && value) this._queueEnergyMeters({
+      kind: isIndividual ? "individual" : "total",
+      index: isIndividual ? individualIndex : undefined,
+      source: value,
+    });
   }
 
   _addEnergyIndividual() {
@@ -18424,58 +18452,83 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       ? (this._config.energy_individual?.[individualIndex] || {})
       : (this._config.energy_setup || {});
     const scope = isIndividual ? ' data-index="' + individualIndex + '"' : "";
-    const fields = [["year", "Jahr · automatisch 1. Januar"],
-      ["month", "Monat · nur manuell"], ["day", "Tag · nur manuell"]];
     return `
       <div class="editor-section-help">
-        Wähle einen fortlaufenden Energiesensor (kWh). Vorhandene Zähler
-        können direkt zugeordnet werden. Fehlende Utility-Meter-Helfer lassen
-        sich anschließend automatisch anlegen. Jahr setzt sich am 1. Januar
-        zurück; Monat und Tag nur manuell. Bestehende Zähler werden nie überschrieben.
+        Wähle einen fortlaufenden Energiesensor (kWh). Jahres-, Monats- und
+        Tageszähler werden automatisch zugeordnet oder bei Bedarf angelegt.
+        Jahr setzt sich am 1. Januar zurück; Monat und Tag nur manuell.
+        Bestehende Zählerstände bleiben erhalten.
       </div>
       <label class="primary-field"><span>kWh-Quellsensor</span>
         <select class="energy-setup-field" data-key="total"${scope}>
           ${this._energySourceOptionsHtml(setup.total || "")}
         </select>
       </label>
-      ${fields.map(([key, title]) => `
-        <label class="primary-field"><span>${title}</span>
-          <select class="energy-setup-field" data-key="${key}"${scope}>
-            ${this._energyMeterOptionsHtml(setup[key] || "")}
-          </select>
-        </label>`).join("")}
-      <div class="toolbar">
-        <button class="energy-create-meters" type="button"${scope}
-          ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen (Jahr / Monat / Tag)</button>
-      </div>
       <div class="editor-section-help energy-setup-status" role="status">
-        Nur neue Helfer werden angelegt. Werte lassen sich anschließend
-        direkt im jeweiligen Jahres-, Monats- oder Tages-Popup setzen oder zurücksetzen.
+        ${["year", "month", "day"].filter(key => setup[key]).length}/3 Zähler zugeordnet.
+        Werte lassen sich in den zugehörigen Popups setzen oder zurücksetzen.
       </div>
       `;
   }
 
-  async _createEnergyMeters(status, individualIndex = null) {
-    // Use verified flow for year, month and day, one at a time.
-    if (this._creatingEnergyMeters) return;
-    const individual = Array.isArray(this._config.energy_individual)
-      ? this._config.energy_individual.map(item => ({ ...item })) : [];
-    const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0 &&
-      individualIndex < individual.length;
-    const setup = { ...(isIndividual ? individual[individualIndex] : this._config.energy_setup || {}) };
-    const source = setup.total;
-    const attributes = this._hass?.states?.[source]?.attributes;
-    if (!source?.startsWith("sensor.") ||
+  _queueEnergyMeters(context) {
+    // Serialize HA config flows: parallel requests could create duplicates.
+    this._energyEnsureQueue = this._energyEnsureQueue
+      .then(() => this._ensureEnergyMeters(context))
+      .catch(error => console.error("ATZE Strom: Automatische Zähler-Einrichtung", error));
+    return this._energyEnsureQueue;
+  }
+
+  async _ensureEnergyMeters({ kind, index, areaId, source }) {
+    if (!this.isConnected || !this._hass) return;
+    const getSetup = () => {
+      if (kind === "area") {
+        const override = this._config.area_overrides?.[areaId] || {};
+        if (override.primary_sensors?.energy !== source) return null;
+        const previous = override.energy_meters || {};
+        return previous.total === source ? { ...previous } : { total: source };
+      }
+      const setup = kind === "individual"
+        ? this._config.energy_individual?.[index]
+        : this._config.energy_setup;
+      return setup?.total === source ? { ...setup } : null;
+    };
+    const report = message => {
+      const node = kind === "area"
+        ? [...(this.shadowRoot?.querySelectorAll("[data-primary-area]") || [])]
+          .find(item => item.dataset.primaryArea === areaId)?.querySelector(".energy-auto-status")
+        : [...(this.shadowRoot?.querySelectorAll(".energy-setup-status") || [])]
+          .find(item => kind === "total"
+            ? !item.closest(".energy-individual-entry")
+            : Number(item.closest(".energy-individual-entry")?.dataset.index) === index);
+      if (node) node.textContent = message;
+      console.info("ATZE Strom: " + message);
+    };
+    const persist = setup => {
+      if (!getSetup()) return false; // Sensor was changed while a flow was running.
+      const next = { ...this._config };
+      if (kind === "area") {
+        const overrides = { ...(next.area_overrides || {}) };
+        overrides[areaId] = { ...overrides[areaId], energy_meters: { ...setup } };
+        next.area_overrides = overrides;
+      } else if (kind === "individual") {
+        const individual = [...(next.energy_individual || [])];
+        individual[index] = { ...setup };
+        next.energy_individual = individual;
+      } else next.energy_setup = { ...setup };
+      this._config = next;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config: next }, bubbles: true, composed: true
+      }));
+      return true;
+    };
+    const setup = getSetup();
+    if (!setup) return;
+    const attributes = this._hass.states?.[source]?.attributes;
+    if (!source.startsWith("sensor.") ||
         !(attributes?.unit_of_measurement === "kWh" ||
-          attributes?.device_class === "energy" ||
-          source === "sensor.gesamt_strom")) {
-      status.textContent = "Bitte einen fortlaufenden kWh-Energiesensor auswählen.";
-      return;
-    }
-    const missing = [["year", "Jahr", "jahr"], ["month", "Monat", "monat"], ["day", "Tag", "tag"]]
-      .filter(([key]) => !setup[key]);
-    if (!missing.length) {
-      status.textContent = "Jahres-, Monats- und Tageszähler sind bereits zugeordnet.";
+          (attributes?.device_class === "energy" && attributes?.unit_of_measurement === "kWh"))) {
+      report(source + ": kein verfügbarer kWh-Quellsensor; keine Helfer angelegt.");
       return;
     }
     const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
@@ -18488,100 +18541,73 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     if (deviceName) {
       if (!sourceFriendly.toLocaleLowerCase("de-DE").startsWith(
           deviceName.toLocaleLowerCase("de-DE") + " ")) {
-        status.textContent = "Der Gerätename (" + deviceName +
-          ") passt nicht zum Sensornamen (" + sourceFriendly +
-          "). Keine Erstellung, damit keine doppelten Namen entstehen.";
+        report(source + ": Geräte- und Sensorname passen nicht zusammen; keine Helfer angelegt.");
         return;
       }
       localName = sourceFriendly.slice(deviceName.length).trim();
     }
     if (!localName) {
-      status.textContent = "Sensornamen-Anteil konnte nicht ermittelt werden. Kein Helfer erstellt.";
+      report(source + ": Sensorname fehlt; keine Helfer angelegt.");
       return;
     }
-    // Native cycle=none keeps these meters running until an explicit manual reset.
-    if (!window.confirm("Fehlende Jahres-, Monats- und Tageszähler anlegen?\n\n" +
-      missing.map(([, label, suffix]) =>
-        "Name: " + localName + " " + label +
-        "\nEntitäts-ID: " + source + "_" + suffix).join("\n\n") +
-      "\n\nJahr automatisch am 1. Januar; Monat/Tag nur manuell. Bestehende Zähler bleiben unverändert.")) return;
-    const button = [...this.shadowRoot.querySelectorAll(".energy-create-meters")]
-      .find(item => isIndividual
-        ? Number(item.dataset.index) === individualIndex
-        : !item.hasAttribute("data-index"));
-    this._creatingEnergyMeters = true;
-    if (button) button.disabled = true;
-    try {
-      for (const [key, label, suffix] of missing) {
-        const expectedId = source + "_" + suffix;
-        const name = localName + " " + label;
-        const entriesBefore = await registry();
-        if (entriesBefore.some(e => e.entity_id === expectedId)) {
-          status.textContent = expectedId +
-            " existiert bereits. Bitte zuordnen; es wurde kein weiterer Helfer erstellt.";
+    for (const [key, label, suffix] of [
+      ["year", "Jahr", "jahr"], ["month", "Monat", "monat"], ["day", "Tag", "tag"]
+    ]) {
+      if (!getSetup()) return;
+      if (setup[key]) continue;
+      const expectedId = source + "_" + suffix;
+      const entriesBefore = await registry();
+      const existing = entriesBefore.find(e => e.entity_id === expectedId);
+      if (existing) {
+        if (existing.platform !== "utility_meter") {
+          report(expectedId + " existiert, ist aber kein Utility-Meter. Bitte prüfen.");
           return;
         }
-        const legacy = entriesBefore.filter(e => e.platform === "utility_meter" &&
-          e.entity_id?.endsWith("_" + source.split(".")[1] + "_" + suffix));
-        if (legacy.length) {
-          status.textContent = "Möglicherweise bereits vorhandener " + label +
-            "-Zähler: " + legacy.map(e => e.entity_id).join(", ") +
-            ". Bitte erst zuordnen, damit kein Duplikat entsteht.";
-          return;
-        }
-        status.textContent = label + " wird angelegt …";
-        const init = await this._hass.callApi("POST",
-          "config/config_entries/flow", { handler: "utility_meter" });
-        if (init.type !== "form" || !init.flow_id) {
-          throw Error("Utility-Meter-Einrichtungsdialog nicht verfügbar.");
-        }
-        const result = await this._hass.callApi("POST",
-          "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
-          { name, source, cycle: key === "year" ? "yearly" : "none", offset: 0, tariffs: [],
-            net_consumption: false, delta_values: false, periodically_resetting: true });
-        if (result.type !== "create_entry") {
-          throw Error(label + ": Home Assistant hat die Anlage nicht bestätigt: " +
-            (result.errors ? JSON.stringify(result.errors) : result.type));
-        }
-        const previousIds = new Set(entriesBefore.map(e => e.entity_id));
-        let created = "";
-        for (let attempt = 0; attempt < 12 && !created; attempt++) {
-          const entries = await registry();
-          const added = entries.filter(e => e.platform === "utility_meter" &&
-            e.entity_id?.startsWith("sensor.") && !previousIds.has(e.entity_id));
-          if (added.some(e => e.entity_id === expectedId)) created = expectedId;
-          else if (added.length === 1) created = added[0].entity_id;
-          if (!created) await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        if (!created) {
-          status.textContent = label + " wurde angelegt, Entitäts-ID aber nicht erkannt. " +
-            "Bitte Home Assistant prüfen und nicht erneut anlegen.";
-          return;
-        }
-        if (created !== expectedId) {
-          status.textContent = label + " wurde mit falscher Entitäts-ID angelegt: " +
-            created + " (erwartet " + expectedId +
-            "). Keine nachträgliche Umbenennung. Bitte nicht erneut anlegen.";
-          return;
-        }
-        setup[key] = created;
-        if (isIndividual) individual[individualIndex] = { ...setup };
-        this._config = { ...this._config,
-          ...(isIndividual ? { energy_individual: [...individual] } : { energy_setup: { ...setup } }) };
-        this.dispatchEvent(new CustomEvent("config-changed", {
-          detail: { config: this._config }, bubbles: true, composed: true
-        }));
-        if (status?.isConnected) status.textContent = label + " korrekt angelegt: " + created;
+        setup[key] = expectedId;
+        persist(setup);
+        report(label + " bereits vorhanden und zugeordnet: " + expectedId);
+        continue;
       }
-      this._fireConfigChanged({ ...this._config,
-        ...(isIndividual ? { energy_individual: [...individual] } : { energy_setup: setup }) });
-    } catch (error) {
-      if (status?.isConnected)
-        status.textContent = "Erstellung fehlgeschlagen: " + (error?.message || error);
-      console.error("ATZE Strom: Zähler-Erstellung", error);
-    } finally {
-      this._creatingEnergyMeters = false;
-      if (button?.isConnected) button.disabled = false;
+      const possibleDuplicates = entriesBefore.filter(e => e.platform === "utility_meter" &&
+        (e.entity_id?.endsWith("_" + source.split(".")[1] + "_" + suffix) ||
+          [e.name, e.original_name].some(name =>
+            String(name || "").toLocaleLowerCase("de-DE") ===
+            (localName + " " + label).toLocaleLowerCase("de-DE"))));
+      if (possibleDuplicates.length) {
+        report("Möglicher vorhandener " + label + "-Zähler: " +
+          possibleDuplicates.map(e => e.entity_id).join(", ") + ". Keine Duplikate angelegt.");
+        return;
+      }
+      report(label + " wird für " + source + " angelegt …");
+      const init = await this._hass.callApi("POST", "config/config_entries/flow",
+        { handler: "utility_meter" });
+      if (init.type !== "form" || !init.flow_id) throw Error("Utility-Meter-Flow nicht verfügbar.");
+      const result = await this._hass.callApi("POST",
+        "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
+        { name: localName + " " + label, source,
+          cycle: key === "year" ? "yearly" : "none", offset: 0, tariffs: [],
+          net_consumption: false, delta_values: false, periodically_resetting: true });
+      if (result.type !== "create_entry") {
+        throw Error(label + ": Anlage nicht bestätigt: " + JSON.stringify(result.errors || result.type));
+      }
+      const previousIds = new Set(entriesBefore.map(e => e.entity_id));
+      let created = "";
+      for (let attempt = 0; attempt < 12 && !created; attempt++) {
+        const entries = await registry();
+        const added = entries.filter(e => e.platform === "utility_meter" &&
+          e.entity_id?.startsWith("sensor.") && !previousIds.has(e.entity_id));
+        if (added.some(e => e.entity_id === expectedId)) created = expectedId;
+        else if (added.length === 1) created = added[0].entity_id;
+        if (!created) await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (!created || created !== expectedId) {
+        report(label + " erstellt, aber ID " + (created || "unbekannt") +
+          " statt " + expectedId + ". Bitte prüfen; kein erneuter Anlageversuch.");
+        return;
+      }
+      setup[key] = created;
+      persist(setup);
+      report(label + " angelegt: " + created);
     }
   }
 
@@ -19954,10 +19980,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     for (const button of this.shadowRoot.querySelectorAll(".energy-remove-individual")) {
       button.addEventListener("click", () => this._removeEnergyIndividual(Number(button.dataset.index)));
     }
-    for (const button of this.shadowRoot.querySelectorAll(".energy-create-meters")) {
-      button.addEventListener("click", () => this._createEnergyMeters(energyStatusFor(button),
-        button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
-    }
     // Build expensive Home Assistant selectors only when a room is opened.
     const initialisePrimaryArea = panel => {
       if (!panel.open || !panel.isConnected) return;
@@ -20001,6 +20023,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         clearButton.disabled = !selector.value;
         selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
         selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
+        if (role === "energy") {
+          const status = document.createElement("div");
+          status.className = "editor-section-help energy-auto-status";
+          status.setAttribute("role", "status");
+          status.textContent = "Jahr, Monat und Tag werden automatisch eingerichtet.";
+          container.appendChild(status);
+        }
         const setPrimarySensor = value => {
           const overrides = { ...(this._config.area_overrides || {}) };
           const area = { ...(overrides[areaId] || {}) };
@@ -20008,6 +20037,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           if ((primary[role] || "") === value) return;
           if (value) primary[role] = value;
           else delete primary[role];
+          if (role === "energy") delete area.energy_meters;
           if (Object.keys(primary).length) area.primary_sensors = primary;
           else delete area.primary_sensors;
           if (Object.keys(area).length) overrides[areaId] = area;
@@ -20024,6 +20054,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             detail: { config: next }, bubbles: true, composed: true,
           }));
           this._navigationEditActive = false;
+          if (role === "energy" && value) this._queueEnergyMeters({ kind: "area", areaId, source: value });
         };
         selector.addEventListener("value-changed", event => {
           event.stopPropagation();
