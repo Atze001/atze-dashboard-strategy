@@ -297,10 +297,64 @@ class AtzeDashboardStrategy extends HTMLElement {
           );
 
     const customPageViews = buildCustomPageViews(config);
+    // The energy overview is a native Strategy page, independent of a
+    // separately maintained Lovelace dashboard.
+    const energyPath = customPageViews.some(view => view.path === "strom")
+      ? "strom-atze"
+      : "strom";
+    const energySetup = config.energy_setup || {};
+    const individualEnergyMeters = (config.energy_individual || []).filter(item => item?.total);
+    const primaryEnergyMeters = filteredAreas.flatMap(area => {
+      const primary = getOverride(config.area_overrides, area.area_id).primary_sensors || {};
+      if (!primary.energy) return [];
+      return [{
+        name: area.name || area.area_id,
+        icon: area.icon || "mdi:home-outline",
+        total: primary.energy,
+        power: primary.power || "",
+        ...(() => {
+          const meters = getOverride(config.area_overrides, area.area_id).energy_meters || {};
+          const matched = meters.total === primary.energy
+            ? meters : individualEnergyMeters.find(item => item.total === primary.energy) || {};
+          return { year: matched.year || "", month: matched.month || "", day: matched.day || "" };
+        })(),
+      }];
+    });
+    const energyCard = {
+      type: ATZE_TESTING_BUILD
+        ? "custom:atze-energy-overview-card-testing"
+        : "custom:atze-energy-overview-card",
+      total: energySetup.total || "",
+      year: energySetup.year || "",
+      month: energySetup.month || "",
+      day: energySetup.day || "",
+      power: config.home_power_entity || "",
+      month_script: "",
+      day_script: "",
+      month_reset: "",
+      day_reset: "",
+      native_utility_meters: true,
+      individual_meters: [
+        ...primaryEnergyMeters,
+        ...individualEnergyMeters.filter(item =>
+          !primaryEnergyMeters.some(primary => primary.total === item.total)),
+      ],
+      return_path: config.home_path || "home",
+    };
+    const energyView = {
+      title: "Strom",
+      path: energyPath,
+      icon: "mdi:lightning-bolt",
+      // Match the room-navigation mode: with subviews enabled, Strom remains
+      // accessible from its home tile but disappears from the top tabs.
+      subview: config.single_room_navigation !== false,
+      cards: [energyCard],
+    };
 
     const views =
       config.home_view === false
         ? [
+            energyView,
             ...customPageViews,
             ...roomViews,
           ]
@@ -310,7 +364,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
+              { ...config, energy_path: energyPath, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
@@ -318,6 +372,7 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
+            energyView,
             ...customPageViews,
             ...roomViews,
           ];

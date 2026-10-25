@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.413.0";
+const ATZE_VERSION = "0.414.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -3282,6 +3282,7 @@ function selectEnvironmentBadges(
       : ["temperature", "humidity", "illuminance", "power"];
 
   for (const deviceClass of requestedClasses) {
+    const configured = configuredRoomSensor(hass, areaOverride, deviceClass);
     const candidates = entities
       .filter((entity) => {
         if (shouldHideExactEntity(config, entity.entity_id)) return false;
@@ -3299,10 +3300,8 @@ function selectEnvironmentBadges(
           environmentBadgeScore(hass, a, area, deviceClass)
       );
 
-    if (!candidates.length) continue;
-
-    const selected = candidates[0];
-    const entityId = selected.entity_id;
+    const entityId = configured || candidates[0]?.entity_id;
+    if (!entityId || !hass.states[entityId]) continue;
 
     const badge = {
       type: "custom:atze-status-badge-v1",
@@ -3333,15 +3332,40 @@ function selectEnvironmentBadges(
     entityIds.add(entityId);
   }
 
+  // Energy consumption is an optional fifth primary metric. It is shown
+  // only when explicitly selected, preserving the existing automatic badges.
+  const selectedEnergy = configuredRoomSensor(hass, areaOverride, "energy");
+  if (selectedEnergy && hass.states[selectedEnergy] && !entityIds.has(selectedEnergy)) {
+    const energyBadge = {
+      type: "custom:atze-status-badge-v1",
+      entity: selectedEnergy,
+      inactive_icon_color: "#FFD60A",
+      active_icon_color: "#FFD60A",
+    };
+    const badgeOverride = getOverride(config.entity_overrides, selectedEnergy);
+    if (badgeOverride.badge_name) energyBadge.name = badgeOverride.badge_name;
+    if (badgeOverride.badge_icon) energyBadge.icon = badgeOverride.badge_icon;
+    badges.push(energyBadge);
+    entityIds.add(selectedEnergy);
+  }
+
   if (config.occupancy_badge !== false) {
-    const occupancy = selectBinaryBadge(
-      hass,
-      entities,
-      config,
-      area,
-      popupMap,
-      "occupancy"
-    );
+    const chosenPresence = configuredRoomSensor(hass, areaOverride, "presence");
+    const occupancy = chosenPresence && hass.states[chosenPresence]
+      ? { entityId: chosenPresence, badge: {
+          type: "custom:atze-status-badge-v1",
+          entity: chosenPresence,
+          inactive_icon_color: "#30D158",
+          active_icon_color: "#30D158",
+        } }
+      : selectBinaryBadge(
+          hass,
+          entities,
+          config,
+          area,
+          popupMap,
+          "occupancy"
+        );
 
     if (occupancy) {
       const manualOccupancyBadge =
@@ -4697,6 +4721,16 @@ const DEFAULT_HOME_CONTROL_CENTER_IMAGE = new URL(
   ATZE_ASSET_BASE_URL
 ).href;
 
+// Explicit per-room selections take precedence over automatic detection.
+// Unavailable selections stay selected (and recover automatically), rather than
+// silently showing a different sensor instead.
+function configuredRoomSensor(hass, areaOverride, role, automatic = null) {
+  const chosen = areaOverride?.primary_sensors?.[role];
+  if (typeof chosen !== "string" || !chosen.trim()) return automatic;
+  const domain = role === "presence" ? "binary_sensor" : "sensor";
+  return domainOf(chosen) === domain ? chosen : automatic;
+}
+
 function bestEnvironmentEntity(
   hass,
   entities,
@@ -5668,7 +5702,7 @@ function buildHomeOverviewView(
     const path = override.path || slugify(name);
     const icon = override.icon || area.icon || "mdi:home-outline";
 
-    const temperature = bestEnvironmentEntity(
+    const automaticTemperature = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5677,7 +5711,7 @@ function buildHomeOverviewView(
       "temperature"
     );
 
-    const humidity = bestEnvironmentEntity(
+    const automaticHumidity = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5686,7 +5720,7 @@ function buildHomeOverviewView(
       "humidity"
     );
 
-    const power = bestEnvironmentEntity(
+    const automaticPower = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5704,7 +5738,7 @@ function buildHomeOverviewView(
       "illuminance"
     );
 
-    const occupancy = bestBinaryEntity(
+    const automaticOccupancy = bestBinaryEntity(
       hass,
       areaEntities,
       config,
@@ -5712,6 +5746,12 @@ function buildHomeOverviewView(
       popupMap,
       "occupancy"
     );
+
+    const temperature = configuredRoomSensor(hass, override, "temperature", automaticTemperature);
+    const humidity = configuredRoomSensor(hass, override, "humidity", automaticHumidity);
+    const power = configuredRoomSensor(hass, override, "power", automaticPower);
+    const energy = configuredRoomSensor(hass, override, "energy");
+    const occupancy = configuredRoomSensor(hass, override, "presence", automaticOccupancy);
 
     const motionInterrupter = occupancy
       ? roomMotionInterrupterEntity(
@@ -5855,6 +5895,7 @@ function buildHomeOverviewView(
       temperature,
       humidity,
       power,
+      energy,
       illuminance,
       occupancy,
       motion_interrupter: motionInterrupter,
@@ -5963,6 +6004,8 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    energy_total_entity: config.energy_setup?.total || null,
+    energy_path: config.energy_path || "strom",
     outdoor_illuminance_entity:
       config.home_outdoor_illuminance_entity &&
       hass.states[config.home_outdoor_illuminance_entity]
@@ -6081,6 +6124,25 @@ function schedulerPopupEnabled(config) {
   return asArray(config.custom_pages).some(isSchedulerCustomPage);
 }
 
+// Apply the Settings meter mapping to energy cards on strategy-owned pages.
+function applyEnergySetupToCard(card, setup) {
+  if (!card || typeof card !== "object") return card;
+  const nested = { ...card };
+  if (/^custom:atze-energy-overview-card(?:-testing)?$/.test(String(nested.type || ""))) {
+    for (const key of ["total", "year", "month", "day"]) {
+      if (setup?.[key]) nested[key] = setup[key];
+    }
+    if (setup?.month) { nested.month_script = ""; nested.month_reset = ""; }
+    if (setup?.day) { nested.day_script = ""; nested.day_reset = ""; }
+    nested.native_utility_meters = Boolean(setup?.month || setup?.day);
+    return nested;
+  }
+  if (Array.isArray(nested.cards)) {
+    nested.cards = nested.cards.map(child => applyEnergySetupToCard(child, setup));
+  }
+  return nested;
+}
+
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -6156,6 +6218,20 @@ function buildCustomPageViews(config) {
           : [homeButton, ...pageCards];
       }
 
+      if (config.energy_setup) {
+        if (Array.isArray(generatedView.cards)) {
+          generatedView.cards = generatedView.cards.map(card =>
+            applyEnergySetupToCard(card, config.energy_setup));
+        }
+        if (Array.isArray(generatedView.sections)) {
+          generatedView.sections = generatedView.sections.map(section => ({
+            ...section,
+            cards: Array.isArray(section.cards)
+              ? section.cards.map(card => applyEnergySetupToCard(card, config.energy_setup))
+              : section.cards,
+          }));
+        }
+      }
       return generatedView;
     })
     .filter(Boolean);
@@ -7249,10 +7325,64 @@ class AtzeDashboardStrategy extends HTMLElement {
           );
 
     const customPageViews = buildCustomPageViews(config);
+    // The energy overview is a native Strategy page, independent of a
+    // separately maintained Lovelace dashboard.
+    const energyPath = customPageViews.some(view => view.path === "strom")
+      ? "strom-atze"
+      : "strom";
+    const energySetup = config.energy_setup || {};
+    const individualEnergyMeters = (config.energy_individual || []).filter(item => item?.total);
+    const primaryEnergyMeters = filteredAreas.flatMap(area => {
+      const primary = getOverride(config.area_overrides, area.area_id).primary_sensors || {};
+      if (!primary.energy) return [];
+      return [{
+        name: area.name || area.area_id,
+        icon: area.icon || "mdi:home-outline",
+        total: primary.energy,
+        power: primary.power || "",
+        ...(() => {
+          const meters = getOverride(config.area_overrides, area.area_id).energy_meters || {};
+          const matched = meters.total === primary.energy
+            ? meters : individualEnergyMeters.find(item => item.total === primary.energy) || {};
+          return { year: matched.year || "", month: matched.month || "", day: matched.day || "" };
+        })(),
+      }];
+    });
+    const energyCard = {
+      type: ATZE_TESTING_BUILD
+        ? "custom:atze-energy-overview-card-testing"
+        : "custom:atze-energy-overview-card",
+      total: energySetup.total || "",
+      year: energySetup.year || "",
+      month: energySetup.month || "",
+      day: energySetup.day || "",
+      power: config.home_power_entity || "",
+      month_script: "",
+      day_script: "",
+      month_reset: "",
+      day_reset: "",
+      native_utility_meters: true,
+      individual_meters: [
+        ...primaryEnergyMeters,
+        ...individualEnergyMeters.filter(item =>
+          !primaryEnergyMeters.some(primary => primary.total === item.total)),
+      ],
+      return_path: config.home_path || "home",
+    };
+    const energyView = {
+      title: "Strom",
+      path: energyPath,
+      icon: "mdi:lightning-bolt",
+      // Match the room-navigation mode: with subviews enabled, Strom remains
+      // accessible from its home tile but disappears from the top tabs.
+      subview: config.single_room_navigation !== false,
+      cards: [energyCard],
+    };
 
     const views =
       config.home_view === false
         ? [
+            energyView,
             ...customPageViews,
             ...roomViews,
           ]
@@ -7262,7 +7392,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
+              { ...config, energy_path: energyPath, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
@@ -7270,6 +7400,7 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
+            energyView,
             ...customPageViews,
             ...roomViews,
           ];
@@ -8753,6 +8884,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return badges.filter((badge) => badge.active);
   }
 
+  _formatEnergyTotal() {
+    const entityId = this._config.energy_total_entity;
+    const state = this._state(entityId);
+    const value = Number(state?.state);
+    if (!Number.isFinite(value) || ["unavailable", "unknown"].includes(state?.state)) return "—";
+    const unit = state.attributes?.unit_of_measurement || "kWh";
+    return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(value) + " " + unit;
+  }
+
   _formatPower() {
     const primary = this._state(this._config.power_entity);
 
@@ -9086,15 +9226,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         : "";
 
     const powerState = this._state(this._config.power_entity);
-    const powerAvailable = Boolean(
-      powerState &&
-      !["", "unknown", "unavailable"].includes(
-        String(powerState.state || "").toLowerCase()
-      ) &&
-      Number.isFinite(
-        Number.parseFloat(powerState.state)
-      )
-    );
+    const powerAvailable = Boolean(powerState &&
+      !["", "unknown", "unavailable"].includes(String(powerState.state || "").toLowerCase()) &&
+      Number.isFinite(Number.parseFloat(powerState.state)));
 
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
@@ -9314,17 +9448,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ? this._formatted(room.illuminance)
             : "";
 
-        const roomPrimaryMetric = power || illuminance;
-        const roomPrimaryMetricLabel = power
-          ? "Leistung"
-          : "Helligkeit";
-        const roomPrimaryMetricIcon = power
-          ? "mdi:lightning-bolt"
-          : "mdi:white-balance-sunny";
+        const energyState = room.energy ? this._state(room.energy) : null;
+        const energy = energyState &&
+          !["unknown", "unavailable"].includes(String(energyState.state || "").toLowerCase())
+            ? this._formatted(room.energy) : "";
+        const roomPrimaryMetric = power || energy || illuminance;
+        const roomPrimaryMetricLabel = power ? "Leistung" : energy ? "Verbrauch" : "Helligkeit";
+        const roomPrimaryMetricIcon = power ? "mdi:lightning-bolt" : energy ? "mdi:lightning-bolt-circle" : "mdi:white-balance-sunny";
         const roomPrimaryMetricMoreInfoEntity =
-          !power && illuminance
-            ? "input_number.lichtschwelle"
-            : "";
+          !power && !energy && illuminance ? "input_number.lichtschwelle" : "";
+        const roomMetricHtml = [
+          roomPrimaryMetric ? `<ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon><span>${this._escapeHtml(roomPrimaryMetric)}</span>` : "",
+          // If the user selected energy and power, both readings belong on
+          // the room card rather than silently discarding the energy sensor.
+          power && energy ? `<ha-icon icon="mdi:lightning-bolt-circle"></ha-icon><span>${this._escapeHtml(energy)}</span>` : "",
+        ].filter(Boolean).join("");
 
         const occupancyState = room.occupancy
           ? this._isActive(this._state(room.occupancy))
@@ -9363,7 +9501,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
-            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : "", room.power && power ? `<span><ha-icon icon="mdi:lightning-bolt"></ha-icon>${this._escapeHtml(power)}</span>` : "", room.energy && energy ? `<span><ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>${this._escapeHtml(energy)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : "", room.power && power ? `<span><ha-icon icon="mdi:lightning-bolt"></ha-icon>${this._escapeHtml(power)}</span>` : "", room.energy && energy ? `<span><ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>${this._escapeHtml(energy)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -9405,8 +9543,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                         : ""
                     }
                   >
-                    <ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon>
-                    <span>${roomPrimaryMetric}</span>
+                    ${roomMetricHtml}
                   </div>
                 `
                 : ""
@@ -9700,13 +9837,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
           font-weight: 800;
           letter-spacing: 0.12em;
           line-height: 1.2;
-          pointer-events: none;
+          cursor: pointer;
+          font: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
           backdrop-filter: blur(8px);
         }
 
-        .testing-build-badge.update-available {
-          pointer-events: auto;
-          cursor: pointer;
+        .testing-build-badge:disabled { opacity: .65; cursor: wait; }
+        .testing-build-badge:focus-visible {
+          outline: 2px solid white;
+          outline-offset: 3px;
         }
 
         .hero {
@@ -10441,6 +10583,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-yellow);
         }
 
+        .room-power:has(ha-icon:nth-of-type(2)) {
+          gap: 6px;
+          padding-right: 10px;
+          font-size: 12px;
+        }
         .room-power.clickable {
           cursor: pointer;
         }
@@ -11015,7 +11162,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"} ${outdoorIlluminanceAvailable ? "has-outdoor-illuminance" : ""}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
+            ${ATZE_TESTING_BUILD ? `<button class="testing-build-badge" id="testing-build-badge" type="button" title="Aktuelles Testing-Build laden" aria-label="Aktuelles Testing-Build laden">TESTING · ${ATZE_TESTING_REVISION || "DEV"} · ↻ Laden</button>` : ""}
             ${outdoorIlluminanceAvailable ? `
               <div
                 class="outdoor-illuminance-badge"
@@ -11756,6 +11903,44 @@ class AtzeHomeOverviewCard extends HTMLElement {
         () => this._openHomeAssistantUpdate()
       );
 
+    this.shadowRoot.querySelector("#testing-build-badge")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
+      button.disabled = true;
+      const previousLabel = button.textContent;
+      button.textContent = "TESTING · Prüfe Build …";
+      try {
+        const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error("Versionsdatei nicht erreichbar");
+        const revision = (await response.text()).trim().toUpperCase();
+        if (!/^[A-F0-9]{7}$/.test(revision)) throw new Error("Ungültige Versionskennung");
+
+        // ATZE Home can rebuild its WKWebView after clearing web resource
+        // caches. This also resets the custom-element registry. Older native
+        // builds and ordinary browsers keep the existing navigation fallback.
+        const nativeReload = window.webkit?.messageHandlers?.atzeReloadTesting;
+        if (nativeReload?.postMessage) {
+          nativeReload.postMessage({
+            path: location.pathname + location.search + location.hash,
+            revision,
+          });
+          return;
+        }
+
+        // A full document navigation resets already registered custom elements.
+        // Home Assistant login, local storage and dashboard configuration stay intact.
+        sessionStorage.setItem("atze-testing:return-url", location.pathname + location.search + location.hash);
+        const url = new URL(location.href);
+        url.searchParams.set("atze_testing_refresh", revision + "-" + Date.now());
+        location.replace(url.href);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = previousLabel;
+        console.error("ATZE Testing: Build konnte nicht geladen werden", error);
+        alert("Testing-Build konnte nicht geladen werden. Bitte die Verbindung und den GitHub-Actions-Build prüfen.");
+      }
+    });
+
 
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
@@ -11849,11 +12034,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
     const powerStatus = this.shadowRoot.querySelector("#power-status");
-    powerStatus?.addEventListener("click", () => this._openPowerPopup());
+    powerStatus?.addEventListener("click", () => this._navigate(this._config.energy_path || "strom"));
     powerStatus?.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        this._openPowerPopup();
+        this._navigate(this._config.energy_path || "strom");
       }
     });
     this.shadowRoot.querySelector("#power-popup-backdrop")?.addEventListener("click", (event) => {
@@ -11944,6 +12129,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 }
 
+// The testing loader uses this marker to detect an older, already registered
+// custom element. Web Components cannot be redefined in a running document.
+AtzeHomeOverviewCard.testingRevision = ATZE_TESTING_REVISION;
 if (!customElements.get("atze-home-overview-card")) {
   customElements.define(
     "atze-home-overview-card",
@@ -16135,7 +16323,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const goBack = () => {
       const target = String(this._config?.return_path || "").trim();
       if (target) {
-        const url = target.startsWith("/") ? target : "/" + target;
+        const current = window.location.pathname.split("/").filter(Boolean);
+        const prefix = current.slice(0, -1).join("/");
+        const url = target.startsWith("/") ? target
+          : "/" + (prefix ? prefix + "/" : "") + target;
         window.history.pushState(null, "", url);
         window.dispatchEvent(new Event("location-changed"));
       } else if (window.history.length > 1) {
@@ -16230,53 +16421,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       hero_image: "/local/stromverbrauch-titelbild.webp",
       // Optional absolute Home Assistant route, e.g. /atze-test/home.
       return_path: "",
-      total: "sensor.gesamt_strom",
-      power: "sensor.gesamt_leistung",
-      year: "sensor.gesamt_strom_virtuell_jahr",
-      month: "sensor.gesamt_strom_virtuell_monat",
-      day: "sensor.gesamt_strom_virtuell_tag",
-      kitchen_energy: "sensor.kuche_stromzahler_energy",
-      kitchen_power: "sensor.kuche_stromzahler_power",
-      kitchen_year: "sensor.kueche_strom_jahr",
-      bedroom_energy: "sensor.schlafzimmer_stromzahler_energy",
-      bedroom_power: "sensor.schlafzimmer_stromzahler_power",
-      bedroom_year: "sensor.schlafzimmer_strom_jahr",
-      living_energy: "sensor.wohnzimmer_stromzahler_energy",
-      living_power: "sensor.wohnzimmer_stromzahler_power",
-      living_year: "sensor.wohnzimmer_strom_jahr",
-      washer_energy: "sensor.waschmaschine_steckdose_energie",
-      washer_power: "sensor.waschmaschine_steckdose_leistung",
-      washer_year: "sensor.waschmaschine_strom_jahr",
-      washer_month: "sensor.waschmaschine_strom_monat",
-      washer_day: "sensor.waschmaschine_strom_tag",
-      washer_month_reset: "input_datetime.waschmaschine_strom_reset_monat",
-      washer_day_reset: "input_datetime.waschmaschine_strom_reset_tag",
-      washer_month_script: "script.waschmaschine_strom_reset_monat",
-      washer_day_script: "script.waschmaschine_strom_reset_tag",
-      // Room utility meters, reset timestamps and manual reset scripts.
-      living_month: "sensor.wohnzimmer_strom_monat",
-      living_day: "sensor.wohnzimmer_strom_tag",
-      living_month_reset: "input_datetime.wohnzimmer_strom_reset_monat",
-      living_day_reset: "input_datetime.wohnzimmer_strom_reset_tag",
-      living_month_script: "script.wohnzimmer_strom_reset_monat",
-      living_day_script: "script.wohnzimmer_strom_reset_tag",
-      bedroom_month: "sensor.schlafzimmer_strom_monat",
-      bedroom_day: "sensor.schlafzimmer_strom_tag",
-      bedroom_month_reset: "input_datetime.schlafzimmer_strom_reset_monat",
-      bedroom_day_reset: "input_datetime.schlafzimmer_strom_reset_tag",
-      bedroom_month_script: "script.schlafzimmer_strom_reset_monat",
-      bedroom_day_script: "script.schlafzimmer_strom_reset_tag",
-      kitchen_month: "sensor.kueche_strom_monat",
-      kitchen_day: "sensor.kueche_strom_tag",
-      kitchen_month_reset: "input_datetime.kueche_strom_reset_monat",
-      kitchen_day_reset: "input_datetime.kueche_strom_reset_tag",
-      kitchen_month_script: "script.kueche_strom_reset_monat",
-      kitchen_day_script: "script.kueche_strom_reset_tag",
-      year_reset: "input_datetime.gesamt_strom_reset_jahr",
-      month_reset: "input_datetime.gesamt_strom_reset_monat",
-      day_reset: "input_datetime.gesamt_strom_reset_tag",
-      month_script: "script.gesamt_strom_reset_monat",
-      day_script: "script.gesamt_strom_reset_tag",
+      total: "",
+      power: "",
+      year: "",
+      month: "",
+      day: "",
+      individual_meters: [],
       ...config,
     };
     this._render();
@@ -16309,6 +16459,27 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }).format(date);
   }
 
+  _roomDefinitions() {
+    const configured = Array.isArray(this._config.individual_meters)
+      ? this._config.individual_meters.filter(item => item?.total) : [];
+    return configured.map((item, index) => ({
+        key: "meter" + index,
+        name: item.name ||
+          this._hass?.states?.[item.total]?.attributes?.friendly_name ||
+          item.total.replace(/^sensor\./, "").replaceAll("_", " "),
+        icon: item.icon || "mdi:lightning-bolt",
+        tone: ["#64b5f6", "#ae86ed", "#30d158", "#26b9cc"][index % 4],
+        energy: item.total, year: item.year, month: item.month,
+        day: item.day, power: item.power || "",
+      }));
+  }
+
+  _roomEntity(room, key) {
+    return room.energy !== undefined
+      ? (room[key] || "")
+      : this._config[room.key + "_" + key];
+  }
+
   _details(entityId) {
     if (!entityId) return;
     this.dispatchEvent(new CustomEvent("hass-more-info", {
@@ -16316,36 +16487,69 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }));
   }
 
-  async _reset(period) {
+  async _calibrate(period, rawValue) {
+    const native = this._config.native_utility_meters &&
+      (["year", "month", "day"].includes(period) || /^meter\d+_(year|month|day)$/.test(period));
+    const entityId = this._config[period];
     const scriptId = this._config[period + "_script"];
-    if (!scriptId) return;
-    const title = period.endsWith("month") ? "Monats" : "Tages";
-    if (!window.confirm(title + "verbrauch wirklich auf 0 kWh zurücksetzen?")) return;
-    const button = this.shadowRoot.querySelector('[data-reset="' + period + '"]');
-    if (button) button.disabled = true;
+    const value = Number(String(rawValue).replace(",", "."));
+    const status = this.shadowRoot.querySelector(".dialog-status");
+    if (String(rawValue).trim() === "" || !Number.isFinite(value) || value < 0) {
+      status.textContent = "Bitte einen gültigen kWh-Wert ab 0 eingeben.";
+      return;
+    }
+    if (native && (!entityId || !this._hass?.states?.[entityId])) {
+      window.alert("Utility-Meter-Entität nicht verfügbar.");
+      return;
+    }
+    if (!native && !(scriptId && value === 0)) return;
+    const name = this.shadowRoot.querySelector(".dialog-title").textContent;
+    if (!window.confirm(name + " wirklich auf " + value + " kWh setzen?")) return;
+    const buttons = [...this.shadowRoot.querySelectorAll(".dialog-reset, .dialog-set")];
+    buttons.forEach(button => { button.disabled = true; });
+    status.textContent = "Wert wird übertragen …";
     try {
-      await this._hass.callService("script", "turn_on", { entity_id: scriptId });
+      if (native) {
+        await this._hass.callService("utility_meter", "calibrate",
+          { value }, { entity_id: entityId });
+      } else {
+        await this._hass.callService("script", "turn_on", { entity_id: scriptId });
+      }
+      status.textContent = "Wert erfolgreich auf " + value + " kWh gesetzt.";
     } catch (error) {
-      console.error("ATZE Strom: Reset fehlgeschlagen", error);
-      window.alert("Zurücksetzen fehlgeschlagen. Bitte Home Assistant prüfen.");
+      console.error("ATZE Strom: Kalibrierung fehlgeschlagen", error);
+      status.textContent = "Änderung fehlgeschlagen. Bitte Home Assistant prüfen.";
     } finally {
-      if (button) button.disabled = false;
+      buttons.forEach(button => { button.disabled = false; });
     }
   }
 
   _openPeriod(period) {
     const dialog = this.shadowRoot.querySelector(".period-dialog");
-    const valid = ["month", "day", "living_month", "living_day",
+    const valid = ["year", "month", "day", "living_year", "living_month", "living_day",
+      "bedroom_year", "kitchen_year", "washer_year",
       "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day",
       "washer_month", "washer_day"];
-    if (!dialog || !valid.includes(period)) return;
+    if (!dialog || !(valid.includes(period) || /^meter\d+_(year|month|day)$/.test(period))) return;
     dialog.dataset.period = period;
     const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche", washer: "Waschmaschine" };
+    for (const definition of this._roomDefinitions()) roomLabels[definition.key] = definition.name;
     const [room, span] = period.includes("_") ? period.split("_") : [null, period];
     dialog.querySelector(".dialog-title").textContent =
-      (room ? roomLabels[room] + " · " : "") + (span === "month" ? "Monat" : "Tag");
+      (room ? roomLabels[room] + " · " : "") +
+      (span === "year" ? "Jahr" : span === "month" ? "Monat" : "Tag");
+    dialog.querySelector(".dialog-status").textContent = "";
+    const display = dialog.querySelector(".dialog-input");
+    display.dataset.value = "";
+    display.textContent = "Wert in kWh";
+    display.classList.remove("has-value");
     this._updatePeriodDialog();
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      // The in-dialog keypad never focuses an editable field, so iOS has no
+      // reason to open its keyboard and pan the Home Assistant viewport.
+      dialog.showModal();
+      dialog.querySelector(".dialog-close")?.focus({ preventScroll: true });
+    }
   }
 
   _updatePeriodDialog() {
@@ -16356,9 +16560,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-date").textContent = resetEntity
       ? this._resetLabel(resetEntity) : "Nicht eingerichtet";
     dialog.querySelector(".dialog-value").textContent = this._value(this._config[period]);
-    const resetButton = dialog.querySelector(".dialog-reset");
-    resetButton.dataset.reset = period;
-    resetButton.hidden = !this._config[period + "_script"];
+    const nativeMeter = Boolean(this._config.native_utility_meters &&
+        (["year", "month", "day"].includes(period) ||
+          /^meter\d+_(year|month|day)$/.test(period)) && this._config[period]);
+    dialog.querySelector(".dialog-reset").hidden =
+      !(nativeMeter || this._config[period + "_script"]);
+    dialog.querySelector(".dialog-set").hidden = !nativeMeter;
+    dialog.querySelector(".dialog-input").hidden = !nativeMeter;
+    dialog.querySelector(".dialog-keypad").hidden = !nativeMeter;
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
@@ -16453,6 +16662,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       <style>
         :host { display:block; min-width:0 }
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+        .tile[hidden] { display:none }
         .energy-hero-placeholder { grid-column:1/-1; width:100%; min-width:0 }
         .energy-hero { grid-column:1/-1;
           width:100%; min-width:0; overflow:hidden; border-radius:16px;
@@ -16488,7 +16698,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-section .tile.room-total { grid-column:1/-1; min-height:108px }
         .room-section .tile.period { min-height:54px }
         .room-section .room-power { display:flex; }
-        .dialog-reset[hidden] { display:none }
+        .dialog-reset[hidden], .dialog-set[hidden], .dialog-input[hidden],
+        .dialog-keypad[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .room-power { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
         .room-power .unit { font-size:11px }
@@ -16511,13 +16722,19 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .summary-value { font-size:clamp(28px,7vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
         .period-dialog { box-sizing:border-box; width:min(340px,calc(100vw - 36px));
-          max-height:calc(100dvh - 60px); overflow:auto; margin:auto; padding:22px;
+          position:fixed; inset:auto; left:50%; top:50%; transform:translate(-50%,-50%);
+          max-height:calc(100dvh - 44px); overflow:auto; margin:0; padding:18px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:20px;
           background:var(--card-background-color,#202126); color:var(--primary-text-color);
           box-shadow:0 18px 50px rgba(0,0,0,.45) }
         .period-dialog::backdrop { background:rgba(0,0,0,.62); backdrop-filter:blur(4px) }
-        .dialog-title { font-size:18px; font-weight:650; margin-bottom:18px }
-        .dialog-value-line { text-align:center; margin-bottom:20px; font-weight:700; font-size:32px }
+        .dialog-title { font-size:18px; font-weight:650; margin-bottom:12px }
+        .dialog-close { position:absolute; top:14px; right:14px; width:32px; height:32px;
+          display:flex; align-items:center; justify-content:center; border:0;
+          border-radius:50%; background:rgba(118,118,128,.22);
+          color:var(--primary-text-color); cursor:pointer }
+        .dialog-close ha-icon { --mdc-icon-size:19px }
+        .dialog-value-line { text-align:center; margin-bottom:12px; font-weight:700; font-size:32px }
         .dialog-meta { display:flex; align-items:center; justify-content:space-between; gap:10px;
           font-size:12px; color:var(--secondary-text-color) }
         .dialog-date { margin-top:5px; color:var(--primary-text-color); font-size:14px }
@@ -16527,6 +16744,24 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
         .dialog-reset ha-icon { --mdc-icon-size:18px }
         .dialog-reset:disabled { opacity:.45; cursor:wait }
+        .dialog-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px }
+        .dialog-input { box-sizing:border-box; width:100%; padding:10px 12px;
+          border:1px solid var(--primary-color,#1683ff); border-radius:10px;
+          background:rgba(118,118,128,.18); color:var(--secondary-text-color); font:inherit;
+          font-size:20px; font-variant-numeric:tabular-nums; text-align:right }
+        .dialog-input.has-value { color:var(--primary-text-color) }
+        .dialog-keypad { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:7px; margin-top:10px }
+        .dialog-key { min-height:46px; border:1px solid rgba(255,255,255,.07);
+          border-radius:11px; background:rgba(118,118,128,.22); color:var(--primary-text-color);
+          font:inherit; font-size:23px; font-weight:550; cursor:pointer; touch-action:manipulation }
+        .dialog-key:active { background:rgba(118,118,128,.48) }
+        .dialog-key[aria-label="Letztes Zeichen löschen"] { font-size:20px }
+        .dialog-set { padding:9px 12px; border-radius:10px; cursor:pointer;
+          border:1px solid var(--home-card-border,rgba(255,255,255,.16));
+          background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
+        .dialog-set:disabled { opacity:.45; cursor:wait }
+        .dialog-status { min-height:16px; margin-top:10px; font-size:12px; color:var(--secondary-text-color) }
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
@@ -16546,14 +16781,38 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         </div>
       </div>
       <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
+        <button class="dialog-close" type="button" autofocus aria-label="Popup schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
         <div class="dialog-title" id="energy-period-dialog-title"></div>
         <div class="dialog-value-line"><span class="dialog-value"></span> <span class="unit">kWh</span></div>
         <div class="dialog-meta">
           <div><div>Zurückgesetzt am</div><div class="dialog-date"></div></div>
+        </div>
+        <div class="dialog-entry">
+          <div class="dialog-input" role="textbox" aria-label="Neuer Zählerstand in kWh"
+            aria-readonly="true">Wert in kWh</div>
+          <div class="dialog-keypad" role="group" aria-label="Zahlentastatur">
+            <button class="dialog-key" type="button" data-key="1">1</button>
+            <button class="dialog-key" type="button" data-key="2">2</button>
+            <button class="dialog-key" type="button" data-key="3">3</button>
+            <button class="dialog-key" type="button" data-key="4">4</button>
+            <button class="dialog-key" type="button" data-key="5">5</button>
+            <button class="dialog-key" type="button" data-key="6">6</button>
+            <button class="dialog-key" type="button" data-key="7">7</button>
+            <button class="dialog-key" type="button" data-key="8">8</button>
+            <button class="dialog-key" type="button" data-key="9">9</button>
+            <button class="dialog-key" type="button" data-key=",">,</button>
+            <button class="dialog-key" type="button" data-key="0">0</button>
+            <button class="dialog-key" type="button" data-key="backspace" aria-label="Letztes Zeichen löschen">⌫</button>
+          </div>
+        </div>
+        <div class="dialog-actions">
+          <button class="dialog-set" type="button">Wert setzen</button>
           <button class="dialog-reset" type="button"><ha-icon icon="mdi:restart"></ha-icon>Zurücksetzen</button>
         </div>
+        <div class="dialog-status" role="status" aria-live="polite"></div>
       </dialog>`;
     const dialog = this.shadowRoot.querySelector(".period-dialog");
+    dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) {
         const bounds = dialog.getBoundingClientRect();
@@ -16561,7 +16820,27 @@ class AtzeEnergyOverviewCard extends HTMLElement {
             event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
       }
     });
-    dialog.querySelector(".dialog-reset").addEventListener("click", () => this._reset(dialog.dataset.period));
+    dialog.querySelector(".dialog-reset").addEventListener("click", () => this._calibrate(dialog.dataset.period, "0"));
+    dialog.querySelector(".dialog-set").addEventListener("click", () =>
+      this._calibrate(dialog.dataset.period, dialog.querySelector(".dialog-input").dataset.value));
+    const display = dialog.querySelector(".dialog-input");
+    for (const key of dialog.querySelectorAll(".dialog-key")) {
+      key.addEventListener("click", () => {
+        const digit = key.dataset.key;
+        const current = display.dataset.value || "";
+        let next = current;
+        if (digit === "backspace") next = current.slice(0, -1);
+        else if (digit === ",") {
+          if (!current.includes(",")) next = (current || "0") + ",";
+        } else if (current.length < 14) {
+          next = current === "0" ? digit : current + digit;
+        }
+        display.dataset.value = next;
+        display.textContent = next ? next + " kWh" : "Wert in kWh";
+        display.classList.toggle("has-value", Boolean(next));
+        dialog.querySelector(".dialog-status").textContent = "";
+      });
+    }
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
@@ -16577,9 +16856,19 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       hero.hidden = true;
     }
     const grid = this.shadowRoot.querySelector(".grid");
+    const hasTotal = Boolean(this._config.total);
+    grid.querySelector(".tile.total").hidden = !hasTotal;
+    if (!hasTotal && !this._roomDefinitions().length) {
+      const empty = document.createElement("div");
+      empty.className = "energy-empty";
+      empty.style.cssText = "grid-column:1/-1;padding:24px 16px;text-align:center;color:var(--secondary-text-color);";
+      empty.textContent = "Noch keine Stromsensoren eingerichtet. Wähle einen Gesamtstromsensor oder Energie-Hauptsensor in den Einstellungen.";
+      grid.appendChild(empty);
+    }
     for (const period of ["total", "year"]) {
       const detail = this.shadowRoot.querySelector('[data-detail="' + period + '"]');
-      const open = () => this._details(this._config[period]);
+      const open = () => period === "year"
+        ? this._openPeriod("year") : this._details(this._config[period]);
       detail.addEventListener("click", open);
       detail.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -16589,6 +16878,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       });
     }
     for (const card of cards) {
+      if (!hasTotal) continue;
       const tile = document.createElement("div");
       tile.className = "tile period";
       tile.tabIndex = 0;
@@ -16609,13 +16899,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       });
       grid.appendChild(tile);
     }
-    const rooms = [
-      { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
-      { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
-      { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
-      { key: "washer", name: "Waschmaschine", icon: "mdi:washing-machine", tone: "#26b9cc" },
-    ];
+    const rooms = this._roomDefinitions();
     for (const room of rooms) {
+      if (room.energy !== undefined) {
+        for (const metric of ["energy", "year", "month", "day", "power"]) {
+          this._config[room.key + "_" + metric] = room[metric] || "";
+        }
+      }
       const section = document.createElement("section");
       section.className = "room-section";
       section.dataset.roomSection = room.key;
@@ -16640,7 +16930,9 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       const total = section.querySelector(".room-total");
       for (const metric of ["energy", "year"]) {
         const detail = total.querySelector('[data-room-detail="' + metric + '"]');
-        const open = () => this._details(this._config[room.key + "_" + metric]);
+        const open = () => metric === "year"
+          ? this._openPeriod(room.key + "_year")
+          : this._details(this._config[room.key + "_" + metric]);
         detail.addEventListener("click", open);
         detail.addEventListener("keydown", event => {
           if (event.key === "Enter" || event.key === " ") {
@@ -16682,24 +16974,30 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   _update() {
     if (!this.shadowRoot?.querySelector(".grid")) return;
     const total = this.shadowRoot.querySelector('[data-period="total"]');
-    total.querySelector(".total-number").textContent = this._value(this._config.total);
-    total.querySelector(".year-number").textContent = this._value(this._config.year);
-    const power = total.querySelector(".live-power");
-    power.hidden = !this._config.power;
-    if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
+    if (this._config.total) {
+      total.querySelector(".total-number").textContent = this._value(this._config.total);
+      total.querySelector(".year-number").textContent = this._value(this._config.year);
+      const power = total.querySelector(".live-power");
+      power.hidden = !this._config.power;
+      if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
+    }
     for (const period of ["month", "day"]) {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
+      if (!tile) continue;
       tile.querySelector(".number").textContent = this._value(this._config[period]);
     }
     this._updatePeriodDialog();
-    for (const room of ["living", "bedroom", "kitchen", "washer"]) {
-      const tile = this.shadowRoot.querySelector('[data-room="' + room + '"]');
+    for (const room of this._roomDefinitions()) {
+      const tile = this.shadowRoot.querySelector('[data-room="' + room.key + '"]');
       if (!tile) continue;
-      tile.querySelector(".room-energy").textContent = this._value(this._config[room + "_energy"]);
-      tile.querySelector(".room-year").textContent = this._value(this._config[room + "_year"]);
-      tile.querySelector(".room-watts").textContent = this._value(this._config[room + "_power"]);
+      tile.closest(".room-section").querySelector(".room-heading span").textContent = room.name;
+      tile.querySelector(".room-energy").textContent = this._value(this._roomEntity(room, "energy"));
+      tile.querySelector(".room-year").textContent = this._value(this._roomEntity(room, "year"));
+      const watts = tile.querySelector(".room-power");
+      watts.hidden = !this._roomEntity(room, "power");
+      tile.querySelector(".room-watts").textContent = this._value(this._roomEntity(room, "power"));
       for (const period of ["month", "day"]) {
-        const key = room + "_" + period;
+        const key = room.key + "_" + period;
         const periodTile = this.shadowRoot.querySelector('[data-room-period="' + key + '"]');
         periodTile.querySelector(".number").textContent =
           this._config[key] ? this._value(this._config[key]) : "–";
@@ -16740,6 +17038,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._dashboardBackgroundError = false;
     this._backgroundFileInput = null;
     this._backgroundPickerActive = false;
+    this._energyEnsureQueue = Promise.resolve();
+    this._energyMigrationStarted = false;
   }
 
   set hass(value) {
@@ -16778,6 +17078,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     this._pendingCustomPageValues.clear();
     this._entityVisibilityActive = false;
     this._pendingHassRender = false;
+    this._energyMigrationStarted = false;
     this._loadRegistries();
     this._render();
   }
@@ -16815,6 +17116,20 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._labels = labels || [];
       this._devices = devices || [];
       this._entities = entities || [];
+      if (!this._energyMigrationStarted) {
+        this._energyMigrationStarted = true;
+        // Existing selections predate automatic provisioning. Reconcile them
+        // once when Settings opens; preserve all assigned helpers and values.
+        const setup = this._config.energy_setup;
+        if (setup?.total) this._queueEnergyMeters({ kind: "total", source: setup.total });
+        (this._config.energy_individual || []).forEach((item, index) => {
+          if (item?.total) this._queueEnergyMeters({ kind: "individual", index, source: item.total });
+        });
+        for (const [areaId, override] of Object.entries(this._config.area_overrides || {})) {
+          const source = override?.primary_sensors?.energy;
+          if (source) this._queueEnergyMeters({ kind: "area", areaId, source });
+        }
+      }
     } catch (_error) {
       this._areas = [];
       this._labels = [];
@@ -18118,6 +18433,272 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     `;
   }
 
+
+  _energySourceOptionsHtml(selected = "") {
+    const options = Object.entries(this._hass?.states || {})
+      .filter(([id, state]) => id.startsWith("sensor.") &&
+        (String(state.attributes?.unit_of_measurement || "").trim().toLowerCase() === "kwh" ||
+          state.attributes?.device_class === "energy" ||
+          id === "sensor.gesamt_strom"))
+      .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
+        .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
+    return '<option value="">Bitte kWh-Quelle auswählen</option>' +
+      options.map(([id, state]) => '<option value="' + this._escape(id) + '"' +
+        (id === selected ? ' selected' : '') + '>' +
+        this._escape(state.attributes?.friendly_name || id) + ' (' +
+        this._escape(id) + ')</option>').join("") +
+      (selected && !options.some(([id]) => id === selected)
+        ? '<option selected value="' + this._escape(selected) + '">' +
+          this._escape(selected) + ' (nicht verfügbar)</option>' : "");
+  }
+
+  _energyMeterOptionsHtml(selected = "") {
+    const states = this._hass?.states || {};
+    const options = Object.entries(states)
+      .filter(([id, state]) => id.startsWith("sensor.") &&
+        state.attributes?.device_class === "energy" &&
+        ["kWh"].includes(state.attributes?.unit_of_measurement))
+      .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
+        .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
+    return '<option value="">Noch nicht zugeordnet</option>' +
+      options.map(([id, state]) => '<option value="' + this._escape(id) + '"' +
+        (id === selected ? ' selected' : '') + '>' +
+        this._escape(state.attributes?.friendly_name || id) + '</option>').join("") +
+      (selected && !options.some(([id]) => id === selected)
+        ? '<option selected value="' + this._escape(selected) + '">' +
+          this._escape(selected) + ' (nicht verfügbar)</option>' : "");
+  }
+
+  _setEnergySetupField(key, value, individualIndex = null) {
+    const individual = Array.isArray(this._config.energy_individual)
+      ? this._config.energy_individual.map(item => ({ ...item })) : [];
+    const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0 &&
+      individualIndex < individual.length;
+    const setup = { ...(isIndividual ? individual[individualIndex] : this._config.energy_setup || {}) };
+    if (key === "total" && setup.total !== value &&
+        ["year", "month", "day"].some(period => setup[period])) {
+      if (!window.confirm("Anderen kWh-Quellsensor wählen?\\n" +
+          "Die bisherigen Zähler-Zuordnungen werden aus diesem Eintrag gelöst.\\n" +
+          "Die Helfer und Verbrauchswerte in Home Assistant bleiben erhalten.")) {
+        this._render();
+        return;
+      }
+      delete setup.year;
+      delete setup.month;
+      delete setup.day;
+    }
+    if (value) setup[key] = value;
+    else delete setup[key];
+    const next = { ...this._config };
+    if (isIndividual) {
+      individual[individualIndex] = setup;
+      next.energy_individual = individual;
+    } else if (Object.keys(setup).length) next.energy_setup = setup;
+    else delete next.energy_setup;
+    this._fireConfigChanged(next);
+    if (key === "total" && value) this._queueEnergyMeters({
+      kind: isIndividual ? "individual" : "total",
+      index: isIndividual ? individualIndex : undefined,
+      source: value,
+    });
+  }
+
+  _addEnergyIndividual() {
+    const entries = Array.isArray(this._config.energy_individual)
+      ? this._config.energy_individual : [];
+    this._fireConfigChanged({ ...this._config,
+      energy_individual: [...entries, {}] });
+  }
+
+  _removeEnergyIndividual(index) {
+    const entries = Array.isArray(this._config.energy_individual)
+      ? [...this._config.energy_individual] : [];
+    const entry = entries[index];
+    if (!entry || !window.confirm("Diesen Einzelstrom-Eintrag aus dem Dashboard entfernen?\\n" +
+      "Die Home-Assistant-Helfer und ihre Werte bleiben erhalten.")) return;
+    entries.splice(index, 1);
+    this._fireConfigChanged({ ...this._config, energy_individual: entries });
+  }
+
+  _energySetupHtml(individualIndex = null) {
+    const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0;
+    const setup = isIndividual
+      ? (this._config.energy_individual?.[individualIndex] || {})
+      : (this._config.energy_setup || {});
+    const scope = isIndividual ? ' data-index="' + individualIndex + '"' : "";
+    return `
+      <div class="editor-section-help">
+        Wähle einen fortlaufenden Energiesensor (kWh). Jahres-, Monats- und
+        Tageszähler werden automatisch zugeordnet oder bei Bedarf angelegt.
+        Jahr setzt sich am 1. Januar zurück, Monat am Monatsersten;
+        Tag nur manuell.
+        Bestehende Zählerstände bleiben erhalten.
+      </div>
+      <label class="primary-field"><span>kWh-Quellsensor</span>
+        <select class="energy-setup-field" data-key="total"${scope}>
+          ${this._energySourceOptionsHtml(setup.total || "")}
+        </select>
+      </label>
+      <div class="editor-section-help energy-setup-status" role="status">
+        ${["year", "month", "day"].filter(key => setup[key]).length}/3 Zähler zugeordnet.
+        Werte lassen sich in den zugehörigen Popups setzen oder zurücksetzen.
+      </div>
+      `;
+  }
+
+  _queueEnergyMeters(context) {
+    // Serialize HA config flows: parallel requests could create duplicates.
+    this._energyEnsureQueue = this._energyEnsureQueue
+      .then(() => this._ensureEnergyMeters(context))
+      .catch(error => console.error("ATZE Strom: Automatische Zähler-Einrichtung", error));
+    return this._energyEnsureQueue;
+  }
+
+  async _ensureEnergyMeters({ kind, index, areaId, source }) {
+    if (!this.isConnected || !this._hass) return;
+    const getSetup = () => {
+      if (kind === "area") {
+        const override = this._config.area_overrides?.[areaId] || {};
+        if (override.primary_sensors?.energy !== source) return null;
+        const previous = override.energy_meters || {};
+        return previous.total === source ? { ...previous } : { total: source };
+      }
+      const setup = kind === "individual"
+        ? this._config.energy_individual?.[index]
+        : this._config.energy_setup;
+      return setup?.total === source ? { ...setup } : null;
+    };
+    const report = message => {
+      const node = kind === "area"
+        ? [...(this.shadowRoot?.querySelectorAll("[data-primary-area]") || [])]
+          .find(item => item.dataset.primaryArea === areaId)?.querySelector(".energy-auto-status")
+        : [...(this.shadowRoot?.querySelectorAll(".energy-setup-status") || [])]
+          .find(item => kind === "total"
+            ? !item.closest(".energy-individual-entry")
+            : Number(item.closest(".energy-individual-entry")?.dataset.index) === index);
+      if (node) node.textContent = message;
+      console.info("ATZE Strom: " + message);
+    };
+    const persist = setup => {
+      if (!getSetup()) return false; // Sensor was changed while a flow was running.
+      const next = { ...this._config };
+      if (kind === "area") {
+        const overrides = { ...(next.area_overrides || {}) };
+        overrides[areaId] = { ...overrides[areaId], energy_meters: { ...setup } };
+        next.area_overrides = overrides;
+      } else if (kind === "individual") {
+        const individual = [...(next.energy_individual || [])];
+        individual[index] = { ...setup };
+        next.energy_individual = individual;
+      } else next.energy_setup = { ...setup };
+      this._config = next;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config: next }, bubbles: true, composed: true
+      }));
+      return true;
+    };
+    const setup = getSetup();
+    if (!setup) return;
+    const attributes = this._hass.states?.[source]?.attributes;
+    if (!source.startsWith("sensor.") ||
+        !(attributes?.unit_of_measurement === "kWh" ||
+          (attributes?.device_class === "energy" && attributes?.unit_of_measurement === "kWh"))) {
+      report(source + ": kein verfügbarer kWh-Quellsensor; keine Helfer angelegt.");
+      return;
+    }
+    const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
+    const before = await registry();
+    const sourceEntry = before.find(e => e.entity_id === source);
+    const device = this._devices.find(d => d.id === sourceEntry?.device_id);
+    const deviceName = String(device?.name_by_user || device?.name || "").trim();
+    const sourceFriendly = String(attributes.friendly_name || "").trim();
+    let localName = sourceFriendly;
+    if (deviceName) {
+      if (!sourceFriendly.toLocaleLowerCase("de-DE").startsWith(
+          deviceName.toLocaleLowerCase("de-DE") + " ")) {
+        report(source + ": Geräte- und Sensorname passen nicht zusammen; keine Helfer angelegt.");
+        return;
+      }
+      localName = sourceFriendly.slice(deviceName.length).trim();
+    }
+    if (!localName) {
+      report(source + ": Sensorname fehlt; keine Helfer angelegt.");
+      return;
+    }
+    for (const [key, label, suffix] of [
+      ["year", "Jahr", "jahr"], ["month", "Monat", "monat"], ["day", "Tag", "tag"]
+    ]) {
+      if (!getSetup()) return;
+      if (setup[key]) continue;
+      const expectedId = source + "_" + suffix;
+      const entriesBefore = await registry();
+      const existing = entriesBefore.find(e => e.entity_id === expectedId);
+      if (existing) {
+        if (existing.platform !== "utility_meter") {
+          report(expectedId + " existiert, ist aber kein Utility-Meter. Bitte prüfen.");
+          return;
+        }
+        setup[key] = expectedId;
+        persist(setup);
+        report(label + " bereits vorhanden und zugeordnet: " + expectedId);
+        continue;
+      }
+      // HA generates IDs from the display name, not necessarily from the
+      // source entity ID. E.g. source ..._energy => meter ..._energie_jahr.
+      // A unique meter with the source's device prefix and matching period
+      // is safe to reuse, including one created by an earlier interrupted run.
+      const sourcePrefix = source.includes("_")
+        ? source.slice(0, source.lastIndexOf("_") + 1)
+        : source + "_";
+      const related = entriesBefore.filter(e => e.platform === "utility_meter" &&
+        e.entity_id?.startsWith(sourcePrefix) && e.entity_id?.endsWith("_" + suffix));
+      if (related.length === 1) {
+        setup[key] = related[0].entity_id;
+        persist(setup);
+        report(label + " vorhandenen Zähler übernommen: " + setup[key]);
+        continue;
+      }
+      if (related.length > 1) {
+        report("Mehrere mögliche " + label + "-Zähler gefunden: " +
+          related.map(e => e.entity_id).join(", ") + ". Bitte prüfen; nichts angelegt.");
+        return;
+      }
+      report(label + " wird für " + source + " angelegt …");
+      const init = await this._hass.callApi("POST", "config/config_entries/flow",
+        { handler: "utility_meter" });
+      if (init.type !== "form" || !init.flow_id) throw Error("Utility-Meter-Flow nicht verfügbar.");
+      const result = await this._hass.callApi("POST",
+        "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
+        { name: localName + " " + label, source,
+          cycle: key === "year" ? "yearly" : key === "month" ? "monthly" : "none",
+          offset: 0, tariffs: [],
+          net_consumption: false, delta_values: false, periodically_resetting: true });
+      if (result.type !== "create_entry") {
+        throw Error(label + ": Anlage nicht bestätigt: " + JSON.stringify(result.errors || result.type));
+      }
+      const previousIds = new Set(entriesBefore.map(e => e.entity_id));
+      let created = "";
+      for (let attempt = 0; attempt < 12 && !created; attempt++) {
+        const entries = await registry();
+        const added = entries.filter(e => e.platform === "utility_meter" &&
+          e.entity_id?.startsWith("sensor.") && !previousIds.has(e.entity_id));
+        if (added.some(e => e.entity_id === expectedId)) created = expectedId;
+        else if (added.length === 1) created = added[0].entity_id;
+        if (!created) await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (!created) {
+        report(label + " angelegt, aber neue Entitäts-ID nicht erkannt. " +
+          "Bitte prüfen; kein erneuter Anlageversuch.");
+        return;
+      }
+      // The ID returned by the registry is authoritative. Do not create a
+      // second meter just because HA localized part of the display name.
+      setup[key] = created;
+      persist(setup);
+      report(label + " angelegt: " + created);
+    }
+  }
+
   _render() {
     if (!this.shadowRoot || this._backgroundPickerActive) return;
 
@@ -18331,7 +18912,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
         .primary-fields { display:grid; gap:12px; padding:14px 16px; }
         .primary-field { display:grid; gap:6px; min-width:0; font-size:13px; }
+        .primary-field-controls { display:flex; align-items:center; gap:8px; min-width:0; }
         .primary-selector { width:100%; min-width:0; }
+        .primary-clear { flex:none; padding:9px 10px; border:1px solid var(--divider-color, #555); border-radius:9px; background:transparent; color:var(--primary-text-color); cursor:pointer; }
+        .primary-clear:disabled { opacity:.35; cursor:default; }
         .primary-area { margin-bottom:8px; }
         .editor-version {
           padding: 0 4px 2px;
@@ -19060,12 +19644,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Lege fest, welcher Leistungssensor für die Strom-Kachel
-              verwendet wird. Ist der Sensor nicht verfügbar, wird die
-              Kachel automatisch ausgeblendet.
+              Den Leistungssensor für die Strom-Kachel stellst du jetzt unter
+              „Strom · Gesamtstrom“ ein.
             </div>
             <div class="rows">
-              ${this._powerSensorSelectHtml()}
               ${this._outdoorIlluminanceSensorSelectHtml()}
               ${this._hofMotionSensorSelectHtml()}
             </div>
@@ -19229,10 +19811,53 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           </summary>
           <div class="editor-section-body">
             <div class="editor-section-help">Wähle für jeden Raum die Hauptsensoren. Ohne Auswahl
-              gilt weiterhin die automatische Erkennung. Diese Zuordnungen werden zunächst nur
-              gespeichert; die bisherigen Karten bleiben unverändert.</div>
+              gilt in den Raumansichten weiterhin die automatische Erkennung. Für die Stromseite
+              werden nur Räume mit ausdrücklich ausgewähltem Energie-Hauptsensor übernommen.</div>
             ${this._loading ? '<div class="loading">Bereiche werden geladen …</div>' :
               (primarySensorHtml || '<div class="loading">Keine ausgewählten Räume gefunden.</div>')}
+          </div>
+        </details>
+        <details class="panel editor-section" data-editor-section="energy-setup"
+          ${this._openEditorSections.has("energy-setup") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>
+            <span class="editor-section-summary-title">Strom · Gesamtstrom</span>
+          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body" style="display:grid;gap:12px;padding:16px">
+            <div class="editor-section-help">Diese kWh-Entität bestimmt den Wert auf der
+              Startseite sowie die Gesamtwerte im integrierten Strom-Dashboard.</div>
+            <label class="primary-field">
+              <span>Aktuelle Gesamtleistung (W) · Startseiten-Kachel</span>
+              <select class="power-sensor-select" aria-label="Leistungssensor (W) auswählen">
+                ${this._powerSensorOptionsHtml(String(this._config.home_power_entity || ""))}
+              </select>
+            </label>
+            ${this._energySetupHtml()}
+          </div>
+        </details>
+        <details class="panel editor-section" data-editor-section="energy-individual"
+          ${this._openEditorSections.has("energy-individual") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:power-plug-outline"></ha-icon>
+            <span class="editor-section-summary-title">Strom · Einzelerfassung</span>
+          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body" style="display:grid;gap:14px;padding:16px">
+            <div class="editor-section-help">Geräte oder Räume einzeln hinzufügen.
+              Jeder Eintrag bekommt einen eigenen kWh-Quellsensor und eigene
+              Jahres-, Monats- und Tageszähler.</div>
+            ${(this._config.energy_individual || []).map((entry, index) => `
+              <div class="energy-individual-entry" data-index="${index}"
+                style="border:1px solid var(--divider-color,rgba(127,127,127,.24));border-radius:12px;padding:12px;display:grid;gap:10px">
+                <div class="toolbar" style="justify-content:space-between;align-items:center">
+                  <strong>${this._escape(this._hass?.states?.[entry.total]?.attributes?.friendly_name ||
+                    entry.total || "Einzelzähler " + (index + 1))}</strong>
+                  <button class="energy-remove-individual" data-index="${index}" type="button">Entfernen</button>
+                </div>
+                ${this._energySetupHtml(index)}
+              </div>`).join("") || '<div class="editor-section-help">Noch keine Einzelzähler eingerichtet.</div>'}
+            <div class="toolbar"><button id="energy-add-individual" type="button">
+              Einzelstrom hinzufügen
+            </button></div>
           </div>
         </details>
         <details class="panel editor-section" data-editor-section="name-filters" ${this._openEditorSections.has("name-filters") ? "open" : ""}>
@@ -19431,6 +20056,18 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
     };
 
+    for (const select of this.shadowRoot.querySelectorAll(".energy-setup-field")) {
+      select.addEventListener("change", () =>
+        this._setEnergySetupField(select.dataset.key, select.value,
+          select.hasAttribute("data-index") ? Number(select.dataset.index) : null));
+    }
+    const energyStatusFor = element => element.closest(".energy-individual-entry, .editor-section-body")
+      ?.querySelector(".energy-setup-status");
+    this.shadowRoot.querySelector("#energy-add-individual")
+      ?.addEventListener("click", () => this._addEnergyIndividual());
+    for (const button of this.shadowRoot.querySelectorAll(".energy-remove-individual")) {
+      button.addEventListener("click", () => this._removeEnergyIndividual(Number(button.dataset.index)));
+    }
     // Build expensive Home Assistant selectors only when a room is opened.
     const initialisePrimaryArea = panel => {
       if (!panel.open || !panel.isConnected) return;
@@ -19446,14 +20083,22 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         ["power", "Aktuelle Leistung (W)", "sensor", ["W"]],
       ];
       for (const [role, title, domain, units] of roles) {
-        const label = document.createElement("label");
+        const label = document.createElement("div");
         label.className = "primary-field";
         const caption = document.createElement("span");
         caption.textContent = title;
         label.appendChild(caption);
+        const controls = document.createElement("div");
+        controls.className = "primary-field-controls";
         const selector = document.createElement("ha-selector");
         selector.className = "primary-selector";
-        label.appendChild(selector);
+        const clearButton = document.createElement("button");
+        clearButton.type = "button";
+        clearButton.className = "primary-clear";
+        clearButton.textContent = "Löschen";
+        clearButton.setAttribute("aria-label", `${title} für diesen Raum zurücksetzen`);
+        controls.append(selector, clearButton);
+        label.appendChild(controls);
         container.appendChild(label);
         selector.hass = this._hass;
         selector.selector = { entity: {
@@ -19463,17 +20108,24 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           },
         } };
         selector.value = this._config.area_overrides?.[areaId]?.primary_sensors?.[role] || "";
+        clearButton.disabled = !selector.value;
         selector.addEventListener("pointerdown", () => { this._navigationEditActive = true; }, true);
         selector.addEventListener("focusin", () => { this._navigationEditActive = true; });
-        selector.addEventListener("value-changed", event => {
-          event.stopPropagation();
-          const value = String(event.detail?.value || "").trim();
+        if (role === "energy") {
+          const status = document.createElement("div");
+          status.className = "editor-section-help energy-auto-status";
+          status.setAttribute("role", "status");
+          status.textContent = "Jahr, Monat und Tag werden automatisch eingerichtet.";
+          container.appendChild(status);
+        }
+        const setPrimarySensor = value => {
           const overrides = { ...(this._config.area_overrides || {}) };
           const area = { ...(overrides[areaId] || {}) };
           const primary = { ...(area.primary_sensors || {}) };
           if ((primary[role] || "") === value) return;
           if (value) primary[role] = value;
           else delete primary[role];
+          if (role === "energy") delete area.energy_meters;
           if (Object.keys(primary).length) area.primary_sensors = primary;
           else delete area.primary_sensors;
           if (Object.keys(area).length) overrides[areaId] = area;
@@ -19482,13 +20134,21 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           if (Object.keys(overrides).length) next.area_overrides = overrides;
           else delete next.area_overrides;
           this._config = next;
+          clearButton.disabled = !value;
+          if (!value) selector.value = "";
           panel.querySelector(".entity-count").textContent =
             roles.filter(([key]) => primary[key]).length + "/5";
           this.dispatchEvent(new CustomEvent("config-changed", {
             detail: { config: next }, bubbles: true, composed: true,
           }));
           this._navigationEditActive = false;
+          if (role === "energy" && value) this._queueEnergyMeters({ kind: "area", areaId, source: value });
+        };
+        selector.addEventListener("value-changed", event => {
+          event.stopPropagation();
+          setPrimarySensor(String(event.detail?.value || "").trim());
         });
+        clearButton.addEventListener("click", () => setPrimarySensor(""));
       }
     };
     for (const panel of this.shadowRoot.querySelectorAll(".primary-area")) {

@@ -1,3 +1,10 @@
+## v0.414.0
+
+- Stromdashboard mit Gesamtstromsensor und Hauptsensoren je Raum sowie Jahres-, Monats- und Tageszählern erweitert.
+- Zählerstände in Popups anzeigen, setzen und zurücksetzen; eigene integrierte Zahlentastatur verhindert das Springen der Ansicht auf dem iPhone.
+- Neue Utility-Meter-Helfer werden automatisch mit Jahreszyklus (yearly), Monatszyklus (monthly) beziehungsweise manuellem Tageszyklus (none) angelegt.
+- Hinweis: Die automatische Rücksetzung zum tatsächlichen Monats- oder Jahreswechsel ist noch nicht im Echtbetrieb bestätigt. Bestehende Zähler bleiben unverändert.
+
 ## v0.413.0
 
 - Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.

@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.413.0";
+const ATZE_VERSION = "0.414.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -3282,6 +3282,7 @@ function selectEnvironmentBadges(
       : ["temperature", "humidity", "illuminance", "power"];
 
   for (const deviceClass of requestedClasses) {
+    const configured = configuredRoomSensor(hass, areaOverride, deviceClass);
     const candidates = entities
       .filter((entity) => {
         if (shouldHideExactEntity(config, entity.entity_id)) return false;
@@ -3299,10 +3300,8 @@ function selectEnvironmentBadges(
           environmentBadgeScore(hass, a, area, deviceClass)
       );
 
-    if (!candidates.length) continue;
-
-    const selected = candidates[0];
-    const entityId = selected.entity_id;
+    const entityId = configured || candidates[0]?.entity_id;
+    if (!entityId || !hass.states[entityId]) continue;
 
     const badge = {
       type: "custom:atze-status-badge-v1",
@@ -3333,15 +3332,40 @@ function selectEnvironmentBadges(
     entityIds.add(entityId);
   }
 
+  // Energy consumption is an optional fifth primary metric. It is shown
+  // only when explicitly selected, preserving the existing automatic badges.
+  const selectedEnergy = configuredRoomSensor(hass, areaOverride, "energy");
+  if (selectedEnergy && hass.states[selectedEnergy] && !entityIds.has(selectedEnergy)) {
+    const energyBadge = {
+      type: "custom:atze-status-badge-v1",
+      entity: selectedEnergy,
+      inactive_icon_color: "#FFD60A",
+      active_icon_color: "#FFD60A",
+    };
+    const badgeOverride = getOverride(config.entity_overrides, selectedEnergy);
+    if (badgeOverride.badge_name) energyBadge.name = badgeOverride.badge_name;
+    if (badgeOverride.badge_icon) energyBadge.icon = badgeOverride.badge_icon;
+    badges.push(energyBadge);
+    entityIds.add(selectedEnergy);
+  }
+
   if (config.occupancy_badge !== false) {
-    const occupancy = selectBinaryBadge(
-      hass,
-      entities,
-      config,
-      area,
-      popupMap,
-      "occupancy"
-    );
+    const chosenPresence = configuredRoomSensor(hass, areaOverride, "presence");
+    const occupancy = chosenPresence && hass.states[chosenPresence]
+      ? { entityId: chosenPresence, badge: {
+          type: "custom:atze-status-badge-v1",
+          entity: chosenPresence,
+          inactive_icon_color: "#30D158",
+          active_icon_color: "#30D158",
+        } }
+      : selectBinaryBadge(
+          hass,
+          entities,
+          config,
+          area,
+          popupMap,
+          "occupancy"
+        );
 
     if (occupancy) {
       const manualOccupancyBadge =
@@ -4697,6 +4721,16 @@ const DEFAULT_HOME_CONTROL_CENTER_IMAGE = new URL(
   ATZE_ASSET_BASE_URL
 ).href;
 
+// Explicit per-room selections take precedence over automatic detection.
+// Unavailable selections stay selected (and recover automatically), rather than
+// silently showing a different sensor instead.
+function configuredRoomSensor(hass, areaOverride, role, automatic = null) {
+  const chosen = areaOverride?.primary_sensors?.[role];
+  if (typeof chosen !== "string" || !chosen.trim()) return automatic;
+  const domain = role === "presence" ? "binary_sensor" : "sensor";
+  return domainOf(chosen) === domain ? chosen : automatic;
+}
+
 function bestEnvironmentEntity(
   hass,
   entities,
@@ -5668,7 +5702,7 @@ function buildHomeOverviewView(
     const path = override.path || slugify(name);
     const icon = override.icon || area.icon || "mdi:home-outline";
 
-    const temperature = bestEnvironmentEntity(
+    const automaticTemperature = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5677,7 +5711,7 @@ function buildHomeOverviewView(
       "temperature"
     );
 
-    const humidity = bestEnvironmentEntity(
+    const automaticHumidity = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5686,7 +5720,7 @@ function buildHomeOverviewView(
       "humidity"
     );
 
-    const power = bestEnvironmentEntity(
+    const automaticPower = bestEnvironmentEntity(
       hass,
       areaEntities,
       config,
@@ -5704,7 +5738,7 @@ function buildHomeOverviewView(
       "illuminance"
     );
 
-    const occupancy = bestBinaryEntity(
+    const automaticOccupancy = bestBinaryEntity(
       hass,
       areaEntities,
       config,
@@ -5712,6 +5746,12 @@ function buildHomeOverviewView(
       popupMap,
       "occupancy"
     );
+
+    const temperature = configuredRoomSensor(hass, override, "temperature", automaticTemperature);
+    const humidity = configuredRoomSensor(hass, override, "humidity", automaticHumidity);
+    const power = configuredRoomSensor(hass, override, "power", automaticPower);
+    const energy = configuredRoomSensor(hass, override, "energy");
+    const occupancy = configuredRoomSensor(hass, override, "presence", automaticOccupancy);
 
     const motionInterrupter = occupancy
       ? roomMotionInterrupterEntity(
@@ -5855,6 +5895,7 @@ function buildHomeOverviewView(
       temperature,
       humidity,
       power,
+      energy,
       illuminance,
       occupancy,
       motion_interrupter: motionInterrupter,
@@ -5963,6 +6004,8 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    energy_total_entity: config.energy_setup?.total || null,
+    energy_path: config.energy_path || "strom",
     outdoor_illuminance_entity:
       config.home_outdoor_illuminance_entity &&
       hass.states[config.home_outdoor_illuminance_entity]
@@ -6081,6 +6124,25 @@ function schedulerPopupEnabled(config) {
   return asArray(config.custom_pages).some(isSchedulerCustomPage);
 }
 
+// Apply the Settings meter mapping to energy cards on strategy-owned pages.
+function applyEnergySetupToCard(card, setup) {
+  if (!card || typeof card !== "object") return card;
+  const nested = { ...card };
+  if (/^custom:atze-energy-overview-card(?:-testing)?$/.test(String(nested.type || ""))) {
+    for (const key of ["total", "year", "month", "day"]) {
+      if (setup?.[key]) nested[key] = setup[key];
+    }
+    if (setup?.month) { nested.month_script = ""; nested.month_reset = ""; }
+    if (setup?.day) { nested.day_script = ""; nested.day_reset = ""; }
+    nested.native_utility_meters = Boolean(setup?.month || setup?.day);
+    return nested;
+  }
+  if (Array.isArray(nested.cards)) {
+    nested.cards = nested.cards.map(child => applyEnergySetupToCard(child, setup));
+  }
+  return nested;
+}
+
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -6156,6 +6218,20 @@ function buildCustomPageViews(config) {
           : [homeButton, ...pageCards];
       }
 
+      if (config.energy_setup) {
+        if (Array.isArray(generatedView.cards)) {
+          generatedView.cards = generatedView.cards.map(card =>
+            applyEnergySetupToCard(card, config.energy_setup));
+        }
+        if (Array.isArray(generatedView.sections)) {
+          generatedView.sections = generatedView.sections.map(section => ({
+            ...section,
+            cards: Array.isArray(section.cards)
+              ? section.cards.map(card => applyEnergySetupToCard(card, config.energy_setup))
+              : section.cards,
+          }));
+        }
+      }
       return generatedView;
     })
     .filter(Boolean);

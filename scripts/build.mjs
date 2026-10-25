@@ -17,6 +17,7 @@ const sources = [
 const sourceContents = await Promise.all(
   sources.map((source) => readFile(resolve(root, source), "utf8"))
 );
+const testingLoader = await readFile(resolve(root, "scripts/testing-loader.js"), "utf8");
 
 const versionMatch = sourceContents[0].match(
   /const ATZE_VERSION = "([^"]+)";/
@@ -104,7 +105,7 @@ if (buildTestingArtifacts) {
   writes.push(
     writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.js"), testingBundle, "utf8"),
     writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.bundle.js"), testingBundle, "utf8"),
-    writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.loader.js"), `const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });\nconst revision = response.ok ? (await response.text()).trim().toUpperCase() : String(Date.now());\nawait import("/local/atze-dashboard-strategy-testing.bundle.js?v=" + encodeURIComponent(revision));\n`, "utf8"),
+    writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.loader.js"), testingLoader, "utf8"),
     writeFile(resolve(root, "dist/atze-dashboard-strategy-testing.version"), `${testingRevision}\n`, "utf8")
   );
 }

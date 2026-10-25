@@ -1420,6 +1420,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return badges.filter((badge) => badge.active);
   }
 
+  _formatEnergyTotal() {
+    const entityId = this._config.energy_total_entity;
+    const state = this._state(entityId);
+    const value = Number(state?.state);
+    if (!Number.isFinite(value) || ["unavailable", "unknown"].includes(state?.state)) return "—";
+    const unit = state.attributes?.unit_of_measurement || "kWh";
+    return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(value) + " " + unit;
+  }
+
   _formatPower() {
     const primary = this._state(this._config.power_entity);
 
@@ -1753,15 +1762,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         : "";
 
     const powerState = this._state(this._config.power_entity);
-    const powerAvailable = Boolean(
-      powerState &&
-      !["", "unknown", "unavailable"].includes(
-        String(powerState.state || "").toLowerCase()
-      ) &&
-      Number.isFinite(
-        Number.parseFloat(powerState.state)
-      )
-    );
+    const powerAvailable = Boolean(powerState &&
+      !["", "unknown", "unavailable"].includes(String(powerState.state || "").toLowerCase()) &&
+      Number.isFinite(Number.parseFloat(powerState.state)));
 
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
@@ -1981,17 +1984,21 @@ class AtzeHomeOverviewCard extends HTMLElement {
             ? this._formatted(room.illuminance)
             : "";
 
-        const roomPrimaryMetric = power || illuminance;
-        const roomPrimaryMetricLabel = power
-          ? "Leistung"
-          : "Helligkeit";
-        const roomPrimaryMetricIcon = power
-          ? "mdi:lightning-bolt"
-          : "mdi:white-balance-sunny";
+        const energyState = room.energy ? this._state(room.energy) : null;
+        const energy = energyState &&
+          !["unknown", "unavailable"].includes(String(energyState.state || "").toLowerCase())
+            ? this._formatted(room.energy) : "";
+        const roomPrimaryMetric = power || energy || illuminance;
+        const roomPrimaryMetricLabel = power ? "Leistung" : energy ? "Verbrauch" : "Helligkeit";
+        const roomPrimaryMetricIcon = power ? "mdi:lightning-bolt" : energy ? "mdi:lightning-bolt-circle" : "mdi:white-balance-sunny";
         const roomPrimaryMetricMoreInfoEntity =
-          !power && illuminance
-            ? "input_number.lichtschwelle"
-            : "";
+          !power && !energy && illuminance ? "input_number.lichtschwelle" : "";
+        const roomMetricHtml = [
+          roomPrimaryMetric ? `<ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon><span>${this._escapeHtml(roomPrimaryMetric)}</span>` : "",
+          // If the user selected energy and power, both readings belong on
+          // the room card rather than silently discarding the energy sensor.
+          power && energy ? `<ha-icon icon="mdi:lightning-bolt-circle"></ha-icon><span>${this._escapeHtml(energy)}</span>` : "",
+        ].filter(Boolean).join("");
 
         const occupancyState = room.occupancy
           ? this._isActive(this._state(room.occupancy))
@@ -2030,7 +2037,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             role="button"
             tabindex="0"
           >
-            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
+            <div class="room-compact-content"><ha-icon icon="${this._escapeHtml(room.icon || "mdi:home-outline")}"></ha-icon><div class="room-compact-label"><span class="room-compact-name">${this._escapeHtml(room.name || "Raum")}</span>${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : "", room.power && power ? `<span><ha-icon icon="mdi:lightning-bolt"></ha-icon>${this._escapeHtml(power)}</span>` : "", room.energy && energy ? `<span><ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>${this._escapeHtml(energy)}</span>` : ""].some(Boolean) ? `<span class="room-compact-climate">${[room.temperature && !["unknown", "unavailable"].includes(String(this._state(room.temperature)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:thermometer"></ha-icon>${this._escapeHtml(temp)}</span>` : "", room.humidity && !["unknown", "unavailable"].includes(String(this._state(room.humidity)?.state || "unknown").toLowerCase()) ? `<span><ha-icon icon="mdi:water-percent"></ha-icon>${this._escapeHtml(humidity)}</span>` : "", room.power && power ? `<span><ha-icon icon="mdi:lightning-bolt"></ha-icon>${this._escapeHtml(power)}</span>` : "", room.energy && energy ? `<span><ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>${this._escapeHtml(energy)}</span>` : ""].filter(Boolean).join("")}</span>` : ""}</div><ha-icon class="room-compact-chevron" icon="mdi:chevron-right"></ha-icon></div>
             ${
               room.image
                 ? `
@@ -2072,8 +2079,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                         : ""
                     }
                   >
-                    <ha-icon icon="${roomPrimaryMetricIcon}"></ha-icon>
-                    <span>${roomPrimaryMetric}</span>
+                    ${roomMetricHtml}
                   </div>
                 `
                 : ""
@@ -2367,13 +2373,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
           font-weight: 800;
           letter-spacing: 0.12em;
           line-height: 1.2;
-          pointer-events: none;
+          cursor: pointer;
+          font: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
           backdrop-filter: blur(8px);
         }
 
-        .testing-build-badge.update-available {
-          pointer-events: auto;
-          cursor: pointer;
+        .testing-build-badge:disabled { opacity: .65; cursor: wait; }
+        .testing-build-badge:focus-visible {
+          outline: 2px solid white;
+          outline-offset: 3px;
         }
 
         .hero {
@@ -3108,6 +3119,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           color: var(--home-yellow);
         }
 
+        .room-power:has(ha-icon:nth-of-type(2)) {
+          gap: 6px;
+          padding-right: 10px;
+          font-size: 12px;
+        }
         .room-power.clickable {
           cursor: pointer;
         }
@@ -3682,7 +3698,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             class="home-status-panel ${heroIsDay ? "day" : "night"} ${outdoorIlluminanceAvailable ? "has-outdoor-illuminance" : ""}"
             aria-label="Hausstatus"
           >
-            ${ATZE_TESTING_BUILD ? `<div class="testing-build-badge" id="testing-build-badge" role="status">TESTING · ${ATZE_TESTING_REVISION || "DEV"}</div>` : ""}
+            ${ATZE_TESTING_BUILD ? `<button class="testing-build-badge" id="testing-build-badge" type="button" title="Aktuelles Testing-Build laden" aria-label="Aktuelles Testing-Build laden">TESTING · ${ATZE_TESTING_REVISION || "DEV"} · ↻ Laden</button>` : ""}
             ${outdoorIlluminanceAvailable ? `
               <div
                 class="outdoor-illuminance-badge"
@@ -4423,6 +4439,44 @@ class AtzeHomeOverviewCard extends HTMLElement {
         () => this._openHomeAssistantUpdate()
       );
 
+    this.shadowRoot.querySelector("#testing-build-badge")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      if (button.disabled) return;
+      button.disabled = true;
+      const previousLabel = button.textContent;
+      button.textContent = "TESTING · Prüfe Build …";
+      try {
+        const response = await fetch("/local/atze-dashboard-strategy-testing.version?t=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error("Versionsdatei nicht erreichbar");
+        const revision = (await response.text()).trim().toUpperCase();
+        if (!/^[A-F0-9]{7}$/.test(revision)) throw new Error("Ungültige Versionskennung");
+
+        // ATZE Home can rebuild its WKWebView after clearing web resource
+        // caches. This also resets the custom-element registry. Older native
+        // builds and ordinary browsers keep the existing navigation fallback.
+        const nativeReload = window.webkit?.messageHandlers?.atzeReloadTesting;
+        if (nativeReload?.postMessage) {
+          nativeReload.postMessage({
+            path: location.pathname + location.search + location.hash,
+            revision,
+          });
+          return;
+        }
+
+        // A full document navigation resets already registered custom elements.
+        // Home Assistant login, local storage and dashboard configuration stay intact.
+        sessionStorage.setItem("atze-testing:return-url", location.pathname + location.search + location.hash);
+        const url = new URL(location.href);
+        url.searchParams.set("atze_testing_refresh", revision + "-" + Date.now());
+        location.replace(url.href);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = previousLabel;
+        console.error("ATZE Testing: Build konnte nicht geladen werden", error);
+        alert("Testing-Build konnte nicht geladen werden. Bitte die Verbindung und den GitHub-Actions-Build prüfen.");
+      }
+    });
+
 
     const kioskClock =
       this.shadowRoot.querySelector("#kiosk-clock");
@@ -4516,11 +4570,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
     const powerStatus = this.shadowRoot.querySelector("#power-status");
-    powerStatus?.addEventListener("click", () => this._openPowerPopup());
+    powerStatus?.addEventListener("click", () => this._navigate(this._config.energy_path || "strom"));
     powerStatus?.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        this._openPowerPopup();
+        this._navigate(this._config.energy_path || "strom");
       }
     });
     this.shadowRoot.querySelector("#power-popup-backdrop")?.addEventListener("click", (event) => {
@@ -4611,6 +4665,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 }
 
+// The testing loader uses this marker to detect an older, already registered
+// custom element. Web Components cannot be redefined in a running document.
+AtzeHomeOverviewCard.testingRevision = ATZE_TESTING_REVISION;
 if (!customElements.get("atze-home-overview-card")) {
   customElements.define(
     "atze-home-overview-card",

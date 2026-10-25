@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.413.0**
+Version **0.414.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,13 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.414.0
+
+- Stromdashboard mit Gesamtstromsensor und Hauptsensoren je Raum sowie Jahres-, Monats- und Tageszählern erweitert.
+- Zählerstände in Popups anzeigen, setzen und zurücksetzen; eigene integrierte Zahlentastatur verhindert das Springen der Ansicht auf dem iPhone.
+- Neue Utility-Meter-Helfer werden automatisch mit Jahreszyklus (yearly), Monatszyklus (monthly) beziehungsweise manuellem Tageszyklus (none) angelegt.
+- Hinweis: Die automatische Rücksetzung zum tatsächlichen Monats- oder Jahreswechsel ist noch nicht im Echtbetrieb bestätigt. Bestehende Zähler bleiben unverändert.
+
 ## v0.413.0
 
 - Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.
@@ -242,11 +249,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Manuell auswählbare Hauptsensoren je Raum in den Dashboard-Einstellungen; flüssigere Einstellungsansicht und gezielte Sensorfilter.
 - JSON-Konfigurationssicherung in ATZE Home über native iOS-Dateifreigabe; normaler Download im Browser bleibt erhalten.
 - Nicht mehr verwendete JavaScript-Bounce-Sperren bereinigt. Das native Scrollverhalten wird in der ATZE Home App gesteuert.
-
-## v0.411.0
-
-- Versionsupdate für HACS: bestätigten Fix der grauen Thermostat-Kapsel auf der Hauptübersicht und Entfernung des temporären Diagnosecodes als neue Version bereitgestellt.
-- Eingebettete Thermostat-Service-Dialoge bleiben weiterhin nutzbar.
 <!-- latest-changes:end -->
 
 ## Lizenz
