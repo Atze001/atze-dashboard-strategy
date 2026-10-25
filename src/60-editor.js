@@ -1438,18 +1438,46 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           this._escape(selected) + ' (nicht verfügbar)</option>' : "");
   }
 
-  _setEnergySetupField(key, value) {
-    const setup = { ...(this._config.energy_setup || {}) };
+  _setEnergySetupField(key, value, individualIndex = null) {
+    const individual = Array.isArray(this._config.energy_individual)
+      ? this._config.energy_individual.map(item => ({ ...item })) : [];
+    const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0 &&
+      individualIndex < individual.length;
+    const setup = { ...(isIndividual ? individual[individualIndex] : this._config.energy_setup || {}) };
     if (value) setup[key] = value;
     else delete setup[key];
     const next = { ...this._config };
-    if (Object.keys(setup).length) next.energy_setup = setup;
+    if (isIndividual) {
+      individual[individualIndex] = setup;
+      next.energy_individual = individual;
+    } else if (Object.keys(setup).length) next.energy_setup = setup;
     else delete next.energy_setup;
     this._fireConfigChanged(next);
   }
 
-  _energySetupHtml() {
-    const setup = this._config.energy_setup || {};
+  _addEnergyIndividual() {
+    const entries = Array.isArray(this._config.energy_individual)
+      ? this._config.energy_individual : [];
+    this._fireConfigChanged({ ...this._config,
+      energy_individual: [...entries, {}] });
+  }
+
+  _removeEnergyIndividual(index) {
+    const entries = Array.isArray(this._config.energy_individual)
+      ? [...this._config.energy_individual] : [];
+    const entry = entries[index];
+    if (!entry || !window.confirm("Diesen Einzelstrom-Eintrag aus dem Dashboard entfernen?\\n" +
+      "Die Home-Assistant-Helfer und ihre Werte bleiben erhalten.")) return;
+    entries.splice(index, 1);
+    this._fireConfigChanged({ ...this._config, energy_individual: entries });
+  }
+
+  _energySetupHtml(individualIndex = null) {
+    const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0;
+    const setup = isIndividual
+      ? (this._config.energy_individual?.[individualIndex] || {})
+      : (this._config.energy_setup || {});
+    const scope = isIndividual ? ' data-index="' + individualIndex + '"' : "";
     const fields = [["year", "Jahr · automatisch 1. Januar"],
       ["month", "Monat · nur manuell"], ["day", "Tag · nur manuell"]];
     return `
@@ -1460,33 +1488,33 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         zurück; Monat und Tag nur manuell. Bestehende Zähler werden nie überschrieben.
       </div>
       <label class="primary-field"><span>kWh-Quellsensor</span>
-        <select class="energy-setup-field" data-key="total">
+        <select class="energy-setup-field" data-key="total"${scope}>
           ${this._energySourceOptionsHtml(setup.total || "")}
         </select>
       </label>
       ${fields.map(([key, title]) => `
         <label class="primary-field"><span>${title}</span>
-          <select class="energy-setup-field" data-key="${key}">
+          <select class="energy-setup-field" data-key="${key}"${scope}>
             ${this._energyMeterOptionsHtml(setup[key] || "")}
           </select>
         </label>`).join("")}
       <div class="toolbar">
-        <button id="energy-create-meters" type="button"
+        <button class="energy-create-meters" type="button"${scope}
           ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen (Jahr / Monat / Tag)</button>
       </div>
-      <div class="editor-section-help" id="energy-setup-status" role="status">
+      <div class="editor-section-help energy-setup-status" role="status">
         Nur neue Helfer werden angelegt. Ein Vorgabewert kann nach der
         Zuordnung unten gesetzt werden.
       </div>
       ${fields.map(([key, title]) => `
         <label class="primary-field"><span>${title.split(" · ")[0]} · Vorgabewert (kWh)</span>
           <span style="display:flex;gap:8px;align-items:center">
-            <input class="energy-calibration-value" data-key="${key}"
+            <input class="energy-calibration-value" data-key="${key}"${scope}
               type="number" step="any" min="0" placeholder="z. B. 0"
               style="min-width:0;flex:1" />
-            <button class="energy-calibrate" data-key="${key}" type="button"
+            <button class="energy-calibrate" data-key="${key}"${scope} type="button"
               ${!setup[key] ? "disabled" : ""}>Setzen</button>
-            ${key !== "year" ? `<button class="energy-reset" data-key="${key}"
+            ${key !== "year" ? `<button class="energy-reset" data-key="${key}"${scope}
               type="button" ${!setup[key] ? "disabled" : ""}>Reset</button>` : ""}
           </span>
         </label>`).join("")}
@@ -1497,10 +1525,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       </div>`;
   }
 
-  async _createEnergyMeters(status) {
+  async _createEnergyMeters(status, individualIndex = null) {
     // Use verified flow for year, month and day, one at a time.
     if (this._creatingEnergyMeters) return;
-    const setup = { ...(this._config.energy_setup || {}) };
+    const individual = Array.isArray(this._config.energy_individual)
+      ? this._config.energy_individual.map(item => ({ ...item })) : [];
+    const isIndividual = Number.isInteger(individualIndex) && individualIndex >= 0 &&
+      individualIndex < individual.length;
+    const setup = { ...(isIndividual ? individual[individualIndex] : this._config.energy_setup || {}) };
     const source = setup.total;
     const attributes = this._hass?.states?.[source]?.attributes;
     if (!source?.startsWith("sensor.") ||
@@ -1543,7 +1575,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         "Name: " + localName + " " + label +
         "\nEntitäts-ID: " + source + "_" + suffix).join("\n\n") +
       "\n\nJahr automatisch am 1. Januar; Monat/Tag nur manuell. Bestehende Zähler bleiben unverändert.")) return;
-    const button = this.shadowRoot.querySelector("#energy-create-meters");
+    const button = [...this.shadowRoot.querySelectorAll(".energy-create-meters")]
+      .find(item => isIndividual
+        ? Number(item.dataset.index) === individualIndex
+        : !item.hasAttribute("data-index"));
     this._creatingEnergyMeters = true;
     if (button) button.disabled = true;
     try {
@@ -1600,19 +1635,19 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           return;
         }
         setup[key] = created;
-        this._config = { ...this._config, energy_setup: { ...setup } };
+        if (isIndividual) individual[individualIndex] = { ...setup };
+        this._config = { ...this._config,
+          ...(isIndividual ? { energy_individual: [...individual] } : { energy_setup: { ...setup } }) };
         this.dispatchEvent(new CustomEvent("config-changed", {
           detail: { config: this._config }, bubbles: true, composed: true
         }));
-        const current = this.shadowRoot.querySelector("#energy-setup-status");
-        if (current) current.textContent = label + " korrekt angelegt: " + created;
+        if (status?.isConnected) status.textContent = label + " korrekt angelegt: " + created;
       }
-      this._fireConfigChanged({ ...this._config, energy_setup: setup });
-      const current = this.shadowRoot.querySelector("#energy-setup-status");
-      if (current) current.textContent = "Alle fehlenden Zähler korrekt eingerichtet.";
+      this._fireConfigChanged({ ...this._config,
+        ...(isIndividual ? { energy_individual: [...individual] } : { energy_setup: setup }) });
     } catch (error) {
-      const current = this.shadowRoot.querySelector("#energy-setup-status") || status;
-      current.textContent = "Erstellung fehlgeschlagen: " + (error?.message || error);
+      if (status?.isConnected)
+        status.textContent = "Erstellung fehlgeschlagen: " + (error?.message || error);
       console.error("ATZE Strom: Zähler-Erstellung", error);
     } finally {
       this._creatingEnergyMeters = false;
@@ -1620,8 +1655,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
   }
 
-  async _calibrateEnergyMeter(key, value, status) {
-    const entityId = this._config.energy_setup?.[key];
+  async _calibrateEnergyMeter(key, value, status, individualIndex = null) {
+    const individual = Number.isInteger(individualIndex) && individualIndex >= 0
+      ? this._config.energy_individual?.[individualIndex] : null;
+    const entityId = (individual || this._config.energy_setup)?.[key];
     const number = Number(String(value).replace(",", "."));
     if (!entityId || !this._hass?.states?.[entityId]) {
       status.textContent = "Zähler nicht verfügbar oder noch nicht zugeordnet.";
