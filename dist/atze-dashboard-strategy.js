@@ -18292,7 +18292,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   _energySourceOptionsHtml(selected = "") {
     const options = Object.entries(this._hass?.states || {})
       .filter(([id, state]) => id.startsWith("sensor.") &&
-        String(state.attributes?.unit_of_measurement || "").trim().toLowerCase() === "kwh")
+        (String(state.attributes?.unit_of_measurement || "").trim().toLowerCase() === "kwh" ||
+          state.attributes?.device_class === "energy" ||
+          id === "sensor.gesamt_strom"))
       .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
         .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
     return '<option value="">Bitte kWh-Quelle auswählen</option>' +
@@ -18432,9 +18434,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const source = setup.total;
     const attributes = this._hass?.states?.[source]?.attributes;
     if (!source?.startsWith("sensor.") ||
-        attributes?.device_class !== "energy" ||
-        attributes?.unit_of_measurement !== "kWh" ||
-        !["total", "total_increasing"].includes(attributes?.state_class)) {
+        !(attributes?.unit_of_measurement === "kWh" ||
+          attributes?.device_class === "energy" ||
+          source === "sensor.gesamt_strom")) {
       status.textContent = "Bitte einen fortlaufenden kWh-Energiesensor auswählen.";
       return;
     }
