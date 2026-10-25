@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1C24DFA";
+const ATZE_TESTING_REVISION = "1361309";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9199,10 +9199,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ? this._formatted(outdoorIlluminanceEntity)
         : "";
 
-    const energyState = this._state(this._config.energy_total_entity);
-    const energyAvailable = Boolean(energyState &&
-      !["", "unknown", "unavailable"].includes(String(energyState.state || "").toLowerCase()) &&
-      Number.isFinite(Number(energyState.state)));
+    const powerState = this._state(this._config.power_entity);
+    const powerAvailable = Boolean(powerState &&
+      !["", "unknown", "unavailable"].includes(String(powerState.state || "").toLowerCase()) &&
+      Number.isFinite(Number.parseFloat(powerState.state)));
 
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
@@ -11220,12 +11220,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-            ${energyAvailable ? `
+            ${powerAvailable ? `
               <div class="status power" id="power-status" role="button" tabindex="0">
                 <ha-icon icon="mdi:flash"></ha-icon>
                 <div>
                   <div class="status-main">Strom</div>
-                  <div class="status-sub">${this._formatEnergyTotal()} · Gesamt</div>
+                  <div class="status-sub">${this._formatPower()} · Gesamt</div>
                 </div>
               </div>
             ` : ""}
