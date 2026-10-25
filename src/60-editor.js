@@ -1531,13 +1531,17 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         ? { new_entity_id: expected.entityId } : {}),
       name: expected.name,
     });
-    const after = await registry();
-    const updated = after.find(e => e.entity_id === expected.entityId);
-    if (!updated || updated.name !== expected.name ||
-        updated.platform !== "utility_meter") {
-      throw Error("Home Assistant hat die gewünschte Entitäts-ID oder den Namen nicht bestätigt.");
+    // Verify the actual registry ID (not merely the display name).
+    // The updated entry might take a moment to appear in subsequent lists.
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const after = await registry();
+      const updated = after.find(e => e.entity_id === expected.entityId);
+      if (updated?.platform === "utility_meter" && updated.name === expected.name)
+        return expected.entityId;
+      if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 250));
     }
-    return expected.entityId;
+    throw Error("Die endgültige Entitäts-ID " + expected.entityId +
+      " konnte im Entitätsregister nicht bestätigt werden.");
   }
 
   async _repairEnergyMeterNames(status) {
@@ -1585,6 +1589,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
   async _createEnergyMeters(status) {
     if (this._creatingEnergyMeters) return;
+    this._energySetupWarnings = [];
     const setup = { ...(this._config.energy_setup || {}) };
     const source = setup.total;
     const attributes = this._hass?.states?.[source]?.attributes;
@@ -1671,16 +1676,27 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             "Nicht erneut auf Anlegen klicken.";
           return;
         }
+        // Once Home Assistant has created a meter, always save its real ID.
+        // A naming failure must not cause the next click to create a duplicate.
+        let renameWarning = "";
         try {
           created = await this._normalizeEnergyMeter(created, expected, registry);
         } catch (renameError) {
-          status.textContent = "Helfer wurde als " + created +
-            " angelegt, aber die Entitäts-ID oder der Name konnte nicht korrigiert werden: " +
-            (renameError?.message || renameError) +
-            ". Bitte den Helfer prüfen und nicht erneut erstellen.";
-          return;
+          // Confirm whether the rename succeeded despite an incomplete response.
+          const after = await registry();
+          if (after.some(e => e.entity_id === expectedEntityId &&
+                e.platform === "utility_meter")) {
+            created = expectedEntityId;
+          } else {
+            renameWarning = names[key] + ": Entitäts-ID ist noch " + created +
+              " statt " + expectedEntityId + " (" +
+              (renameError?.message || renameError) + ").";
+          }
         }
         setup[key] = created;
+        if (renameWarning) {
+          this._energySetupWarnings = [...(this._energySetupWarnings || []), renameWarning];
+        }
         this._config = { ...this._config, energy_setup: { ...setup } };
         this.dispatchEvent(new CustomEvent("config-changed", {
           detail: { config: this._config }, bubbles: true, composed: true
@@ -1689,8 +1705,15 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       }
       // Refresh selectors once all three meters are linked.
       this._fireConfigChanged({ ...this._config, energy_setup: setup });
+      const currentStatus = this.shadowRoot.querySelector("#energy-setup-status");
+      if (currentStatus) currentStatus.textContent = this._energySetupWarnings.length
+        ? "Zähler erstellt, aber folgende IDs müssen noch korrigiert werden: " +
+          this._energySetupWarnings.join(" | ") +
+          " Nutze „Vorhandene Entitäts-IDs korrigieren“."
+        : "Alle fehlenden Zähler angelegt und mit ihren Entitäts-IDs verknüpft.";
     } catch (error) {
-      status.textContent = "Einrichtung abgebrochen: " + (error?.message || error) +
+      const currentStatus = this.shadowRoot.querySelector("#energy-setup-status") || status;
+      currentStatus.textContent = "Einrichtung abgebrochen: " + (error?.message || error) +
         ". Bitte Home Assistant → Geräte & Dienste → Helfer kontrollieren, " +
         "bevor du es erneut versuchst.";
       console.error("ATZE Strom: Utility-Meter-Einrichtung fehlgeschlagen", error);
