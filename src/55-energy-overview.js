@@ -8,7 +8,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._hass = null;
     this._backGesture = null;
     this._heroPinCleanup = null;
-    this._periodLockCleanup = null;
   }
 
   connectedCallback() {
@@ -146,8 +145,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this._periodLockCleanup?.();
-    this._periodLockCleanup = null;
     this._backGesture?.();
     this._backGesture = null;
     this._heroPinCleanup?.();
@@ -277,88 +274,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       (room ? roomLabels[room] + " · " : "") +
       (span === "year" ? "Jahr" : span === "month" ? "Monat" : "Tag");
     dialog.querySelector(".dialog-status").textContent = "";
-    dialog.querySelector(".dialog-input").value = "";
+    const display = dialog.querySelector(".dialog-input");
+    display.dataset.value = "";
+    display.textContent = "Wert in kWh";
+    display.classList.remove("has-value");
     this._updatePeriodDialog();
     if (!dialog.open) {
-      // WebKit otherwise auto-focuses the first editable field, opens the
-      // number keyboard and scrolls the underlying HA view on modal opening.
-      // Start on a non-editable control; keyboard only on an explicit tap.
+      // The in-dialog keypad never focuses an editable field, so iOS has no
+      // reason to open its keyboard and pan the Home Assistant viewport.
       dialog.showModal();
-      this._lockPeriodBackground(dialog);
       dialog.querySelector(".dialog-close")?.focus({ preventScroll: true });
     }
-  }
-
-  _lockPeriodBackground(dialog) {
-    this._periodLockCleanup?.();
-    // HA uses nested scroll containers inside shadow roots. Preserve their
-    // exact positions while iOS pans/resizes its visual viewport for a keyboard.
-    const positions = [];
-    const seen = new Set();
-    let node = this;
-    while (node) {
-      if (node instanceof HTMLElement && !seen.has(node) &&
-          node.scrollHeight > node.clientHeight + 1) {
-        positions.push({ node, top: node.scrollTop, left: node.scrollLeft });
-        seen.add(node);
-      }
-      node = node.parentNode || node.getRootNode?.()?.host || null;
-    }
-    const page = document.scrollingElement;
-    if (page && !seen.has(page)) {
-      positions.push({ node: page, top: page.scrollTop, left: page.scrollLeft });
-    }
-
-    const viewport = window.visualViewport;
-    const initialHeight = viewport?.height || window.innerHeight;
-    let keyboardVisible = false;
-    let frame = 0;
-    const stabilize = () => {
-      frame = 0;
-      if (!dialog.open) return;
-      const height = viewport?.height || window.innerHeight;
-      // Follow keyboard state, not every intermediate iOS viewport offset.
-      const nextKeyboardVisible = height < initialHeight - 140;
-      if (nextKeyboardVisible !== keyboardVisible) {
-        keyboardVisible = nextKeyboardVisible;
-        if (keyboardVisible) {
-          dialog.style.top = Math.min(180, Math.max(110, height / 2)) + "px";
-          dialog.style.maxHeight = Math.max(150, height - 24) + "px";
-        } else {
-          dialog.style.removeProperty("top");
-          dialog.style.removeProperty("max-height");
-        }
-      }
-      for (const item of positions) {
-        if (item.node.scrollTop !== item.top) item.node.scrollTop = item.top;
-        if (item.node.scrollLeft !== item.left) item.node.scrollLeft = item.left;
-      }
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(stabilize);
-    };
-    const owner = this;
-    viewport?.addEventListener("resize", schedule);
-    window.addEventListener("resize", schedule);
-    window.addEventListener("scroll", schedule, true);
-    dialog.addEventListener("close", cleanup, { once: true });
-    function cleanup() {
-      dialog.removeEventListener("close", cleanup);
-      viewport?.removeEventListener("resize", schedule);
-      window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule, true);
-      if (frame) cancelAnimationFrame(frame);
-      dialog.style.removeProperty("top");
-      dialog.style.removeProperty("left");
-      dialog.style.removeProperty("max-height");
-      for (const item of positions) {
-        item.node.scrollTop = item.top;
-        item.node.scrollLeft = item.left;
-      }
-      if (owner._periodLockCleanup === cleanup) owner._periodLockCleanup = null;
-    }
-    this._periodLockCleanup = cleanup;
-    schedule();
   }
 
   _updatePeriodDialog() {
@@ -376,6 +302,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       !(nativeMeter || this._config[period + "_script"]);
     dialog.querySelector(".dialog-set").hidden = !nativeMeter;
     dialog.querySelector(".dialog-input").hidden = !nativeMeter;
+    dialog.querySelector(".dialog-keypad").hidden = !nativeMeter;
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
@@ -460,8 +387,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   }
 
   _render() {
-    this._periodLockCleanup?.();
-    this._periodLockCleanup = null;
     this._heroPinCleanup?.();
     this._heroPinCleanup = null;
     const cards = [
@@ -508,7 +433,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-section .tile.room-total { grid-column:1/-1; min-height:108px }
         .room-section .tile.period { min-height:54px }
         .room-section .room-power { display:flex; }
-        .dialog-reset[hidden], .dialog-set[hidden], .dialog-input[hidden] { display:none }
+        .dialog-reset[hidden], .dialog-set[hidden], .dialog-input[hidden],
+        .dialog-keypad[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .room-power { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
         .room-power .unit { font-size:11px }
@@ -532,19 +458,18 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
         .period-dialog { box-sizing:border-box; width:min(340px,calc(100vw - 36px));
           position:fixed; inset:auto; left:50%; top:50%; transform:translate(-50%,-50%);
-          transition:top .24s ease-out;
-          max-height:calc(100dvh - 60px); overflow:auto; margin:0; padding:22px;
+          max-height:calc(100dvh - 44px); overflow:auto; margin:0; padding:18px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:20px;
           background:var(--card-background-color,#202126); color:var(--primary-text-color);
           box-shadow:0 18px 50px rgba(0,0,0,.45) }
         .period-dialog::backdrop { background:rgba(0,0,0,.62); backdrop-filter:blur(4px) }
-        .dialog-title { font-size:18px; font-weight:650; margin-bottom:18px }
+        .dialog-title { font-size:18px; font-weight:650; margin-bottom:12px }
         .dialog-close { position:absolute; top:14px; right:14px; width:32px; height:32px;
           display:flex; align-items:center; justify-content:center; border:0;
           border-radius:50%; background:rgba(118,118,128,.22);
           color:var(--primary-text-color); cursor:pointer }
         .dialog-close ha-icon { --mdc-icon-size:19px }
-        .dialog-value-line { text-align:center; margin-bottom:20px; font-weight:700; font-size:32px }
+        .dialog-value-line { text-align:center; margin-bottom:12px; font-weight:700; font-size:32px }
         .dialog-meta { display:flex; align-items:center; justify-content:space-between; gap:10px;
           font-size:12px; color:var(--secondary-text-color) }
         .dialog-date { margin-top:5px; color:var(--primary-text-color); font-size:14px }
@@ -554,10 +479,19 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
         .dialog-reset ha-icon { --mdc-icon-size:18px }
         .dialog-reset:disabled { opacity:.45; cursor:wait }
-        .dialog-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px }
-        .dialog-input { box-sizing:border-box; flex:1; min-width:100px; padding:9px 10px;
-          border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:10px;
-          background:rgba(118,118,128,.18); color:var(--primary-text-color); font:inherit }
+        .dialog-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px }
+        .dialog-input { box-sizing:border-box; width:100%; padding:10px 12px;
+          border:1px solid var(--primary-color,#1683ff); border-radius:10px;
+          background:rgba(118,118,128,.18); color:var(--secondary-text-color); font:inherit;
+          font-size:20px; font-variant-numeric:tabular-nums; text-align:right }
+        .dialog-input.has-value { color:var(--primary-text-color) }
+        .dialog-keypad { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:7px; margin-top:10px }
+        .dialog-key { min-height:46px; border:1px solid rgba(255,255,255,.07);
+          border-radius:11px; background:rgba(118,118,128,.22); color:var(--primary-text-color);
+          font:inherit; font-size:23px; font-weight:550; cursor:pointer; touch-action:manipulation }
+        .dialog-key:active { background:rgba(118,118,128,.48) }
+        .dialog-key[aria-label="Letztes Zeichen löschen"] { font-size:20px }
         .dialog-set { padding:9px 12px; border-radius:10px; cursor:pointer;
           border:1px solid var(--home-card-border,rgba(255,255,255,.16));
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
@@ -588,8 +522,25 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         <div class="dialog-meta">
           <div><div>Zurückgesetzt am</div><div class="dialog-date"></div></div>
         </div>
+        <div class="dialog-entry">
+          <div class="dialog-input" role="textbox" aria-label="Neuer Zählerstand in kWh"
+            aria-readonly="true">Wert in kWh</div>
+          <div class="dialog-keypad" role="group" aria-label="Zahlentastatur">
+            <button class="dialog-key" type="button" data-key="1">1</button>
+            <button class="dialog-key" type="button" data-key="2">2</button>
+            <button class="dialog-key" type="button" data-key="3">3</button>
+            <button class="dialog-key" type="button" data-key="4">4</button>
+            <button class="dialog-key" type="button" data-key="5">5</button>
+            <button class="dialog-key" type="button" data-key="6">6</button>
+            <button class="dialog-key" type="button" data-key="7">7</button>
+            <button class="dialog-key" type="button" data-key="8">8</button>
+            <button class="dialog-key" type="button" data-key="9">9</button>
+            <button class="dialog-key" type="button" data-key=",">,</button>
+            <button class="dialog-key" type="button" data-key="0">0</button>
+            <button class="dialog-key" type="button" data-key="backspace" aria-label="Letztes Zeichen löschen">⌫</button>
+          </div>
+        </div>
         <div class="dialog-actions">
-          <input class="dialog-input" type="number" min="0" step="any" inputmode="decimal" aria-label="Neuer Zählerstand in kWh" placeholder="Wert in kWh">
           <button class="dialog-set" type="button">Wert setzen</button>
           <button class="dialog-reset" type="button"><ha-icon icon="mdi:restart"></ha-icon>Zurücksetzen</button>
         </div>
@@ -606,7 +557,25 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     });
     dialog.querySelector(".dialog-reset").addEventListener("click", () => this._calibrate(dialog.dataset.period, "0"));
     dialog.querySelector(".dialog-set").addEventListener("click", () =>
-      this._calibrate(dialog.dataset.period, dialog.querySelector(".dialog-input").value));
+      this._calibrate(dialog.dataset.period, dialog.querySelector(".dialog-input").dataset.value));
+    const display = dialog.querySelector(".dialog-input");
+    for (const key of dialog.querySelectorAll(".dialog-key")) {
+      key.addEventListener("click", () => {
+        const digit = key.dataset.key;
+        const current = display.dataset.value || "";
+        let next = current;
+        if (digit === "backspace") next = current.slice(0, -1);
+        else if (digit === ",") {
+          if (!current.includes(",")) next = (current || "0") + ",";
+        } else if (current.length < 14) {
+          next = current === "0" ? digit : current + digit;
+        }
+        display.dataset.value = next;
+        display.textContent = next ? next + " kWh" : "Wert in kWh";
+        display.classList.toggle("has-value", Boolean(next));
+        dialog.querySelector(".dialog-status").textContent = "";
+      });
+    }
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
