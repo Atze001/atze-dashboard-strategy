@@ -273,7 +273,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   async _reset(period) {
     const native = this._config.native_utility_meters &&
-      (["month", "day"].includes(period) || /^meter\\d+_(month|day)$/.test(period));
+      (["month", "day"].includes(period) || /^meter\d+_(month|day)$/.test(period));
     const entityId = this._config[period];
     const scriptId = this._config[period + "_script"];
     if (native && (!entityId || !this._hass?.states?.[entityId])) {
@@ -305,7 +305,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const valid = ["month", "day", "living_month", "living_day",
       "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day",
       "washer_month", "washer_day"];
-    if (!dialog || !(valid.includes(period) || /^meter\\d+_(month|day)$/.test(period))) return;
+    if (!dialog || !(valid.includes(period) || /^meter\d+_(month|day)$/.test(period))) return;
     dialog.dataset.period = period;
     const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche", washer: "Waschmaschine" };
     for (const definition of this._roomDefinitions()) roomLabels[definition.key] = definition.name;
@@ -329,7 +329,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     resetButton.hidden = !(this._config[period + "_script"] ||
       (this._config.native_utility_meters &&
         (["month", "day"].includes(period) ||
-          /^meter\\d+_(month|day)$/.test(period)) && this._config[period]));
+          /^meter\d+_(month|day)$/.test(period)) && this._config[period]));
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
