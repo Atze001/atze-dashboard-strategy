@@ -7354,7 +7354,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       icon: "mdi:lightning-bolt",
       // Match the room-navigation mode: with subviews enabled, Strom remains
       // accessible from its home tile but disappears from the top tabs.
-      subview: config.energy_view === false || config.single_room_navigation !== false,
+      subview: config.single_room_navigation !== false,
       cards: [energyCard],
     };
 
@@ -19392,12 +19392,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "maintenance_view",
                 "Wartung anzeigen",
                 "Batterie- und Wartungsansicht.",
-                true
-              )}
-              ${this._toggleHtml(
-                "energy_view",
-                "Strom-Reiter anzeigen",
-                "Strom als Reiter anzeigen, wenn Räume nicht als Unterseiten geöffnet werden. Die Strom-Kachel bleibt immer erreichbar.",
                 true
               )}
               ${this._toggleHtml(

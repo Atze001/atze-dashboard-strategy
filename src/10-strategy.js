@@ -326,7 +326,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       icon: "mdi:lightning-bolt",
       // Match the room-navigation mode: with subviews enabled, Strom remains
       // accessible from its home tile but disappears from the top tabs.
-      subview: config.energy_view === false || config.single_room_navigation !== false,
+      subview: config.single_room_navigation !== false,
       cards: [energyCard],
     };
 

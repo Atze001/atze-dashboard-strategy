@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B8B3238";
+const ATZE_TESTING_REVISION = "780F2FE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7351,7 +7351,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       icon: "mdi:lightning-bolt",
       // Match the room-navigation mode: with subviews enabled, Strom remains
       // accessible from its home tile but disappears from the top tabs.
-      subview: config.energy_view === false || config.single_room_navigation !== false,
+      subview: config.single_room_navigation !== false,
       cards: [energyCard],
     };
 
@@ -19389,12 +19389,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "maintenance_view",
                 "Wartung anzeigen",
                 "Batterie- und Wartungsansicht.",
-                true
-              )}
-              ${this._toggleHtml(
-                "energy_view",
-                "Strom-Reiter anzeigen",
-                "Strom als Reiter anzeigen, wenn Räume nicht als Unterseiten geöffnet werden. Die Strom-Kachel bleibt immer erreichbar.",
                 true
               )}
               ${this._toggleHtml(

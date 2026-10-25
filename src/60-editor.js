@@ -2507,12 +2507,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 true
               )}
               ${this._toggleHtml(
-                "energy_view",
-                "Strom-Reiter anzeigen",
-                "Strom als Reiter anzeigen, wenn Räume nicht als Unterseiten geöffnet werden. Die Strom-Kachel bleibt immer erreichbar.",
-                true
-              )}
-              ${this._toggleHtml(
                 "single_room_navigation",
                 "Räume als Unterseiten",
                 "Raumansichten als Subviews öffnen.",
