@@ -7352,7 +7352,9 @@ class AtzeDashboardStrategy extends HTMLElement {
       title: "Strom",
       path: energyPath,
       icon: "mdi:lightning-bolt",
-      subview: true,
+      // Keep the Strom route reachable from the home tile even when its
+      // navigation tab is hidden in the dashboard settings.
+      subview: config.energy_view === false,
       cards: [energyCard],
     };
 
@@ -19390,6 +19392,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "maintenance_view",
                 "Wartung anzeigen",
                 "Batterie- und Wartungsansicht.",
+                true
+              )}
+              ${this._toggleHtml(
+                "energy_view",
+                "Strom-Reiter anzeigen",
+                "Strom oben in der Navigation anzeigen. Die Strom-Kachel bleibt auch bei ausgeblendetem Reiter erreichbar.",
                 true
               )}
               ${this._toggleHtml(

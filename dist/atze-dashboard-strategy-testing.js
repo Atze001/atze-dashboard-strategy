@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "46DE45E";
+const ATZE_TESTING_REVISION = "06D6036";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7349,7 +7349,9 @@ class AtzeDashboardStrategy extends HTMLElement {
       title: "Strom",
       path: energyPath,
       icon: "mdi:lightning-bolt",
-      subview: true,
+      // Keep the Strom route reachable from the home tile even when its
+      // navigation tab is hidden in the dashboard settings.
+      subview: config.energy_view === false,
       cards: [energyCard],
     };
 
@@ -19387,6 +19389,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 "maintenance_view",
                 "Wartung anzeigen",
                 "Batterie- und Wartungsansicht.",
+                true
+              )}
+              ${this._toggleHtml(
+                "energy_view",
+                "Strom-Reiter anzeigen",
+                "Strom oben in der Navigation anzeigen. Die Strom-Kachel bleibt auch bei ausgeblendetem Reiter erreichbar.",
                 true
               )}
               ${this._toggleHtml(
