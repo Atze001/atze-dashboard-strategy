@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "5942F79";
+const ATZE_TESTING_REVISION = "8B65A0D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16270,6 +16270,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._hass = null;
     this._backGesture = null;
     this._heroPinCleanup = null;
+    this._periodLockCleanup = null;
   }
 
   connectedCallback() {
@@ -16407,6 +16408,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._periodLockCleanup?.();
+    this._periodLockCleanup = null;
     this._backGesture?.();
     this._backGesture = null;
     this._heroPinCleanup?.();
@@ -16543,8 +16546,74 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       // number keyboard and scrolls the underlying HA view on modal opening.
       // Start on a non-editable control; keyboard only on an explicit tap.
       dialog.showModal();
+      this._lockPeriodBackground(dialog);
       dialog.querySelector(".dialog-close")?.focus({ preventScroll: true });
     }
+  }
+
+  _lockPeriodBackground(dialog) {
+    this._periodLockCleanup?.();
+    // HA uses nested scroll containers inside shadow roots. Preserve their
+    // exact positions while iOS pans/resizes its visual viewport for a keyboard.
+    const positions = [];
+    const seen = new Set();
+    let node = this;
+    while (node) {
+      if (node instanceof HTMLElement && !seen.has(node) &&
+          node.scrollHeight > node.clientHeight + 1) {
+        positions.push({ node, top: node.scrollTop, left: node.scrollLeft });
+        seen.add(node);
+      }
+      node = node.parentNode || node.getRootNode?.()?.host || null;
+    }
+    const page = document.scrollingElement;
+    if (page && !seen.has(page)) {
+      positions.push({ node: page, top: page.scrollTop, left: page.scrollLeft });
+    }
+
+    let frame = 0;
+    const stabilize = () => {
+      frame = 0;
+      if (!dialog.open) return;
+      const viewport = window.visualViewport;
+      const width = viewport?.width || window.innerWidth;
+      const height = viewport?.height || window.innerHeight;
+      dialog.style.left = ((viewport?.offsetLeft || 0) + width / 2) + "px";
+      dialog.style.top = ((viewport?.offsetTop || 0) + height / 2) + "px";
+      dialog.style.maxHeight = Math.max(150, height - 24) + "px";
+      for (const item of positions) {
+        if (item.node.scrollTop !== item.top) item.node.scrollTop = item.top;
+        if (item.node.scrollLeft !== item.left) item.node.scrollLeft = item.left;
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(stabilize);
+    };
+    const viewport = window.visualViewport;
+    const owner = this;
+    viewport?.addEventListener("resize", schedule);
+    viewport?.addEventListener("scroll", schedule);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    dialog.addEventListener("close", cleanup, { once: true });
+    function cleanup() {
+      dialog.removeEventListener("close", cleanup);
+      viewport?.removeEventListener("resize", schedule);
+      viewport?.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      if (frame) cancelAnimationFrame(frame);
+      dialog.style.removeProperty("top");
+      dialog.style.removeProperty("left");
+      dialog.style.removeProperty("max-height");
+      for (const item of positions) {
+        item.node.scrollTop = item.top;
+        item.node.scrollLeft = item.left;
+      }
+      if (owner._periodLockCleanup === cleanup) owner._periodLockCleanup = null;
+    }
+    this._periodLockCleanup = cleanup;
+    schedule();
   }
 
   _updatePeriodDialog() {
@@ -16646,6 +16715,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   }
 
   _render() {
+    this._periodLockCleanup?.();
+    this._periodLockCleanup = null;
     this._heroPinCleanup?.();
     this._heroPinCleanup = null;
     const cards = [
@@ -16715,7 +16786,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .summary-value { font-size:clamp(28px,7vw,40px); font-weight:700; line-height:1.15;
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
         .period-dialog { box-sizing:border-box; width:min(340px,calc(100vw - 36px));
-          max-height:calc(100dvh - 60px); overflow:auto; margin:auto; padding:22px;
+          position:fixed; inset:auto; left:50%; top:50%; transform:translate(-50%,-50%);
+          max-height:calc(100dvh - 60px); overflow:auto; margin:0; padding:22px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:20px;
           background:var(--card-background-color,#202126); color:var(--primary-text-color);
           box-shadow:0 18px 50px rgba(0,0,0,.45) }
