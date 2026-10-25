@@ -16252,7 +16252,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const goBack = () => {
       const target = String(this._config?.return_path || "").trim();
       if (target) {
-        const url = target.startsWith("/") ? target : "/" + target;
+        const current = window.location.pathname.split("/").filter(Boolean);
+        const prefix = current.slice(0, -1).join("/");
+        const url = target.startsWith("/") ? target
+          : "/" + (prefix ? prefix + "/" : "") + target;
         window.history.pushState(null, "", url);
         window.dispatchEvent(new Event("location-changed"));
       } else if (window.history.length > 1) {
@@ -16426,6 +16429,35 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }).format(date);
   }
 
+  _roomDefinitions() {
+    const configured = Array.isArray(this._config.individual_meters)
+      ? this._config.individual_meters.filter(item => item?.total) : [];
+    if (configured.length) {
+      return configured.map((item, index) => ({
+        key: "meter" + index,
+        name: item.name ||
+          this._hass?.states?.[item.total]?.attributes?.friendly_name ||
+          item.total.replace(/^sensor\./, "").replaceAll("_", " "),
+        icon: "mdi:lightning-bolt",
+        tone: ["#64b5f6", "#ae86ed", "#30d158", "#26b9cc"][index % 4],
+        energy: item.total, year: item.year, month: item.month,
+        day: item.day, power: item.power || "",
+      }));
+    }
+    return [
+      { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
+      { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
+      { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
+      { key: "washer", name: "Waschmaschine", icon: "mdi:washing-machine", tone: "#26b9cc" },
+    ];
+  }
+
+  _roomEntity(room, key) {
+    return room.energy !== undefined
+      ? (room[key] || "")
+      : this._config[room.key + "_" + key];
+  }
+
   _details(entityId) {
     if (!entityId) return;
     this.dispatchEvent(new CustomEvent("hass-more-info", {
@@ -16435,7 +16467,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   async _reset(period) {
     const native = this._config.native_utility_meters &&
-      ["month", "day"].includes(period);
+      (["month", "day"].includes(period) || /^meter\\d+_(month|day)$/.test(period));
     const entityId = this._config[period];
     const scriptId = this._config[period + "_script"];
     if (native && (!entityId || !this._hass?.states?.[entityId])) {
@@ -16467,9 +16499,10 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const valid = ["month", "day", "living_month", "living_day",
       "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day",
       "washer_month", "washer_day"];
-    if (!dialog || !valid.includes(period)) return;
+    if (!dialog || !(valid.includes(period) || /^meter\\d+_(month|day)$/.test(period))) return;
     dialog.dataset.period = period;
     const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche", washer: "Waschmaschine" };
+    for (const definition of this._roomDefinitions()) roomLabels[definition.key] = definition.name;
     const [room, span] = period.includes("_") ? period.split("_") : [null, period];
     dialog.querySelector(".dialog-title").textContent =
       (room ? roomLabels[room] + " · " : "") + (span === "month" ? "Monat" : "Tag");
@@ -16489,7 +16522,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     resetButton.dataset.reset = period;
     resetButton.hidden = !(this._config[period + "_script"] ||
       (this._config.native_utility_meters &&
-        ["month", "day"].includes(period) && this._config[period]));
+        (["month", "day"].includes(period) ||
+          /^meter\\d+_(month|day)$/.test(period)) && this._config[period]));
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
@@ -16740,13 +16774,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       });
       grid.appendChild(tile);
     }
-    const rooms = [
-      { key: "living", name: "Wohnzimmer", icon: "mdi:sofa-outline", tone: "#64b5f6" },
-      { key: "bedroom", name: "Schlafzimmer", icon: "mdi:bed-outline", tone: "#ae86ed" },
-      { key: "kitchen", name: "Küche", icon: "mdi:stove", tone: "#30d158" },
-      { key: "washer", name: "Waschmaschine", icon: "mdi:washing-machine", tone: "#26b9cc" },
-    ];
+    const rooms = this._roomDefinitions();
     for (const room of rooms) {
+      if (room.energy !== undefined) {
+        for (const metric of ["energy", "year", "month", "day", "power"]) {
+          this._config[room.key + "_" + metric] = room[metric] || "";
+        }
+      }
       const section = document.createElement("section");
       section.className = "room-section";
       section.dataset.roomSection = room.key;
@@ -16823,14 +16857,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       tile.querySelector(".number").textContent = this._value(this._config[period]);
     }
     this._updatePeriodDialog();
-    for (const room of ["living", "bedroom", "kitchen", "washer"]) {
-      const tile = this.shadowRoot.querySelector('[data-room="' + room + '"]');
+    for (const room of this._roomDefinitions()) {
+      const tile = this.shadowRoot.querySelector('[data-room="' + room.key + '"]');
       if (!tile) continue;
-      tile.querySelector(".room-energy").textContent = this._value(this._config[room + "_energy"]);
-      tile.querySelector(".room-year").textContent = this._value(this._config[room + "_year"]);
-      tile.querySelector(".room-watts").textContent = this._value(this._config[room + "_power"]);
+      tile.closest(".room-section").querySelector(".room-heading span").textContent = room.name;
+      tile.querySelector(".room-energy").textContent = this._value(this._roomEntity(room, "energy"));
+      tile.querySelector(".room-year").textContent = this._value(this._roomEntity(room, "year"));
+      const watts = tile.querySelector(".room-power");
+      watts.hidden = !this._roomEntity(room, "power");
+      tile.querySelector(".room-watts").textContent = this._value(this._roomEntity(room, "power"));
       for (const period of ["month", "day"]) {
-        const key = room + "_" + period;
+        const key = room.key + "_" + period;
         const periodTile = this.shadowRoot.querySelector('[data-room-period="' + key + '"]');
         periodTile.querySelector(".number").textContent =
           this._config[key] ? this._value(this._config[key]) : "–";
