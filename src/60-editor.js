@@ -1407,7 +1407,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const options = Object.entries(this._hass?.states || {})
       .filter(([id, state]) => id.startsWith("sensor.") &&
         state.attributes?.device_class === "energy" &&
-        ["kWh", "Wh"].includes(state.attributes?.unit_of_measurement) &&
+        ["kWh"].includes(state.attributes?.unit_of_measurement) &&
         ["total", "total_increasing"].includes(state.attributes?.state_class))
       .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
         .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
@@ -1426,7 +1426,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const options = Object.entries(states)
       .filter(([id, state]) => id.startsWith("sensor.") &&
         state.attributes?.device_class === "energy" &&
-        ["kWh", "Wh"].includes(state.attributes?.unit_of_measurement))
+        ["kWh"].includes(state.attributes?.unit_of_measurement))
       .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
         .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
     return '<option value="">Noch nicht zugeordnet</option>' +
@@ -1454,7 +1454,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       ["month", "Monat · nur manuell"], ["day", "Tag · nur manuell"]];
     return `
       <div class="editor-section-help">
-        Wähle einen fortlaufenden Energiesensor (kWh oder Wh). Vorhandene Zähler
+        Wähle einen fortlaufenden Energiesensor (kWh). Vorhandene Zähler
         können direkt zugeordnet werden. Fehlende Utility-Meter-Helfer lassen
         sich anschließend automatisch anlegen. Jahr setzt sich am 1. Januar
         zurück; Monat und Tag nur manuell. Bestehende Zähler werden nie überschrieben.
@@ -1502,7 +1502,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const source = setup.total;
     const attributes = this._hass?.states?.[source]?.attributes;
     if (!source || attributes?.device_class !== "energy" ||
-        !["kWh", "Wh"].includes(attributes?.unit_of_measurement) ||
+        !["kWh"].includes(attributes?.unit_of_measurement) ||
         !["total", "total_increasing"].includes(attributes?.state_class)) {
       status.textContent = "Bitte zuerst einen gültigen fortlaufenden Energie-Quellsensor auswählen.";
       return;
