@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8483747";
+const ATZE_TESTING_REVISION = "E136FF8";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7320,10 +7320,39 @@ class AtzeDashboardStrategy extends HTMLElement {
           );
 
     const customPageViews = buildCustomPageViews(config);
+    // The energy overview is a native Strategy page, independent of a
+    // separately maintained Lovelace dashboard.
+    const energyPath = "strom";
+    const energySetup = config.energy_setup || {};
+    const energyCard = {
+      type: ATZE_TESTING_BUILD
+        ? "custom:atze-energy-overview-card-testing"
+        : "custom:atze-energy-overview-card",
+      total: energySetup.total || "",
+      year: energySetup.year || "",
+      month: energySetup.month || "",
+      day: energySetup.day || "",
+      power: config.home_power_entity || "",
+      month_script: "",
+      day_script: "",
+      month_reset: "",
+      day_reset: "",
+      native_utility_meters: true,
+      return_path: config.home_path || "home",
+    };
+    const energyView = {
+      title: "Strom",
+      path: energyPath,
+      icon: "mdi:lightning-bolt",
+      subview: true,
+      cards: [energyCard],
+    };
 
     const views =
       config.home_view === false
         ? [
+            energyView,
+            energyView,
             ...customPageViews,
             ...roomViews,
           ]
@@ -7333,7 +7362,7 @@ class AtzeDashboardStrategy extends HTMLElement {
               filteredAreas,
               entitiesByArea,
               usableEntities,
-              { ...config, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
+              { ...config, energy_path: energyPath, security_popup_card: securityView?.cards?.[0] || null, battery_popup_card: maintenanceView?.cards?.[0] || null },
               popupMap,
               areaById,
               securityEntityIds,
