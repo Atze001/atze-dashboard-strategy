@@ -8856,6 +8856,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     return badges.filter((badge) => badge.active);
   }
 
+  _formatEnergyTotal() {
+    const entityId = this._config.energy_total_entity;
+    const state = this._state(entityId);
+    const value = Number(state?.state);
+    if (!Number.isFinite(value) || ["unavailable", "unknown"].includes(state?.state)) return "—";
+    const unit = state.attributes?.unit_of_measurement || "kWh";
+    return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(value) + " " + unit;
+  }
+
   _formatPower() {
     const primary = this._state(this._config.power_entity);
 
@@ -9188,16 +9197,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ? this._formatted(outdoorIlluminanceEntity)
         : "";
 
-    const powerState = this._state(this._config.power_entity);
-    const powerAvailable = Boolean(
-      powerState &&
-      !["", "unknown", "unavailable"].includes(
-        String(powerState.state || "").toLowerCase()
-      ) &&
-      Number.isFinite(
-        Number.parseFloat(powerState.state)
-      )
-    );
+    const energyState = this._state(this._config.energy_total_entity);
+    const energyAvailable = Boolean(energyState &&
+      !["", "unknown", "unavailable"].includes(String(energyState.state || "").toLowerCase()) &&
+      Number.isFinite(Number(energyState.state)));
 
     const alarmState = this._state(this._config.alarm_entity);
     const alarmText = this._alarmText(alarmState);
@@ -11215,12 +11218,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
               </div>
             </div>
 
-            ${powerAvailable ? `
+            ${energyAvailable ? `
               <div class="status power" id="power-status" role="button" tabindex="0">
                 <ha-icon icon="mdi:flash"></ha-icon>
                 <div>
                   <div class="status-main">Strom</div>
-                  <div class="status-sub">${this._formatPower()} · Gesamt</div>
+                  <div class="status-sub">${this._formatEnergyTotal()} · Gesamt</div>
                 </div>
               </div>
             ` : ""}
@@ -11960,11 +11963,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       if (event.target?.id === "presence-history-backdrop") this._closePresenceHistory();
     });
     const powerStatus = this.shadowRoot.querySelector("#power-status");
-    powerStatus?.addEventListener("click", () => this._openPowerPopup());
+    powerStatus?.addEventListener("click", () => this._navigate(this._config.energy_path || "strom"));
     powerStatus?.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        this._openPowerPopup();
+        this._navigate(this._config.energy_path || "strom");
       }
     });
     this.shadowRoot.querySelector("#power-popup-backdrop")?.addEventListener("click", (event) => {
