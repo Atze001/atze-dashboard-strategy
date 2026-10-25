@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "BFB8C72";
+const ATZE_TESTING_REVISION = "E91123C";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16466,47 +16466,59 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }));
   }
 
-  async _reset(period) {
+  async _calibrate(period, rawValue) {
     const native = this._config.native_utility_meters &&
-      (["month", "day"].includes(period) || /^meter\d+_(month|day)$/.test(period));
+      (["year", "month", "day"].includes(period) || /^meter\d+_(year|month|day)$/.test(period));
     const entityId = this._config[period];
     const scriptId = this._config[period + "_script"];
+    const value = Number(String(rawValue).replace(",", "."));
+    const status = this.shadowRoot.querySelector(".dialog-status");
+    if (String(rawValue).trim() === "" || !Number.isFinite(value) || value < 0) {
+      status.textContent = "Bitte einen gültigen kWh-Wert ab 0 eingeben.";
+      return;
+    }
     if (native && (!entityId || !this._hass?.states?.[entityId])) {
       window.alert("Utility-Meter-Entität nicht verfügbar.");
       return;
     }
-    if (!native && !scriptId) return;
-    const title = period.endsWith("month") ? "Monats" : "Tages";
-    if (!window.confirm(title + "verbrauch wirklich auf 0 kWh zurücksetzen?")) return;
-    const button = this.shadowRoot.querySelector(".dialog-reset");
-    if (button) button.disabled = true;
+    if (!native && !(scriptId && value === 0)) return;
+    const name = this.shadowRoot.querySelector(".dialog-title").textContent;
+    if (!window.confirm(name + " wirklich auf " + value + " kWh setzen?")) return;
+    const buttons = [...this.shadowRoot.querySelectorAll(".dialog-reset, .dialog-set")];
+    buttons.forEach(button => { button.disabled = true; });
+    status.textContent = "Wert wird übertragen …";
     try {
       if (native) {
         await this._hass.callService("utility_meter", "calibrate",
-          { value: 0 }, { entity_id: entityId });
+          { value }, { entity_id: entityId });
       } else {
         await this._hass.callService("script", "turn_on", { entity_id: scriptId });
       }
+      status.textContent = "Wert erfolgreich auf " + value + " kWh gesetzt.";
     } catch (error) {
-      console.error("ATZE Strom: Reset fehlgeschlagen", error);
-      window.alert("Zurücksetzen fehlgeschlagen. Bitte Home Assistant prüfen.");
+      console.error("ATZE Strom: Kalibrierung fehlgeschlagen", error);
+      status.textContent = "Änderung fehlgeschlagen. Bitte Home Assistant prüfen.";
     } finally {
-      if (button) button.disabled = false;
+      buttons.forEach(button => { button.disabled = false; });
     }
   }
 
   _openPeriod(period) {
     const dialog = this.shadowRoot.querySelector(".period-dialog");
-    const valid = ["month", "day", "living_month", "living_day",
+    const valid = ["year", "month", "day", "living_year", "living_month", "living_day",
+      "bedroom_year", "kitchen_year", "washer_year",
       "bedroom_month", "bedroom_day", "kitchen_month", "kitchen_day",
       "washer_month", "washer_day"];
-    if (!dialog || !(valid.includes(period) || /^meter\d+_(month|day)$/.test(period))) return;
+    if (!dialog || !(valid.includes(period) || /^meter\d+_(year|month|day)$/.test(period))) return;
     dialog.dataset.period = period;
     const roomLabels = { living: "Wohnzimmer", bedroom: "Schlafzimmer", kitchen: "Küche", washer: "Waschmaschine" };
     for (const definition of this._roomDefinitions()) roomLabels[definition.key] = definition.name;
     const [room, span] = period.includes("_") ? period.split("_") : [null, period];
     dialog.querySelector(".dialog-title").textContent =
-      (room ? roomLabels[room] + " · " : "") + (span === "month" ? "Monat" : "Tag");
+      (room ? roomLabels[room] + " · " : "") +
+      (span === "year" ? "Jahr" : span === "month" ? "Monat" : "Tag");
+    dialog.querySelector(".dialog-status").textContent = "";
+    dialog.querySelector(".dialog-input").value = "";
     this._updatePeriodDialog();
     if (!dialog.open) dialog.showModal();
   }
@@ -16519,12 +16531,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-date").textContent = resetEntity
       ? this._resetLabel(resetEntity) : "Nicht eingerichtet";
     dialog.querySelector(".dialog-value").textContent = this._value(this._config[period]);
-    const resetButton = dialog.querySelector(".dialog-reset");
-    resetButton.dataset.reset = period;
-    resetButton.hidden = !(this._config[period + "_script"] ||
-      (this._config.native_utility_meters &&
-        (["month", "day"].includes(period) ||
-          /^meter\d+_(month|day)$/.test(period)) && this._config[period]));
+    const nativeMeter = Boolean(this._config.native_utility_meters &&
+        (["year", "month", "day"].includes(period) ||
+          /^meter\d+_(year|month|day)$/.test(period)) && this._config[period]);
+    dialog.querySelector(".dialog-reset").hidden =
+      !(nativeMeter || this._config[period + "_script"]);
+    dialog.querySelector(".dialog-set").hidden = !nativeMeter;
+    dialog.querySelector(".dialog-input").hidden = !nativeMeter;
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
@@ -16655,7 +16668,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         .room-section .tile.room-total { grid-column:1/-1; min-height:108px }
         .room-section .tile.period { min-height:54px }
         .room-section .room-power { display:flex; }
-        .dialog-reset[hidden] { display:none }
+        .dialog-reset[hidden], .dialog-set[hidden], .dialog-input[hidden] { display:none }
         .tile.room:focus-visible { outline:2px solid var(--primary-color); outline-offset:2px }
         .room-power { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums }
         .room-power .unit { font-size:11px }
@@ -16694,6 +16707,15 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
         .dialog-reset ha-icon { --mdc-icon-size:18px }
         .dialog-reset:disabled { opacity:.45; cursor:wait }
+        .dialog-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px }
+        .dialog-input { box-sizing:border-box; flex:1; min-width:100px; padding:9px 10px;
+          border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:10px;
+          background:rgba(118,118,128,.18); color:var(--primary-text-color); font:inherit }
+        .dialog-set { padding:9px 12px; border-radius:10px; cursor:pointer;
+          border:1px solid var(--home-card-border,rgba(255,255,255,.16));
+          background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
+        .dialog-set:disabled { opacity:.45; cursor:wait }
+        .dialog-status { min-height:16px; margin-top:10px; font-size:12px; color:var(--secondary-text-color) }
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
@@ -16717,8 +16739,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         <div class="dialog-value-line"><span class="dialog-value"></span> <span class="unit">kWh</span></div>
         <div class="dialog-meta">
           <div><div>Zurückgesetzt am</div><div class="dialog-date"></div></div>
+        </div>
+        <div class="dialog-actions">
+          <input class="dialog-input" type="number" min="0" step="any" inputmode="decimal" aria-label="Neuer Zählerstand in kWh" placeholder="Wert in kWh">
+          <button class="dialog-set" type="button">Wert setzen</button>
           <button class="dialog-reset" type="button"><ha-icon icon="mdi:restart"></ha-icon>Zurücksetzen</button>
         </div>
+        <div class="dialog-status" role="status" aria-live="polite"></div>
       </dialog>`;
     const dialog = this.shadowRoot.querySelector(".period-dialog");
     dialog.addEventListener("click", (event) => {
@@ -16728,7 +16755,9 @@ class AtzeEnergyOverviewCard extends HTMLElement {
             event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
       }
     });
-    dialog.querySelector(".dialog-reset").addEventListener("click", () => this._reset(dialog.dataset.period));
+    dialog.querySelector(".dialog-reset").addEventListener("click", () => this._calibrate(dialog.dataset.period, "0"));
+    dialog.querySelector(".dialog-set").addEventListener("click", () =>
+      this._calibrate(dialog.dataset.period, dialog.querySelector(".dialog-input").value));
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
@@ -16755,7 +16784,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     }
     for (const period of ["total", "year"]) {
       const detail = this.shadowRoot.querySelector('[data-detail="' + period + '"]');
-      const open = () => this._details(this._config[period]);
+      const open = () => period === "year"
+        ? this._openPeriod("year") : this._details(this._config[period]);
       detail.addEventListener("click", open);
       detail.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -16817,7 +16847,9 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       const total = section.querySelector(".room-total");
       for (const metric of ["energy", "year"]) {
         const detail = total.querySelector('[data-room-detail="' + metric + '"]');
-        const open = () => this._details(this._config[room.key + "_" + metric]);
+        const open = () => metric === "year"
+          ? this._openPeriod(room.key + "_year")
+          : this._details(this._config[room.key + "_" + metric]);
         detail.addEventListener("click", open);
         detail.addEventListener("keydown", event => {
           if (event.key === "Enter" || event.key === " ") {
@@ -18414,26 +18446,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen (Jahr / Monat / Tag)</button>
       </div>
       <div class="editor-section-help energy-setup-status" role="status">
-        Nur neue Helfer werden angelegt. Ein Vorgabewert kann nach der
-        Zuordnung unten gesetzt werden.
+        Nur neue Helfer werden angelegt. Werte lassen sich anschließend
+        direkt im jeweiligen Jahres-, Monats- oder Tages-Popup setzen oder zurücksetzen.
       </div>
-      ${fields.map(([key, title]) => `
-        <label class="primary-field"><span>${title.split(" · ")[0]} · Vorgabewert (kWh)</span>
-          <span style="display:flex;gap:8px;align-items:center">
-            <input class="energy-calibration-value" data-key="${key}"${scope}
-              type="number" step="any" min="0" placeholder="z. B. 0"
-              style="min-width:0;flex:1" />
-            <button class="energy-calibrate" data-key="${key}"${scope} type="button"
-              ${!setup[key] ? "disabled" : ""}>Setzen</button>
-            ${key !== "year" ? `<button class="energy-reset" data-key="${key}"${scope}
-              type="button" ${!setup[key] ? "disabled" : ""}>Reset</button>` : ""}
-          </span>
-        </label>`).join("")}
-      <div class="editor-section-help">
-        Kalibrieren setzt den gewählten Zähler auf den eingegebenen Wert.
-        Reset setzt Monat oder Tag nach Bestätigung auf 0 kWh.
-        Die Zähler werden in Home Assistant gespeichert.
-      </div>`;
+      `;
   }
 
   async _createEnergyMeters(status, individualIndex = null) {
@@ -18564,27 +18580,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._creatingEnergyMeters = false;
       if (button?.isConnected) button.disabled = false;
     }
-  }
-
-  async _calibrateEnergyMeter(key, value, status, individualIndex = null) {
-    const individual = Number.isInteger(individualIndex) && individualIndex >= 0
-      ? this._config.energy_individual?.[individualIndex] : null;
-    const entityId = (individual || this._config.energy_setup)?.[key];
-    const number = Number(String(value).replace(",", "."));
-    if (!entityId || !this._hass?.states?.[entityId]) {
-      status.textContent = "Zähler nicht verfügbar oder noch nicht zugeordnet.";
-      return;
-    }
-    if (String(value).trim() === "" || !Number.isFinite(number) || number < 0) {
-      status.textContent = "Bitte einen gültigen, nichtnegativen kWh-Wert eingeben.";
-      return;
-    }
-    if (!window.confirm(entityId + " wirklich auf " + number + " setzen?")) return;
-    try {
-      await this._hass.callService("utility_meter", "calibrate",
-        { value: number }, { entity_id: entityId });
-      status.textContent = entityId + " auf " + number + " gesetzt.";
-    } catch (error) { status.textContent = "Kalibrierung fehlgeschlagen: " + error; }
   }
 
   _render() {
@@ -19960,22 +19955,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       button.addEventListener("click", () => this._createEnergyMeters(energyStatusFor(button),
         button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
     }
-    for (const button of this.shadowRoot.querySelectorAll(".energy-calibrate")) {
-      button.addEventListener("click", () => {
-        const holder = button.closest(".energy-individual-entry, .editor-section-body");
-        const input = [...holder.querySelectorAll(".energy-calibration-value")]
-          .find(item => item.dataset.key === button.dataset.key);
-        this._calibrateEnergyMeter(button.dataset.key, input?.value || "",
-          energyStatusFor(button),
-          button.hasAttribute("data-index") ? Number(button.dataset.index) : null);
-      });
-    }
-    for (const button of this.shadowRoot.querySelectorAll(".energy-reset")) {
-      button.addEventListener("click", () =>
-        this._calibrateEnergyMeter(button.dataset.key, "0", energyStatusFor(button),
-          button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
-    }
-
     // Build expensive Home Assistant selectors only when a room is opened.
     const initialisePrimaryArea = panel => {
       if (!panel.open || !panel.isConnected) return;
