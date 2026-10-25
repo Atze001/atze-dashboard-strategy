@@ -315,6 +315,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       month_reset: "",
       day_reset: "",
       native_utility_meters: true,
+      individual_meters: (config.energy_individual || []).filter(item => item?.total),
       return_path: config.home_path || "home",
     };
     const energyView = {
@@ -328,7 +329,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     const views =
       config.home_view === false
         ? [
-            energyView,
             energyView,
             ...customPageViews,
             ...roomViews,
@@ -347,6 +347,7 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
+            energyView,
             ...customPageViews,
             ...roomViews,
           ];
