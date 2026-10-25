@@ -1515,26 +1515,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen (Jahr / Monat / Tag)</button>
       </div>
       <div class="editor-section-help energy-setup-status" role="status">
-        Nur neue Helfer werden angelegt. Ein Vorgabewert kann nach der
-        Zuordnung unten gesetzt werden.
+        Nur neue Helfer werden angelegt. Werte lassen sich anschließend
+        direkt im jeweiligen Jahres-, Monats- oder Tages-Popup setzen oder zurücksetzen.
       </div>
-      ${fields.map(([key, title]) => `
-        <label class="primary-field"><span>${title.split(" · ")[0]} · Vorgabewert (kWh)</span>
-          <span style="display:flex;gap:8px;align-items:center">
-            <input class="energy-calibration-value" data-key="${key}"${scope}
-              type="number" step="any" min="0" placeholder="z. B. 0"
-              style="min-width:0;flex:1" />
-            <button class="energy-calibrate" data-key="${key}"${scope} type="button"
-              ${!setup[key] ? "disabled" : ""}>Setzen</button>
-            ${key !== "year" ? `<button class="energy-reset" data-key="${key}"${scope}
-              type="button" ${!setup[key] ? "disabled" : ""}>Reset</button>` : ""}
-          </span>
-        </label>`).join("")}
-      <div class="editor-section-help">
-        Kalibrieren setzt den gewählten Zähler auf den eingegebenen Wert.
-        Reset setzt Monat oder Tag nach Bestätigung auf 0 kWh.
-        Die Zähler werden in Home Assistant gespeichert.
-      </div>`;
+      `;
   }
 
   async _createEnergyMeters(status, individualIndex = null) {
@@ -1665,27 +1649,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._creatingEnergyMeters = false;
       if (button?.isConnected) button.disabled = false;
     }
-  }
-
-  async _calibrateEnergyMeter(key, value, status, individualIndex = null) {
-    const individual = Number.isInteger(individualIndex) && individualIndex >= 0
-      ? this._config.energy_individual?.[individualIndex] : null;
-    const entityId = (individual || this._config.energy_setup)?.[key];
-    const number = Number(String(value).replace(",", "."));
-    if (!entityId || !this._hass?.states?.[entityId]) {
-      status.textContent = "Zähler nicht verfügbar oder noch nicht zugeordnet.";
-      return;
-    }
-    if (String(value).trim() === "" || !Number.isFinite(number) || number < 0) {
-      status.textContent = "Bitte einen gültigen, nichtnegativen kWh-Wert eingeben.";
-      return;
-    }
-    if (!window.confirm(entityId + " wirklich auf " + number + " setzen?")) return;
-    try {
-      await this._hass.callService("utility_meter", "calibrate",
-        { value: number }, { entity_id: entityId });
-      status.textContent = entityId + " auf " + number + " gesetzt.";
-    } catch (error) { status.textContent = "Kalibrierung fehlgeschlagen: " + error; }
   }
 
   _render() {
@@ -3061,22 +3024,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       button.addEventListener("click", () => this._createEnergyMeters(energyStatusFor(button),
         button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
     }
-    for (const button of this.shadowRoot.querySelectorAll(".energy-calibrate")) {
-      button.addEventListener("click", () => {
-        const holder = button.closest(".energy-individual-entry, .editor-section-body");
-        const input = [...holder.querySelectorAll(".energy-calibration-value")]
-          .find(item => item.dataset.key === button.dataset.key);
-        this._calibrateEnergyMeter(button.dataset.key, input?.value || "",
-          energyStatusFor(button),
-          button.hasAttribute("data-index") ? Number(button.dataset.index) : null);
-      });
-    }
-    for (const button of this.shadowRoot.querySelectorAll(".energy-reset")) {
-      button.addEventListener("click", () =>
-        this._calibrateEnergyMeter(button.dataset.key, "0", energyStatusFor(button),
-          button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
-    }
-
     // Build expensive Home Assistant selectors only when a room is opened.
     const initialisePrimaryArea = panel => {
       if (!panel.open || !panel.isConnected) return;
