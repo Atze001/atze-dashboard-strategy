@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "2648BC5";
+const ATZE_TESTING_REVISION = "1096FB8";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -18393,6 +18393,33 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             "Bitte den Helfer unter Geräte & Dienste → Helfer prüfen und zuordnen. " +
             "Nicht erneut auf Anlegen klicken.";
           return;
+        }
+        // Home Assistant may prefix the source device name to the generated
+        // sensor ID. Explicitly normalize only the sensor created in this flow.
+        // Never rename existing sensors or silently accept a conflicting ID.
+        if (created !== expectedEntityId) {
+          const entries = await registry();
+          if (entries.some(e => e.entity_id === expectedEntityId)) {
+            status.textContent = "Helfer wurde als " + created +
+              " angelegt, aber " + expectedEntityId +
+              " ist bereits vergeben. Bitte den Konflikt in Home Assistant prüfen. " +
+              "Es wurde keine bestehende Entität umbenannt.";
+            return;
+          }
+          try {
+            await this._hass.callWS({
+              type: "config/entity_registry/update",
+              entity_id: created,
+              new_entity_id: expectedEntityId
+            });
+            created = expectedEntityId;
+          } catch (renameError) {
+            status.textContent = "Helfer wurde als " + created +
+              " angelegt, aber Umbenennen zu " + expectedEntityId +
+              " fehlgeschlagen: " + (renameError?.message || renameError) +
+              ". Bitte unter Geräte & Dienste → Entitäten umbenennen, nicht neu anlegen.";
+            return;
+          }
         }
         setup[key] = created;
         this._config = { ...this._config, energy_setup: { ...setup } };

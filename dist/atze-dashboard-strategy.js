@@ -18397,6 +18397,33 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             "Nicht erneut auf Anlegen klicken.";
           return;
         }
+        // Home Assistant may prefix the source device name to the generated
+        // sensor ID. Explicitly normalize only the sensor created in this flow.
+        // Never rename existing sensors or silently accept a conflicting ID.
+        if (created !== expectedEntityId) {
+          const entries = await registry();
+          if (entries.some(e => e.entity_id === expectedEntityId)) {
+            status.textContent = "Helfer wurde als " + created +
+              " angelegt, aber " + expectedEntityId +
+              " ist bereits vergeben. Bitte den Konflikt in Home Assistant prüfen. " +
+              "Es wurde keine bestehende Entität umbenannt.";
+            return;
+          }
+          try {
+            await this._hass.callWS({
+              type: "config/entity_registry/update",
+              entity_id: created,
+              new_entity_id: expectedEntityId
+            });
+            created = expectedEntityId;
+          } catch (renameError) {
+            status.textContent = "Helfer wurde als " + created +
+              " angelegt, aber Umbenennen zu " + expectedEntityId +
+              " fehlgeschlagen: " + (renameError?.message || renameError) +
+              ". Bitte unter Geräte & Dienste → Entitäten umbenennen, nicht neu anlegen.";
+            return;
+          }
+        }
         setup[key] = created;
         this._config = { ...this._config, energy_setup: { ...setup } };
         this.dispatchEvent(new CustomEvent("config-changed", {
