@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1C30737";
+const ATZE_TESTING_REVISION = "517F7FB";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -18164,6 +18164,181 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     `;
   }
 
+
+  _energySourceOptionsHtml(selected = "") {
+    const options = Object.entries(this._hass?.states || {})
+      .filter(([id, state]) => id.startsWith("sensor.") &&
+        state.attributes?.device_class === "energy" &&
+        ["kWh", "Wh"].includes(state.attributes?.unit_of_measurement) &&
+        ["total", "total_increasing"].includes(state.attributes?.state_class))
+      .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
+        .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
+    return '<option value="">Bitte kWh-Quelle auswählen</option>' +
+      options.map(([id, state]) => '<option value="' + this._escape(id) + '"' +
+        (id === selected ? ' selected' : '') + '>' +
+        this._escape(state.attributes?.friendly_name || id) + ' (' +
+        this._escape(id) + ')</option>').join("") +
+      (selected && !options.some(([id]) => id === selected)
+        ? '<option selected value="' + this._escape(selected) + '">' +
+          this._escape(selected) + ' (nicht verfügbar)</option>' : "");
+  }
+
+  _energyMeterOptionsHtml(selected = "") {
+    const states = this._hass?.states || {};
+    const options = Object.entries(states)
+      .filter(([id, state]) => id.startsWith("sensor.") &&
+        state.attributes?.device_class === "energy" &&
+        ["kWh", "Wh"].includes(state.attributes?.unit_of_measurement))
+      .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
+        .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
+    return '<option value="">Noch nicht zugeordnet</option>' +
+      options.map(([id, state]) => '<option value="' + this._escape(id) + '"' +
+        (id === selected ? ' selected' : '') + '>' +
+        this._escape(state.attributes?.friendly_name || id) + '</option>').join("") +
+      (selected && !options.some(([id]) => id === selected)
+        ? '<option selected value="' + this._escape(selected) + '">' +
+          this._escape(selected) + ' (nicht verfügbar)</option>' : "");
+  }
+
+  _setEnergySetupField(key, value) {
+    const setup = { ...(this._config.energy_setup || {}) };
+    if (value) setup[key] = value;
+    else delete setup[key];
+    const next = { ...this._config };
+    if (Object.keys(setup).length) next.energy_setup = setup;
+    else delete next.energy_setup;
+    this._fireConfigChanged(next);
+  }
+
+  _energySetupHtml() {
+    const setup = this._config.energy_setup || {};
+    const fields = [["year", "Jahr · automatisch 1. Januar"],
+      ["month", "Monat · nur manuell"], ["day", "Tag · nur manuell"]];
+    return `
+      <div class="editor-section-help">
+        Wähle einen fortlaufenden Energiesensor (kWh oder Wh). Vorhandene Zähler
+        können direkt zugeordnet werden. Fehlende Utility-Meter-Helfer lassen
+        sich anschließend automatisch anlegen. Jahr setzt sich am 1. Januar
+        zurück; Monat und Tag nur manuell. Bestehende Zähler werden nie überschrieben.
+      </div>
+      <label class="primary-field"><span>kWh-Quellsensor</span>
+        <select class="energy-setup-field" data-key="total">
+          ${this._energySourceOptionsHtml(setup.total || "")}
+        </select>
+      </label>
+      ${fields.map(([key, title]) => `
+        <label class="primary-field"><span>${title}</span>
+          <select class="energy-setup-field" data-key="${key}">
+            ${this._energyMeterOptionsHtml(setup[key] || "")}
+          </select>
+        </label>`).join("")}
+      <div class="toolbar">
+        <button id="energy-create-meters" type="button"
+          ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen</button>
+      </div>
+      <div class="editor-section-help" id="energy-setup-status" role="status">
+        Nur neue Helfer werden angelegt. Ein Vorgabewert kann nach der
+        Zuordnung unten gesetzt werden.
+      </div>
+      ${fields.map(([key, title]) => `
+        <label class="primary-field"><span>${title.split(" · ")[0]} · Vorgabewert (kWh)</span>
+          <span style="display:flex;gap:8px;align-items:center">
+            <input class="energy-calibration-value" data-key="${key}"
+              type="number" step="any" min="0" placeholder="z. B. 0"
+              style="min-width:0;flex:1" />
+            <button class="energy-calibrate" data-key="${key}" type="button"
+              ${!setup[key] ? "disabled" : ""}>Setzen</button>
+            ${key !== "year" ? `<button class="energy-reset" data-key="${key}"
+              type="button" ${!setup[key] ? "disabled" : ""}>Reset</button>` : ""}
+          </span>
+        </label>`).join("")}
+      <div class="editor-section-help">
+        Kalibrieren setzt den gewählten Zähler auf den eingegebenen Wert.
+        Reset setzt Monat oder Tag nach Bestätigung auf 0 kWh.
+        Die Zähler werden in Home Assistant gespeichert.
+      </div>`;
+  }
+
+  async _createEnergyMeters(status) {
+    const setup = { ...(this._config.energy_setup || {}) };
+    const source = setup.total;
+    const attributes = this._hass?.states?.[source]?.attributes;
+    if (!source || attributes?.device_class !== "energy" ||
+        !["kWh", "Wh"].includes(attributes?.unit_of_measurement) ||
+        !["total", "total_increasing"].includes(attributes?.state_class)) {
+      status.textContent = "Bitte zuerst einen gültigen fortlaufenden Energie-Quellsensor auswählen.";
+      return;
+    }
+    const missing = ["year", "month", "day"].filter(key => !setup[key]);
+    if (!missing.length) {
+      status.textContent = "Alle drei Zähler sind bereits zugeordnet.";
+      return;
+    }
+    if (!window.confirm(missing.length + " neue Utility-Meter-Helfer für " +
+        source + " anlegen? Bestehende Zähler bleiben unverändert.")) return;
+    const names = { year: "Jahr", month: "Monat", day: "Tag" };
+    const sourceLabel = attributes.friendly_name || source;
+    status.textContent = "Helfer werden erstellt …";
+    for (const key of missing) {
+      try {
+        const name = "ATZE " + sourceLabel + " " + names[key];
+        const init = await this._hass.callWS({
+          type: "config_entries/flow/init", handler: "utility_meter"
+        });
+        if (init.type !== "form" || !init.flow_id) throw Error("Einrichtungsdialog nicht verfügbar");
+        const result = await this._hass.callWS({
+          type: "config_entries/flow/configure", flow_id: init.flow_id,
+          user_input: { name, source, cycle: key === "year" ? "yearly" : "none",
+            offset: 0, tariffs: [], net_consumption: false,
+            delta_values: false, periodically_resetting: true }
+        });
+        if (result.type !== "create_entry") {
+          throw Error("Home Assistant hat die Anlage nicht bestätigt (" + result.type + ")");
+        }
+        // Match by the new config entry ID, never guess an entity ID.
+        const entryId = result.result?.entry_id;
+        let found = null;
+        for (let attempt = 0; attempt < 6 && !found; attempt++) {
+          const entries = await this._hass.callWS({ type: "config/entity_registry/list" });
+          found = entries.find(e => e.config_entry_id === entryId &&
+            e.domain === "sensor" && !e.disabled_by)?.entity_id;
+          if (!found) await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (!found) throw Error("Helfer angelegt, Entität noch nicht erkannt. Bitte unten zuordnen.");
+        setup[key] = found;
+        this._config = { ...this._config, energy_setup: { ...setup } };
+        this.dispatchEvent(new CustomEvent("config-changed", {
+          detail: { config: this._config }, bubbles: true, composed: true
+        }));
+        status.textContent = names[key] + " angelegt: " + found;
+      } catch (error) {
+        status.textContent = "Bei " + names[key] + ": " + (error?.message || error) +
+          ". Bereits angelegte Helfer bleiben erhalten. Vor erneutem Versuch prüfen.";
+        return;
+      }
+    }
+    this._fireConfigChanged({ ...this._config, energy_setup: setup });
+  }
+
+  async _calibrateEnergyMeter(key, value, status) {
+    const entityId = this._config.energy_setup?.[key];
+    const number = Number(String(value).replace(",", "."));
+    if (!entityId || !this._hass?.states?.[entityId]) {
+      status.textContent = "Zähler nicht verfügbar oder noch nicht zugeordnet.";
+      return;
+    }
+    if (String(value).trim() === "" || !Number.isFinite(number) || number < 0) {
+      status.textContent = "Bitte einen gültigen, nichtnegativen kWh-Wert eingeben.";
+      return;
+    }
+    if (!window.confirm(entityId + " wirklich auf " + number + " setzen?")) return;
+    try {
+      await this._hass.callService("utility_meter", "calibrate",
+        { value: number }, { entity_id: entityId });
+      status.textContent = entityId + " auf " + number + " gesetzt.";
+    } catch (error) { status.textContent = "Kalibrierung fehlgeschlagen: " + error; }
+  }
+
   _render() {
     if (!this.shadowRoot || this._backgroundPickerActive) return;
 
@@ -19281,6 +19456,16 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               (primarySensorHtml || '<div class="loading">Keine ausgewählten Räume gefunden.</div>')}
           </div>
         </details>
+        <details class="panel editor-section" data-editor-section="energy-setup"
+          ${this._openEditorSections.has("energy-setup") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>
+            <span class="editor-section-summary-title">Stromverbrauch einrichten</span>
+          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body" style="display:grid;gap:12px;padding:16px">
+            ${this._energySetupHtml()}
+          </div>
+        </details>
         <details class="panel editor-section" data-editor-section="name-filters" ${this._openEditorSections.has("name-filters") ? "open" : ""}>
           <summary><span class="editor-section-summary-main"><ha-icon icon="mdi:filter-cog-outline"></ha-icon><span class="editor-section-summary-title">Namensfilter / Zuordnung</span></span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
           <div class="editor-section-body">
@@ -19476,6 +19661,25 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._config = { ...this._config, custom_pages: pages };
       this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
     };
+
+    for (const select of this.shadowRoot.querySelectorAll(".energy-setup-field")) {
+      select.addEventListener("change", () =>
+        this._setEnergySetupField(select.dataset.key, select.value));
+    }
+    const energyStatus = this.shadowRoot.querySelector("#energy-setup-status");
+    this.shadowRoot.querySelector("#energy-create-meters")
+      ?.addEventListener("click", () => this._createEnergyMeters(energyStatus));
+    for (const button of this.shadowRoot.querySelectorAll(".energy-calibrate")) {
+      button.addEventListener("click", () => {
+        const input = this.shadowRoot.querySelector(
+          '.energy-calibration-value[data-key="' + button.dataset.key + '"]');
+        this._calibrateEnergyMeter(button.dataset.key, input?.value || "", energyStatus);
+      });
+    }
+    for (const button of this.shadowRoot.querySelectorAll(".energy-reset")) {
+      button.addEventListener("click", () =>
+        this._calibrateEnergyMeter(button.dataset.key, "0", energyStatus));
+    }
 
     // Build expensive Home Assistant selectors only when a room is opened.
     const initialisePrimaryArea = panel => {
