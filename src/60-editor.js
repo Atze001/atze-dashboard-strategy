@@ -1628,14 +1628,24 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         report(label + " bereits vorhanden und zugeordnet: " + expectedId);
         continue;
       }
-      const possibleDuplicates = entriesBefore.filter(e => e.platform === "utility_meter" &&
-        (e.entity_id?.endsWith("_" + source.split(".")[1] + "_" + suffix) ||
-          [e.name, e.original_name].some(name =>
-            String(name || "").toLocaleLowerCase("de-DE") ===
-            (localName + " " + label).toLocaleLowerCase("de-DE"))));
-      if (possibleDuplicates.length) {
-        report("Möglicher vorhandener " + label + "-Zähler: " +
-          possibleDuplicates.map(e => e.entity_id).join(", ") + ". Keine Duplikate angelegt.");
+      // HA generates IDs from the display name, not necessarily from the
+      // source entity ID. E.g. source ..._energy => meter ..._energie_jahr.
+      // A unique meter with the source's device prefix and matching period
+      // is safe to reuse, including one created by an earlier interrupted run.
+      const sourcePrefix = source.includes("_")
+        ? source.slice(0, source.lastIndexOf("_") + 1)
+        : source + "_";
+      const related = entriesBefore.filter(e => e.platform === "utility_meter" &&
+        e.entity_id?.startsWith(sourcePrefix) && e.entity_id?.endsWith("_" + suffix));
+      if (related.length === 1) {
+        setup[key] = related[0].entity_id;
+        persist(setup);
+        report(label + " vorhandenen Zähler übernommen: " + setup[key]);
+        continue;
+      }
+      if (related.length > 1) {
+        report("Mehrere mögliche " + label + "-Zähler gefunden: " +
+          related.map(e => e.entity_id).join(", ") + ". Bitte prüfen; nichts angelegt.");
         return;
       }
       report(label + " wird für " + source + " angelegt …");
@@ -1660,11 +1670,13 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         else if (added.length === 1) created = added[0].entity_id;
         if (!created) await new Promise(resolve => setTimeout(resolve, 500));
       }
-      if (!created || created !== expectedId) {
-        report(label + " erstellt, aber ID " + (created || "unbekannt") +
-          " statt " + expectedId + ". Bitte prüfen; kein erneuter Anlageversuch.");
+      if (!created) {
+        report(label + " angelegt, aber neue Entitäts-ID nicht erkannt. " +
+          "Bitte prüfen; kein erneuter Anlageversuch.");
         return;
       }
+      // The ID returned by the registry is authoritative. Do not create a
+      // second meter just because HA localized part of the display name.
       setup[key] = created;
       persist(setup);
       report(label + " angelegt: " + created);
