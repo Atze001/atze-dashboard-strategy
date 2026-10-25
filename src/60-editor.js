@@ -2507,6 +2507,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
                 true
               )}
               ${this._toggleHtml(
+                "energy_view",
+                "Strom-Reiter anzeigen",
+                "Strom oben in der Navigation anzeigen. Die Strom-Kachel bleibt auch bei ausgeblendetem Reiter erreichbar.",
+                true
+              )}
+              ${this._toggleHtml(
                 "single_room_navigation",
                 "Räume als Unterseiten",
                 "Raumansichten als Subviews öffnen.",
