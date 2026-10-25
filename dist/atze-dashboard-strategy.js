@@ -18330,20 +18330,25 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
     const button = this.shadowRoot.querySelector("#energy-create-meters");
     const names = { year: "Jahr", month: "Monat", day: "Tag" };
-    const sourceLabel = attributes.friendly_name || source;
+    const sourceEntityStem = source.replace(/^sensor\./, "");
+    const suffixes = { year: "jahr", month: "monat", day: "tag" };
     const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
     this._creatingEnergyMeters = true;
     if (button) button.disabled = true;
     try {
       for (const key of missing) {
-        const name = "ATZE " + sourceLabel + " " + names[key];
+        const name = sourceEntityStem + "_" + suffixes[key];
+        const expectedEntityId = "sensor." + name;
         status.textContent = names[key] + ": Prüfe vorhandene Helfer …";
         const before = await registry();
-        const alreadyNamed = before.filter(e => !e.disabled_by &&
-          e.platform === "utility_meter" && e.entity_id?.startsWith("sensor.") &&
-          (e.name === name || e.original_name === name));
+        // Avoid duplicates and silent Home Assistant _2 suffixes, even when
+        // the expected entity ID belongs to a different integration.
+        const alreadyNamed = before.filter(e =>
+          e.entity_id === expectedEntityId ||
+          (e.platform === "utility_meter" &&
+            (e.name === name || e.original_name === name)));
         if (alreadyNamed.length) {
-          status.textContent = name + " existiert bereits. Bitte zuerst im Feld " +
+          status.textContent = expectedEntityId + " ist bereits vergeben. Bitte zuerst im Feld " +
             names[key] + " zuordnen, damit kein doppelter Helfer entsteht.";
           return;
         }
@@ -18375,7 +18380,9 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           const candidates = after.filter(e => !e.disabled_by &&
             e.platform === "utility_meter" && e.entity_id?.startsWith("sensor.") &&
             !previousIds.has(e.entity_id));
-          if (candidates.length === 1) created = candidates[0].entity_id;
+          const exact = candidates.find(e => e.entity_id === expectedEntityId);
+          if (exact) created = exact.entity_id;
+          else if (candidates.length === 1) created = candidates[0].entity_id;
           else if (candidates.length > 1) {
             const named = candidates.filter(e =>
               e.name === name || e.original_name === name);
