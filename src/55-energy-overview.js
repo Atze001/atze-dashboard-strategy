@@ -309,16 +309,26 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       positions.push({ node: page, top: page.scrollTop, left: page.scrollLeft });
     }
 
+    const viewport = window.visualViewport;
+    const initialHeight = viewport?.height || window.innerHeight;
+    let keyboardVisible = false;
     let frame = 0;
     const stabilize = () => {
       frame = 0;
       if (!dialog.open) return;
-      const viewport = window.visualViewport;
-      const width = viewport?.width || window.innerWidth;
       const height = viewport?.height || window.innerHeight;
-      dialog.style.left = ((viewport?.offsetLeft || 0) + width / 2) + "px";
-      dialog.style.top = ((viewport?.offsetTop || 0) + height / 2) + "px";
-      dialog.style.maxHeight = Math.max(150, height - 24) + "px";
+      // Follow keyboard state, not every intermediate iOS viewport offset.
+      const nextKeyboardVisible = height < initialHeight - 140;
+      if (nextKeyboardVisible !== keyboardVisible) {
+        keyboardVisible = nextKeyboardVisible;
+        if (keyboardVisible) {
+          dialog.style.top = Math.min(180, Math.max(110, height / 2)) + "px";
+          dialog.style.maxHeight = Math.max(150, height - 24) + "px";
+        } else {
+          dialog.style.removeProperty("top");
+          dialog.style.removeProperty("max-height");
+        }
+      }
       for (const item of positions) {
         if (item.node.scrollTop !== item.top) item.node.scrollTop = item.top;
         if (item.node.scrollLeft !== item.left) item.node.scrollLeft = item.left;
@@ -327,17 +337,14 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(stabilize);
     };
-    const viewport = window.visualViewport;
     const owner = this;
     viewport?.addEventListener("resize", schedule);
-    viewport?.addEventListener("scroll", schedule);
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
     dialog.addEventListener("close", cleanup, { once: true });
     function cleanup() {
       dialog.removeEventListener("close", cleanup);
       viewport?.removeEventListener("resize", schedule);
-      viewport?.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
       if (frame) cancelAnimationFrame(frame);
@@ -525,6 +532,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           font-variant-numeric:tabular-nums; text-align:center; overflow-wrap:anywhere }
         .period-dialog { box-sizing:border-box; width:min(340px,calc(100vw - 36px));
           position:fixed; inset:auto; left:50%; top:50%; transform:translate(-50%,-50%);
+          transition:top .24s ease-out;
           max-height:calc(100dvh - 60px); overflow:auto; margin:0; padding:22px;
           border:1px solid var(--home-card-border,rgba(255,255,255,.16)); border-radius:20px;
           background:var(--card-background-color,#202126); color:var(--primary-text-color);
