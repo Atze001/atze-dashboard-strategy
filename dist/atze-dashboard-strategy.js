@@ -18285,6 +18285,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       <div class="toolbar">
         <button id="energy-create-meters" type="button"
           ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen</button>
+        <button id="energy-repair-meters" type="button"
+          ${!setup.total || !fields.some(([key]) => setup[key]) ? "disabled" : ""}>
+          Vorhandene Entitäts-IDs korrigieren
+        </button>
       </div>
       <div class="editor-section-help" id="energy-setup-status" role="status">
         Nur neue Helfer werden angelegt. Ein Vorgabewert kann nach der
@@ -18307,6 +18311,88 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         Reset setzt Monat oder Tag nach Bestätigung auf 0 kWh.
         Die Zähler werden in Home Assistant gespeichert.
       </div>`;
+  }
+
+  _energyMeterIdentity(source, key) {
+    const stem = String(source || "").replace(/^sensor\./, "");
+    const suffix = { year: "jahr", month: "monat", day: "tag" }[key];
+    if (!source?.startsWith("sensor.") || !suffix) return null;
+    const sourceName = stem.split("_").filter(Boolean)
+      .map(word => word.charAt(0).toLocaleUpperCase("de-DE") + word.slice(1))
+      .join(" ");
+    return {
+      name: sourceName + " " + suffix.charAt(0).toUpperCase() + suffix.slice(1),
+      entityId: source + "_" + suffix,
+    };
+  }
+
+  async _normalizeEnergyMeter(currentId, expected, registry) {
+    const entries = await registry();
+    const current = entries.find(e => e.entity_id === currentId);
+    if (!current || current.platform !== "utility_meter") {
+      throw Error(currentId + " ist kein registrierter Utility-Meter-Helfer.");
+    }
+    if (currentId !== expected.entityId &&
+        entries.some(e => e.entity_id === expected.entityId)) {
+      throw Error(expected.entityId + " ist bereits durch eine andere Entität belegt.");
+    }
+    await this._hass.callWS({
+      type: "config/entity_registry/update",
+      entity_id: currentId,
+      ...(currentId !== expected.entityId
+        ? { new_entity_id: expected.entityId } : {}),
+      name: expected.name,
+    });
+    const after = await registry();
+    const updated = after.find(e => e.entity_id === expected.entityId);
+    if (!updated || updated.name !== expected.name ||
+        updated.platform !== "utility_meter") {
+      throw Error("Home Assistant hat die gewünschte Entitäts-ID oder den Namen nicht bestätigt.");
+    }
+    return expected.entityId;
+  }
+
+  async _repairEnergyMeterNames(status) {
+    const setup = { ...(this._config.energy_setup || {}) };
+    if (!setup.total) {
+      status.textContent = "Bitte zuerst den ursprünglichen kWh-Sensor auswählen.";
+      return;
+    }
+    const linked = ["year", "month", "day"].filter(key => setup[key]);
+    if (!linked.length) {
+      status.textContent = "Es sind noch keine Zähler zugeordnet.";
+      return;
+    }
+    const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
+    const all = await registry();
+    const changes = linked.map(key => ({
+      key, from: setup[key], expected: this._energyMeterIdentity(setup.total, key),
+    })).filter(item => item.expected &&
+      (item.from !== item.expected.entityId ||
+        all.find(e => e.entity_id === item.from)?.name !== item.expected.name));
+    if (!changes.length) {
+      status.textContent = "Alle zugeordneten Zähler haben bereits die richtigen Namen und Entitäts-IDs.";
+      return;
+    }
+    if (!window.confirm("Folgende vorhandene Verbrauchszähler umbenennen?\n\n" +
+      changes.map(c => c.from + "\n→ " + c.expected.entityId +
+        "\nName: " + c.expected.name).join("\n\n") +
+      "\n\nDie Zählerstände bleiben erhalten.")) return;
+    for (const item of changes) {
+      try {
+        setup[item.key] = await this._normalizeEnergyMeter(item.from, item.expected, registry);
+        this._config = { ...this._config, energy_setup: { ...setup } };
+        this.dispatchEvent(new CustomEvent("config-changed", {
+          detail: { config: this._config }, bubbles: true, composed: true,
+        }));
+        status.textContent = item.expected.entityId + " korrigiert.";
+      } catch (error) {
+        status.textContent = "Korrektur abgebrochen: " + (error?.message || error) +
+          ". Bereits korrigierte Zähler bleiben erhalten.";
+        return;
+      }
+    }
+    this._fireConfigChanged({ ...this._config, energy_setup: setup });
   }
 
   async _createEnergyMeters(status) {
@@ -18397,32 +18483,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
             "Nicht erneut auf Anlegen klicken.";
           return;
         }
-        // Home Assistant may prefix the source device name to the generated
-        // sensor ID. Explicitly normalize only the sensor created in this flow.
-        // Never rename existing sensors or silently accept a conflicting ID.
-        if (created !== expectedEntityId) {
-          const entries = await registry();
-          if (entries.some(e => e.entity_id === expectedEntityId)) {
-            status.textContent = "Helfer wurde als " + created +
-              " angelegt, aber " + expectedEntityId +
-              " ist bereits vergeben. Bitte den Konflikt in Home Assistant prüfen. " +
-              "Es wurde keine bestehende Entität umbenannt.";
-            return;
-          }
-          try {
-            await this._hass.callWS({
-              type: "config/entity_registry/update",
-              entity_id: created,
-              new_entity_id: expectedEntityId
-            });
-            created = expectedEntityId;
-          } catch (renameError) {
-            status.textContent = "Helfer wurde als " + created +
-              " angelegt, aber Umbenennen zu " + expectedEntityId +
-              " fehlgeschlagen: " + (renameError?.message || renameError) +
-              ". Bitte unter Geräte & Dienste → Entitäten umbenennen, nicht neu anlegen.";
-            return;
-          }
+        try {
+          created = await this._normalizeEnergyMeter(created, expected, registry);
+        } catch (renameError) {
+          status.textContent = "Helfer wurde als " + created +
+            " angelegt, aber die Entitäts-ID oder der Name konnte nicht korrigiert werden: " +
+            (renameError?.message || renameError) +
+            ". Bitte den Helfer prüfen und nicht erneut erstellen.";
+          return;
         }
         setup[key] = created;
         this._config = { ...this._config, energy_setup: { ...setup } };
@@ -19793,6 +19861,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const energyStatus = this.shadowRoot.querySelector("#energy-setup-status");
     this.shadowRoot.querySelector("#energy-create-meters")
       ?.addEventListener("click", () => this._createEnergyMeters(energyStatus));
+    this.shadowRoot.querySelector("#energy-repair-meters")
+      ?.addEventListener("click", () => this._repairEnergyMeterNames(energyStatus));
     for (const button of this.shadowRoot.querySelectorAll(".energy-calibrate")) {
       button.addEventListener("click", () => {
         const input = this.shadowRoot.querySelector(
