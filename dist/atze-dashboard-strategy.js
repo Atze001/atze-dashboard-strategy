@@ -6122,6 +6122,25 @@ function schedulerPopupEnabled(config) {
   return asArray(config.custom_pages).some(isSchedulerCustomPage);
 }
 
+// Apply the Settings meter mapping to energy cards on strategy-owned pages.
+function applyEnergySetupToCard(card, setup) {
+  if (!card || typeof card !== "object") return card;
+  const nested = { ...card };
+  if (/^custom:atze-energy-overview-card(?:-testing)?$/.test(String(nested.type || ""))) {
+    for (const key of ["total", "year", "month", "day"]) {
+      if (setup?.[key]) nested[key] = setup[key];
+    }
+    if (setup?.month) { nested.month_script = ""; nested.month_reset = ""; }
+    if (setup?.day) { nested.day_script = ""; nested.day_reset = ""; }
+    nested.native_utility_meters = Boolean(setup?.month || setup?.day);
+    return nested;
+  }
+  if (Array.isArray(nested.cards)) {
+    nested.cards = nested.cards.map(child => applyEnergySetupToCard(child, setup));
+  }
+  return nested;
+}
+
 function buildCustomPageViews(config) {
   const usedPaths = new Set([
     config.home_path || "home",
@@ -6197,6 +6216,20 @@ function buildCustomPageViews(config) {
           : [homeButton, ...pageCards];
       }
 
+      if (config.energy_setup) {
+        if (Array.isArray(generatedView.cards)) {
+          generatedView.cards = generatedView.cards.map(card =>
+            applyEnergySetupToCard(card, config.energy_setup));
+        }
+        if (Array.isArray(generatedView.sections)) {
+          generatedView.sections = generatedView.sections.map(section => ({
+            ...section,
+            cards: Array.isArray(section.cards)
+              ? section.cards.map(card => applyEnergySetupToCard(card, config.energy_setup))
+              : section.cards,
+          }));
+        }
+      }
       return generatedView;
     })
     .filter(Boolean);
