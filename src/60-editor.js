@@ -1406,9 +1406,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
   _energySourceOptionsHtml(selected = "") {
     const options = Object.entries(this._hass?.states || {})
       .filter(([id, state]) => id.startsWith("sensor.") &&
-        state.attributes?.device_class === "energy" &&
-        ["kWh"].includes(state.attributes?.unit_of_measurement) &&
-        ["total", "total_increasing"].includes(state.attributes?.state_class))
+        String(state.attributes?.unit_of_measurement || "").trim().toLowerCase() === "kwh")
       .sort((a, b) => String(a[1].attributes?.friendly_name || a[0])
         .localeCompare(String(b[1].attributes?.friendly_name || b[0]), "de"));
     return '<option value="">Bitte kWh-Quelle auswählen</option>' +
@@ -2630,12 +2628,10 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Lege fest, welcher Leistungssensor für die Strom-Kachel
-              verwendet wird. Ist der Sensor nicht verfügbar, wird die
-              Kachel automatisch ausgeblendet.
+              Den Leistungssensor für die Strom-Kachel stellst du jetzt unter
+              „Strom · Gesamtstrom“ ein.
             </div>
             <div class="rows">
-              ${this._powerSensorSelectHtml()}
               ${this._outdoorIlluminanceSensorSelectHtml()}
               ${this._hofMotionSensorSelectHtml()}
             </div>
@@ -2814,6 +2810,12 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           <div class="editor-section-body" style="display:grid;gap:12px;padding:16px">
             <div class="editor-section-help">Diese kWh-Entität bestimmt den Wert auf der
               Startseite sowie die Gesamtwerte im integrierten Strom-Dashboard.</div>
+            <label class="primary-field">
+              <span>Aktuelle Gesamtleistung (W) · Startseiten-Kachel</span>
+              <select class="power-sensor-select" aria-label="Leistungssensor (W) auswählen">
+                ${this._powerSensorOptionsHtml(String(this._config.home_power_entity || ""))}
+              </select>
+            </label>
             ${this._energySetupHtml()}
           </div>
         </details>
