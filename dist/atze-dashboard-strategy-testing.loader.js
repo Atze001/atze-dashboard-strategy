@@ -1,12 +1,8 @@
-// ATZE testing loader. Kept separate from the dashboard bundle so it can
-// detect a newer build while Home Assistant remains open as a single-page app.
+// ATZE testing loader. A new build is loaded on page start or by the
+// explicit reload button in the testing dashboard, never by polling.
 const versionURL = "/local/atze-dashboard-strategy-testing.version";
 const bundleURL = "/local/atze-dashboard-strategy-testing.bundle.js";
-const refreshKey = "atze-testing:refresh-attempt";
 const returnKey = "atze-testing:return-url";
-const homeTag = "atze-testing-home-overview-card";
-
-const onTestingDashboard = () => location.pathname.split("/")[1] === "atze-test";
 
 async function currentRevision() {
   try {
@@ -39,30 +35,3 @@ if (returnURL) {
 
 const initialRevision = await currentRevision();
 await import(bundleURL + "?v=" + encodeURIComponent(initialRevision || String(Date.now())));
-
-const activeRevision = () => customElements.get(homeTag)?.testingRevision || "UNKNOWN";
-if (initialRevision && activeRevision() === initialRevision) {
-  sessionStorage.removeItem(refreshKey);
-}
-
-async function checkForUpdate() {
-  if (!onTestingDashboard() || document.visibilityState !== "visible") return;
-  const available = await currentRevision();
-  if (!available || activeRevision() === available) return;
-
-  // One full-page restart per revision at most. If deployment is inconsistent,
-  // stop here instead of trapping the user in a reload loop.
-  if (sessionStorage.getItem(refreshKey) === available) return;
-  sessionStorage.setItem(refreshKey, available);
-  sessionStorage.setItem(returnKey, location.pathname + location.search + location.hash);
-  const url = new URL(location.href);
-  url.searchParams.set("atze_testing_refresh", available);
-  location.replace(url.href);
-}
-
-setInterval(checkForUpdate, 60_000);
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") checkForUpdate();
-});
-// Also detect stale registered components immediately when the route is opened.
-setTimeout(checkForUpdate, 2500);
