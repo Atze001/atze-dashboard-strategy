@@ -324,9 +324,9 @@ class AtzeDashboardStrategy extends HTMLElement {
       title: "Strom",
       path: energyPath,
       icon: "mdi:lightning-bolt",
-      // Keep the Strom route reachable from the home tile even when its
-      // navigation tab is hidden in the dashboard settings.
-      subview: config.energy_view === false,
+      // Match the room-navigation mode: with subviews enabled, Strom remains
+      // accessible from its home tile but disappears from the top tabs.
+      subview: config.energy_view === false || config.single_room_navigation !== false,
       cards: [energyCard],
     };
 
