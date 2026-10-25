@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "287CA39";
+const ATZE_TESTING_REVISION = "425EB5A";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6001,6 +6001,8 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    energy_total_entity: config.energy_setup?.total || null,
+    energy_path: config.energy_path || "strom",
     outdoor_illuminance_entity:
       config.home_outdoor_illuminance_entity &&
       hass.states[config.home_outdoor_illuminance_entity]

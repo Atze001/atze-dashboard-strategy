@@ -6004,6 +6004,8 @@ function buildHomeOverviewView(
       usableEntities,
       config
     ),
+    energy_total_entity: config.energy_setup?.total || null,
+    energy_path: config.energy_path || "strom",
     outdoor_illuminance_entity:
       config.home_outdoor_illuminance_entity &&
       hass.states[config.home_outdoor_illuminance_entity]
