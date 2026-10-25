@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "C854F0F";
+const ATZE_TESTING_REVISION = "BAEC48B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -18337,7 +18337,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         status.textContent = names[key] + ": Prüfe vorhandene Helfer …";
         const before = await registry();
         const alreadyNamed = before.filter(e => !e.disabled_by &&
-          e.entity_id?.startsWith("sensor.") &&
+          e.platform === "utility_meter" && e.entity_id?.startsWith("sensor.") &&
           (e.name === name || e.original_name === name));
         if (alreadyNamed.length) {
           status.textContent = name + " existiert bereits. Bitte zuerst im Feld " +
@@ -18370,7 +18370,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         for (let attempt = 0; attempt < 12 && !created; attempt++) {
           const after = await registry();
           const candidates = after.filter(e => !e.disabled_by &&
-            e.entity_id?.startsWith("sensor.") && !previousIds.has(e.entity_id));
+            e.platform === "utility_meter" && e.entity_id?.startsWith("sensor.") &&
+            !previousIds.has(e.entity_id));
           if (candidates.length === 1) created = candidates[0].entity_id;
           else if (candidates.length > 1) {
             const named = candidates.filter(e =>
