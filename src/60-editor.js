@@ -1472,11 +1472,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
         </label>`).join("")}
       <div class="toolbar">
         <button id="energy-create-meters" type="button"
-          ${!setup.total ? "disabled" : ""}>Fehlende Zähler anlegen</button>
-        <button id="energy-repair-meters" type="button"
-          ${!setup.total || !fields.some(([key]) => setup[key]) ? "disabled" : ""}>
-          Vorhandene Entitäts-IDs korrigieren
-        </button>
+          ${!setup.total ? "disabled" : ""}>Jahreszähler testweise anlegen</button>
       </div>
       <div class="editor-section-help" id="energy-setup-status" role="status">
         Nur neue Helfer werden angelegt. Ein Vorgabewert kann nach der
@@ -1501,222 +1497,117 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       </div>`;
   }
 
-  _energyMeterIdentity(source, key) {
-    const stem = String(source || "").replace(/^sensor\./, "");
-    const suffix = { year: "jahr", month: "monat", day: "tag" }[key];
-    if (!source?.startsWith("sensor.") || !suffix) return null;
-    const sourceName = stem.split("_").filter(Boolean)
-      .map(word => word.charAt(0).toLocaleUpperCase("de-DE") + word.slice(1))
-      .join(" ");
-    return {
-      name: sourceName + " " + suffix.charAt(0).toUpperCase() + suffix.slice(1),
-      entityId: source + "_" + suffix,
-    };
-  }
-
-  async _normalizeEnergyMeter(currentId, expected, registry) {
-    const entries = await registry();
-    const current = entries.find(e => e.entity_id === currentId);
-    if (!current || current.platform !== "utility_meter") {
-      throw Error(currentId + " ist kein registrierter Utility-Meter-Helfer.");
-    }
-    if (currentId !== expected.entityId &&
-        entries.some(e => e.entity_id === expected.entityId)) {
-      throw Error(expected.entityId + " ist bereits durch eine andere Entität belegt.");
-    }
-    await this._hass.callWS({
-      type: "config/entity_registry/update",
-      entity_id: currentId,
-      ...(currentId !== expected.entityId
-        ? { new_entity_id: expected.entityId } : {}),
-      name: expected.name,
-    });
-    // Verify the actual registry ID (not merely the display name).
-    // The updated entry might take a moment to appear in subsequent lists.
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const after = await registry();
-      const updated = after.find(e => e.entity_id === expected.entityId);
-      if (updated?.platform === "utility_meter" && updated.name === expected.name)
-        return expected.entityId;
-      if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 250));
-    }
-    throw Error("Die endgültige Entitäts-ID " + expected.entityId +
-      " konnte im Entitätsregister nicht bestätigt werden.");
-  }
-
-  async _repairEnergyMeterNames(status) {
-    const setup = { ...(this._config.energy_setup || {}) };
-    if (!setup.total) {
-      status.textContent = "Bitte zuerst den ursprünglichen kWh-Sensor auswählen.";
-      return;
-    }
-    const linked = ["year", "month", "day"].filter(key => setup[key]);
-    if (!linked.length) {
-      status.textContent = "Es sind noch keine Zähler zugeordnet.";
-      return;
-    }
-    const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
-    const all = await registry();
-    const changes = linked.map(key => ({
-      key, from: setup[key], expected: this._energyMeterIdentity(setup.total, key),
-    })).filter(item => item.expected &&
-      (item.from !== item.expected.entityId ||
-        all.find(e => e.entity_id === item.from)?.name !== item.expected.name));
-    if (!changes.length) {
-      status.textContent = "Alle zugeordneten Zähler haben bereits die richtigen Namen und Entitäts-IDs.";
-      return;
-    }
-    if (!window.confirm("Folgende vorhandene Verbrauchszähler umbenennen?\n\n" +
-      changes.map(c => c.from + "\n→ " + c.expected.entityId +
-        "\nName: " + c.expected.name).join("\n\n") +
-      "\n\nDie Zählerstände bleiben erhalten.")) return;
-    for (const item of changes) {
-      try {
-        setup[item.key] = await this._normalizeEnergyMeter(item.from, item.expected, registry);
-        this._config = { ...this._config, energy_setup: { ...setup } };
-        this.dispatchEvent(new CustomEvent("config-changed", {
-          detail: { config: this._config }, bubbles: true, composed: true,
-        }));
-        status.textContent = item.expected.entityId + " korrigiert.";
-      } catch (error) {
-        status.textContent = "Korrektur abgebrochen: " + (error?.message || error) +
-          ". Bereits korrigierte Zähler bleiben erhalten.";
-        return;
-      }
-    }
-    this._fireConfigChanged({ ...this._config, energy_setup: setup });
-  }
-
   async _createEnergyMeters(status) {
+    // Deliberately only the first step: create ONE annual meter and verify it.
+    // No automatic renaming, no batch creation and no repair of existing meters.
     if (this._creatingEnergyMeters) return;
-    this._energySetupWarnings = [];
     const setup = { ...(this._config.energy_setup || {}) };
     const source = setup.total;
-    const attributes = this._hass?.states?.[source]?.attributes;
-    if (!source || attributes?.device_class !== "energy" ||
+    const state = this._hass?.states?.[source];
+    const attributes = state?.attributes;
+    if (!source?.startsWith("sensor.") ||
+        attributes?.device_class !== "energy" ||
         attributes?.unit_of_measurement !== "kWh" ||
         !["total", "total_increasing"].includes(attributes?.state_class)) {
-      status.textContent = "Bitte zuerst einen gültigen fortlaufenden kWh-Sensor auswählen.";
+      status.textContent = "Bitte einen fortlaufenden kWh-Energiesensor auswählen.";
       return;
     }
-    const missing = ["year", "month", "day"].filter(key => !setup[key]);
-    if (!missing.length) {
-      status.textContent = "Alle drei Zähler sind bereits zugeordnet.";
-      return;
-    }
-    if (!window.confirm(missing.length + " fehlende Utility-Meter-Helfer für " +
-        source + " anlegen? Bereits vorhandene Helfer bleiben unverändert.")) return;
-
-    const button = this.shadowRoot.querySelector("#energy-create-meters");
-    const names = { year: "Jahr", month: "Monat", day: "Tag" };
-    const sourceEntityStem = source.replace(/^sensor\./, "");
-    const suffixes = { year: "jahr", month: "monat", day: "tag" };
+    const expectedId = source + "_jahr";
     const registry = () => this._hass.callWS({ type: "config/entity_registry/list" });
+    const before = await registry();
+    const sourceEntry = before.find(e => e.entity_id === source);
+    const device = this._devices.find(d => d.id === sourceEntry?.device_id);
+    const deviceName = String(device?.name_by_user || device?.name || "").trim();
+    const sourceFriendly = String(attributes.friendly_name || "").trim();
+
+    // HA attaches the device name automatically to the generated sensor ID.
+    // Therefore the helper's own name must contain only the device-local part.
+    // Fail safely if we cannot derive it, rather than generating a duplicate ID.
+    let localName = sourceFriendly;
+    if (deviceName) {
+      if (!sourceFriendly.toLocaleLowerCase("de-DE").startsWith(
+          deviceName.toLocaleLowerCase("de-DE") + " ")) {
+        status.textContent = "Der Gerätename (" + deviceName +
+          ") passt nicht zum Sensornamen (" + sourceFriendly +
+          "). Keine Erstellung, damit die Entitäts-ID nicht wieder doppelt wird.";
+        return;
+      }
+      localName = sourceFriendly.slice(deviceName.length).trim();
+    }
+    if (!localName) {
+      status.textContent = "Der Sensornamen-Anteil konnte nicht ermittelt werden. Kein Helfer erstellt.";
+      return;
+    }
+    const name = localName + " Jahr";
+    if (before.some(e => e.entity_id === expectedId)) {
+      status.textContent = expectedId + " existiert bereits. Kein weiterer Helfer erstellt.";
+      return;
+    }
+    if (setup.year) {
+      status.textContent = "Ein Jahreszähler ist bereits zugeordnet: " +
+        setup.year + ". Kein weiterer Helfer erstellt.";
+      return;
+    }
+    // Never create a second helper when the former broken naming convention
+    // already left a utility meter for this source/device in the registry.
+    const existing = before.filter(e => e.platform === "utility_meter" &&
+      (e.entity_id === expectedId ||
+        e.entity_id?.endsWith("_" + source.split(".")[1] + "_jahr")));
+    if (existing.length) {
+      status.textContent = "Es ist bereits ein möglicherweise zugehöriger Jahres-Helfer vorhanden: " +
+        existing.map(e => e.entity_id).join(", ") +
+        ". Zur Sicherheit wird kein weiterer erstellt.";
+      return;
+    }
+    if (!window.confirm("Nur einen Jahreszähler anlegen?\n\n" +
+        "Name: " + name + "\nErwartete Entitäts-ID: " + expectedId +
+        "\n\nBestehende Helfer bleiben unverändert.")) return;
+    const button = this.shadowRoot.querySelector("#energy-create-meters");
     this._creatingEnergyMeters = true;
     if (button) button.disabled = true;
     try {
-      for (const key of missing) {
-        const name = sourceEntityStem + "_" + suffixes[key];
-        const expectedEntityId = "sensor." + name;
-        status.textContent = names[key] + ": Prüfe vorhandene Helfer …";
-        const before = await registry();
-        // Avoid duplicates and silent Home Assistant _2 suffixes, even when
-        // the expected entity ID belongs to a different integration.
-        const alreadyNamed = before.filter(e =>
-          e.entity_id === expectedEntityId ||
-          (e.platform === "utility_meter" &&
-            (e.name === name || e.original_name === name)));
-        if (alreadyNamed.length) {
-          status.textContent = expectedEntityId + " ist bereits vergeben. Bitte zuerst im Feld " +
-            names[key] + " zuordnen, damit kein doppelter Helfer entsteht.";
-          return;
-        }
-        status.textContent = names[key] + ": Erstelle Home-Assistant-Helfer …";
-        // The official HA config-entry flows use authenticated REST endpoints,
-        // not config_entries/flow/init/configure WebSocket commands.
-        const init = await this._hass.callApi("POST",
-          "config/config_entries/flow", { handler: "utility_meter" });
-        if (init.type !== "form" || !init.flow_id) {
-          throw Error("Home Assistant hat keinen Utility-Meter-Konfigurationsdialog geöffnet");
-        }
-        const result = await this._hass.callApi("POST",
-          "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
-          { name, source, cycle: key === "year" ? "yearly" : "none",
-            offset: 0, tariffs: [], net_consumption: false,
-            delta_values: false, periodically_resetting: true });
-        if (result.type !== "create_entry") {
-          const errors = result.errors ? JSON.stringify(result.errors) : "";
-          throw Error("Home Assistant hat den Helfer nicht angelegt (" +
-            (result.type || "unbekannt") + (errors ? ": " + errors : "") + ")");
-        }
-        // HA's REST config-flow result intentionally omits the config entry ID.
-        // Compare the entity registry before and after creation, instead of
-        // guessing the entity ID from a slug or the friendly name.
-        const previousIds = new Set(before.map(e => e.entity_id));
-        let created = null;
-        for (let attempt = 0; attempt < 12 && !created; attempt++) {
-          const after = await registry();
-          const candidates = after.filter(e => !e.disabled_by &&
-            e.platform === "utility_meter" && e.entity_id?.startsWith("sensor.") &&
-            !previousIds.has(e.entity_id));
-          const exact = candidates.find(e => e.entity_id === expectedEntityId);
-          if (exact) created = exact.entity_id;
-          else if (candidates.length === 1) created = candidates[0].entity_id;
-          else if (candidates.length > 1) {
-            const named = candidates.filter(e =>
-              e.name === name || e.original_name === name);
-            if (named.length === 1) created = named[0].entity_id;
-          }
-          if (!created) await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        if (!created) {
-          status.textContent = name + " wurde von Home Assistant angelegt, " +
-            "aber die Entität konnte nicht eindeutig zugeordnet werden. " +
-            "Bitte den Helfer unter Geräte & Dienste → Helfer prüfen und zuordnen. " +
-            "Nicht erneut auf Anlegen klicken.";
-          return;
-        }
-        // Once Home Assistant has created a meter, always save its real ID.
-        // A naming failure must not cause the next click to create a duplicate.
-        let renameWarning = "";
-        try {
-          created = await this._normalizeEnergyMeter(created, expected, registry);
-        } catch (renameError) {
-          // Confirm whether the rename succeeded despite an incomplete response.
-          const after = await registry();
-          if (after.some(e => e.entity_id === expectedEntityId &&
-                e.platform === "utility_meter")) {
-            created = expectedEntityId;
-          } else {
-            renameWarning = names[key] + ": Entitäts-ID ist noch " + created +
-              " statt " + expectedEntityId + " (" +
-              (renameError?.message || renameError) + ").";
-          }
-        }
-        setup[key] = created;
-        if (renameWarning) {
-          this._energySetupWarnings = [...(this._energySetupWarnings || []), renameWarning];
-        }
-        this._config = { ...this._config, energy_setup: { ...setup } };
-        this.dispatchEvent(new CustomEvent("config-changed", {
-          detail: { config: this._config }, bubbles: true, composed: true
-        }));
-        status.textContent = names[key] + " erstellt: " + created;
+      status.textContent = "Jahreszähler wird erstellt …";
+      const init = await this._hass.callApi("POST",
+        "config/config_entries/flow", { handler: "utility_meter" });
+      if (init.type !== "form" || !init.flow_id) {
+        throw Error("Utility-Meter-Einrichtungsdialog nicht verfügbar.");
       }
-      // Refresh selectors once all three meters are linked.
+      const result = await this._hass.callApi("POST",
+        "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
+        { name, source, cycle: "yearly", offset: 0, tariffs: [],
+          net_consumption: false, delta_values: false, periodically_resetting: true });
+      if (result.type !== "create_entry") {
+        throw Error("Home Assistant hat die Anlage nicht bestätigt: " +
+          (result.errors ? JSON.stringify(result.errors) : result.type));
+      }
+      const previousIds = new Set(before.map(e => e.entity_id));
+      let created = "";
+      for (let attempt = 0; attempt < 12 && !created; attempt++) {
+        const entries = await registry();
+        const added = entries.filter(e => e.platform === "utility_meter" &&
+          e.entity_id?.startsWith("sensor.") && !previousIds.has(e.entity_id));
+        if (added.some(e => e.entity_id === expectedId)) created = expectedId;
+        else if (added.length === 1) created = added[0].entity_id;
+        if (!created) await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (!created) {
+        status.textContent = "Home Assistant hat den Helfer angelegt, aber die neue " +
+          "Entitäts-ID konnte nicht gefunden werden. Nicht erneut anlegen.";
+        return;
+      }
+      if (created !== expectedId) {
+        status.textContent = "Jahreszähler angelegt, aber mit falscher Entitäts-ID: " +
+          created + " (erwartet: " + expectedId +
+          "). Es wurde nichts nachträglich umbenannt. Bitte nicht erneut anlegen.";
+        return;
+      }
+      setup.year = created;
       this._fireConfigChanged({ ...this._config, energy_setup: setup });
-      const currentStatus = this.shadowRoot.querySelector("#energy-setup-status");
-      if (currentStatus) currentStatus.textContent = this._energySetupWarnings.length
-        ? "Zähler erstellt, aber folgende IDs müssen noch korrigiert werden: " +
-          this._energySetupWarnings.join(" | ") +
-          " Nutze „Vorhandene Entitäts-IDs korrigieren“."
-        : "Alle fehlenden Zähler angelegt und mit ihren Entitäts-IDs verknüpft.";
+      const current = this.shadowRoot.querySelector("#energy-setup-status");
+      if (current) current.textContent = "Jahreszähler korrekt angelegt: " + created;
     } catch (error) {
-      const currentStatus = this.shadowRoot.querySelector("#energy-setup-status") || status;
-      currentStatus.textContent = "Einrichtung abgebrochen: " + (error?.message || error) +
-        ". Bitte Home Assistant → Geräte & Dienste → Helfer kontrollieren, " +
-        "bevor du es erneut versuchst.";
-      console.error("ATZE Strom: Utility-Meter-Einrichtung fehlgeschlagen", error);
+      status.textContent = "Erstellung fehlgeschlagen: " + (error?.message || error);
+      console.error("ATZE Strom: Jahreszähler-Erstellung", error);
     } finally {
       this._creatingEnergyMeters = false;
       if (button?.isConnected) button.disabled = false;
@@ -3072,8 +2963,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     const energyStatus = this.shadowRoot.querySelector("#energy-setup-status");
     this.shadowRoot.querySelector("#energy-create-meters")
       ?.addEventListener("click", () => this._createEnergyMeters(energyStatus));
-    this.shadowRoot.querySelector("#energy-repair-meters")
-      ?.addEventListener("click", () => this._repairEnergyMeterNames(energyStatus));
     for (const button of this.shadowRoot.querySelectorAll(".energy-calibrate")) {
       button.addEventListener("click", () => {
         const input = this.shadowRoot.querySelector(
