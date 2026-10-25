@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "3891C0E";
+const ATZE_TESTING_REVISION = "8781B08";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16526,7 +16526,13 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-status").textContent = "";
     dialog.querySelector(".dialog-input").value = "";
     this._updatePeriodDialog();
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      // WebKit otherwise auto-focuses the first editable field, opens the
+      // number keyboard and scrolls the underlying HA view on modal opening.
+      // Start on a non-editable control; keyboard only on an explicit tap.
+      dialog.showModal();
+      dialog.querySelector(".dialog-close")?.focus({ preventScroll: true });
+    }
   }
 
   _updatePeriodDialog() {
@@ -16703,6 +16709,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           box-shadow:0 18px 50px rgba(0,0,0,.45) }
         .period-dialog::backdrop { background:rgba(0,0,0,.62); backdrop-filter:blur(4px) }
         .dialog-title { font-size:18px; font-weight:650; margin-bottom:18px }
+        .dialog-close { position:absolute; top:14px; right:14px; width:32px; height:32px;
+          display:flex; align-items:center; justify-content:center; border:0;
+          border-radius:50%; background:rgba(118,118,128,.22);
+          color:var(--primary-text-color); cursor:pointer }
+        .dialog-close ha-icon { --mdc-icon-size:19px }
         .dialog-value-line { text-align:center; margin-bottom:20px; font-weight:700; font-size:32px }
         .dialog-meta { display:flex; align-items:center; justify-content:space-between; gap:10px;
           font-size:12px; color:var(--secondary-text-color) }
@@ -16741,6 +16752,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         </div>
       </div>
       <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
+        <button class="dialog-close" type="button" autofocus aria-label="Popup schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
         <div class="dialog-title" id="energy-period-dialog-title"></div>
         <div class="dialog-value-line"><span class="dialog-value"></span> <span class="unit">kWh</span></div>
         <div class="dialog-meta">
@@ -16754,6 +16766,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         <div class="dialog-status" role="status" aria-live="polite"></div>
       </dialog>`;
     const dialog = this.shadowRoot.querySelector(".period-dialog");
+    dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) {
         const bounds = dialog.getBoundingClientRect();
