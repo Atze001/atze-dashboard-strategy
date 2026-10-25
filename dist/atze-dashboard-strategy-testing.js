@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8EDE78D";
+const ATZE_TESTING_REVISION = "24A49C2";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7340,6 +7340,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       month_reset: "",
       day_reset: "",
       native_utility_meters: true,
+      individual_meters: (config.energy_individual || []).filter(item => item?.total),
       return_path: config.home_path || "home",
     };
     const energyView = {
@@ -7353,7 +7354,6 @@ class AtzeDashboardStrategy extends HTMLElement {
     const views =
       config.home_view === false
         ? [
-            energyView,
             energyView,
             ...customPageViews,
             ...roomViews,
@@ -7372,6 +7372,7 @@ class AtzeDashboardStrategy extends HTMLElement {
                 (entity) => entity.entity_id
               )
             ),
+            energyView,
             ...customPageViews,
             ...roomViews,
           ];
