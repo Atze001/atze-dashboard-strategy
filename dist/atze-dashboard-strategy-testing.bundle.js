@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B0FE5A5";
+const ATZE_TESTING_REVISION = "8EDE78D";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -19640,10 +19640,37 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           ${this._openEditorSections.has("energy-setup") ? "open" : ""}>
           <summary><span class="editor-section-summary-main">
             <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>
-            <span class="editor-section-summary-title">Stromverbrauch einrichten</span>
+            <span class="editor-section-summary-title">Strom · Gesamtstrom</span>
           </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
           <div class="editor-section-body" style="display:grid;gap:12px;padding:16px">
+            <div class="editor-section-help">Diese kWh-Entität bestimmt den Wert auf der
+              Startseite sowie die Gesamtwerte im integrierten Strom-Dashboard.</div>
             ${this._energySetupHtml()}
+          </div>
+        </details>
+        <details class="panel editor-section" data-editor-section="energy-individual"
+          ${this._openEditorSections.has("energy-individual") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:power-plug-outline"></ha-icon>
+            <span class="editor-section-summary-title">Strom · Einzelerfassung</span>
+          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body" style="display:grid;gap:14px;padding:16px">
+            <div class="editor-section-help">Geräte oder Räume einzeln hinzufügen.
+              Jeder Eintrag bekommt einen eigenen kWh-Quellsensor und eigene
+              Jahres-, Monats- und Tageszähler.</div>
+            ${(this._config.energy_individual || []).map((entry, index) => `
+              <div class="energy-individual-entry" data-index="${index}"
+                style="border:1px solid var(--divider-color,rgba(127,127,127,.24));border-radius:12px;padding:12px;display:grid;gap:10px">
+                <div class="toolbar" style="justify-content:space-between;align-items:center">
+                  <strong>${this._escape(this._hass?.states?.[entry.total]?.attributes?.friendly_name ||
+                    entry.total || "Einzelzähler " + (index + 1))}</strong>
+                  <button class="energy-remove-individual" data-index="${index}" type="button">Entfernen</button>
+                </div>
+                ${this._energySetupHtml(index)}
+              </div>`).join("") || '<div class="editor-section-help">Noch keine Einzelzähler eingerichtet.</div>'}
+            <div class="toolbar"><button id="energy-add-individual" type="button">
+              Einzelstrom hinzufügen
+            </button></div>
           </div>
         </details>
         <details class="panel editor-section" data-editor-section="name-filters" ${this._openEditorSections.has("name-filters") ? "open" : ""}>
@@ -19844,21 +19871,34 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
     for (const select of this.shadowRoot.querySelectorAll(".energy-setup-field")) {
       select.addEventListener("change", () =>
-        this._setEnergySetupField(select.dataset.key, select.value));
+        this._setEnergySetupField(select.dataset.key, select.value,
+          select.hasAttribute("data-index") ? Number(select.dataset.index) : null));
     }
-    const energyStatus = this.shadowRoot.querySelector("#energy-setup-status");
-    this.shadowRoot.querySelector("#energy-create-meters")
-      ?.addEventListener("click", () => this._createEnergyMeters(energyStatus));
+    const energyStatusFor = element => element.closest(".energy-individual-entry, .editor-section-body")
+      ?.querySelector(".energy-setup-status");
+    this.shadowRoot.querySelector("#energy-add-individual")
+      ?.addEventListener("click", () => this._addEnergyIndividual());
+    for (const button of this.shadowRoot.querySelectorAll(".energy-remove-individual")) {
+      button.addEventListener("click", () => this._removeEnergyIndividual(Number(button.dataset.index)));
+    }
+    for (const button of this.shadowRoot.querySelectorAll(".energy-create-meters")) {
+      button.addEventListener("click", () => this._createEnergyMeters(energyStatusFor(button),
+        button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
+    }
     for (const button of this.shadowRoot.querySelectorAll(".energy-calibrate")) {
       button.addEventListener("click", () => {
-        const input = this.shadowRoot.querySelector(
-          '.energy-calibration-value[data-key="' + button.dataset.key + '"]');
-        this._calibrateEnergyMeter(button.dataset.key, input?.value || "", energyStatus);
+        const holder = button.closest(".energy-individual-entry, .editor-section-body");
+        const input = [...holder.querySelectorAll(".energy-calibration-value")]
+          .find(item => item.dataset.key === button.dataset.key);
+        this._calibrateEnergyMeter(button.dataset.key, input?.value || "",
+          energyStatusFor(button),
+          button.hasAttribute("data-index") ? Number(button.dataset.index) : null);
       });
     }
     for (const button of this.shadowRoot.querySelectorAll(".energy-reset")) {
       button.addEventListener("click", () =>
-        this._calibrateEnergyMeter(button.dataset.key, "0", energyStatus));
+        this._calibrateEnergyMeter(button.dataset.key, "0", energyStatusFor(button),
+          button.hasAttribute("data-index") ? Number(button.dataset.index) : null));
     }
 
     // Build expensive Home Assistant selectors only when a room is opened.
