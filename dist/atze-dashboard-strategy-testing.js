@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8781B08";
+const ATZE_TESTING_REVISION = "5942F79";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11911,6 +11911,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
         if (!response.ok) throw new Error("Versionsdatei nicht erreichbar");
         const revision = (await response.text()).trim().toUpperCase();
         if (!/^[A-F0-9]{7}$/.test(revision)) throw new Error("Ungültige Versionskennung");
+
+        // ATZE Home can rebuild its WKWebView after clearing web resource
+        // caches. This also resets the custom-element registry. Older native
+        // builds and ordinary browsers keep the existing navigation fallback.
+        const nativeReload = window.webkit?.messageHandlers?.atzeReloadTesting;
+        if (nativeReload?.postMessage) {
+          nativeReload.postMessage({
+            path: location.pathname + location.search + location.hash,
+            revision,
+          });
+          return;
+        }
 
         // A full document navigation resets already registered custom elements.
         // Home Assistant login, local storage and dashboard configuration stay intact.
