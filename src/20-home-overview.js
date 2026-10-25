@@ -4451,6 +4451,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
         const revision = (await response.text()).trim().toUpperCase();
         if (!/^[A-F0-9]{7}$/.test(revision)) throw new Error("Ungültige Versionskennung");
 
+        // ATZE Home can rebuild its WKWebView after clearing web resource
+        // caches. This also resets the custom-element registry. Older native
+        // builds and ordinary browsers keep the existing navigation fallback.
+        const nativeReload = window.webkit?.messageHandlers?.atzeReloadTesting;
+        if (nativeReload?.postMessage) {
+          nativeReload.postMessage({
+            path: location.pathname + location.search + location.hash,
+            revision,
+          });
+          return;
+        }
+
         // A full document navigation resets already registered custom elements.
         // Home Assistant login, local storage and dashboard configuration stay intact.
         sessionStorage.setItem("atze-testing:return-url", location.pathname + location.search + location.hash);
