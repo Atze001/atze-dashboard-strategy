@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.413.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "62AC45F";
+const ATZE_TESTING_REVISION = "C545B99";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16396,14 +16396,26 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   }
 
   async _reset(period) {
+    const native = this._config.native_utility_meters &&
+      ["month", "day"].includes(period);
+    const entityId = this._config[period];
     const scriptId = this._config[period + "_script"];
-    if (!scriptId) return;
+    if (native && (!entityId || !this._hass?.states?.[entityId])) {
+      window.alert("Utility-Meter-Entität nicht verfügbar.");
+      return;
+    }
+    if (!native && !scriptId) return;
     const title = period.endsWith("month") ? "Monats" : "Tages";
     if (!window.confirm(title + "verbrauch wirklich auf 0 kWh zurücksetzen?")) return;
-    const button = this.shadowRoot.querySelector('[data-reset="' + period + '"]');
+    const button = this.shadowRoot.querySelector(".dialog-reset");
     if (button) button.disabled = true;
     try {
-      await this._hass.callService("script", "turn_on", { entity_id: scriptId });
+      if (native) {
+        await this._hass.callService("utility_meter", "calibrate",
+          { value: 0 }, { entity_id: entityId });
+      } else {
+        await this._hass.callService("script", "turn_on", { entity_id: scriptId });
+      }
     } catch (error) {
       console.error("ATZE Strom: Reset fehlgeschlagen", error);
       window.alert("Zurücksetzen fehlgeschlagen. Bitte Home Assistant prüfen.");
@@ -16437,7 +16449,9 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     dialog.querySelector(".dialog-value").textContent = this._value(this._config[period]);
     const resetButton = dialog.querySelector(".dialog-reset");
     resetButton.dataset.reset = period;
-    resetButton.hidden = !this._config[period + "_script"];
+    resetButton.hidden = !(this._config[period + "_script"] ||
+      (this._config.native_utility_meters &&
+        ["month", "day"].includes(period) && this._config[period]));
     dialog.querySelector(".dialog-date").parentElement.hidden = !resetEntity;
   }
 
