@@ -18530,7 +18530,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       <div class="editor-section-help">
         Wähle einen fortlaufenden Energiesensor (kWh). Jahres-, Monats- und
         Tageszähler werden automatisch zugeordnet oder bei Bedarf angelegt.
-        Jahr setzt sich am 1. Januar zurück; Monat und Tag nur manuell.
+        Jahr setzt sich am 1. Januar zurück, Monat am Monatsersten;
+        Tag nur manuell.
         Bestehende Zählerstände bleiben erhalten.
       </div>
       <label class="primary-field"><span>kWh-Quellsensor</span>
@@ -18669,7 +18670,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       const result = await this._hass.callApi("POST",
         "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
         { name: localName + " " + label, source,
-          cycle: key === "year" ? "yearly" : "none", offset: 0, tariffs: [],
+          cycle: key === "year" ? "yearly" : key === "month" ? "monthly" : "none",
+          offset: 0, tariffs: [],
           net_consumption: false, delta_values: false, periodically_resetting: true });
       if (result.type !== "create_entry") {
         throw Error(label + ": Anlage nicht bestätigt: " + JSON.stringify(result.errors || result.type));
