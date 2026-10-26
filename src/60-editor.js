@@ -1656,7 +1656,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       const result = await this._hass.callApi("POST",
         "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
         { name: localName + " " + label, source,
-          cycle: key === "year" ? "yearly" : key === "month" ? "monthly" : "none",
+          cycle: key === "year" ? "yearly" : key === "month" ? "monthly" : "daily",
           offset: 0, tariffs: [],
           net_consumption: false, delta_values: false, periodically_resetting: true });
       if (result.type !== "create_entry") {
