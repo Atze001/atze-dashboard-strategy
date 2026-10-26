@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.414.0";
+const ATZE_VERSION = "0.415.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "016E6F9";
+const ATZE_TESTING_REVISION = "8367172";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -18667,7 +18667,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       const result = await this._hass.callApi("POST",
         "config/config_entries/flow/" + encodeURIComponent(init.flow_id),
         { name: localName + " " + label, source,
-          cycle: key === "year" ? "yearly" : key === "month" ? "monthly" : "none",
+          cycle: key === "year" ? "yearly" : key === "month" ? "monthly" : "daily",
           offset: 0, tariffs: [],
           net_consumption: false, delta_values: false, periodically_resetting: true });
       if (result.type !== "create_entry") {
