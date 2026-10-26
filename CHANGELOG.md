@@ -1,3 +1,9 @@
+## v0.415.0
+
+- Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.
+- Jahres- (`yearly`) und Monatszyklus (`monthly`) bleiben unverändert.
+- Bereits bestehende Utility Meter werden nicht automatisch umgestellt; ein tatsächlicher Tageswechsel mit neu angelegtem Helfer ist noch nicht praktisch bestätigt.
+
 ## v0.414.0
 
 - Stromdashboard mit Gesamtstromsensor und Hauptsensoren je Raum sowie Jahres-, Monats- und Tageszählern erweitert.
