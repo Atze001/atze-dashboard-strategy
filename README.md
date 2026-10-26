@@ -230,6 +230,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.415.0
+
+- Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.
+- Jahres- (`yearly`) und Monatszyklus (`monthly`) bleiben unverändert.
+- Bereits bestehende Utility Meter werden nicht automatisch umgestellt; ein tatsächlicher Tageswechsel mit neu angelegtem Helfer ist noch nicht praktisch bestätigt.
+
 ## v0.414.0
 
 - Stromdashboard mit Gesamtstromsensor und Hauptsensoren je Raum sowie Jahres-, Monats- und Tageszählern erweitert.
@@ -241,14 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.
 - Die gewählte Reihenfolge wird dauerhaft in der Dashboard-Konfiguration gespeichert; normale Navigation und zentrierte Darstellung bleiben erhalten.
-
-## v0.412.0
-
-- Strom-Dashboard mit eigener Energieübersicht und fixiertem Titelbild; Abdeckungen verhindern beim Scrollen sichtbare Karten oberhalb und seitlich des Bildes.
-- Raumansichten mit fixierten Titelbildern und Scroll-Abdeckung.
-- Manuell auswählbare Hauptsensoren je Raum in den Dashboard-Einstellungen; flüssigere Einstellungsansicht und gezielte Sensorfilter.
-- JSON-Konfigurationssicherung in ATZE Home über native iOS-Dateifreigabe; normaler Download im Browser bleibt erhalten.
-- Nicht mehr verwendete JavaScript-Bounce-Sperren bereinigt. Das native Scrollverhalten wird in der ATZE Home App gesteuert.
 <!-- latest-changes:end -->
 
 ## Lizenz

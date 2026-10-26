@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.414.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8D20FBB";
+const ATZE_TESTING_REVISION = "D2C8B1E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
