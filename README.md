@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.415.0**
+Version **0.416.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
