@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.415.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "39331AE";
+const ATZE_TESTING_REVISION = "CC1FF14";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13635,7 +13635,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     let pinned = false;
     let frame = 0;
     let originalStyles = null;
-    let initialLeftOffset = 0;
+    let pinnedWidth = 0;
     let clippedContainer = null;
     let originalClipPath = null;
     const initialPath = window.location.pathname;
@@ -13652,6 +13652,7 @@ class AtzeRoomNavHeader extends HTMLElement {
       clearClip();
       if (!pinned) return;
       pinned = false;
+      pinnedWidth = 0;
       Object.assign(this.style, originalStyles);
       originalStyles = null;
       placeholder.style.display = "none";
@@ -13694,18 +13695,22 @@ class AtzeRoomNavHeader extends HTMLElement {
         };
         placeholder.style.cssText =
           `display:block;height:${rect.height}px;width:${rect.width}px;max-width:100%;flex:none;pointer-events:none`;
-        // Capture the original horizontal position before replacing the
-        // flex item. The placeholder can be centered at a different x-offset.
-        initialLeftOffset = rect.left - parent.getBoundingClientRect().left;
+        // Center relative to the stable Lovelace view-header container.
+        // The flex item's own parent shifts when the fixed card is replaced
+        // by its placeholder, so it must not be used as the left anchor.
+        pinnedWidth = rect.width;
+        const headerContainer = this.getRootNode()?.host?.closest(".container");
+        const bounds = (headerContainer || parent).getBoundingClientRect();
         this.style.position = "fixed";
         this.style.top = `${Math.max(0, rect.top)}px`;
-        this.style.left = `${rect.left}px`;
-        this.style.width = `${rect.width}px`;
+        this.style.left = `${bounds.left + (bounds.width - pinnedWidth) / 2}px`;
+        this.style.width = `${pinnedWidth}px`;
         this.style.zIndex = "30";
         pinned = true;
       } else if (pinned) {
-        // Track the parent on viewport changes, not the centered placeholder.
-        this.style.left = `${parent.getBoundingClientRect().left + initialLeftOffset}px`;
+        const headerContainer = this.getRootNode()?.host?.closest(".container");
+        const bounds = (headerContainer || parent).getBoundingClientRect();
+        this.style.left = `${bounds.left + (bounds.width - pinnedWidth) / 2}px`;
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
       if (pinned) {
