@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.415.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8367172";
+const ATZE_TESTING_REVISION = "7C92273";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13694,8 +13694,9 @@ class AtzeRoomNavHeader extends HTMLElement {
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
       if (pinned) {
-        // Hide content that scrolls through the gap above the pinned image.
-        const maskHeight = Math.max(0, this.getBoundingClientRect().top);
+        // Hide scrolling entities across the entire pinned header height,
+        // including the space beside the room image on wide screens.
+        const maskHeight = Math.max(0, this.getBoundingClientRect().bottom);
         topMask.style.height = `${maskHeight}px`;
         topMask.style.display = maskHeight > 0 ? "block" : "none";
       }
