@@ -13936,20 +13936,11 @@ class AtzeRoomNavHeader extends HTMLElement {
           align-items: center;
           justify-content: flex-start;
           gap: 10px;
-          cursor: pointer;
           user-select: none;
           color: var(--primary-text-color);
           transition:
             opacity 120ms ease,
             transform 120ms ease;
-        }
-
-        .nav-row:hover {
-          opacity: 0.88;
-        }
-
-        .nav-row:active {
-          transform: scale(0.98);
         }
 
         .home-icon {
@@ -14025,10 +14016,6 @@ class AtzeRoomNavHeader extends HTMLElement {
       <ha-card class="${backgroundImage ? "has-background" : ""}">
         <div
           class="nav-row"
-          role="button"
-          tabindex="0"
-          title="Zurück zu Zuhause"
-          aria-label="Zurück zu Zuhause – ${areaName}"
         >
           ${this._config.hide_home_icon ? "" : `
           <span class="home-icon">
@@ -14077,19 +14064,6 @@ class AtzeRoomNavHeader extends HTMLElement {
       appendRow(secondRowBadges);
     }
 
-    const row = this.shadowRoot.querySelector(".nav-row");
-
-    row?.addEventListener(
-      "click",
-      () => this._navigate()
-    );
-
-    row?.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        this._navigate();
-      }
-    });
   }
 }
 
