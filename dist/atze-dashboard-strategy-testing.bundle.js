@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.415.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "54D9B64";
+const ATZE_TESTING_REVISION = "BD494A7";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13637,6 +13637,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     let originalStyles = null;
     let clippedContainer = null;
     let originalClipPath = null;
+    const initialPath = window.location.pathname;
 
     const clearClip = () => {
       if (clippedContainer) {
@@ -13656,7 +13657,16 @@ class AtzeRoomNavHeader extends HTMLElement {
     };
     const update = () => {
       frame = 0;
-      if (!this.isConnected || !this._config) return;
+      if (!this.isConnected || !this._config) {
+        release();
+        return;
+      }
+      // A fixed header otherwise survives the outgoing view transition.
+      // Cached Lovelace subviews may remain connected after navigation.
+      if (window.location.pathname !== initialPath) {
+        release();
+        return;
+      }
       const hasImage = Boolean(this.shadowRoot?.querySelector("ha-card.has-background"));
       if (!hasImage) {
         release();
