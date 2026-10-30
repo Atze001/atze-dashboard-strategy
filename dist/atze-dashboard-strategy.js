@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.415.0";
+const ATZE_VERSION = "0.416.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -13634,30 +13634,44 @@ class AtzeRoomNavHeader extends HTMLElement {
     // slot in place, so the rest of the room view scrolls normally.
     const placeholder = document.createElement("div");
     placeholder.setAttribute("aria-hidden", "true");
-    const topMask = document.createElement("div");
-    topMask.setAttribute("aria-hidden", "true");
-    topMask.style.cssText = [
-      "position:fixed", "top:0", "left:0", "right:0", "height:0",
-      "pointer-events:none", "z-index:29", "display:none",
-      "background:var(--primary-background-color,#000)"
-    ].join(";");
-    document.body.appendChild(topMask);
     placeholder.style.cssText = "display:none;pointer-events:none";
     let pinned = false;
     let frame = 0;
     let originalStyles = null;
+    let pinnedWidth = 0;
+    let clippedContainer = null;
+    let originalClipPath = null;
+    const initialPath = window.location.pathname;
+
+    const clearClip = () => {
+      if (clippedContainer) {
+        clippedContainer.style.clipPath = originalClipPath;
+        clippedContainer = null;
+        originalClipPath = null;
+      }
+    };
 
     const release = () => {
+      clearClip();
       if (!pinned) return;
       pinned = false;
+      pinnedWidth = 0;
       Object.assign(this.style, originalStyles);
       originalStyles = null;
       placeholder.style.display = "none";
-      topMask.style.display = "none";
     };
     const update = () => {
       frame = 0;
-      if (!this.isConnected || !this._config) return;
+      if (!this.isConnected || !this._config) {
+        release();
+        return;
+      }
+      // A fixed header otherwise survives the outgoing view transition.
+      // Cached Lovelace subviews may remain connected after navigation.
+      if (window.location.pathname !== initialPath) {
+        release();
+        return;
+      }
       const hasImage = Boolean(this.shadowRoot?.querySelector("ha-card.has-background"));
       if (!hasImage) {
         release();
@@ -13683,24 +13697,50 @@ class AtzeRoomNavHeader extends HTMLElement {
           zIndex: this.style.zIndex,
         };
         placeholder.style.cssText =
-          `display:block;height:${rect.height}px;width:100%;pointer-events:none`;
+          `display:block;height:${rect.height}px;width:${rect.width}px;max-width:100%;flex:none;pointer-events:none`;
+        // Center relative to the stable Lovelace view-header container.
+        // The flex item's own parent shifts when the fixed card is replaced
+        // by its placeholder, so it must not be used as the left anchor.
+        pinnedWidth = rect.width;
+        const headerContainer = this.getRootNode()?.host?.closest(".container");
+        const bounds = (headerContainer || parent).getBoundingClientRect();
         this.style.position = "fixed";
         this.style.top = `${Math.max(0, rect.top)}px`;
-        this.style.left = `${rect.left}px`;
-        this.style.width = `${rect.width}px`;
+        this.style.left = `${bounds.left + (bounds.width - pinnedWidth) / 2}px`;
+        this.style.width = `${pinnedWidth}px`;
         this.style.zIndex = "30";
         pinned = true;
       } else if (pinned) {
-        // Keep the original screen position even while scrolling upwards.
-        this.style.left = `${rect.left}px`;
-        this.style.width = `${rect.width}px`;
+        const headerContainer = this.getRootNode()?.host?.closest(".container");
+        const bounds = (headerContainer || parent).getBoundingClientRect();
+        this.style.left = `${bounds.left + (bounds.width - pinnedWidth) / 2}px`;
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
       if (pinned) {
-        // Hide content that scrolls through the gap above the pinned image.
-        const maskHeight = Math.max(0, this.getBoundingClientRect().top);
-        topMask.style.height = `${maskHeight}px`;
-        topMask.style.display = maskHeight > 0 ? "block" : "none";
+        // The header and entity grid are siblings in hui-sections-view.
+        // Clip the moving grid above the fixed header's lower edge without
+        // painting over the dashboard's own background.
+        const headerHost = this.getRootNode()?.host;
+        const wrapper = headerHost?.parentElement;
+        const grid = Array.from(wrapper?.children || []).find(
+          (el) => el.matches?.("div.container")
+        );
+        if (grid !== clippedContainer) {
+          clearClip();
+          if (grid) {
+            clippedContainer = grid;
+            originalClipPath = grid.style.clipPath;
+          }
+        }
+        if (clippedContainer) {
+          const cut = Math.max(
+            0,
+            Math.ceil(this.getBoundingClientRect().bottom -
+              clippedContainer.getBoundingClientRect().top)
+          );
+          clippedContainer.style.clipPath =
+            cut > 0 ? `inset(${cut}px 0 0 0)` : originalClipPath;
+        }
       }
     };
     const schedule = () => {
@@ -13717,7 +13757,6 @@ class AtzeRoomNavHeader extends HTMLElement {
       if (frame) window.cancelAnimationFrame(frame);
       release();
       placeholder.remove();
-      topMask.remove();
     };
   }
 
@@ -13902,20 +13941,11 @@ class AtzeRoomNavHeader extends HTMLElement {
           align-items: center;
           justify-content: flex-start;
           gap: 10px;
-          cursor: pointer;
           user-select: none;
           color: var(--primary-text-color);
           transition:
             opacity 120ms ease,
             transform 120ms ease;
-        }
-
-        .nav-row:hover {
-          opacity: 0.88;
-        }
-
-        .nav-row:active {
-          transform: scale(0.98);
         }
 
         .home-icon {
@@ -13991,10 +14021,6 @@ class AtzeRoomNavHeader extends HTMLElement {
       <ha-card class="${backgroundImage ? "has-background" : ""}">
         <div
           class="nav-row"
-          role="button"
-          tabindex="0"
-          title="Zurück zu Zuhause"
-          aria-label="Zurück zu Zuhause – ${areaName}"
         >
           ${this._config.hide_home_icon ? "" : `
           <span class="home-icon">
@@ -14043,19 +14069,6 @@ class AtzeRoomNavHeader extends HTMLElement {
       appendRow(secondRowBadges);
     }
 
-    const row = this.shadowRoot.querySelector(".nav-row");
-
-    row?.addEventListener(
-      "click",
-      () => this._navigate()
-    );
-
-    row?.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        this._navigate();
-      }
-    });
   }
 }
 
