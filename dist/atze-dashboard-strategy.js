@@ -13698,10 +13698,13 @@ class AtzeRoomNavHeader extends HTMLElement {
           `display:block;height:${rect.height}px;width:100%;pointer-events:none`;
         this.style.position = "fixed";
         this.style.top = `${Math.max(0, rect.top)}px`;
-        this.style.left = `${rect.left}px`;
-        this.style.width = `${rect.width}px`;
         this.style.zIndex = "30";
         pinned = true;
+        // The placeholder is now the element defining the final layout width.
+        // Read its geometry immediately, rather than only after the first scroll.
+        const slotRect = placeholder.getBoundingClientRect();
+        this.style.left = `${slotRect.left}px`;
+        this.style.width = `${slotRect.width}px`;
       } else if (pinned) {
         // Keep the original screen position even while scrolling upwards.
         this.style.left = `${rect.left}px`;
