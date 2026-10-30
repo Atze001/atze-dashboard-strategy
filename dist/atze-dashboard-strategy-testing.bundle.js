@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.415.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9CC73EC";
+const ATZE_TESTING_REVISION = "39331AE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13635,6 +13635,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     let pinned = false;
     let frame = 0;
     let originalStyles = null;
+    let initialLeftOffset = 0;
     let clippedContainer = null;
     let originalClipPath = null;
     const initialPath = window.location.pathname;
@@ -13693,19 +13694,18 @@ class AtzeRoomNavHeader extends HTMLElement {
         };
         placeholder.style.cssText =
           `display:block;height:${rect.height}px;width:${rect.width}px;max-width:100%;flex:none;pointer-events:none`;
+        // Capture the original horizontal position before replacing the
+        // flex item. The placeholder can be centered at a different x-offset.
+        initialLeftOffset = rect.left - parent.getBoundingClientRect().left;
         this.style.position = "fixed";
         this.style.top = `${Math.max(0, rect.top)}px`;
-        this.style.zIndex = "30";
-        pinned = true;
-        // Preserve the original room image width in the flex layout.
-        // A 100%-wide placeholder lets the flex row expand by ~200px on scroll.
-        const slotRect = placeholder.getBoundingClientRect();
-        this.style.left = `${slotRect.left}px`;
-        this.style.width = `${slotRect.width}px`;
-      } else if (pinned) {
-        // Keep the original screen position even while scrolling upwards.
         this.style.left = `${rect.left}px`;
         this.style.width = `${rect.width}px`;
+        this.style.zIndex = "30";
+        pinned = true;
+      } else if (pinned) {
+        // Track the parent on viewport changes, not the centered placeholder.
+        this.style.left = `${parent.getBoundingClientRect().left + initialLeftOffset}px`;
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
       if (pinned) {
