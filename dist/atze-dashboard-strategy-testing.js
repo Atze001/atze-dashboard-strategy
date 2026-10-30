@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.415.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "7C92273";
+const ATZE_TESTING_REVISION = "A3B9772";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13636,7 +13636,9 @@ class AtzeRoomNavHeader extends HTMLElement {
     topMask.style.cssText = [
       "position:fixed", "top:0", "left:0", "right:0", "height:0",
       "pointer-events:none", "z-index:29", "display:none",
-      "background:var(--primary-background-color,#000)"
+      "background:var(--lovelace-background,var(--primary-background-color,#000))",
+      "background-size:cover", "background-position:center center",
+      "background-attachment:fixed"
     ].join(";");
     document.body.appendChild(topMask);
     placeholder.style.cssText = "display:none;pointer-events:none";
