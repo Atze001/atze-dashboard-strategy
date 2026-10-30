@@ -69,28 +69,28 @@ class AtzeRoomNavHeader extends HTMLElement {
     // slot in place, so the rest of the room view scrolls normally.
     const placeholder = document.createElement("div");
     placeholder.setAttribute("aria-hidden", "true");
-    const topMask = document.createElement("div");
-    topMask.setAttribute("aria-hidden", "true");
-    topMask.style.cssText = [
-      "position:fixed", "top:0", "left:0", "right:0", "height:0",
-      "pointer-events:none", "z-index:29", "display:none",
-      "background:var(--lovelace-background,var(--primary-background-color,#000))",
-      "background-size:cover", "background-position:center center",
-      "background-attachment:fixed"
-    ].join(";");
-    document.body.appendChild(topMask);
     placeholder.style.cssText = "display:none;pointer-events:none";
     let pinned = false;
     let frame = 0;
     let originalStyles = null;
+    let clippedContainer = null;
+    let originalClipPath = null;
+
+    const clearClip = () => {
+      if (clippedContainer) {
+        clippedContainer.style.clipPath = originalClipPath;
+        clippedContainer = null;
+        originalClipPath = null;
+      }
+    };
 
     const release = () => {
+      clearClip();
       if (!pinned) return;
       pinned = false;
       Object.assign(this.style, originalStyles);
       originalStyles = null;
       placeholder.style.display = "none";
-      topMask.style.display = "none";
     };
     const update = () => {
       frame = 0;
@@ -134,11 +134,30 @@ class AtzeRoomNavHeader extends HTMLElement {
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
       if (pinned) {
-        // Hide scrolling entities across the entire pinned header height,
-        // including the space beside the room image on wide screens.
-        const maskHeight = Math.max(0, this.getBoundingClientRect().bottom);
-        topMask.style.height = `${maskHeight}px`;
-        topMask.style.display = maskHeight > 0 ? "block" : "none";
+        // The header and entity grid are siblings in hui-sections-view.
+        // Clip the moving grid above the fixed header's lower edge without
+        // painting over the dashboard's own background.
+        const headerHost = this.getRootNode()?.host;
+        const wrapper = headerHost?.parentElement;
+        const grid = Array.from(wrapper?.children || []).find(
+          (el) => el.matches?.("div.container")
+        );
+        if (grid !== clippedContainer) {
+          clearClip();
+          if (grid) {
+            clippedContainer = grid;
+            originalClipPath = grid.style.clipPath;
+          }
+        }
+        if (clippedContainer) {
+          const cut = Math.max(
+            0,
+            Math.ceil(this.getBoundingClientRect().bottom -
+              clippedContainer.getBoundingClientRect().top)
+          );
+          clippedContainer.style.clipPath =
+            cut > 0 ? `inset(${cut}px 0 0 0)` : originalClipPath;
+        }
       }
     };
     const schedule = () => {
@@ -155,7 +174,6 @@ class AtzeRoomNavHeader extends HTMLElement {
       if (frame) window.cancelAnimationFrame(frame);
       release();
       placeholder.remove();
-      topMask.remove();
     };
   }
 
