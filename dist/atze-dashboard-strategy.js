@@ -13695,13 +13695,13 @@ class AtzeRoomNavHeader extends HTMLElement {
           zIndex: this.style.zIndex,
         };
         placeholder.style.cssText =
-          `display:block;height:${rect.height}px;width:100%;pointer-events:none`;
+          `display:block;height:${rect.height}px;width:${rect.width}px;max-width:100%;flex:none;pointer-events:none`;
         this.style.position = "fixed";
         this.style.top = `${Math.max(0, rect.top)}px`;
         this.style.zIndex = "30";
         pinned = true;
-        // The placeholder is now the element defining the final layout width.
-        // Read its geometry immediately, rather than only after the first scroll.
+        // Preserve the original room image width in the flex layout.
+        // A 100%-wide placeholder lets the flex row expand by ~200px on scroll.
         const slotRect = placeholder.getBoundingClientRect();
         this.style.left = `${slotRect.left}px`;
         this.style.width = `${slotRect.width}px`;
