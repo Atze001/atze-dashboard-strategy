@@ -16556,7 +16556,6 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     display.dataset.value = "";
     display.textContent = "Wert in kWh";
     display.classList.remove("has-value");
-    this._updatePowerMeters();
     this._updatePeriodDialog();
     if (!dialog.open) {
       // The in-dialog keypad never focuses an editable field, so iOS has no
@@ -17200,6 +17199,7 @@ exportPDF.addEventListener("click", () => {
       power.hidden = !this._config.power;
       if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
     }
+    this._updatePowerMeters();
     for (const period of ["month", "day"]) {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
       if (!tile) continue;
