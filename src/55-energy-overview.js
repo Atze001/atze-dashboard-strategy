@@ -386,6 +386,55 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     };
   }
 
+
+  async _buildReport() {
+    const ui=this.shadowRoot, btn=ui.querySelector(".report-run"), status=ui.querySelector(".report-status");
+    const ym=ui.querySelector(".report-month").value;
+    if(!/^\\d{4}-\\d{2}$/.test(ym)||!this._config.day)return;
+    const [y,m]=ym.split("-").map(Number), from=new Date(y,m-1,1), to=new Date(y,m,1);
+    const rooms=this._roomDefinitions(), ids=[...new Set([this._config.day,...rooms.map(r=>r.day)].filter(Boolean))];
+    btn.disabled=true;status.textContent="Lese Tagesstatistiken …";
+    try {
+      const result=await this._hass.callWS({type:"recorder/statistics_during_period",
+        start_time:from.toISOString(),end_time:to.toISOString(),period:"day",statistic_ids:ids,types:["change"]});
+      const valid=id=>(result[id]||[]).filter(v=>typeof v.change==="number"&&Number.isFinite(v.change));
+      const days=valid(this._config.day);
+      if(!days.length){status.textContent="Keine auswertbaren Tagesdaten vorhanden.";return;}
+      const sum=a=>a.reduce((n,v)=>n+v.change,0);
+      const fmt=n=>new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+" kWh";
+      const esc=x=>String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+      const label=new Intl.DateTimeFormat("de-DE",{month:"long",year:"numeric"}).format(from);
+      const incomplete=days.length<new Date(y,m,0).getDate()||to>Date.now();
+      const dayHTML=days.map(d=>"<tr><td>"+new Date(d.start).toLocaleDateString("de-DE",{timeZone:"Europe/Berlin"})+"</td><td>"+fmt(d.change)+"</td></tr>").join("");
+      const deviceHTML=rooms.map(r=>{const d=valid(r.day);return "<tr><td>"+esc(r.name)+"</td><td>"+(d.length?fmt(sum(d)):"Keine Daten")+"</td></tr>";}).join("");
+      this._reportMarkup=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>ATZE Strombericht</title>
+<style>@page{size:A4;margin:17mm}body{font:14px system-ui;color:#192a40}
+h1{font-size:28px}header{color:#1675c5;font-weight:bold}.amount{font-size:30px;font-weight:700}
+.summary{background:#eaf2fa;padding:18px;border-radius:12px}table{width:100%;border-collapse:collapse}
+td,th{text-align:left;padding:9px;border-bottom:1px solid #ddd}td:last-child,th:last-child{text-align:right}
+p{color:#536478;line-height:1.5}h2{margin-top:24px}</style></head><body>
+<header>ATZE HOME · STROMBERICHT</header><h1>${esc(label)}</h1>
+<div class="summary">Gesamtverbrauch<div class="amount">${fmt(sum(days))}</div></div>
+<p>${incomplete?"Teilmonat / unvollständige Statistik. ":""}${days.length} erfasste Tagesperioden.
+Keine Hochrechnung. Datenquelle: Home Assistant Langzeitstatistik.</p>
+<h2>Tagesverbrauch</h2><table><tr><th>Datum</th><th>Verbrauch</th></tr>${dayHTML}</table>
+<h2>Einzelverbraucher (informativ)</h2><p>Diese Werte werden nicht zum Gesamtstrom hinzuaddiert.
+Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
+<table><tr><th>Verbraucher</th><th>Verbrauch</th></tr>${deviceHTML}</table>
+<p>Keine Kostenberechnung ohne verifizierten Stromtarif. Erstellt: ${new Date().toLocaleString("de-DE")}.</p>
+</body></html>`;
+      ui.querySelector(".report-print").hidden=false;
+      status.textContent=label+": "+fmt(sum(days))+(incomplete?" (Teilmonat)":"")+" · PDF bereit";
+    }catch(e){status.textContent="Statistikabfrage fehlgeschlagen: "+(e?.message||String(e));}
+    finally{btn.disabled=false;}
+  }
+  _printReport() {
+    if(!this._reportMarkup)return;
+    const popup=window.open("","_blank");
+    if(!popup){this.shadowRoot.querySelector(".report-status").textContent="Pop-up blockiert. Bitte PDF-Fenster erlauben.";return;}
+    popup.document.open();popup.document.write(this._reportMarkup);popup.document.close();popup.focus();popup.print();
+  }
+
   _render() {
     this._heroPinCleanup?.();
     this._heroPinCleanup = null;
@@ -497,6 +546,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
         .dialog-set:disabled { opacity:.45; cursor:wait }
         .dialog-status { min-height:16px; margin-top:10px; font-size:12px; color:var(--secondary-text-color) }
+        .report-panel{margin-top:12px;padding:14px;border-radius:14px;background:rgba(55,58,67,.3);color:var(--primary-text-color)}
+        .report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+        .report-actions button,.report-actions input{font:inherit;border-radius:9px;padding:9px;border:1px solid rgba(255,255,255,.2);background:rgba(118,118,128,.22);color:inherit}
+        .report-actions button:disabled{opacity:.5}.report-print[hidden]{display:none}
+        .report-status{font-size:12px;margin-top:8px;color:var(--secondary-text-color)}
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
@@ -515,6 +569,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           </div>
         </div>
       </div>
+      <div class="report-panel"><strong>Monatsbericht</strong>
+        <div class="report-actions"><input type="month" class="report-month" aria-label="Monat">
+        <button type="button" class="report-run">Bericht erstellen</button>
+        <button type="button" class="report-print" hidden>PDF / Drucken</button></div>
+        <div class="report-status" role="status">Datenabruf nur auf Knopfdruck.</div></div>
       <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
         <button class="dialog-close" type="button" autofocus aria-label="Popup schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
         <div class="dialog-title" id="energy-period-dialog-title"></div>
@@ -576,6 +635,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         dialog.querySelector(".dialog-status").textContent = "";
       });
     }
+    const reportMonth=this.shadowRoot.querySelector(".report-month");
+    const today=new Date();
+    reportMonth.value=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
+    reportMonth.addEventListener("change",()=>{this._reportMarkup=null;this.shadowRoot.querySelector(".report-print").hidden=true;});
+    this.shadowRoot.querySelector(".report-run").addEventListener("click",()=>this._buildReport());
+    this.shadowRoot.querySelector(".report-print").addEventListener("click",()=>this._printReport());
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
