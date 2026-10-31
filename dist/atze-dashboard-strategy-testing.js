@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.416.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "067EECC";
+const ATZE_TESTING_REVISION = "2D03DA0";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16553,6 +16553,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     display.dataset.value = "";
     display.textContent = "Wert in kWh";
     display.classList.remove("has-value");
+    this._updatePowerMeters();
     this._updatePeriodDialog();
     if (!dialog.open) {
       // The in-dialog keypad never focuses an editable field, so iOS has no
@@ -16766,6 +16767,64 @@ exportPDF.addEventListener("click", () => {
     }
   }
 
+  _powerWatts(entityId) {
+    if (!entityId) return null;
+    const entity = this._hass?.states?.[entityId];
+    if (!entity || ["unknown", "unavailable"].includes(entity.state)) return null;
+    const value = Number(entity.state);
+    if (!Number.isFinite(value) || value < 0) return null;
+    const unit = String(entity.attributes?.unit_of_measurement || "W").trim().toLowerCase();
+    if (unit === "kw") return value * 1000;
+    return unit === "w" ? value : null;
+  }
+
+  _updatePowerMeters() {
+    const panel = this.shadowRoot?.querySelector(".power-meter-panel");
+    if (!panel) return;
+    const total = this._powerWatts(this._config.power);
+    const devices = this._roomDefinitions()
+      .map(room => ({name:room.name, watts:this._powerWatts(room.power)}))
+      .filter(item => item.watts !== null && item.watts > 5)
+      .sort((a,b) => b.watts-a.watts);
+    if (!this._config.power && !this._roomDefinitions().some(room => room.power)) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const headline = panel.querySelector(".power-meter-total");
+    headline.textContent = total === null ? "–" : new Intl.NumberFormat("de-DE", {maximumFractionDigits:0}).format(total) + " W";
+    const label = panel.querySelector(".power-meter-caption");
+    label.textContent = total === null
+      ? "Gesamtleistung: kein gültiger Watt-Sensor konfiguriert"
+      : "Aktuelle Gesamtleistung";
+    const list = panel.querySelector(".power-meter-bars");
+    list.replaceChildren();
+    const max = Math.max(1,...devices.map(item=>item.watts));
+    const fmt = n => new Intl.NumberFormat("de-DE",{maximumFractionDigits:0}).format(n) + " W";
+    for (const item of devices) {
+      const row = document.createElement("div");
+      row.className = "power-meter-row";
+      const heading = document.createElement("div");
+      heading.className = "power-meter-row-head";
+      const name = document.createElement("span");
+      name.textContent = item.name;
+      const value = document.createElement("strong");
+      value.textContent = fmt(item.watts);
+      heading.append(name,value);
+      const track = document.createElement("div");
+      track.className = "power-meter-track";
+      const fill = document.createElement("div");
+      fill.className = "power-meter-fill";
+      fill.style.width = Math.max(1,item.watts / max * 100) + "%";
+      track.appendChild(fill);
+      row.append(heading,track);
+      list.appendChild(row);
+    }
+    const empty = panel.querySelector(".power-meter-empty");
+    empty.hidden = devices.length > 0;
+    empty.textContent = "Derzeit keine konfigurierten Einzelverbraucher über 5 W.";
+  }
+
   _render() {
     this._heroPinCleanup?.();
     this._heroPinCleanup = null;
@@ -16877,6 +16936,21 @@ exportPDF.addEventListener("click", () => {
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
         .dialog-set:disabled { opacity:.45; cursor:wait }
         .dialog-status { min-height:16px; margin-top:10px; font-size:12px; color:var(--secondary-text-color) }
+        .power-meter-panel{grid-column:1/-1;padding:15px;border-radius:16px;
+          background:rgba(55,58,67,.30);border:1px solid var(--home-card-border,rgba(255,255,255,.10));
+          color:var(--primary-text-color)}
+        .power-meter-panel[hidden]{display:none}
+        .power-meter-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+        .power-meter-heading strong{font-size:16px}
+        .power-meter-total{font-size:clamp(22px,6vw,32px);font-weight:750;font-variant-numeric:tabular-nums}
+        .power-meter-caption,.power-meter-hint,.power-meter-empty{font-size:12px;color:var(--secondary-text-color)}
+        .power-meter-bars{display:grid;gap:10px;margin:14px 0 8px}
+        .power-meter-row-head{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:5px}
+        .power-meter-row-head span{min-width:0;overflow-wrap:anywhere}
+        .power-meter-row-head strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+        .power-meter-track{height:12px;background:rgba(128,128,128,.25);border-radius:10px;overflow:hidden}
+        .power-meter-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#2d9cf0,#55d6ed);
+          transition:width 250ms ease}
         .report-panel{margin-top:12px;padding:14px;border-radius:14px;background:rgba(55,58,67,.3);color:var(--primary-text-color)}
         .report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
         .report-actions button,.report-actions input{font:inherit;border-radius:9px;padding:9px;border:1px solid rgba(255,255,255,.2);background:rgba(118,118,128,.22);color:inherit}
@@ -17029,6 +17103,17 @@ exportPDF.addEventListener("click", () => {
         }
       });
       grid.appendChild(tile);
+    }
+    if (hasTotal) {
+      const panel = document.createElement("section");
+      panel.className = "power-meter-panel";
+      panel.innerHTML = `<div class="power-meter-heading">
+        <strong>Aktuelle Leistung</strong><span class="power-meter-total">–</span></div>
+        <div class="power-meter-caption"></div>
+        <div class="power-meter-bars"></div>
+        <div class="power-meter-empty" hidden></div>
+        <div class="power-meter-hint">Einzelverbraucher sind informativ und werden nicht zur Gesamtleistung addiert.</div>`;
+      grid.appendChild(panel);
     }
     const rooms = this._roomDefinitions();
     for (const room of rooms) {
