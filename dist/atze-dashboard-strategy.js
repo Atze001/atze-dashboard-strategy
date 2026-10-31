@@ -16709,33 +16709,43 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
   }
   _printReport() {
     if (!this._reportMarkup) return;
-    // Show a real, visible report. Printing an invisible iframe is unreliable
-    // in the ATZE Home WKWebView and must not be reported as success.
+    // A modal <dialog> enters the browser's top layer. This keeps the close
+    // control above the pinned energy hero (which has its own stacking context).
     this.shadowRoot.querySelector(".report-viewer")?.remove();
-    const viewer = document.createElement("div");
+    const viewer = document.createElement("dialog");
     viewer.className = "report-viewer";
-    viewer.setAttribute("role", "dialog");
-    viewer.setAttribute("aria-modal", "true");
     viewer.setAttribute("aria-label", "Strom-Monatsbericht");
-    viewer.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.86);display:flex;flex-direction:column;padding:env(safe-area-inset-top,12px) 10px env(safe-area-inset-bottom,12px);box-sizing:border-box;gap:10px";
+    viewer.style.cssText = "box-sizing:border-box;position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;padding:env(safe-area-inset-top,12px) 10px env(safe-area-inset-bottom,12px);border:0;background:#111827;color:white;overflow:hidden";
+    const layout = document.createElement("div");
+    layout.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;height:100%;min-height:0";
     const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;color:white;padding:10px";
+    actions.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:4px";
     const heading = document.createElement("strong");
     heading.textContent = "Strom-Monatsbericht";
     const close = document.createElement("button");
     close.type = "button";
-    close.textContent = "Schließen";
-    close.style.cssText = "padding:10px 14px;border:0;border-radius:10px;background:#334155;color:white;font:inherit";
-    close.addEventListener("click", () => viewer.remove());
-    actions.append(heading, close);
+    close.textContent = "✕ Schließen";
+    close.setAttribute("aria-label", "Monatsbericht schließen");
+    close.style.cssText = "padding:12px 16px;border:0;border-radius:10px;background:#334155;color:white;font:inherit;cursor:pointer";
+    close.addEventListener("click", () => viewer.close());
+    viewer.addEventListener("close", () => viewer.remove(), { once:true });
+    actions.append(heading,close);
     const frame = document.createElement("iframe");
     frame.title = "Strom-Monatsbericht";
     frame.style.cssText = "display:block;flex:1;min-height:0;width:100%;background:white;border:0;border-radius:12px";
     frame.srcdoc = this._reportMarkup;
-    viewer.append(actions, frame);
+    layout.append(actions,frame);
+    viewer.appendChild(layout);
     this.shadowRoot.appendChild(viewer);
-    this.shadowRoot.querySelector(".report-status").textContent =
-      "Bericht angezeigt. Der direkte PDF-Export in der App ist noch nicht verfügbar.";
+    try {
+      viewer.showModal();
+      close.focus();
+      this.shadowRoot.querySelector(".report-status").textContent = "Bericht angezeigt.";
+    } catch (error) {
+      viewer.remove();
+      this.shadowRoot.querySelector(".report-status").textContent =
+        "Bericht konnte nicht geöffnet werden: " + (error?.message || String(error));
+    }
   }
 
   _render() {
