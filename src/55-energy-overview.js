@@ -441,9 +441,26 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
     const layout = document.createElement("div");
     layout.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;height:100%;min-height:0";
     const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;padding:4px";
+    actions.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:52px;padding:4px;flex-wrap:wrap";
     const heading = document.createElement("strong");
     heading.textContent = "Strom-Monatsbericht";
+    const exportPDF = document.createElement("button");
+    exportPDF.type = "button";
+    exportPDF.textContent = "PDF exportieren";
+    exportPDF.style.cssText = "padding:12px 14px;border:0;border-radius:10px;background:#1675c5;color:white;font:inherit;cursor:pointer";
+    exportPDF.addEventListener("click", () => {
+      const bridge = window.webkit?.messageHandlers?.atzeEnergyPDFExport;
+      if (!bridge) {
+        this.shadowRoot.querySelector(".report-status").textContent =
+          "PDF-Export benötigt die aktualisierte ATZE-Home-App.";
+        return;
+      }
+      const ym = this.shadowRoot.querySelector(".report-month")?.value;
+      if (!/^\\d{4}-\\d{2}$/.test(ym)) return;
+      bridge.postMessage({ filename:"atze-strombericht-" + ym + ".pdf", html:this._reportMarkup });
+      this.shadowRoot.querySelector(".report-status").textContent =
+        "PDF an die ATZE-Home-App übergeben. Bitte iOS-Teilen-Menü prüfen.";
+    });
     const close = document.createElement("button");
     close.type = "button";
     close.textContent = "✕ Schließen";
@@ -451,7 +468,10 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
     close.style.cssText = "padding:12px 16px;border:0;border-radius:10px;background:#334155;color:white;font:inherit;cursor:pointer";
     close.addEventListener("click", () => viewer.close());
     viewer.addEventListener("close", () => viewer.remove(), { once:true });
-    actions.append(heading,close);
+    const buttons = document.createElement("div");
+    buttons.style.cssText = "display:flex;align-items:center;gap:7px";
+    buttons.append(exportPDF, close);
+    actions.append(heading, buttons);
     const frame = document.createElement("iframe");
     frame.title = "Strom-Monatsbericht";
     frame.style.cssText = "display:block;flex:1;min-height:0;width:100%;background:white;border:0;border-radius:12px";
