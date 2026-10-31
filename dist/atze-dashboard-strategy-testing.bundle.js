@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.416.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "63DF45C";
+const ATZE_TESTING_REVISION = "78156A3";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16665,7 +16665,8 @@ class AtzeEnergyOverviewCard extends HTMLElement {
   async _buildReport() {
     const ui=this.shadowRoot, btn=ui.querySelector(".report-run"), status=ui.querySelector(".report-status");
     const ym=ui.querySelector(".report-month").value;
-    if(!/^\\d{4}-\\d{2}$/.test(ym)||!this._config.day)return;
+    if(!/^\d{4}-\d{2}$/.test(ym)) { status.textContent="Bitte einen gültigen Monat auswählen."; return; }
+    if(!this._config.day) { status.textContent="Gesamtstrom-Tageszähler ist nicht konfiguriert."; return; }
     const [y,m]=ym.split("-").map(Number), from=new Date(y,m-1,1), to=new Date(y,m,1);
     const rooms=this._roomDefinitions(), ids=[...new Set([this._config.day,...rooms.map(r=>r.day)].filter(Boolean))];
     btn.disabled=true;status.textContent="Lese Tagesstatistiken …";
