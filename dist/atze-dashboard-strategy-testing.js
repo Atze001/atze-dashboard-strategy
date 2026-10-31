@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.416.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "78156A3";
+const ATZE_TESTING_REVISION = "921730C";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16705,10 +16705,27 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
     finally{btn.disabled=false;}
   }
   _printReport() {
-    if(!this._reportMarkup)return;
-    const popup=window.open("","_blank");
-    if(!popup){this.shadowRoot.querySelector(".report-status").textContent="Pop-up blockiert. Bitte PDF-Fenster erlauben.";return;}
-    popup.document.open();popup.document.write(this._reportMarkup);popup.document.close();popup.focus();popup.print();
+    if (!this._reportMarkup) return;
+    const status = this.shadowRoot.querySelector(".report-status");
+    // Print the prepared report inside the existing page; iOS WebViews often
+    // block window.open(), even when invoked from a user gesture.
+    this._reportFrame?.remove();
+    const frame = document.createElement("iframe");
+    frame.title = "ATZE Strombericht – Druckansicht";
+    frame.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0";
+    this._reportFrame = frame;
+    frame.addEventListener("load", () => {
+      try {
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+        status.textContent = "Druckansicht geöffnet. Über die Druckfunktion kann der Bericht als PDF gespeichert werden.";
+      } catch (error) {
+        status.textContent = "Druckfunktion konnte nicht geöffnet werden: " + (error?.message || String(error));
+      }
+    }, { once: true });
+    frame.srcdoc = this._reportMarkup;
+    document.body.appendChild(frame);
+    status.textContent = "Bereite Druckansicht vor …";
   }
 
   _render() {
