@@ -16726,18 +16726,19 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
     exportPDF.type = "button";
     exportPDF.textContent = "PDF exportieren";
     exportPDF.style.cssText = "padding:12px 14px;border:0;border-radius:10px;background:#1675c5;color:white;font:inherit;cursor:pointer";
-    exportPDF.addEventListener("click", () => {
+        const exportNotice = document.createElement("span");
+    exportNotice.setAttribute("role", "status");
+    exportNotice.style.cssText = "font-size:12px;color:#e2e8f0;flex-basis:100%;min-height:16px";
+exportPDF.addEventListener("click", () => {
       const bridge = window.webkit?.messageHandlers?.atzeEnergyPDFExport;
       if (!bridge) {
-        this.shadowRoot.querySelector(".report-status").textContent =
-          "PDF-Export benötigt die aktualisierte ATZE-Home-App.";
+        exportNotice.textContent = "Die native PDF-Schnittstelle ist nicht verfügbar. Bitte ATZE Home aktualisieren.";
         return;
       }
       const ym = this.shadowRoot.querySelector(".report-month")?.value;
-      if (!/^\\d{4}-\\d{2}$/.test(ym)) return;
+      if (!/^\d{4}-\d{2}$/.test(ym)) { exportNotice.textContent = "Ungültiger Berichtsmonat."; return; }
       bridge.postMessage({ filename:"atze-strombericht-" + ym + ".pdf", html:this._reportMarkup });
-      this.shadowRoot.querySelector(".report-status").textContent =
-        "PDF an die ATZE-Home-App übergeben. Bitte iOS-Teilen-Menü prüfen.";
+      exportNotice.textContent = "PDF-Anforderung gesendet. Das iOS-Teilen-Menü sollte sich öffnen.";
     });
     const close = document.createElement("button");
     close.type = "button";
@@ -16749,7 +16750,7 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
     const buttons = document.createElement("div");
     buttons.style.cssText = "display:flex;align-items:center;gap:7px";
     buttons.append(exportPDF, close);
-    actions.append(heading, buttons);
+    actions.append(heading, buttons, exportNotice);
     const frame = document.createElement("iframe");
     frame.title = "Strom-Monatsbericht";
     frame.style.cssText = "display:block;flex:1;min-height:0;width:100%;background:white;border:0;border-radius:12px";
