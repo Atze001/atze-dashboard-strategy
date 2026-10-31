@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.416.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "921730C";
+const ATZE_TESTING_REVISION = "57E024E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16706,26 +16706,33 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
   }
   _printReport() {
     if (!this._reportMarkup) return;
-    const status = this.shadowRoot.querySelector(".report-status");
-    // Print the prepared report inside the existing page; iOS WebViews often
-    // block window.open(), even when invoked from a user gesture.
-    this._reportFrame?.remove();
+    // Show a real, visible report. Printing an invisible iframe is unreliable
+    // in the ATZE Home WKWebView and must not be reported as success.
+    this.shadowRoot.querySelector(".report-viewer")?.remove();
+    const viewer = document.createElement("div");
+    viewer.className = "report-viewer";
+    viewer.setAttribute("role", "dialog");
+    viewer.setAttribute("aria-modal", "true");
+    viewer.setAttribute("aria-label", "Strom-Monatsbericht");
+    viewer.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.86);display:flex;flex-direction:column;padding:env(safe-area-inset-top,12px) 10px env(safe-area-inset-bottom,12px);box-sizing:border-box;gap:10px";
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;color:white;padding:10px";
+    const heading = document.createElement("strong");
+    heading.textContent = "Strom-Monatsbericht";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "Schließen";
+    close.style.cssText = "padding:10px 14px;border:0;border-radius:10px;background:#334155;color:white;font:inherit";
+    close.addEventListener("click", () => viewer.remove());
+    actions.append(heading, close);
     const frame = document.createElement("iframe");
-    frame.title = "ATZE Strombericht – Druckansicht";
-    frame.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0";
-    this._reportFrame = frame;
-    frame.addEventListener("load", () => {
-      try {
-        frame.contentWindow?.focus();
-        frame.contentWindow?.print();
-        status.textContent = "Druckansicht geöffnet. Über die Druckfunktion kann der Bericht als PDF gespeichert werden.";
-      } catch (error) {
-        status.textContent = "Druckfunktion konnte nicht geöffnet werden: " + (error?.message || String(error));
-      }
-    }, { once: true });
+    frame.title = "Strom-Monatsbericht";
+    frame.style.cssText = "display:block;flex:1;min-height:0;width:100%;background:white;border:0;border-radius:12px";
     frame.srcdoc = this._reportMarkup;
-    document.body.appendChild(frame);
-    status.textContent = "Bereite Druckansicht vor …";
+    viewer.append(actions, frame);
+    this.shadowRoot.appendChild(viewer);
+    this.shadowRoot.querySelector(".report-status").textContent =
+      "Bericht angezeigt. Der direkte PDF-Export in der App ist noch nicht verfügbar.";
   }
 
   _render() {
@@ -16865,7 +16872,7 @@ Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
       <div class="report-panel"><strong>Monatsbericht</strong>
         <div class="report-actions"><input type="month" class="report-month" aria-label="Monat">
         <button type="button" class="report-run">Bericht erstellen</button>
-        <button type="button" class="report-print" hidden>PDF / Drucken</button></div>
+        <button type="button" class="report-print" hidden>Bericht ansehen</button></div>
         <div class="report-status" role="status">Datenabruf nur auf Knopfdruck.</div></div>
       <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
         <button class="dialog-close" type="button" autofocus aria-label="Popup schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
