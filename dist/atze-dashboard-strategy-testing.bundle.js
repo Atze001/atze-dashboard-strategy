@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.416.0";
+const ATZE_VERSION = "0.417.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B26CF4C";
+const ATZE_TESTING_REVISION = "409C37C";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16661,6 +16661,169 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     };
   }
 
+
+  async _buildReport() {
+    const ui=this.shadowRoot, btn=ui.querySelector(".report-run"), status=ui.querySelector(".report-status");
+    const ym=ui.querySelector(".report-month").value;
+    if(!/^\d{4}-\d{2}$/.test(ym)) { status.textContent="Bitte einen gültigen Monat auswählen."; return; }
+    if(!this._config.day) { status.textContent="Gesamtstrom-Tageszähler ist nicht konfiguriert."; return; }
+    const [y,m]=ym.split("-").map(Number), from=new Date(y,m-1,1), to=new Date(y,m,1);
+    const rooms=this._roomDefinitions(), ids=[...new Set([this._config.day,...rooms.map(r=>r.day)].filter(Boolean))];
+    btn.disabled=true;status.textContent="Lese Tagesstatistiken …";
+    try {
+      const result=await this._hass.callWS({type:"recorder/statistics_during_period",
+        start_time:from.toISOString(),end_time:to.toISOString(),period:"day",statistic_ids:ids,types:["change"]});
+      const valid=id=>(result[id]||[]).filter(v=>typeof v.change==="number"&&Number.isFinite(v.change));
+      const days=valid(this._config.day);
+      if(!days.length){status.textContent="Keine auswertbaren Tagesdaten vorhanden.";return;}
+      const sum=a=>a.reduce((n,v)=>n+v.change,0);
+      const fmt=n=>new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+" kWh";
+      const esc=x=>String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+      const label=new Intl.DateTimeFormat("de-DE",{month:"long",year:"numeric"}).format(from);
+      const incomplete=days.length<new Date(y,m,0).getDate()||to>Date.now();
+      const dayHTML=days.map(d=>"<tr><td>"+new Date(d.start).toLocaleDateString("de-DE",{timeZone:"Europe/Berlin"})+"</td><td>"+fmt(d.change)+"</td></tr>").join("");
+      const deviceHTML=rooms.map(r=>{const d=valid(r.day);return "<tr><td>"+esc(r.name)+"</td><td>"+(d.length?fmt(sum(d)):"Keine Daten")+"</td></tr>";}).join("");
+      this._reportMarkup=`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>ATZE Strombericht</title>
+<style>@page{size:A4;margin:17mm}body{font:14px system-ui;color:#192a40}
+h1{font-size:28px}header{color:#1675c5;font-weight:bold}.amount{font-size:30px;font-weight:700}
+.summary{background:#eaf2fa;padding:18px;border-radius:12px}table{width:100%;border-collapse:collapse}
+td,th{text-align:left;padding:9px;border-bottom:1px solid #ddd}td:last-child,th:last-child{text-align:right}
+p{color:#536478;line-height:1.5}h2{margin-top:24px}</style></head><body>
+<header>ATZE HOME · STROMBERICHT</header><h1>${esc(label)}</h1>
+<div class="summary">Gesamtverbrauch<div class="amount">${fmt(sum(days))}</div></div>
+<p>${incomplete?"Teilmonat / unvollständige Statistik. ":""}${days.length} erfasste Tagesperioden.
+Keine Hochrechnung. Datenquelle: Home Assistant Langzeitstatistik.</p>
+<h2>Tagesverbrauch</h2><table><tr><th>Datum</th><th>Verbrauch</th></tr>${dayHTML}</table>
+<h2>Einzelverbraucher (informativ)</h2><p>Diese Werte werden nicht zum Gesamtstrom hinzuaddiert.
+Fehlende Messwerte bedeuten nicht Nullverbrauch.</p>
+<table><tr><th>Verbraucher</th><th>Verbrauch</th></tr>${deviceHTML}</table>
+<p>Keine Kostenberechnung ohne verifizierten Stromtarif. Erstellt: ${new Date().toLocaleString("de-DE")}.</p>
+</body></html>`;
+      ui.querySelector(".report-print").hidden=false;
+      status.textContent=label+": "+fmt(sum(days))+(incomplete?" (Teilmonat)":"")+" · PDF bereit";
+    }catch(e){status.textContent="Statistikabfrage fehlgeschlagen: "+(e?.message||String(e));}
+    finally{btn.disabled=false;}
+  }
+  _printReport() {
+    if (!this._reportMarkup) return;
+    // A modal <dialog> enters the browser's top layer. This keeps the close
+    // control above the pinned energy hero (which has its own stacking context).
+    this.shadowRoot.querySelector(".report-viewer")?.remove();
+    const viewer = document.createElement("dialog");
+    viewer.className = "report-viewer";
+    viewer.setAttribute("aria-label", "Strom-Monatsbericht");
+    viewer.style.cssText = "box-sizing:border-box;position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;padding:env(safe-area-inset-top,12px) 10px env(safe-area-inset-bottom,12px);border:0;background:#111827;color:white;overflow:hidden";
+    const layout = document.createElement("div");
+    layout.style.cssText = "display:flex;flex-direction:column;gap:10px;width:100%;height:100%;min-height:0";
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:52px;padding:4px;flex-wrap:wrap";
+    const heading = document.createElement("strong");
+    heading.textContent = "Strom-Monatsbericht";
+    const exportPDF = document.createElement("button");
+    exportPDF.type = "button";
+    exportPDF.textContent = "PDF exportieren";
+    exportPDF.style.cssText = "padding:12px 14px;border:0;border-radius:10px;background:#1675c5;color:white;font:inherit;cursor:pointer";
+        const exportNotice = document.createElement("span");
+    exportNotice.setAttribute("role", "status");
+    exportNotice.style.cssText = "font-size:12px;color:#e2e8f0;flex-basis:100%;min-height:16px";
+exportPDF.addEventListener("click", () => {
+      const bridge = window.webkit?.messageHandlers?.atzeEnergyPDFExport;
+      if (!bridge) {
+        exportNotice.textContent = "Die native PDF-Schnittstelle ist nicht verfügbar. Bitte ATZE Home aktualisieren.";
+        return;
+      }
+      const ym = this.shadowRoot.querySelector(".report-month")?.value;
+      if (!/^\d{4}-\d{2}$/.test(ym)) { exportNotice.textContent = "Ungültiger Berichtsmonat."; return; }
+      bridge.postMessage({ filename:"atze-strombericht-" + ym + ".pdf", html:this._reportMarkup });
+      exportNotice.textContent = "PDF-Anforderung gesendet. Das iOS-Teilen-Menü sollte sich öffnen.";
+    });
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "✕ Schließen";
+    close.setAttribute("aria-label", "Monatsbericht schließen");
+    close.style.cssText = "padding:12px 16px;border:0;border-radius:10px;background:#334155;color:white;font:inherit;cursor:pointer";
+    close.addEventListener("click", () => viewer.close());
+    viewer.addEventListener("close", () => viewer.remove(), { once:true });
+    const buttons = document.createElement("div");
+    buttons.style.cssText = "display:flex;align-items:center;gap:7px";
+    buttons.append(exportPDF, close);
+    actions.append(heading, buttons, exportNotice);
+    const frame = document.createElement("iframe");
+    frame.title = "Strom-Monatsbericht";
+    frame.style.cssText = "display:block;flex:1;min-height:0;width:100%;background:white;border:0;border-radius:12px";
+    frame.srcdoc = this._reportMarkup;
+    layout.append(actions,frame);
+    viewer.appendChild(layout);
+    this.shadowRoot.appendChild(viewer);
+    try {
+      viewer.showModal();
+      close.focus();
+      this.shadowRoot.querySelector(".report-status").textContent = "Bericht angezeigt.";
+    } catch (error) {
+      viewer.remove();
+      this.shadowRoot.querySelector(".report-status").textContent =
+        "Bericht konnte nicht geöffnet werden: " + (error?.message || String(error));
+    }
+  }
+
+  _powerWatts(entityId) {
+    if (!entityId) return null;
+    const entity = this._hass?.states?.[entityId];
+    if (!entity || ["unknown", "unavailable"].includes(entity.state)) return null;
+    const value = Number(entity.state);
+    if (!Number.isFinite(value) || value < 0) return null;
+    const unit = String(entity.attributes?.unit_of_measurement || "W").trim().toLowerCase();
+    if (unit === "kw") return value * 1000;
+    return unit === "w" ? value : null;
+  }
+
+  _updatePowerMeters() {
+    const panel = this.shadowRoot?.querySelector(".power-meter-panel");
+    if (!panel) return;
+    const total = this._powerWatts(this._config.power);
+    const devices = this._roomDefinitions()
+      .map(room => ({name:room.name, watts:this._powerWatts(room.power)}))
+      .filter(item => item.watts !== null && item.watts > 5)
+      .sort((a,b) => b.watts-a.watts);
+    if (!this._config.power && !this._roomDefinitions().some(room => room.power)) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const headline = panel.querySelector(".power-meter-total");
+    headline.textContent = total === null ? "–" : new Intl.NumberFormat("de-DE", {maximumFractionDigits:0}).format(total) + " W";
+    const label = panel.querySelector(".power-meter-caption");
+    label.textContent = total === null
+      ? "Gesamtleistung: kein gültiger Watt-Sensor konfiguriert"
+      : "Aktuelle Gesamtleistung";
+    const list = panel.querySelector(".power-meter-bars");
+    list.replaceChildren();
+    const max = Math.max(1,...devices.map(item=>item.watts));
+    const fmt = n => new Intl.NumberFormat("de-DE",{maximumFractionDigits:0}).format(n) + " W";
+    for (const item of devices) {
+      const row = document.createElement("div");
+      row.className = "power-meter-row";
+      const heading = document.createElement("div");
+      heading.className = "power-meter-row-head";
+      const name = document.createElement("span");
+      name.textContent = item.name;
+      const value = document.createElement("strong");
+      value.textContent = fmt(item.watts);
+      heading.append(name,value);
+      const track = document.createElement("div");
+      track.className = "power-meter-track";
+      const fill = document.createElement("div");
+      fill.className = "power-meter-fill";
+      fill.style.width = Math.max(1,item.watts / max * 100) + "%";
+      track.appendChild(fill);
+      row.append(heading,track);
+      list.appendChild(row);
+    }
+    const empty = panel.querySelector(".power-meter-empty");
+    empty.hidden = devices.length > 0;
+    empty.textContent = "Derzeit keine konfigurierten Einzelverbraucher über 5 W.";
+  }
+
   _render() {
     this._heroPinCleanup?.();
     this._heroPinCleanup = null;
@@ -16772,6 +16935,26 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           background:rgba(118,118,128,.22); color:var(--primary-text-color); font:inherit }
         .dialog-set:disabled { opacity:.45; cursor:wait }
         .dialog-status { min-height:16px; margin-top:10px; font-size:12px; color:var(--secondary-text-color) }
+        .power-meter-panel{grid-column:1/-1;padding:15px;border-radius:16px;
+          background:rgba(55,58,67,.30);border:1px solid var(--home-card-border,rgba(255,255,255,.10));
+          color:var(--primary-text-color)}
+        .power-meter-panel[hidden]{display:none}
+        .power-meter-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+        .power-meter-heading strong{font-size:16px}
+        .power-meter-total{font-size:clamp(22px,6vw,32px);font-weight:750;font-variant-numeric:tabular-nums}
+        .power-meter-caption,.power-meter-hint,.power-meter-empty{font-size:12px;color:var(--secondary-text-color)}
+        .power-meter-bars{display:grid;gap:10px;margin:14px 0 8px}
+        .power-meter-row-head{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:5px}
+        .power-meter-row-head span{min-width:0;overflow-wrap:anywhere}
+        .power-meter-row-head strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+        .power-meter-track{height:12px;background:rgba(128,128,128,.25);border-radius:10px;overflow:hidden}
+        .power-meter-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#2d9cf0,#55d6ed);
+          transition:width 250ms ease}
+        .report-panel{margin-top:12px;padding:14px;border-radius:14px;background:rgba(55,58,67,.3);color:var(--primary-text-color)}
+        .report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+        .report-actions button,.report-actions input{font:inherit;border-radius:9px;padding:9px;border:1px solid rgba(255,255,255,.2);background:rgba(118,118,128,.22);color:inherit}
+        .report-actions button:disabled{opacity:.5}.report-print[hidden]{display:none}
+        .report-status{font-size:12px;margin-top:8px;color:var(--secondary-text-color)}
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
@@ -16790,6 +16973,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
           </div>
         </div>
       </div>
+      <div class="report-panel"><strong>Monatsbericht</strong>
+        <div class="report-actions"><input type="month" class="report-month" aria-label="Monat">
+        <button type="button" class="report-run">Bericht erstellen</button>
+        <button type="button" class="report-print" hidden>Bericht ansehen</button></div>
+        <div class="report-status" role="status">Datenabruf nur auf Knopfdruck.</div></div>
       <dialog class="period-dialog" aria-labelledby="energy-period-dialog-title">
         <button class="dialog-close" type="button" autofocus aria-label="Popup schließen" title="Schließen"><ha-icon icon="mdi:close"></ha-icon></button>
         <div class="dialog-title" id="energy-period-dialog-title"></div>
@@ -16851,6 +17039,12 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         dialog.querySelector(".dialog-status").textContent = "";
       });
     }
+    const reportMonth=this.shadowRoot.querySelector(".report-month");
+    const today=new Date();
+    reportMonth.value=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0");
+    reportMonth.addEventListener("change",()=>{this._reportMarkup=null;this.shadowRoot.querySelector(".report-print").hidden=true;});
+    this.shadowRoot.querySelector(".report-run").addEventListener("click",()=>this._buildReport());
+    this.shadowRoot.querySelector(".report-print").addEventListener("click",()=>this._printReport());
     const hero = this.shadowRoot.querySelector(".energy-hero");
     const heroImage = hero.querySelector("img");
     if (this._config.hero_image) {
@@ -16908,6 +17102,17 @@ class AtzeEnergyOverviewCard extends HTMLElement {
         }
       });
       grid.appendChild(tile);
+    }
+    if (hasTotal) {
+      const panel = document.createElement("section");
+      panel.className = "power-meter-panel";
+      panel.innerHTML = `<div class="power-meter-heading">
+        <strong>Aktuelle Leistung</strong><span class="power-meter-total">–</span></div>
+        <div class="power-meter-caption"></div>
+        <div class="power-meter-bars"></div>
+        <div class="power-meter-empty" hidden></div>
+        <div class="power-meter-hint">Einzelverbraucher sind informativ und werden nicht zur Gesamtleistung addiert.</div>`;
+      grid.appendChild(panel);
     }
     const rooms = this._roomDefinitions();
     for (const room of rooms) {
@@ -16991,6 +17196,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       power.hidden = !this._config.power;
       if (this._config.power) power.querySelector(".power-number").textContent = this._value(this._config.power);
     }
+    this._updatePowerMeters();
     for (const period of ["month", "day"]) {
       const tile = this.shadowRoot.querySelector('[data-period="' + period + '"]');
       if (!tile) continue;
