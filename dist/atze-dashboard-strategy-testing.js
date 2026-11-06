@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.417.0";
+const ATZE_VERSION = "0.418.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1DE9571";
+const ATZE_TESTING_REVISION = "457D468";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
