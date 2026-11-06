@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.417.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "409C37C";
+const ATZE_TESTING_REVISION = "1DE9571";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -13638,6 +13638,7 @@ class AtzeRoomNavHeader extends HTMLElement {
     let pinnedWidth = 0;
     let clippedContainer = null;
     let originalClipPath = null;
+    let moreInfoOpen = false;
     const initialPath = window.location.pathname;
 
     const clearClip = () => {
@@ -13705,7 +13706,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         this.style.top = `${Math.max(0, rect.top)}px`;
         this.style.left = `${bounds.left + (bounds.width - pinnedWidth) / 2}px`;
         this.style.width = `${pinnedWidth}px`;
-        this.style.zIndex = "30";
+        this.style.zIndex = moreInfoOpen ? "0" : "30";
         pinned = true;
       } else if (pinned) {
         const headerContainer = this.getRootNode()?.host?.closest(".container");
@@ -13713,7 +13714,7 @@ class AtzeRoomNavHeader extends HTMLElement {
         this.style.left = `${bounds.left + (bounds.width - pinnedWidth) / 2}px`;
         placeholder.style.height = `${this.getBoundingClientRect().height}px`;
       }
-      if (pinned) {
+      if (pinned && !moreInfoOpen) {
         // The header and entity grid are siblings in hui-sections-view.
         // Clip the moving grid above the fixed header's lower edge without
         // painting over the dashboard's own background.
@@ -13743,11 +13744,28 @@ class AtzeRoomNavHeader extends HTMLElement {
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
     };
+    const onMoreInfo = () => {
+      // Home Assistant's native more-info dialogs can be behind the fixed
+      // header. Temporarily lower it and remove the grid's clipping region.
+      moreInfoOpen = true;
+      clearClip();
+      if (pinned) this.style.zIndex = "0";
+    };
+    const onDialogClosed = () => {
+      if (!moreInfoOpen) return;
+      moreInfoOpen = false;
+      if (pinned) this.style.zIndex = "30";
+      schedule();
+    };
+    window.addEventListener("hass-more-info", onMoreInfo, true);
+    window.addEventListener("dialog-closed", onDialogClosed, true);
     window.addEventListener("scroll", schedule, true);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("location-changed", schedule);
     schedule();
     return () => {
+      window.removeEventListener("hass-more-info", onMoreInfo, true);
+      window.removeEventListener("dialog-closed", onDialogClosed, true);
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("location-changed", schedule);
