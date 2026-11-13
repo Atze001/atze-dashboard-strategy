@@ -27,6 +27,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecastLoading = false;
     this._roomDrag = null;
     this._hiddenRoomIds = [];
+    this._alertTickerCard = null;
+    this._alertTickerSignature = "";
+    this._alertTickerAwaitingResource = false;
   }
 
   setConfig(config) {
@@ -52,6 +55,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     if (this._schedulerCard) this._schedulerCard.hass = value;
+    if (this._alertTickerCard) this._alertTickerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
       else this._render();
@@ -1602,6 +1606,77 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
   }
 
+  _alertTickerConfig() {
+    // Reuse the sensors already selected by the Strategy; do not create
+    // another sensor scan, automation, polling loop or notification channel.
+    const candidates = new Set([
+      ...asArray(this._config.warning_entities),
+      ...asArray(this._config.smoke_entities),
+      ...asArray(this._config.security_entities),
+    ]);
+    const kinds = {
+      smoke: { theme: "fire", message: "Rauch erkannt: {name}", priority: 1 },
+      gas: { theme: "toxic", message: "Gaswarnung: {name}", priority: 1 },
+      moisture: { theme: "flood", message: "Wasser erkannt: {name}", priority: 1 },
+      problem: { theme: "caution", message: "Störung: {name}", priority: 2 },
+      safety: { theme: "caution", message: "Sicherheitswarnung: {name}", priority: 2 },
+      tamper: { theme: "caution", message: "Manipulationswarnung: {name}", priority: 2 },
+      window: { theme: "door", message: "Fenster geöffnet: {name}", priority: 3 },
+      door: { theme: "door", message: "Tür geöffnet: {name}", priority: 3 },
+      opening: { theme: "door", message: "Öffnung erkannt: {name}", priority: 3 },
+    };
+    const alerts = [...candidates].flatMap(entityId => {
+      if (!entityId.startsWith("binary_sensor.")) return [];
+      const state = this._hass?.states?.[entityId];
+      const kind = kinds[state?.attributes?.device_class];
+      if (!kind) return [];
+      return [{
+        entity: entityId,
+        state: "on",
+        name: state.attributes.friendly_name || entityId,
+        message: kind.message,
+        theme: kind.theme,
+        priority: kind.priority,
+      }];
+    });
+    return {
+      type: "custom:alert-ticker-card",
+      alerts,
+      show_when_clear: true,
+      clear_message: "Keine aktiven Warnungen",
+      clear_theme: "success",
+      overlay_mode: false,
+      tts_enabled: false,
+      push_enabled: false,
+    };
+  }
+
+  _mountAlertTicker() {
+    const slot = this.shadowRoot?.querySelector("#atze-alert-ticker-slot");
+    if (!slot) return;
+    if (!customElements.get("alert-ticker-card")) {
+      // HACS loads Lovelace resources asynchronously. Wait for the resource
+      // without polling; leave the informative placeholder if never installed.
+      if (!this._alertTickerAwaitingResource) {
+        this._alertTickerAwaitingResource = true;
+        customElements.whenDefined("alert-ticker-card").then(() => {
+          this._alertTickerAwaitingResource = false;
+          if (this.isConnected) this._mountAlertTicker();
+        });
+      }
+      return;
+    }
+    const config = this._alertTickerConfig();
+    const signature = JSON.stringify(config);
+    if (!this._alertTickerCard) this._alertTickerCard = document.createElement("alert-ticker-card");
+    if (signature !== this._alertTickerSignature) {
+      this._alertTickerCard.setConfig(config);
+      this._alertTickerSignature = signature;
+    }
+    slot.replaceChildren(this._alertTickerCard);
+    this._alertTickerCard.hass = this._hass;
+  }
+
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
 
@@ -1614,6 +1689,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const presenceList = this.shadowRoot.querySelector(".presence-event-list");
     const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
     const presenceListScrollTop = presenceList?.scrollTop ?? 0;
+
+    // Preserve the HACS card instance across frequent HA state renders.
+    this._alertTickerCard?.remove();
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -2220,6 +2298,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           min-height: 100vh;
           overflow: hidden;
         }
+
+        .atze-alert-ticker-slot { margin: 12px 0 16px; width: 100%; min-width: 0; }
+        .atze-alert-ticker-slot > alert-ticker-card { display: block; width: 100%; }
+        .atze-alert-ticker-help { border: 1px dashed rgba(255,255,255,.2); border-radius: 14px; padding: 14px; color: var(--secondary-text-color); font-size: 13px; }
 
         .page {
           width: min(1180px, 100%);
@@ -3858,6 +3940,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
           </section>
 
+          <div class="atze-alert-ticker-slot" id="atze-alert-ticker-slot" aria-label="Aktuelle Warnmeldungen">
+            <div class="atze-alert-ticker-help">AlertTicker-Card über HACS installieren und die Dashboard-Ressource laden, um Warnmeldungen hier anzuzeigen.</div>
+          </div>
+
           ${controlCenterHtml}
 
           <div class="rooms">
@@ -3906,6 +3992,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
+    this._mountAlertTicker();
+
     // Mount the actual room thermostat controls, not the generic device-popup card.
     // The native thermostat service dialog is rendered inside each control.
     this._homeThermostatCards = new Map();
