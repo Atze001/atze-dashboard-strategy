@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.418.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B0A4D3E";
+const ATZE_TESTING_REVISION = "F591B0E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -16991,7 +16991,7 @@ exportPDF.addEventListener("click", () => {
       const track = document.createElement("div");
       track.className = "power-meter-track";
       const fill = document.createElement("div");
-      fill.className = "power-meter-fill";
+      fill.className = "power-meter-fill" + (item.watts >= 500 ? " power-meter-fill-red" : item.watts >= 200 ? " power-meter-fill-yellow" : "");
       fill.style.width = Math.max(1,item.watts / max * 100) + "%";
       track.appendChild(fill);
       row.append(heading,track);
@@ -17127,7 +17127,9 @@ exportPDF.addEventListener("click", () => {
         .power-meter-row-head strong{white-space:nowrap;font-variant-numeric:tabular-nums}
         .power-meter-track{height:12px;background:rgba(128,128,128,.25);border-radius:10px;overflow:hidden}
         .power-meter-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#2d9cf0,#55d6ed);
-          transition:width 250ms ease}
+          transition:width 250ms ease,background 250ms ease}
+        .power-meter-fill-yellow{background:linear-gradient(90deg,#f4b400,#ffd60a)}
+        .power-meter-fill-red{background:linear-gradient(90deg,#e53935,#ff6259)}
         .report-panel{margin-top:12px;padding:14px;border-radius:14px;background:rgba(55,58,67,.3);color:var(--primary-text-color)}
         .report-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
         .report-actions button,.report-actions input{font:inherit;border-radius:9px;padding:9px;border:1px solid rgba(255,255,255,.2);background:rgba(118,118,128,.22);color:inherit}
@@ -17290,7 +17292,7 @@ exportPDF.addEventListener("click", () => {
         <div class="power-meter-bars"></div>
         <div class="power-meter-empty" hidden></div>
         <div class="power-meter-hint">Einzelverbraucher sind informativ und werden nicht zur Gesamtleistung addiert.</div>`;
-      grid.appendChild(panel);
+      grid.insertBefore(panel, grid.querySelector(".tile.total"));
     }
     const rooms = this._roomDefinitions();
     for (const room of rooms) {
