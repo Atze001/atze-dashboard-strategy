@@ -9115,6 +9115,77 @@ class AtzeHomeOverviewCard extends HTMLElement {
     };
   }
 
+  _styleAlertTicker() {
+    const root = this._alertTickerCard?.shadowRoot;
+    if (!root || root.querySelector("#atze-ticker-style")) return;
+    // Style only our embedded HACS card. Never change the installed resource.
+    const style = document.createElement("style");
+    style.id = "atze-ticker-style";
+    style.textContent = `
+      :host {
+        --ha-card-border-radius: 22px;
+        --ha-card-box-shadow: none;
+        border-radius: 22px !important;
+        box-shadow: 0 6px 22px rgba(0,0,0,.16) !important;
+      }
+      .atc-card-root, .atc-inner-clip, .at-fold-wrapper {
+        border-radius: 22px !important;
+      }
+      .at-fold-wrapper > div:not(.atc-history-card) {
+        min-height: 92px;
+        padding: 15px 17px !important;
+        border: 1px solid rgba(235,235,245,.34) !important;
+        border-radius: 22px !important;
+        background: linear-gradient(125deg,rgba(31,39,52,.89),rgba(37,40,47,.87)) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+        color: #f5f5f7 !important;
+        animation: none !important;
+      }
+      .at-fold-wrapper > div:not(.atc-history-card)::before,
+      .at-fold-wrapper > div:not(.atc-history-card)::after,
+      .dr-ray, .fl-waves {
+        display: none !important;
+      }
+      .at-fold-wrapper :is(.ca-icon,.wn-icon,.dr-icon,.fi-icon,.fl-icon,.su-icon-wrap,
+        .in-icon-wrap,.ga-icon,.le-icon,.sa-icon,.tm-icon) {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 56px !important;
+        width: 56px !important;
+        height: 56px !important;
+        border: 1px solid rgba(235,235,245,.17) !important;
+        border-radius: 16px !important;
+        background: rgba(59,62,71,.48) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
+        filter: none !important;
+        transform: none !important;
+        animation: none !important;
+      }
+      .at-fold-wrapper :is(.ca-badge,.wn-badge,.dr-badge,.fi-badge,.fl-badge,.su-badge) {
+        color: #ffd60a !important;
+        letter-spacing: 1.5px !important;
+        font-weight: 700 !important;
+      }
+      .at-fold-wrapper :is(.ca-title,.wn-title,.dr-title,.fi-title,.fl-title,.su-title,
+        .in-title) {
+        color: #f5f5f7 !important;
+        font-size: 15px !important;
+        font-weight: 650 !important;
+        line-height: 1.4 !important;
+        overflow-wrap: anywhere;
+      }
+      .at-fold-wrapper :is(.ca-right,.wn-right,.dr-right,.fi-right,.fl-right,.in-right) {
+        margin-left: auto !important;
+        color: rgba(235,235,245,.7) !important;
+      }
+      .at-fold-wrapper :is(.ca-dot,.wn-dot) {
+        display: none !important;
+      }
+    `;
+    root.appendChild(style);
+  }
+
   _mountAlertTicker() {
     const slot = this.shadowRoot?.querySelector("#atze-alert-ticker-slot");
     if (!slot) return;
@@ -9139,6 +9210,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
     slot.replaceChildren(this._alertTickerCard);
     this._alertTickerCard.hass = this._hass;
+    this._styleAlertTicker();
   }
 
   _render() {
@@ -9764,7 +9836,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .atze-alert-ticker-slot { margin: 12px 0 16px; width: 100%; min-width: 0; }
-        .atze-alert-ticker-slot > alert-ticker-card { display: block; width: 100%; }
+        .atze-alert-ticker-slot > alert-ticker-card { display: block; width: 100%; border-radius: 22px; overflow: hidden; }
         .atze-alert-ticker-help { border: 1px dashed rgba(255,255,255,.2); border-radius: 14px; padding: 14px; color: var(--secondary-text-color); font-size: 13px; }
 
         .page {
