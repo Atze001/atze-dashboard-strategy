@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.419.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "2ED9684";
+const ATZE_TESTING_REVISION = "3ADEBEB";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -18935,6 +18935,14 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
           ${this._energySourceOptionsHtml(setup.total || "")}
         </select>
       </label>
+      ${isIndividual ? `
+        <label class="primary-field"><span>Aktuelle Leistung (W)</span>
+          <select class="energy-setup-field" data-key="power"${scope}>
+            ${this._powerSensorOptionsHtml(setup.power || "").replace(
+              '<option value="">Automatisch</option>',
+              '<option value="">Kein Leistungssensor zugeordnet</option>')}
+          </select>
+        </label>` : ""}
       <div class="editor-section-help energy-setup-status" role="status">
         ${["year", "month", "day"].filter(key => setup[key]).length}/3 Zähler zugeordnet.
         Werte lassen sich in den zugehörigen Popups setzen oder zurücksetzen.
