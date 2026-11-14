@@ -74,7 +74,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     };
     const onStart = (event) => {
       if (gesture.id !== null || event.touches.length !== 1) return;
-      if (this.shadowRoot?.querySelector(".period-dialog")?.open) return;
+      if (this._settingsDialog?.open || this.shadowRoot?.querySelector(".period-dialog")?.open) return;
       const touch = event.touches[0];
       if (touch.clientX <= 28) return;
       if ((event.composedPath?.() || []).some(node =>
@@ -169,7 +169,97 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    if (this.shadowRoot.querySelector(".energy-settings")) {
+      this.shadowRoot.querySelector(".energy-settings").hidden = !hass?.user?.is_admin;
+    }
     this._update();
+  }
+
+  _energyStrategyTarget(raw) {
+    // HA can store the custom strategy directly or inside a strategy block.
+    // Resolve only this build's strategy and retain its original storage shape.
+    const matches = config => [STRATEGY_TYPE, "custom:" + STRATEGY_TYPE].includes(config?.type);
+    if (matches(raw?.strategy)) return { config: raw.strategy, nested: true };
+    if (matches(raw)) return { config: raw, nested: false };
+    throw new Error("ATZE Dashboard nicht gefunden");
+  }
+
+  async _openSettings() {
+    if (this._settingsDialog?.isConnected || !this._hass?.user?.is_admin) return;
+    const dialog = document.createElement("dialog");
+    this._settingsDialog = dialog;
+    dialog.setAttribute("aria-label", "Strom Einstellungen");
+    dialog.style.cssText = "box-sizing:border-box;width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;border:1px solid var(--divider-color);border-radius:18px;padding:16px;background:var(--card-background-color,#24252b);color:var(--primary-text-color);";
+    dialog.innerHTML = '<h2>Strom Einstellungen</h2><div class="settings-content"></div><p role="status"></p><button type="button">Schließen</button>';
+    const status = dialog.querySelector('[role="status"]');
+    const close = dialog.querySelector("button");
+    close.style.cssText = "font:inherit;padding:10px 16px;cursor:pointer";
+    // Resolve the actual dashboard, including custom Lovelace URL paths.
+    const route = window.location.pathname.split("/").filter(Boolean)[0];
+    const url_path = route === "lovelace" ? null : route;
+    const request = { url_path };
+    let editor;
+    let dirty = false;
+    let saveError = null;
+    let saves = Promise.resolve();
+    const enqueueSave = config => {
+      dirty = true;
+      const snapshot = JSON.parse(JSON.stringify(config));
+      status.textContent = "Wird gespeichert …";
+      saves = saves.then(async () => {
+        try {
+          const raw = await this._hass.callWS({ type: "lovelace/config", ...request, force: true });
+          const target = this._energyStrategyTarget(raw);
+          const strategy = { ...target.config };
+          // Only these settings belong to this popup. Keep all other options
+          // from the latest server config, including layouts and room meters.
+          for (const key of ["energy_setup", "energy_individual", "home_power_entity"]) {
+            if (Object.hasOwn(snapshot, key)) strategy[key] = snapshot[key];
+            else delete strategy[key];
+          }
+          await this._hass.callWS({ type: "lovelace/config/save", ...request, config: target.nested ? { ...raw, strategy } : strategy });
+          saveError = null;
+          status.textContent = "Gespeichert.";
+        } catch (error) {
+          saveError = error;
+          status.textContent = "Speichern fehlgeschlagen: " + error.message + ". Schließen versucht es erneut.";
+        }
+      });
+    };
+    const finish = async () => {
+      close.disabled = true;
+      if (editor) await editor._energyEnsureQueue;
+      await saves;
+      if (saveError && editor) { enqueueSave(editor._config); await saves; }
+      close.disabled = false;
+      if (saveError) return;
+      dialog.close();
+      dialog.remove();
+      this._settingsDialog = null;
+      if (dirty) window.dispatchEvent(new Event("location-changed"));
+    };
+    close.addEventListener("click", finish);
+    dialog.addEventListener("cancel", event => { event.preventDefault(); finish(); });
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    status.textContent = "Einstellungen werden geladen …";
+    try {
+      const raw = await this._hass.callWS({ type: "lovelace/config", ...request, force: true });
+      const target = this._energyStrategyTarget(raw);
+      if (!dialog.isConnected) return;
+      editor = document.createElement("atze-dashboard-strategy-editor");
+      editor.energySettingsOnly = true;
+      editor.setConfig(JSON.parse(JSON.stringify(target.config)));
+      editor.hass = this._hass;
+      editor.addEventListener("config-changed", event => {
+        event.stopPropagation();
+        enqueueSave(event.detail.config);
+      });
+      dialog.querySelector(".settings-content").appendChild(editor);
+      status.textContent = "Änderungen werden direkt gespeichert.";
+    } catch (error) {
+      status.textContent = "Einstellungen konnten nicht geladen werden: " + error.message;
+    }
   }
 
   getCardSize() { return 4; }
@@ -562,11 +652,18 @@ exportPDF.addEventListener("click", () => {
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
         .tile[hidden] { display:none }
         .energy-hero-placeholder { grid-column:1/-1; width:100%; min-width:0 }
-        .energy-hero { grid-column:1/-1;
+        .energy-hero { position:relative; grid-column:1/-1;
           width:100%; min-width:0; overflow:hidden; border-radius:16px;
           margin:0 0 6px; background:rgba(55,58,67,.30);
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
           box-sizing:border-box }
+        .energy-settings { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:1;
+          display:flex; align-items:center; justify-content:center; width:44px; height:44px;
+          padding:10px; border:1px solid rgba(255,255,255,.35); border-radius:12px;
+          background:rgba(15,23,35,.85); color:#32C5F4; cursor:pointer;
+          box-shadow:0 2px 10px rgba(0,0,0,.35) }
+        .energy-settings[hidden] { display:none }
+        .energy-settings:focus-visible { outline:2px solid #55d6ed; outline-offset:2px }
         .energy-hero img { display:block; width:100%; aspect-ratio:1672/860;
           object-fit:cover; object-position:center top }
         .energy-hero[hidden] { display:none }
@@ -685,7 +782,7 @@ exportPDF.addEventListener("click", () => {
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
       <div class="grid">
-        <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
+        <div class="energy-hero">${this._config.strategy_settings ? '<button class="energy-settings" hidden type="button" aria-label="Strom Einstellungen öffnen" title="Strom Einstellungen"><ha-icon icon="mdi:cog"></ha-icon></button>' : ""}<img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
         <div class="tile total" data-period="total">
           <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">
@@ -736,6 +833,8 @@ exportPDF.addEventListener("click", () => {
         </div>
         <div class="dialog-status" role="status" aria-live="polite"></div>
       </dialog>`;
+    if (this.shadowRoot.querySelector(".energy-settings")) this.shadowRoot.querySelector(".energy-settings").hidden = !this._hass?.user?.is_admin;
+    this.shadowRoot.querySelector(".energy-settings")?.addEventListener("click", () => this._openSettings());
     const dialog = this.shadowRoot.querySelector(".period-dialog");
     dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (event) => {
@@ -793,7 +892,7 @@ exportPDF.addEventListener("click", () => {
       const empty = document.createElement("div");
       empty.className = "energy-empty";
       empty.style.cssText = "grid-column:1/-1;padding:24px 16px;text-align:center;color:var(--secondary-text-color);";
-      empty.textContent = "Noch keine Stromsensoren eingerichtet. Wähle einen Gesamtstromsensor oder Energie-Hauptsensor in den Einstellungen.";
+      empty.textContent = "Noch keine Stromsensoren eingerichtet. Wähle einen Gesamtstromsensor über das Zahnrad oder einen Energie-Hauptsensor in den ATZE Settings.";
       grid.appendChild(empty);
     }
     for (const period of ["total", "year"]) {

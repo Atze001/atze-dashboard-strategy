@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.419.0**
+Version **0.424.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,23 +230,22 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
-## v0.415.0
+## v0.424.0
 
-- Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.
-- Jahres- (`yearly`) und Monatszyklus (`monthly`) bleiben unverändert.
-- Bereits bestehende Utility Meter werden nicht automatisch umgestellt; ein tatsächlicher Tageswechsel mit neu angelegtem Helfer ist noch nicht praktisch bestätigt.
+- Strom · Gesamtstrom und Strom · Einzelerfassung über das azurblaue Zahnrad mittig unten auf dem Strom-Titelbild öffnen; die bisherigen allgemeinen Settings-Oberflächen entfallen.
+- Vorhandene kWh-/W-Zuordnungen, Zähler und Helper bleiben beim UI-Umzug erhalten. Öffnen löst keine Anlage aus; Quelländerungen nutzen die bestehende Einrichtungslogik. Keine neuen Timer oder Pollingmechanismen.
+- Direkt gespeicherte und verschachtelte Custom-Strategien werden unterstützt; Speicherfehler bleiben sichtbar und können erneut versucht werden.
+- Popup und finale Position/Farbe vom Benutzer auf dem iPhone bestätigt.
 
-## v0.414.0
+## v0.423.0
 
-- Stromdashboard mit Gesamtstromsensor und Hauptsensoren je Raum sowie Jahres-, Monats- und Tageszählern erweitert.
-- Zählerstände in Popups anzeigen, setzen und zurücksetzen; eigene integrierte Zahlentastatur verhindert das Springen der Ansicht auf dem iPhone.
-- Neue Utility-Meter-Helfer werden automatisch mit Jahreszyklus (yearly), Monatszyklus (monthly) beziehungsweise manuellem Tageszyklus (none) angelegt.
-- Hinweis: Die automatische Rücksetzung zum tatsächlichen Monats- oder Jahreswechsel ist noch nicht im Echtbetrieb bestätigt. Bestehende Zähler bleiben unverändert.
+- Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
+- Popup-Funktion vom Benutzer bestätigt; iPhone-Sichtprüfung der neuen Position nach vollständigem Neustart noch offen.
 
-## v0.413.0
+## v0.422.0
 
-- Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.
-- Die gewählte Reihenfolge wird dauerhaft in der Dashboard-Konfiguration gespeichert; normale Navigation und zentrierte Darstellung bleiben erhalten.
+- Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.
+- Regressionstests für beide Speicherformen ergänzt. iPhone-Praxistest nach vollständigem Neustart weiterhin offen.
 <!-- latest-changes:end -->
 
 ## Lizenz
