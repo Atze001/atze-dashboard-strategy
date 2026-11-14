@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install test dependencies
+        run: npm ci
+
       - name: Build, validate assets and aliases
         env:
           ATZE_TESTING_REVISION: ${{ github.sha }}
