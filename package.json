@@ -1,12 +1,16 @@
 {
   "name": "atze-dashboard-strategy",
   "private": true,
-  "version": "0.419.0",
+  "version": "0.420.0",
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node --check dist/atze-dashboard-strategy.js",
     "check:assets": "node scripts/check-assets.mjs",
     "test:rooms": "node scripts/test-room-aliases.mjs",
-    "validate": "npm run build && npm run check && npm run check:assets && npm run test:rooms"
+    "validate": "npm run build && npm run check && npm run check:assets && npm run test:rooms && npm run test:energy",
+    "test:energy": "node scripts/test-energy-settings.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.1"
   }
 }

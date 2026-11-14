@@ -1,3 +1,10 @@
+## v0.420.0
+
+- Strom · Gesamtstrom und Strom · Einzelerfassung sind über das Zahnrad auf der Stromseite als Popup erreichbar; die bisherigen allgemeinen Settings-Eingaben entfallen.
+- Bestehende Sensoren und Zähler bleiben erhalten. Öffnen löst keine Zähleranlage aus; ausdrückliche Quelländerungen verwenden weiterhin die vorhandene Einrichtungslogik.
+- Strom-Einstellungen werden im aktuellen Dashboard gespeichert; Speicherfehler bleiben sichtbar und können erneut versucht werden.
+- Lokale Popup-Regressionstests ergänzt. iPhone-Praxistest ab vollständigem Neustart noch offen.
+
 ## v0.415.0
 
 - Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.

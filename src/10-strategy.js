@@ -334,6 +334,7 @@ class AtzeDashboardStrategy extends HTMLElement {
       month_reset: "",
       day_reset: "",
       native_utility_meters: true,
+      strategy_settings: true,
       individual_meters: [
         ...primaryEnergyMeters,
         ...individualEnergyMeters.filter(item =>

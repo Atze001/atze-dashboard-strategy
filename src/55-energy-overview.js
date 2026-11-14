@@ -74,7 +74,7 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     };
     const onStart = (event) => {
       if (gesture.id !== null || event.touches.length !== 1) return;
-      if (this.shadowRoot?.querySelector(".period-dialog")?.open) return;
+      if (this._settingsDialog?.open || this.shadowRoot?.querySelector(".period-dialog")?.open) return;
       const touch = event.touches[0];
       if (touch.clientX <= 28) return;
       if ((event.composedPath?.() || []).some(node =>
@@ -169,7 +169,88 @@ class AtzeEnergyOverviewCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    if (this.shadowRoot.querySelector(".energy-settings")) {
+      this.shadowRoot.querySelector(".energy-settings").hidden = !hass?.user?.is_admin;
+    }
     this._update();
+  }
+
+  async _openSettings() {
+    if (this._settingsDialog?.isConnected || !this._hass?.user?.is_admin) return;
+    const dialog = document.createElement("dialog");
+    this._settingsDialog = dialog;
+    dialog.setAttribute("aria-label", "Strom Einstellungen");
+    dialog.style.cssText = "box-sizing:border-box;width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;border:1px solid var(--divider-color);border-radius:18px;padding:16px;background:var(--card-background-color,#24252b);color:var(--primary-text-color);";
+    dialog.innerHTML = '<h2>Strom Einstellungen</h2><div class="settings-content"></div><p role="status"></p><button type="button">Schließen</button>';
+    const status = dialog.querySelector('[role="status"]');
+    const close = dialog.querySelector("button");
+    close.style.cssText = "font:inherit;padding:10px 16px;cursor:pointer";
+    // Resolve the actual dashboard, including custom Lovelace URL paths.
+    const route = window.location.pathname.split("/").filter(Boolean)[0];
+    const url_path = route === "lovelace" ? null : route;
+    const request = { url_path };
+    let editor;
+    let dirty = false;
+    let saveError = null;
+    let saves = Promise.resolve();
+    const enqueueSave = config => {
+      dirty = true;
+      const snapshot = JSON.parse(JSON.stringify(config));
+      status.textContent = "Wird gespeichert …";
+      saves = saves.then(async () => {
+        try {
+          const raw = await this._hass.callWS({ type: "lovelace/config", ...request, force: true });
+          if (raw?.strategy?.type !== STRATEGY_TYPE) throw new Error("ATZE Dashboard nicht gefunden");
+          const strategy = { ...raw.strategy };
+          // Only these settings belong to this popup. Keep all other options
+          // from the latest server config, including layouts and room meters.
+          for (const key of ["energy_setup", "energy_individual", "home_power_entity"]) {
+            if (Object.hasOwn(snapshot, key)) strategy[key] = snapshot[key];
+            else delete strategy[key];
+          }
+          await this._hass.callWS({ type: "lovelace/config/save", ...request, config: { ...raw, strategy } });
+          saveError = null;
+          status.textContent = "Gespeichert.";
+        } catch (error) {
+          saveError = error;
+          status.textContent = "Speichern fehlgeschlagen: " + error.message + ". Schließen versucht es erneut.";
+        }
+      });
+    };
+    const finish = async () => {
+      close.disabled = true;
+      if (editor) await editor._energyEnsureQueue;
+      await saves;
+      if (saveError && editor) { enqueueSave(editor._config); await saves; }
+      close.disabled = false;
+      if (saveError) return;
+      dialog.close();
+      dialog.remove();
+      this._settingsDialog = null;
+      if (dirty) window.dispatchEvent(new Event("location-changed"));
+    };
+    close.addEventListener("click", finish);
+    dialog.addEventListener("cancel", event => { event.preventDefault(); finish(); });
+    document.body.appendChild(dialog);
+    dialog.showModal();
+    status.textContent = "Einstellungen werden geladen …";
+    try {
+      const raw = await this._hass.callWS({ type: "lovelace/config", ...request, force: true });
+      if (raw?.strategy?.type !== STRATEGY_TYPE) throw new Error("ATZE Dashboard nicht gefunden");
+      if (!dialog.isConnected) return;
+      editor = document.createElement("atze-dashboard-strategy-editor");
+      editor.energySettingsOnly = true;
+      editor.setConfig(JSON.parse(JSON.stringify(raw.strategy)));
+      editor.hass = this._hass;
+      editor.addEventListener("config-changed", event => {
+        event.stopPropagation();
+        enqueueSave(event.detail.config);
+      });
+      dialog.querySelector(".settings-content").appendChild(editor);
+      status.textContent = "Änderungen werden direkt gespeichert.";
+    } catch (error) {
+      status.textContent = "Einstellungen konnten nicht geladen werden: " + error.message;
+    }
   }
 
   getCardSize() { return 4; }
@@ -684,6 +765,7 @@ exportPDF.addEventListener("click", () => {
         .report-status{font-size:12px;margin-top:8px;color:var(--secondary-text-color)}
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
+      ${this._config.strategy_settings ? '<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="energy-settings" hidden type="button" aria-label="Strom Einstellungen öffnen" title="Strom Einstellungen" style="background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:12px;padding:10px;cursor:pointer"><ha-icon icon="mdi:cog"></ha-icon></button></div>' : ""}
       <div class="grid">
         <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
         <div class="tile total" data-period="total">
@@ -736,6 +818,8 @@ exportPDF.addEventListener("click", () => {
         </div>
         <div class="dialog-status" role="status" aria-live="polite"></div>
       </dialog>`;
+    if (this.shadowRoot.querySelector(".energy-settings")) this.shadowRoot.querySelector(".energy-settings").hidden = !this._hass?.user?.is_admin;
+    this.shadowRoot.querySelector(".energy-settings")?.addEventListener("click", () => this._openSettings());
     const dialog = this.shadowRoot.querySelector(".period-dialog");
     dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (event) => {
@@ -793,7 +877,7 @@ exportPDF.addEventListener("click", () => {
       const empty = document.createElement("div");
       empty.className = "energy-empty";
       empty.style.cssText = "grid-column:1/-1;padding:24px 16px;text-align:center;color:var(--secondary-text-color);";
-      empty.textContent = "Noch keine Stromsensoren eingerichtet. Wähle einen Gesamtstromsensor oder Energie-Hauptsensor in den Einstellungen.";
+      empty.textContent = "Noch keine Stromsensoren eingerichtet. Wähle einen Gesamtstromsensor über das Zahnrad oder einen Energie-Hauptsensor in den ATZE Settings.";
       grid.appendChild(empty);
     }
     for (const period of ["total", "year"]) {

@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.419.0**
+Version **0.420.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,13 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.420.0
+
+- Strom · Gesamtstrom und Strom · Einzelerfassung sind über das Zahnrad auf der Stromseite als Popup erreichbar; die bisherigen allgemeinen Settings-Eingaben entfallen.
+- Bestehende Sensoren und Zähler bleiben erhalten. Öffnen löst keine Zähleranlage aus; ausdrückliche Quelländerungen verwenden weiterhin die vorhandene Einrichtungslogik.
+- Strom-Einstellungen werden im aktuellen Dashboard gespeichert; Speicherfehler bleiben sichtbar und können erneut versucht werden.
+- Lokale Popup-Regressionstests ergänzt. iPhone-Praxistest ab vollständigem Neustart noch offen.
+
 ## v0.415.0
 
 - Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.
@@ -242,11 +249,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Zählerstände in Popups anzeigen, setzen und zurücksetzen; eigene integrierte Zahlentastatur verhindert das Springen der Ansicht auf dem iPhone.
 - Neue Utility-Meter-Helfer werden automatisch mit Jahreszyklus (yearly), Monatszyklus (monthly) beziehungsweise manuellem Tageszyklus (none) angelegt.
 - Hinweis: Die automatische Rücksetzung zum tatsächlichen Monats- oder Jahreswechsel ist noch nicht im Echtbetrieb bestätigt. Bestehende Zähler bleiben unverändert.
-
-## v0.413.0
-
-- Navigationsbadges auf der Hauptübersicht lassen sich per langem Drücken und Ziehen (iPhone) oder Drag-and-drop (Desktop) frei anordnen.
-- Die gewählte Reihenfolge wird dauerhaft in der Dashboard-Konfiguration gespeichert; normale Navigation und zentrierte Darstellung bleiben erhalten.
 <!-- latest-changes:end -->
 
 ## Lizenz

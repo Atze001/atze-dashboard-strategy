@@ -102,7 +102,7 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this._labels = labels || [];
       this._devices = devices || [];
       this._entities = entities || [];
-      if (!this._energyMigrationStarted) {
+      if (!this.energySettingsOnly && !this._energyMigrationStarted) {
         this._energyMigrationStarted = true;
         // Existing selections predate automatic provisioning. Reconcile them
         // once when Settings opens; preserve all assigned helpers and values.
@@ -983,6 +983,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
     return [
       `<option value="">Automatisch</option>`,
+      selectedEntityId && !sensors.some(item => item.entityId === selectedEntityId)
+        ? `<option selected value="${this._escape(selectedEntityId)}">${this._escape(selectedEntityId)} (nicht verfügbar)</option>` : "",
       ...sensors.map(({ entityId, name }) => `
         <option
           value="${this._escape(entityId)}"
@@ -1693,8 +1695,87 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
     }
   }
 
+  _energySettingsHtml() {
+    return `        <details class="panel editor-section" data-editor-section="energy-setup"
+          ${this._openEditorSections.has("energy-setup") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>
+            <span class="editor-section-summary-title">Strom · Gesamtstrom</span>
+          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body" style="display:grid;gap:12px;padding:16px">
+            <div class="editor-section-help">Diese kWh-Entität bestimmt den Wert auf der
+              Startseite sowie die Gesamtwerte im integrierten Strom-Dashboard.</div>
+            <label class="primary-field">
+              <span>Aktuelle Gesamtleistung (W) · Startseiten-Kachel</span>
+              <select class="power-sensor-select" aria-label="Leistungssensor (W) auswählen">
+                ${this._powerSensorOptionsHtml(String(this._config.home_power_entity || ""))}
+              </select>
+            </label>
+            ${this._energySetupHtml()}
+          </div>
+        </details>
+        <details class="panel editor-section" data-editor-section="energy-individual"
+          ${this._openEditorSections.has("energy-individual") ? "open" : ""}>
+          <summary><span class="editor-section-summary-main">
+            <ha-icon icon="mdi:power-plug-outline"></ha-icon>
+            <span class="editor-section-summary-title">Strom · Einzelerfassung</span>
+          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
+          <div class="editor-section-body" style="display:grid;gap:14px;padding:16px">
+            <div class="editor-section-help">Geräte oder Räume einzeln hinzufügen.
+              Jeder Eintrag bekommt einen eigenen kWh-Quellsensor und eigene
+              Jahres-, Monats- und Tageszähler.</div>
+            ${(this._config.energy_individual || []).map((entry, index) => `
+              <div class="energy-individual-entry" data-index="${index}"
+                style="border:1px solid var(--divider-color,rgba(127,127,127,.24));border-radius:12px;padding:12px;display:grid;gap:10px">
+                <div class="toolbar" style="justify-content:space-between;align-items:center">
+                  <strong>${this._escape(this._hass?.states?.[entry.total]?.attributes?.friendly_name ||
+                    entry.total || "Einzelzähler " + (index + 1))}</strong>
+                  <button class="energy-remove-individual" data-index="${index}" type="button">Entfernen</button>
+                </div>
+                ${this._energySetupHtml(index)}
+              </div>`).join("") || '<div class="editor-section-help">Noch keine Einzelzähler eingerichtet.</div>'}
+            <div class="toolbar"><button id="energy-add-individual" type="button">
+              Einzelstrom hinzufügen
+            </button></div>
+          </div>
+        </details>
+`;
+  }
+
+  _renderEnergySettings() {
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block;color:var(--primary-text-color)}
+      details{border:1px solid var(--divider-color);border-radius:12px;margin:12px 0}
+      summary{padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px}
+      .editor-section-summary-main{display:flex;align-items:center;gap:8px}
+      .primary-field{display:grid;gap:6px;min-width:0}
+      select,button{font:inherit;color:inherit;background:var(--secondary-background-color,#303038);border:1px solid var(--divider-color);border-radius:8px;padding:10px;max-width:100%;min-width:0}
+      select{width:100%}.editor-section-help{font-size:13px;color:var(--secondary-text-color);line-height:1.5}
+      .toolbar{display:flex;gap:8px;flex-wrap:wrap}strong{overflow-wrap:anywhere}
+    </style>${this._energySettingsHtml()}`;
+    for (const panel of this.shadowRoot.querySelectorAll("details")) {
+      panel.addEventListener("toggle", () => {
+        if (panel.open) this._openEditorSections.add(panel.dataset.editorSection);
+        else this._openEditorSections.delete(panel.dataset.editorSection);
+      });
+    }
+    for (const select of this.shadowRoot.querySelectorAll(".energy-setup-field")) {
+      select.addEventListener("change", () => this._setEnergySetupField(
+        select.dataset.key, select.value,
+        select.hasAttribute("data-index") ? Number(select.dataset.index) : null));
+    }
+    this.shadowRoot.querySelector(".power-sensor-select").addEventListener("change", event => {
+      this._setHomePowerEntity(event.target.value);
+    });
+    this.shadowRoot.querySelector("#energy-add-individual").addEventListener("click", () => this._addEnergyIndividual());
+    for (const button of this.shadowRoot.querySelectorAll(".energy-remove-individual")) {
+      button.addEventListener("click", () => this._removeEnergyIndividual(Number(button.dataset.index)));
+    }
+  }
+
   _render() {
     if (!this.shadowRoot || this._backgroundPickerActive) return;
+    if (this.energySettingsOnly) return this._renderEnergySettings();
 
     const blocked = this._blockedAreaIds();
     const selected = this._selectedAreaIds();
@@ -2638,8 +2719,8 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
 
           <div class="editor-section-body">
             <div class="editor-section-help">
-              Den Leistungssensor für die Strom-Kachel stellst du jetzt unter
-              „Strom · Gesamtstrom“ ein.
+              Den Leistungssensor für die Strom-Kachel stellst du über
+              dem Zahnrad auf der Stromdashboard-Seite ein.
             </div>
             <div class="rows">
               ${this._outdoorIlluminanceSensorSelectHtml()}
@@ -2809,49 +2890,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
               werden nur Räume mit ausdrücklich ausgewähltem Energie-Hauptsensor übernommen.</div>
             ${this._loading ? '<div class="loading">Bereiche werden geladen …</div>' :
               (primarySensorHtml || '<div class="loading">Keine ausgewählten Räume gefunden.</div>')}
-          </div>
-        </details>
-        <details class="panel editor-section" data-editor-section="energy-setup"
-          ${this._openEditorSections.has("energy-setup") ? "open" : ""}>
-          <summary><span class="editor-section-summary-main">
-            <ha-icon icon="mdi:lightning-bolt-circle"></ha-icon>
-            <span class="editor-section-summary-title">Strom · Gesamtstrom</span>
-          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
-          <div class="editor-section-body" style="display:grid;gap:12px;padding:16px">
-            <div class="editor-section-help">Diese kWh-Entität bestimmt den Wert auf der
-              Startseite sowie die Gesamtwerte im integrierten Strom-Dashboard.</div>
-            <label class="primary-field">
-              <span>Aktuelle Gesamtleistung (W) · Startseiten-Kachel</span>
-              <select class="power-sensor-select" aria-label="Leistungssensor (W) auswählen">
-                ${this._powerSensorOptionsHtml(String(this._config.home_power_entity || ""))}
-              </select>
-            </label>
-            ${this._energySetupHtml()}
-          </div>
-        </details>
-        <details class="panel editor-section" data-editor-section="energy-individual"
-          ${this._openEditorSections.has("energy-individual") ? "open" : ""}>
-          <summary><span class="editor-section-summary-main">
-            <ha-icon icon="mdi:power-plug-outline"></ha-icon>
-            <span class="editor-section-summary-title">Strom · Einzelerfassung</span>
-          </span><ha-icon class="editor-section-chevron" icon="mdi:chevron-right"></ha-icon></summary>
-          <div class="editor-section-body" style="display:grid;gap:14px;padding:16px">
-            <div class="editor-section-help">Geräte oder Räume einzeln hinzufügen.
-              Jeder Eintrag bekommt einen eigenen kWh-Quellsensor und eigene
-              Jahres-, Monats- und Tageszähler.</div>
-            ${(this._config.energy_individual || []).map((entry, index) => `
-              <div class="energy-individual-entry" data-index="${index}"
-                style="border:1px solid var(--divider-color,rgba(127,127,127,.24));border-radius:12px;padding:12px;display:grid;gap:10px">
-                <div class="toolbar" style="justify-content:space-between;align-items:center">
-                  <strong>${this._escape(this._hass?.states?.[entry.total]?.attributes?.friendly_name ||
-                    entry.total || "Einzelzähler " + (index + 1))}</strong>
-                  <button class="energy-remove-individual" data-index="${index}" type="button">Entfernen</button>
-                </div>
-                ${this._energySetupHtml(index)}
-              </div>`).join("") || '<div class="editor-section-help">Noch keine Einzelzähler eingerichtet.</div>'}
-            <div class="toolbar"><button id="energy-add-individual" type="button">
-              Einzelstrom hinzufügen
-            </button></div>
           </div>
         </details>
         <details class="panel editor-section" data-editor-section="name-filters" ${this._openEditorSections.has("name-filters") ? "open" : ""}>
@@ -3050,18 +3088,6 @@ class AtzeDashboardStrategyEditor extends HTMLElement {
       this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
     };
 
-    for (const select of this.shadowRoot.querySelectorAll(".energy-setup-field")) {
-      select.addEventListener("change", () =>
-        this._setEnergySetupField(select.dataset.key, select.value,
-          select.hasAttribute("data-index") ? Number(select.dataset.index) : null));
-    }
-    const energyStatusFor = element => element.closest(".energy-individual-entry, .editor-section-body")
-      ?.querySelector(".energy-setup-status");
-    this.shadowRoot.querySelector("#energy-add-individual")
-      ?.addEventListener("click", () => this._addEnergyIndividual());
-    for (const button of this.shadowRoot.querySelectorAll(".energy-remove-individual")) {
-      button.addEventListener("click", () => this._removeEnergyIndividual(Number(button.dataset.index)));
-    }
     // Build expensive Home Assistant selectors only when a room is opened.
     const initialisePrimaryArea = panel => {
       if (!panel.open || !panel.isConnected) return;
