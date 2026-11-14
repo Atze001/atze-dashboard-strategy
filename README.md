@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.421.0**
+Version **0.422.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.422.0
+
+- Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.
+- Regressionstests für beide Speicherformen ergänzt. iPhone-Praxistest nach vollständigem Neustart weiterhin offen.
+
 ## v0.421.0
 
 - Zahnrad oben rechts direkt auf dem Strom-Titelbild platziert. Es bleibt mit dem fixierten Bild sichtbar und bedienbar.
@@ -241,12 +246,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Bestehende Sensoren und Zähler bleiben erhalten. Öffnen löst keine Zähleranlage aus; ausdrückliche Quelländerungen verwenden weiterhin die vorhandene Einrichtungslogik.
 - Strom-Einstellungen werden im aktuellen Dashboard gespeichert; Speicherfehler bleiben sichtbar und können erneut versucht werden.
 - Lokale Popup-Regressionstests ergänzt. iPhone-Praxistest ab vollständigem Neustart noch offen.
-
-## v0.415.0
-
-- Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.
-- Jahres- (`yearly`) und Monatszyklus (`monthly`) bleiben unverändert.
-- Bereits bestehende Utility Meter werden nicht automatisch umgestellt; ein tatsächlicher Tageswechsel mit neu angelegtem Helfer ist noch nicht praktisch bestätigt.
 <!-- latest-changes:end -->
 
 ## Lizenz

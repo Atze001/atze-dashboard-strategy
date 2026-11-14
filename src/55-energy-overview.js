@@ -175,6 +175,15 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     this._update();
   }
 
+  _energyStrategyTarget(raw) {
+    // HA can store the custom strategy directly or inside a strategy block.
+    // Resolve only this build's strategy and retain its original storage shape.
+    const matches = config => [STRATEGY_TYPE, "custom:" + STRATEGY_TYPE].includes(config?.type);
+    if (matches(raw?.strategy)) return { config: raw.strategy, nested: true };
+    if (matches(raw)) return { config: raw, nested: false };
+    throw new Error("ATZE Dashboard nicht gefunden");
+  }
+
   async _openSettings() {
     if (this._settingsDialog?.isConnected || !this._hass?.user?.is_admin) return;
     const dialog = document.createElement("dialog");
@@ -200,15 +209,15 @@ class AtzeEnergyOverviewCard extends HTMLElement {
       saves = saves.then(async () => {
         try {
           const raw = await this._hass.callWS({ type: "lovelace/config", ...request, force: true });
-          if (raw?.strategy?.type !== STRATEGY_TYPE) throw new Error("ATZE Dashboard nicht gefunden");
-          const strategy = { ...raw.strategy };
+          const target = this._energyStrategyTarget(raw);
+          const strategy = { ...target.config };
           // Only these settings belong to this popup. Keep all other options
           // from the latest server config, including layouts and room meters.
           for (const key of ["energy_setup", "energy_individual", "home_power_entity"]) {
             if (Object.hasOwn(snapshot, key)) strategy[key] = snapshot[key];
             else delete strategy[key];
           }
-          await this._hass.callWS({ type: "lovelace/config/save", ...request, config: { ...raw, strategy } });
+          await this._hass.callWS({ type: "lovelace/config/save", ...request, config: target.nested ? { ...raw, strategy } : strategy });
           saveError = null;
           status.textContent = "Gespeichert.";
         } catch (error) {
@@ -236,11 +245,11 @@ class AtzeEnergyOverviewCard extends HTMLElement {
     status.textContent = "Einstellungen werden geladen …";
     try {
       const raw = await this._hass.callWS({ type: "lovelace/config", ...request, force: true });
-      if (raw?.strategy?.type !== STRATEGY_TYPE) throw new Error("ATZE Dashboard nicht gefunden");
+      const target = this._energyStrategyTarget(raw);
       if (!dialog.isConnected) return;
       editor = document.createElement("atze-dashboard-strategy-editor");
       editor.energySettingsOnly = true;
-      editor.setConfig(JSON.parse(JSON.stringify(raw.strategy)));
+      editor.setConfig(JSON.parse(JSON.stringify(target.config)));
       editor.hass = this._hass;
       editor.addEventListener("config-changed", event => {
         event.stopPropagation();

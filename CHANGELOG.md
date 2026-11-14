@@ -1,3 +1,8 @@
+## v0.422.0
+
+- Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.
+- Regressionstests für beide Speicherformen ergänzt. iPhone-Praxistest nach vollständigem Neustart weiterhin offen.
+
 ## v0.421.0
 
 - Zahnrad oben rechts direkt auf dem Strom-Titelbild platziert. Es bleibt mit dem fixierten Bild sichtbar und bedienbar.
