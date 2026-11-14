@@ -1,3 +1,8 @@
+## v0.423.0
+
+- Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
+- Popup-Funktion vom Benutzer bestätigt; iPhone-Sichtprüfung der neuen Position nach vollständigem Neustart noch offen.
+
 ## v0.422.0
 
 - Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.

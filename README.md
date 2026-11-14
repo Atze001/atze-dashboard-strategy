@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.422.0**
+Version **0.423.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.423.0
+
+- Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
+- Popup-Funktion vom Benutzer bestätigt; iPhone-Sichtprüfung der neuen Position nach vollständigem Neustart noch offen.
+
 ## v0.422.0
 
 - Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.
@@ -239,13 +244,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Zahnrad oben rechts direkt auf dem Strom-Titelbild platziert. Es bleibt mit dem fixierten Bild sichtbar und bedienbar.
 - iPhone-Praxistest nach vollständigem App-Neustart noch offen.
-
-## v0.420.0
-
-- Strom · Gesamtstrom und Strom · Einzelerfassung sind über das Zahnrad auf der Stromseite als Popup erreichbar; die bisherigen allgemeinen Settings-Eingaben entfallen.
-- Bestehende Sensoren und Zähler bleiben erhalten. Öffnen löst keine Zähleranlage aus; ausdrückliche Quelländerungen verwenden weiterhin die vorhandene Einrichtungslogik.
-- Strom-Einstellungen werden im aktuellen Dashboard gespeichert; Speicherfehler bleiben sichtbar und können erneut versucht werden.
-- Lokale Popup-Regressionstests ergänzt. iPhone-Praxistest ab vollständigem Neustart noch offen.
 <!-- latest-changes:end -->
 
 ## Lizenz
