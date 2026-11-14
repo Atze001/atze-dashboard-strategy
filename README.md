@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.420.0**
+Version **0.421.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.421.0
+
+- Zahnrad oben rechts direkt auf dem Strom-Titelbild platziert. Es bleibt mit dem fixierten Bild sichtbar und bedienbar.
+- iPhone-Praxistest nach vollständigem App-Neustart noch offen.
+
 ## v0.420.0
 
 - Strom · Gesamtstrom und Strom · Einzelerfassung sind über das Zahnrad auf der Stromseite als Popup erreichbar; die bisherigen allgemeinen Settings-Eingaben entfallen.
@@ -242,13 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Neu angelegte tägliche Strom-Utility-Meter verwenden jetzt den Home-Assistant-Zyklus `daily` statt `none` und werden damit automatisch zum Tageswechsel zurückgesetzt.
 - Jahres- (`yearly`) und Monatszyklus (`monthly`) bleiben unverändert.
 - Bereits bestehende Utility Meter werden nicht automatisch umgestellt; ein tatsächlicher Tageswechsel mit neu angelegtem Helfer ist noch nicht praktisch bestätigt.
-
-## v0.414.0
-
-- Stromdashboard mit Gesamtstromsensor und Hauptsensoren je Raum sowie Jahres-, Monats- und Tageszählern erweitert.
-- Zählerstände in Popups anzeigen, setzen und zurücksetzen; eigene integrierte Zahlentastatur verhindert das Springen der Ansicht auf dem iPhone.
-- Neue Utility-Meter-Helfer werden automatisch mit Jahreszyklus (yearly), Monatszyklus (monthly) beziehungsweise manuellem Tageszyklus (none) angelegt.
-- Hinweis: Die automatische Rücksetzung zum tatsächlichen Monats- oder Jahreswechsel ist noch nicht im Echtbetrieb bestätigt. Bestehende Zähler bleiben unverändert.
 <!-- latest-changes:end -->
 
 ## Lizenz

@@ -34,6 +34,7 @@ const card = w.document.createElement('atze-energy-overview-card');
 card.setConfig({ strategy_settings: true });
 card.hass = hass;
 assert.equal(card.shadowRoot.querySelector('.energy-settings').hidden, false);
+assert(card.shadowRoot.querySelector('.energy-hero > .energy-settings'), 'Zahnrad muss mit dem fixierten Titelbild verbunden sein');
 await card._openSettings();
 const settle = async () => { for (let i=0; i<15; i++) await new Promise(resolve => setImmediate(resolve)); };
 await settle();

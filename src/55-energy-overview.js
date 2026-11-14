@@ -643,11 +643,18 @@ exportPDF.addEventListener("click", () => {
         .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
         .tile[hidden] { display:none }
         .energy-hero-placeholder { grid-column:1/-1; width:100%; min-width:0 }
-        .energy-hero { grid-column:1/-1;
+        .energy-hero { position:relative; grid-column:1/-1;
           width:100%; min-width:0; overflow:hidden; border-radius:16px;
           margin:0 0 6px; background:rgba(55,58,67,.30);
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
           box-sizing:border-box }
+        .energy-settings { position:absolute; top:10px; right:10px; z-index:1;
+          display:flex; align-items:center; justify-content:center; width:44px; height:44px;
+          padding:10px; border:1px solid rgba(255,255,255,.35); border-radius:12px;
+          background:rgba(15,23,35,.85); color:#fff; cursor:pointer;
+          box-shadow:0 2px 10px rgba(0,0,0,.35) }
+        .energy-settings[hidden] { display:none }
+        .energy-settings:focus-visible { outline:2px solid #55d6ed; outline-offset:2px }
         .energy-hero img { display:block; width:100%; aspect-ratio:1672/860;
           object-fit:cover; object-position:center top }
         .energy-hero[hidden] { display:none }
@@ -765,9 +772,8 @@ exportPDF.addEventListener("click", () => {
         .report-status{font-size:12px;margin-top:8px;color:var(--secondary-text-color)}
         @media(max-width:350px) { .grid{gap:7px} .tile{padding:10px} .title{font-size:12px} .summary{gap:5px} }
       </style>
-      ${this._config.strategy_settings ? '<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="energy-settings" hidden type="button" aria-label="Strom Einstellungen öffnen" title="Strom Einstellungen" style="background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--divider-color);border-radius:12px;padding:10px;cursor:pointer"><ha-icon icon="mdi:cog"></ha-icon></button></div>' : ""}
       <div class="grid">
-        <div class="energy-hero"><img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
+        <div class="energy-hero">${this._config.strategy_settings ? '<button class="energy-settings" hidden type="button" aria-label="Strom Einstellungen öffnen" title="Strom Einstellungen"><ha-icon icon="mdi:cog"></ha-icon></button>' : ""}<img alt="Stromverbrauch – Smart-Home-Energieübersicht" loading="eager"><div class="energy-hero-error" role="status"></div></div>
         <div class="tile total" data-period="total">
           <div class="head"><ha-icon icon="mdi:lightning-bolt"></ha-icon><span class="title">Gesamtstrom</span><div class="live-power" hidden><span class="power-number"></span><span class="unit">W aktuell</span></div></div>
           <div class="summary">

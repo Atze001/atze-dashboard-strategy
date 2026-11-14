@@ -1,3 +1,8 @@
+## v0.421.0
+
+- Zahnrad oben rechts direkt auf dem Strom-Titelbild platziert. Es bleibt mit dem fixierten Bild sichtbar und bedienbar.
+- iPhone-Praxistest nach vollständigem App-Neustart noch offen.
+
 ## v0.420.0
 
 - Strom · Gesamtstrom und Strom · Einzelerfassung sind über das Zahnrad auf der Stromseite als Popup erreichbar; die bisherigen allgemeinen Settings-Eingaben entfallen.
