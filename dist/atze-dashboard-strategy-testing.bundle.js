@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.422.0";
+const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "913E6ED";
+const ATZE_TESTING_REVISION = "E4D2CFC";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -17111,10 +17111,10 @@ exportPDF.addEventListener("click", () => {
           margin:0 0 6px; background:rgba(55,58,67,.30);
           border:1px solid var(--home-card-border,rgba(255,255,255,.10));
           box-sizing:border-box }
-        .energy-settings { position:absolute; top:10px; right:10px; z-index:1;
+        .energy-settings { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:1;
           display:flex; align-items:center; justify-content:center; width:44px; height:44px;
           padding:10px; border:1px solid rgba(255,255,255,.35); border-radius:12px;
-          background:rgba(15,23,35,.85); color:#fff; cursor:pointer;
+          background:rgba(15,23,35,.85); color:#32C5F4; cursor:pointer;
           box-shadow:0 2px 10px rgba(0,0,0,.35) }
         .energy-settings[hidden] { display:none }
         .energy-settings:focus-visible { outline:2px solid #55d6ed; outline-offset:2px }
