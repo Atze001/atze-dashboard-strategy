@@ -6946,6 +6946,7 @@ function syncAtzeNativeHeader(enabled) {
 
 const ATZE_SIDEBAR_BUTTON_ID =
   "atze-dashboard-sidebar-button";
+let atzeNativeNavRouteCleanup = null;
 
 function openAtzeHomeAssistantSidebar() {
   const homeAssistant =
@@ -7061,6 +7062,25 @@ function applyAtzeSidebarAccess(config) {
       window.history.replaceState(window.history.state, "",
         window.location.pathname + (query ? "?" + query : "") + window.location.hash);
     }
+  }
+
+  atzeNativeNavRouteCleanup?.();
+  atzeNativeNavRouteCleanup = null;
+  const dashboardRoot = window.location.pathname.split("/").filter(Boolean)[0];
+  if (enabled) {
+    const onLocationChange = () => {
+      const currentRoot = window.location.pathname.split("/").filter(Boolean)[0];
+      if (currentRoot !== dashboardRoot) {
+        syncAtzeSidebarAccessButton(false);
+        syncAtzeNativeHeader(false);
+      }
+    };
+    window.addEventListener("location-changed", onLocationChange);
+    window.addEventListener("popstate", onLocationChange);
+    atzeNativeNavRouteCleanup = () => {
+      window.removeEventListener("location-changed", onLocationChange);
+      window.removeEventListener("popstate", onLocationChange);
+    };
   }
 
   const apply = () => {

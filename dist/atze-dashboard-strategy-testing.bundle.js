@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "3B5764C";
+const ATZE_TESTING_REVISION = "6A76BD7";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6943,6 +6943,7 @@ function syncAtzeNativeHeader(enabled) {
 
 const ATZE_SIDEBAR_BUTTON_ID =
   "atze-dashboard-sidebar-button";
+let atzeNativeNavRouteCleanup = null;
 
 function openAtzeHomeAssistantSidebar() {
   const homeAssistant =
@@ -7058,6 +7059,25 @@ function applyAtzeSidebarAccess(config) {
       window.history.replaceState(window.history.state, "",
         window.location.pathname + (query ? "?" + query : "") + window.location.hash);
     }
+  }
+
+  atzeNativeNavRouteCleanup?.();
+  atzeNativeNavRouteCleanup = null;
+  const dashboardRoot = window.location.pathname.split("/").filter(Boolean)[0];
+  if (enabled) {
+    const onLocationChange = () => {
+      const currentRoot = window.location.pathname.split("/").filter(Boolean)[0];
+      if (currentRoot !== dashboardRoot) {
+        syncAtzeSidebarAccessButton(false);
+        syncAtzeNativeHeader(false);
+      }
+    };
+    window.addEventListener("location-changed", onLocationChange);
+    window.addEventListener("popstate", onLocationChange);
+    atzeNativeNavRouteCleanup = () => {
+      window.removeEventListener("location-changed", onLocationChange);
+      window.removeEventListener("popstate", onLocationChange);
+    };
   }
 
   const apply = () => {
