@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "8B8034B";
+const ATZE_TESTING_REVISION = "B6A68C6";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7529,6 +7529,41 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
+    this._sidebarSwipeStart = null;
+    this._onSidebarSwipeStart = event => {
+      if (event.touches.length !== 1 || this._hasOpenDashboardPopup()) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      const touch = event.touches[0];
+      // 0–28px belongs to HA's native edge gesture. Start beside it so
+      // that opening the sidebar cannot be triggered twice.
+      if (touch.clientX <= ATZE_HOME_SWIPE_NATIVE_EDGE || touch.clientX > 64 ||
+          atzeGestureHitsInteractiveControl(event)) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      this._sidebarSwipeStart = {
+        id: touch.identifier,
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+    };
+    this._onSidebarSwipeEnd = event => {
+      const start = this._sidebarSwipeStart;
+      this._sidebarSwipeStart = null;
+      if (!start || this._hasOpenDashboardPopup()) return;
+      const touch = Array.from(event.changedTouches).find(item => item.identifier === start.id);
+      if (!touch) return;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (dx >= 95 && Math.abs(dy) <= 65 && dx > Math.abs(dy) * 1.5) {
+        openAtzeHomeAssistantSidebar();
+      }
+    };
+    this._onSidebarSwipeCancel = () => {
+      this._sidebarSwipeStart = null;
+    };
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
     this._pageScrollCleanup = null;
@@ -7591,6 +7626,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this.addEventListener("touchstart", this._onSidebarSwipeStart, { passive: true });
+    this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
+    this.addEventListener("touchcancel", this._onSidebarSwipeCancel, { passive: true });
     this._startClock();
 
     if (!this._scrollTopCleanup) {
@@ -7628,6 +7666,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.removeEventListener("touchstart", this._onSidebarSwipeStart);
+    this.removeEventListener("touchend", this._onSidebarSwipeEnd);
+    this.removeEventListener("touchcancel", this._onSidebarSwipeCancel);
+    this._sidebarSwipeStart = null;
     if (this._clockTimer) {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
