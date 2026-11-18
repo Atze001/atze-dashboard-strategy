@@ -426,7 +426,9 @@ class AtzeDashboardStrategy extends HTMLElement {
 
     return {
       title: config.title || "Atze Dashboard",
-      ...(config.kiosk_mode != null
+      // Keep the existing Kiosk Mode config intact, but do not apply it
+      // during the explicit ?atze_native_nav=1 compatibility test.
+      ...(config.kiosk_mode != null && !atzeNativeNavigationEnabled()
         ? { kiosk_mode: config.kiosk_mode }
         : {}),
       views,

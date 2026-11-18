@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.424.0**
+Version **0.425.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,14 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.425.0
+
+- Native Home-Assistant-Kopfzeile ohne HACS Kiosk Mode direkt durch ATZE Strategy ausblendbar; durch Antippen der Uhr wieder ein- und ausblendbar.
+- Originale Home-Assistant-Seitenleiste auf der Hauptseite per Wisch von links nach rechts öffnen; die funktionierende Raum-Zurück-Geste bleibt erhalten.
+- Floating-Menübutton entfernt und den Wischbereich der Hauptseite auf die ersten 100 Pixel erweitert; vertikales Scrollen bleibt geschützt.
+- Seitenleiste mit deckendem Midnight-Blue-Farbschema versehen. Navigation, Uhr-Umschaltung und Farbgebung wurden vom Benutzer auf dem iPhone bestätigt.
+- Bestehende Home-Assistant-Konfiguration und Zählerstände bleiben unverändert.
+
 ## v0.424.0
 
 - Strom · Gesamtstrom und Strom · Einzelerfassung über das azurblaue Zahnrad mittig unten auf dem Strom-Titelbild öffnen; die bisherigen allgemeinen Settings-Oberflächen entfallen.
@@ -241,11 +249,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
 - Popup-Funktion vom Benutzer bestätigt; iPhone-Sichtprüfung der neuen Position nach vollständigem Neustart noch offen.
-
-## v0.422.0
-
-- Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.
-- Regressionstests für beide Speicherformen ergänzt. iPhone-Praxistest nach vollständigem Neustart weiterhin offen.
 <!-- latest-changes:end -->
 
 ## Lizenz

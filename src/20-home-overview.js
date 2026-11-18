@@ -5,6 +5,59 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._config = null;
     this._hass = null;
     this._clockTimer = null;
+    this._sidebarSwipeStart = null;
+    this._onSidebarSwipeStart = event => {
+      if (event.touches.length !== 1 || this._hasOpenDashboardPopup()) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      const touch = event.touches[0];
+      // Use one ATZE gesture across the full left 100px of the home card.
+      // HA's own edge swipe is unreliable while the native header is hidden.
+      if (touch.clientX < 0 || touch.clientX > 100 ||
+          atzeGestureHitsInteractiveControl(event)) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      this._sidebarSwipeStart = {
+        id: touch.identifier,
+        x: touch.clientX,
+        y: touch.clientY,
+      };
+    };
+    this._onSidebarSwipeMove = event => {
+      const start = this._sidebarSwipeStart;
+      if (!start || event.touches.length !== 1) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      const touch = Array.from(event.touches).find(item => item.identifier === start.id);
+      if (!touch) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      // A vertical scroll must never turn into a sidebar swipe.
+      if (Math.abs(dy) > 35 && Math.abs(dy) > Math.abs(dx)) {
+        this._sidebarSwipeStart = null;
+      }
+    };
+    this._onSidebarSwipeEnd = event => {
+      const start = this._sidebarSwipeStart;
+      this._sidebarSwipeStart = null;
+      if (!start || this._hasOpenDashboardPopup()) return;
+      const touch = Array.from(event.changedTouches).find(item => item.identifier === start.id);
+      if (!touch) return;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (dx >= 95 && Math.abs(dy) <= 65 && dx > Math.abs(dy) * 1.5) {
+        openAtzeHomeAssistantSidebar();
+      }
+    };
+    this._onSidebarSwipeCancel = () => {
+      this._sidebarSwipeStart = null;
+    };
     this._blueprintEnsureStarted = false;
     this._scrollTopCleanup = null;
     this._pageScrollCleanup = null;
@@ -27,6 +80,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecastLoading = false;
     this._roomDrag = null;
     this._hiddenRoomIds = [];
+    this._alertTickerCard = null;
+    this._alertTickerSignature = "";
+    this._alertTickerAwaitingResource = false;
   }
 
   setConfig(config) {
@@ -52,6 +108,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     if (this._schedulerCard) this._schedulerCard.hass = value;
+    if (this._alertTickerCard) this._alertTickerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
       else this._render();
@@ -63,6 +120,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this.addEventListener("touchstart", this._onSidebarSwipeStart, { passive: true });
+    this.addEventListener("touchmove", this._onSidebarSwipeMove, { passive: true });
+    this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
+    this.addEventListener("touchcancel", this._onSidebarSwipeCancel, { passive: true });
     this._startClock();
 
     if (!this._scrollTopCleanup) {
@@ -100,6 +161,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.removeEventListener("touchstart", this._onSidebarSwipeStart);
+    this.removeEventListener("touchmove", this._onSidebarSwipeMove);
+    this.removeEventListener("touchend", this._onSidebarSwipeEnd);
+    this.removeEventListener("touchcancel", this._onSidebarSwipeCancel);
+    this._sidebarSwipeStart = null;
     if (this._clockTimer) {
       clearInterval(this._clockTimer);
       this._clockTimer = null;
@@ -121,65 +187,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _toggleKioskMode() {
-    const rawQuery = String(
-      window.location.search || ""
-    );
-
-    let parts = rawQuery.startsWith("?")
-      ? rawQuery.slice(1).split("&").filter(Boolean)
-      : rawQuery
-        ? rawQuery.split("&").filter(Boolean)
-        : [];
-
-    const keyOf = (part) =>
-      decodeURIComponent(
-        String(part).split("=")[0] || ""
-      );
-
-    const hasKey = (key) =>
-      parts.some((part) => keyOf(part) === key);
-
-    const removeKey = (key) => {
-      parts = parts.filter(
-        (part) => keyOf(part) !== key
-      );
-    };
-
-    const active =
-      !hasKey("disable_km") &&
-      (
-        hasKey("hide_header") ||
-        hasKey("kiosk") ||
-        this._config?.force_kiosk === true
-      );
-
-    for (const key of [
-      "kiosk",
-      "hide_header",
-      "hide_sidebar",
-      "disable_km",
-      "atze_km_auto",
-    ]) {
-      removeKey(key);
-    }
-
-    if (active) {
-      parts.push("disable_km");
-    } else {
-      parts.push("hide_header");
-
-      if (this._config?.force_kiosk === true) {
-        parts.push("atze_km_auto=1");
-      }
-    }
-
-    const query = parts.length
-      ? `?${parts.join("&")}`
-      : "";
-
-    window.location.replace(
-      `${window.location.pathname}${query}${window.location.hash || ""}`
-    );
+    // Native ATZE header control; Kiosk Mode is no longer required.
+    toggleAtzeNativeHeaderVisibility();
   }
 
   _state(entityId) {
@@ -1602,6 +1611,149 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
   }
 
+  _alertTickerConfig() {
+    // Reuse the sensors already selected by the Strategy; do not create
+    // another sensor scan, automation, polling loop or notification channel.
+    const candidates = new Set([
+      ...asArray(this._config.warning_entities),
+      ...asArray(this._config.smoke_entities),
+      ...asArray(this._config.security_entities),
+    ]);
+    const kinds = {
+      smoke: { theme: "fire", message: "Rauch erkannt: {name}", priority: 1 },
+      gas: { theme: "toxic", message: "Gaswarnung: {name}", priority: 1 },
+      moisture: { theme: "flood", message: "Wasser erkannt: {name}", priority: 1 },
+      problem: { theme: "caution", message: "Störung: {name}", priority: 2 },
+      safety: { theme: "caution", message: "Sicherheitswarnung: {name}", priority: 2 },
+      tamper: { theme: "caution", message: "Manipulationswarnung: {name}", priority: 2 },
+      window: { theme: "door", message: "Fenster geöffnet: {name}", priority: 3 },
+      door: { theme: "door", message: "Tür geöffnet: {name}", priority: 3 },
+      opening: { theme: "door", message: "Öffnung erkannt: {name}", priority: 3 },
+    };
+    const alerts = [...candidates].flatMap(entityId => {
+      if (!entityId.startsWith("binary_sensor.")) return [];
+      const state = this._hass?.states?.[entityId];
+      const kind = kinds[state?.attributes?.device_class];
+      if (!kind) return [];
+      return [{
+        entity: entityId,
+        state: "on",
+        name: state.attributes.friendly_name || entityId,
+        message: kind.message,
+        theme: kind.theme,
+        priority: kind.priority,
+      }];
+    });
+    return {
+      type: "custom:alert-ticker-card",
+      alerts,
+      show_when_clear: true,
+      clear_message: "Keine aktiven Warnungen",
+      clear_theme: "success",
+      overlay_mode: false,
+      tts_enabled: false,
+      push_enabled: false,
+    };
+  }
+
+  _styleAlertTicker() {
+    const root = this._alertTickerCard?.shadowRoot;
+    if (!root || root.querySelector("#atze-ticker-style")) return;
+    // Style only our embedded HACS card. Never change the installed resource.
+    const style = document.createElement("style");
+    style.id = "atze-ticker-style";
+    style.textContent = `
+      :host {
+        --ha-card-border-radius: 22px;
+        --ha-card-box-shadow: none;
+        border-radius: 22px !important;
+        box-shadow: 0 6px 22px rgba(0,0,0,.16) !important;
+      }
+      .atc-card-root, .atc-inner-clip, .at-fold-wrapper {
+        border-radius: 22px !important;
+      }
+      .at-fold-wrapper > div:not(.atc-history-card) {
+        min-height: 92px;
+        padding: 15px 17px !important;
+        border: 1px solid rgba(235,235,245,.34) !important;
+        border-radius: 22px !important;
+        background: linear-gradient(125deg,rgba(31,39,52,.89),rgba(37,40,47,.87)) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
+        color: #f5f5f7 !important;
+        animation: none !important;
+      }
+      .at-fold-wrapper > div:not(.atc-history-card)::before,
+      .at-fold-wrapper > div:not(.atc-history-card)::after,
+      .dr-ray, .fl-waves {
+        display: none !important;
+      }
+      .at-fold-wrapper :is(.ca-icon,.wn-icon,.dr-icon,.fi-icon,.fl-icon,.su-icon-wrap,
+        .in-icon-wrap,.ga-icon,.le-icon,.sa-icon,.tm-icon) {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 56px !important;
+        width: 56px !important;
+        height: 56px !important;
+        border: 1px solid rgba(235,235,245,.17) !important;
+        border-radius: 16px !important;
+        background: rgba(59,62,71,.48) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
+        filter: none !important;
+        transform: none !important;
+        animation: none !important;
+      }
+      .at-fold-wrapper :is(.ca-badge,.wn-badge,.dr-badge,.fi-badge,.fl-badge,.su-badge) {
+        color: #ffd60a !important;
+        letter-spacing: 1.5px !important;
+        font-weight: 700 !important;
+      }
+      .at-fold-wrapper :is(.ca-title,.wn-title,.dr-title,.fi-title,.fl-title,.su-title,
+        .in-title) {
+        color: #f5f5f7 !important;
+        font-size: 15px !important;
+        font-weight: 650 !important;
+        line-height: 1.4 !important;
+        overflow-wrap: anywhere;
+      }
+      .at-fold-wrapper :is(.ca-right,.wn-right,.dr-right,.fi-right,.fl-right,.in-right) {
+        margin-left: auto !important;
+        color: rgba(235,235,245,.7) !important;
+      }
+      .at-fold-wrapper :is(.ca-dot,.wn-dot) {
+        display: none !important;
+      }
+    `;
+    root.appendChild(style);
+  }
+
+  _mountAlertTicker() {
+    const slot = this.shadowRoot?.querySelector("#atze-alert-ticker-slot");
+    if (!slot) return;
+    if (!customElements.get("alert-ticker-card")) {
+      // HACS loads Lovelace resources asynchronously. Wait for the resource
+      // without polling; leave the informative placeholder if never installed.
+      if (!this._alertTickerAwaitingResource) {
+        this._alertTickerAwaitingResource = true;
+        customElements.whenDefined("alert-ticker-card").then(() => {
+          this._alertTickerAwaitingResource = false;
+          if (this.isConnected) this._mountAlertTicker();
+        });
+      }
+      return;
+    }
+    const config = this._alertTickerConfig();
+    const signature = JSON.stringify(config);
+    if (!this._alertTickerCard) this._alertTickerCard = document.createElement("alert-ticker-card");
+    if (signature !== this._alertTickerSignature) {
+      this._alertTickerCard.setConfig(config);
+      this._alertTickerSignature = signature;
+    }
+    slot.replaceChildren(this._alertTickerCard);
+    this._alertTickerCard.hass = this._hass;
+    this._styleAlertTicker();
+  }
+
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
 
@@ -1614,6 +1766,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const presenceList = this.shadowRoot.querySelector(".presence-event-list");
     const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
     const presenceListScrollTop = presenceList?.scrollTop ?? 0;
+
+    // Preserve the HACS card instance across frequent HA state renders.
+    this._alertTickerCard?.remove();
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -2220,6 +2375,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
           min-height: 100vh;
           overflow: hidden;
         }
+
+        .atze-alert-ticker-slot { margin: 12px 0 16px; width: 100%; min-width: 0; }
+        .atze-alert-ticker-slot > alert-ticker-card { display: block; width: 100%; border-radius: 22px; overflow: hidden; }
+        .atze-alert-ticker-help { border: 1px dashed rgba(255,255,255,.2); border-radius: 14px; padding: 14px; color: var(--secondary-text-color); font-size: 13px; }
 
         .page {
           width: min(1180px, 100%);
@@ -3770,7 +3929,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 }"
                 ${
                   this._config.clock_kiosk_toggle !== false
-                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Kiosk-Modus umschalten"'
+                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Home-Assistant-Kopfzeile ein-/ausblenden"'
                     : ""
                 }
               >${time}</div>
@@ -3858,6 +4017,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
           </section>
 
+          <div class="atze-alert-ticker-slot" id="atze-alert-ticker-slot" aria-label="Aktuelle Warnmeldungen">
+            <div class="atze-alert-ticker-help">AlertTicker-Card über HACS installieren und die Dashboard-Ressource laden, um Warnmeldungen hier anzuzeigen.</div>
+          </div>
+
           ${controlCenterHtml}
 
           <div class="rooms">
@@ -3906,6 +4069,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
+    this._mountAlertTicker();
+
     // Mount the actual room thermostat controls, not the generic device-popup card.
     // The native thermostat service dialog is rendered inside each control.
     this._homeThermostatCards = new Map();

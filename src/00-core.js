@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.424.0";
+const ATZE_VERSION = "0.425.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -6910,8 +6910,96 @@ function applyAtzeKioskQueryFallback(config) {
   window.location.replace(target);
 }
 
+const ATZE_NATIVE_HEADER_STYLE_ID = "atze-native-header-style";
+const ATZE_SIDEBAR_GLASS_STYLE_ID = "atze-sidebar-glass-style";
+
+// Style only the original Home Assistant sidebar inside its own shadow root.
+// The style element can be removed without touching HA themes or user settings.
+function syncAtzeSidebarGlass(enabled) {
+  const visit = root => {
+    if (!root?.querySelectorAll) return;
+    for (const element of root.querySelectorAll("*")) {
+      if (element.localName === "ha-sidebar" && element.shadowRoot) {
+        const existing = element.shadowRoot.getElementById(ATZE_SIDEBAR_GLASS_STYLE_ID);
+        if (!enabled) {
+          existing?.remove();
+        } else if (!existing) {
+          const style = document.createElement("style");
+          style.id = ATZE_SIDEBAR_GLASS_STYLE_ID;
+          style.textContent = `
+            :host {
+              --sidebar-background-color: #10141b;
+              --sidebar-text-color: #dce6f5;
+              --sidebar-icon-color: #a1b5d4;
+              --sidebar-selected-icon-color: #7cc6ff;
+              --sidebar-menu-button-text-color: #dce6f5;
+              --sidebar-menu-button-background-color: #10141b;
+              background-color: #10141b !important;
+              -webkit-backdrop-filter: none;
+              backdrop-filter: none;
+            }
+            .menu {
+              border-bottom-color: #29364d;
+            }
+            ha-list-item-button.selected::before {
+              opacity: 0.26 !important;
+              border-radius: 11px;
+            }
+          `;
+          element.shadowRoot.appendChild(style);
+        }
+      }
+      if (element.shadowRoot) visit(element.shadowRoot);
+    }
+  };
+  visit(document);
+}
+
+
+let atzeNativeHeaderHidden = true;
+
+// The clock toggles our own header style without navigating or reloading.
+function toggleAtzeNativeHeaderVisibility() {
+  atzeNativeHeaderHidden = !atzeNativeHeaderHidden;
+  syncAtzeNativeHeader(atzeNativeHeaderHidden);
+}
+
+// Native shell handling is enabled for ATZE Strategy dashboards.
+// The previous URL-only opt-in did not work inside the native iPhone app.
+function atzeNativeNavigationEnabled() {
+  return true;
+}
+
+function syncAtzeNativeHeader(enabled) {
+  const visit = root => {
+    if (!root?.querySelectorAll) return;
+    for (const element of root.querySelectorAll("*")) {
+      if (element.localName === "hui-root" && element.shadowRoot) {
+        const existing = element.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID);
+        if (!enabled) {
+          existing?.remove();
+        } else if (!existing) {
+          const style = document.createElement("style");
+          style.id = ATZE_NATIVE_HEADER_STYLE_ID;
+          style.textContent = `
+            .header { display: none !important; }
+            hui-view-container {
+              padding-top: var(--safe-area-inset-top, 0px) !important;
+            }
+          `;
+          element.shadowRoot.appendChild(style);
+        }
+      }
+      if (element.shadowRoot) visit(element.shadowRoot);
+    }
+  };
+  visit(document);
+}
+
 const ATZE_SIDEBAR_BUTTON_ID =
   "atze-dashboard-sidebar-button";
+let atzeNativeNavRouteCleanup = null;
+let atzeNativeHeaderObserver = null;
 
 function openAtzeHomeAssistantSidebar() {
   const homeAssistant =
@@ -6934,74 +7022,10 @@ function openAtzeHomeAssistantSidebar() {
   );
 }
 
-function syncAtzeSidebarAccessButton(enabled) {
-  const existing =
-    document.getElementById(
-      ATZE_SIDEBAR_BUTTON_ID
-    );
-
-  if (!enabled) {
-    existing?.remove();
-    return;
-  }
-
-  if (existing) return;
-
-  const button =
-    document.createElement("button");
-
-  button.id = ATZE_SIDEBAR_BUTTON_ID;
-  button.type = "button";
-  button.setAttribute(
-    "aria-label",
-    "Home Assistant Menü öffnen"
-  );
-  button.title = "Menü";
-
-  button.innerHTML = `
-    <ha-icon icon="mdi:menu"></ha-icon>
-  `;
-
-  Object.assign(button.style, {
-    position: "fixed",
-    top: "10px",
-    left: "10px",
-    width: "40px",
-    height: "40px",
-    borderRadius: "0",
-    border: "none",
-    background: "transparent",
-    color: "rgba(255,255,255,0.78)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0",
-    margin: "0",
-    cursor: "pointer",
-    zIndex: "2147483000",
-    boxShadow: "none",
-    backdropFilter: "none",
-    WebkitBackdropFilter: "none",
-    opacity: "1",
-    WebkitTapHighlightColor: "transparent",
-  });
-
-  const icon = button.querySelector("ha-icon");
-
-  if (icon) {
-    Object.assign(icon.style, {
-      width: "22px",
-      height: "22px",
-      color: "inherit",
-    });
-  }
-
-  button.addEventListener(
-    "click",
-    openAtzeHomeAssistantSidebar
-  );
-
-  document.body.appendChild(button);
+// Remove the former floating menu button; the dashboard now uses
+// a swipe gesture and Home Assistant's own sidebar.
+function syncAtzeSidebarAccessButton() {
+  document.getElementById(ATZE_SIDEBAR_BUTTON_ID)?.remove();
 }
 
 function applyAtzeSidebarAccess(config) {
@@ -7010,19 +7034,105 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const enabled = false;
+  const enabled = atzeNativeNavigationEnabled();
+
+  // Kiosk Mode URL switches may survive from the old dashboard. Only clean
+  // them in the explicitly opted-in native test; leave unrelated query data.
+  if (enabled) {
+    let changed = false;
+    for (const key of ["kiosk", "hide_header", "hide_sidebar", "atze_km_auto", "disable_km"]) {
+      if (params.has(key)) {
+        params.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) {
+      const query = params.toString();
+      window.history.replaceState(window.history.state, "",
+        window.location.pathname + (query ? "?" + query : "") + window.location.hash);
+    }
+  }
+
+  atzeNativeNavRouteCleanup?.();
+  atzeNativeNavRouteCleanup = null;
+  const dashboardRoot = window.location.pathname.split("/").filter(Boolean)[0];
+  if (enabled) {
+    const onLocationChange = () => {
+      const currentRoot = window.location.pathname.split("/").filter(Boolean)[0];
+      if (currentRoot !== dashboardRoot) {
+        syncAtzeSidebarAccessButton(false);
+        syncAtzeNativeHeader(false);
+        syncAtzeSidebarGlass(false);
+        atzeNativeHeaderObserver?.disconnect();
+        atzeNativeHeaderObserver = null;
+      }
+    };
+    window.addEventListener("location-changed", onLocationChange);
+    window.addEventListener("popstate", onLocationChange);
+    atzeNativeNavRouteCleanup = () => {
+      window.removeEventListener("location-changed", onLocationChange);
+      window.removeEventListener("popstate", onLocationChange);
+    };
+  }
 
   const apply = () => {
     try {
-      syncAtzeSidebarAccessButton(enabled);
+      syncAtzeSidebarAccessButton();
+      syncAtzeNativeHeader(enabled && atzeNativeHeaderHidden);
+      syncAtzeSidebarGlass(enabled);
     } catch (_error) {
-      // Keep dashboard generation independent
-      // from the optional sidebar access button.
+      // Never block dashboard generation due to optional native navigation.
     }
   };
 
   apply();
-  requestAnimationFrame(apply);
-  setTimeout(apply, 250);
-  setTimeout(apply, 1000);
+  // Strategy generation can run before Home Assistant has attached hui-root.
+  // Watch only until its own shadow root exists; no polling or recurring timer.
+  atzeNativeHeaderObserver?.disconnect();
+  atzeNativeHeaderObserver = null;
+  if (enabled) {
+    const isReady = () => {
+      let headerReady = !atzeNativeHeaderHidden;
+      let sidebarReady = false;
+      const walk = root => {
+        if (!root?.querySelectorAll) return;
+        for (const node of root.querySelectorAll("*")) {
+          if (node.localName === "hui-root" && node.shadowRoot) {
+            headerReady ||= Boolean(node.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID));
+          }
+          if (node.localName === "ha-sidebar" && node.shadowRoot) {
+            sidebarReady ||= Boolean(node.shadowRoot.getElementById(ATZE_SIDEBAR_GLASS_STYLE_ID));
+          }
+          if (node.shadowRoot && !(headerReady && sidebarReady)) walk(node.shadowRoot);
+        }
+      };
+      walk(document);
+      return headerReady && sidebarReady;
+    };
+    if (!isReady()) {
+      // Observe the shadow-root chain as Home Assistant creates it.
+      // Stop permanently once the header style has been installed.
+      const observed = new WeakSet();
+      const watch = root => {
+        if (!root?.querySelectorAll) return;
+        if (!observed.has(root)) {
+          observed.add(root);
+          observer.observe(root, { childList: true, subtree: true });
+        }
+        root.querySelectorAll("*").forEach(el => {
+          if (el.shadowRoot) watch(el.shadowRoot);
+        });
+      };
+      const observer = new MutationObserver(() => {
+        watch(document);
+        apply();
+        if (isReady()) {
+          observer.disconnect();
+          if (atzeNativeHeaderObserver === observer) atzeNativeHeaderObserver = null;
+        }
+      });
+      watch(document);
+      atzeNativeHeaderObserver = observer;
+    }
+  }
 }
