@@ -1,3 +1,11 @@
+## v0.425.0
+
+- Native Home-Assistant-Kopfzeile ohne HACS Kiosk Mode direkt durch ATZE Strategy ausblendbar; durch Antippen der Uhr wieder ein- und ausblendbar.
+- Originale Home-Assistant-Seitenleiste auf der Hauptseite per Wisch von links nach rechts öffnen; die funktionierende Raum-Zurück-Geste bleibt erhalten.
+- Floating-Menübutton entfernt und den Wischbereich der Hauptseite auf die ersten 100 Pixel erweitert; vertikales Scrollen bleibt geschützt.
+- Seitenleiste mit deckendem Midnight-Blue-Farbschema versehen. Navigation, Uhr-Umschaltung und Farbgebung wurden vom Benutzer auf dem iPhone bestätigt.
+- Bestehende Home-Assistant-Konfiguration und Zählerstände bleiben unverändert.
+
 ## v0.423.0
 
 - Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
