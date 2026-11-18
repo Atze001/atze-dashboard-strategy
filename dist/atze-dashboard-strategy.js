@@ -6910,6 +6910,40 @@ function applyAtzeKioskQueryFallback(config) {
   window.location.replace(target);
 }
 
+const ATZE_NATIVE_HEADER_STYLE_ID = "atze-native-header-style";
+
+// Opt-in for the first iPhone test: ?atze_native_nav=1.
+// Keep the installed Kiosk Mode untouched until this works on-device.
+function atzeNativeNavigationEnabled() {
+  return new URLSearchParams(window.location.search).get("atze_native_nav") === "1";
+}
+
+function syncAtzeNativeHeader(enabled) {
+  const visit = root => {
+    if (!root?.querySelectorAll) return;
+    for (const element of root.querySelectorAll("*")) {
+      if (element.localName === "hui-root" && element.shadowRoot) {
+        const existing = element.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID);
+        if (!enabled) {
+          existing?.remove();
+        } else if (!existing) {
+          const style = document.createElement("style");
+          style.id = ATZE_NATIVE_HEADER_STYLE_ID;
+          style.textContent = `
+            .header { display: none !important; }
+            hui-view-container {
+              padding-top: var(--safe-area-inset-top, 0px) !important;
+            }
+          `;
+          element.shadowRoot.appendChild(style);
+        }
+      }
+      if (element.shadowRoot) visit(element.shadowRoot);
+    }
+  };
+  visit(document);
+}
+
 const ATZE_SIDEBAR_BUTTON_ID =
   "atze-dashboard-sidebar-button";
 
@@ -7010,21 +7044,39 @@ function applyAtzeSidebarAccess(config) {
       window.location.search || ""
     );
 
-  const enabled = false;
+  const enabled = atzeNativeNavigationEnabled();
+
+  // Kiosk Mode URL switches may survive from the old dashboard. Only clean
+  // them in the explicitly opted-in native test; leave unrelated query data.
+  if (enabled) {
+    let changed = false;
+    for (const key of ["kiosk", "hide_header", "hide_sidebar", "atze_km_auto", "disable_km"]) {
+      if (params.has(key)) {
+        params.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) {
+      const query = params.toString();
+      window.history.replaceState(window.history.state, "",
+        window.location.pathname + (query ? "?" + query : "") + window.location.hash);
+    }
+  }
 
   const apply = () => {
     try {
       syncAtzeSidebarAccessButton(enabled);
+      syncAtzeNativeHeader(enabled);
     } catch (_error) {
-      // Keep dashboard generation independent
-      // from the optional sidebar access button.
+      // Never block dashboard generation due to optional native navigation.
     }
   };
 
   apply();
-  requestAnimationFrame(apply);
-  setTimeout(apply, 250);
-  setTimeout(apply, 1000);
+  requestAnimationFrame(() => {
+    apply();
+    requestAnimationFrame(apply);
+  });
 }
 
 
@@ -7454,7 +7506,9 @@ class AtzeDashboardStrategy extends HTMLElement {
 
     return {
       title: config.title || "Atze Dashboard",
-      ...(config.kiosk_mode != null
+      // Keep the existing Kiosk Mode config intact, but do not apply it
+      // during the explicit ?atze_native_nav=1 compatibility test.
+      ...(config.kiosk_mode != null && !atzeNativeNavigationEnabled()
         ? { kiosk_mode: config.kiosk_mode }
         : {}),
       views,
