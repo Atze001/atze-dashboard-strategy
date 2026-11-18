@@ -6911,6 +6911,14 @@ function applyAtzeKioskQueryFallback(config) {
 }
 
 const ATZE_NATIVE_HEADER_STYLE_ID = "atze-native-header-style";
+let atzeNativeHeaderHidden = true;
+
+// The clock toggles our own header style without navigating or reloading.
+function toggleAtzeNativeHeaderVisibility() {
+  atzeNativeHeaderHidden = !atzeNativeHeaderHidden;
+  syncAtzeNativeHeader(atzeNativeHeaderHidden);
+  syncAtzeSidebarAccessButton(atzeNativeHeaderHidden);
+}
 
 // Native shell handling is enabled for ATZE Strategy dashboards.
 // The previous URL-only opt-in did not work inside the native iPhone app.
@@ -7088,8 +7096,8 @@ function applyAtzeSidebarAccess(config) {
 
   const apply = () => {
     try {
-      syncAtzeSidebarAccessButton(enabled);
-      syncAtzeNativeHeader(enabled);
+      syncAtzeSidebarAccessButton(enabled && atzeNativeHeaderHidden);
+      syncAtzeNativeHeader(enabled && atzeNativeHeaderHidden);
     } catch (_error) {
       // Never block dashboard generation due to optional native navigation.
     }
@@ -7116,7 +7124,7 @@ function applyAtzeSidebarAccess(config) {
       walk(document);
       return found;
     };
-    if (!isReady()) {
+    if (atzeNativeHeaderHidden && !isReady()) {
       // Observe the shadow-root chain as Home Assistant creates it.
       // Stop permanently once the header style has been installed.
       const observed = new WeakSet();
