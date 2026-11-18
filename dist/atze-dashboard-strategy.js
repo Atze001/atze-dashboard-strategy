@@ -6928,21 +6928,21 @@ function syncAtzeSidebarGlass(enabled) {
           style.id = ATZE_SIDEBAR_GLASS_STYLE_ID;
           style.textContent = `
             :host {
-              --sidebar-background-color: rgba(37, 45, 58, 0.88);
-              --sidebar-text-color: #e4ebf5;
-              --sidebar-icon-color: #b8c5d7;
-              --sidebar-selected-icon-color: #83c6ff;
-              --sidebar-menu-button-text-color: #e4ebf5;
-              --sidebar-menu-button-background-color: transparent;
-              background-color: rgba(37, 45, 58, 0.88) !important;
-              -webkit-backdrop-filter: blur(16px) saturate(135%);
-              backdrop-filter: blur(16px) saturate(135%);
+              --sidebar-background-color: #10141b;
+              --sidebar-text-color: #dce6f5;
+              --sidebar-icon-color: #a1b5d4;
+              --sidebar-selected-icon-color: #7cc6ff;
+              --sidebar-menu-button-text-color: #dce6f5;
+              --sidebar-menu-button-background-color: #10141b;
+              background-color: #10141b !important;
+              -webkit-backdrop-filter: none;
+              backdrop-filter: none;
             }
             .menu {
-              border-bottom-color: rgba(210, 225, 245, 0.12);
+              border-bottom-color: #29364d;
             }
             ha-list-item-button.selected::before {
-              opacity: 0.16 !important;
+              opacity: 0.26 !important;
               border-radius: 11px;
             }
           `;
