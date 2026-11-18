@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "12363BB";
+const ATZE_TESTING_REVISION = "8B8034B";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6914,7 +6914,6 @@ let atzeNativeHeaderHidden = true;
 function toggleAtzeNativeHeaderVisibility() {
   atzeNativeHeaderHidden = !atzeNativeHeaderHidden;
   syncAtzeNativeHeader(atzeNativeHeaderHidden);
-  syncAtzeSidebarAccessButton(atzeNativeHeaderHidden);
 }
 
 // Native shell handling is enabled for ATZE Strategy dashboards.
@@ -6975,74 +6974,10 @@ function openAtzeHomeAssistantSidebar() {
   );
 }
 
-function syncAtzeSidebarAccessButton(enabled) {
-  const existing =
-    document.getElementById(
-      ATZE_SIDEBAR_BUTTON_ID
-    );
-
-  if (!enabled) {
-    existing?.remove();
-    return;
-  }
-
-  if (existing) return;
-
-  const button =
-    document.createElement("button");
-
-  button.id = ATZE_SIDEBAR_BUTTON_ID;
-  button.type = "button";
-  button.setAttribute(
-    "aria-label",
-    "Home Assistant Menü öffnen"
-  );
-  button.title = "Menü";
-
-  button.innerHTML = `
-    <ha-icon icon="mdi:menu"></ha-icon>
-  `;
-
-  Object.assign(button.style, {
-    position: "fixed",
-    top: "10px",
-    left: "10px",
-    width: "40px",
-    height: "40px",
-    borderRadius: "0",
-    border: "none",
-    background: "transparent",
-    color: "rgba(255,255,255,0.78)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "0",
-    margin: "0",
-    cursor: "pointer",
-    zIndex: "2147483000",
-    boxShadow: "none",
-    backdropFilter: "none",
-    WebkitBackdropFilter: "none",
-    opacity: "1",
-    WebkitTapHighlightColor: "transparent",
-  });
-
-  const icon = button.querySelector("ha-icon");
-
-  if (icon) {
-    Object.assign(icon.style, {
-      width: "22px",
-      height: "22px",
-      color: "inherit",
-    });
-  }
-
-  button.addEventListener(
-    "click",
-    openAtzeHomeAssistantSidebar
-  );
-
-  document.body.appendChild(button);
+// Remove the former floating menu button; the dashboard now uses
+// a swipe gesture and Home Assistant's own sidebar.
+function syncAtzeSidebarAccessButton() {
+  document.getElementById(ATZE_SIDEBAR_BUTTON_ID)?.remove();
 }
 
 function applyAtzeSidebarAccess(config) {
@@ -7093,7 +7028,7 @@ function applyAtzeSidebarAccess(config) {
 
   const apply = () => {
     try {
-      syncAtzeSidebarAccessButton(enabled && atzeNativeHeaderHidden);
+      syncAtzeSidebarAccessButton();
       syncAtzeNativeHeader(enabled && atzeNativeHeaderHidden);
     } catch (_error) {
       // Never block dashboard generation due to optional native navigation.
