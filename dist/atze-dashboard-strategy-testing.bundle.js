@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "B6A68C6";
+const ATZE_TESTING_REVISION = "388751F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7536,9 +7536,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         return;
       }
       const touch = event.touches[0];
-      // 0–28px belongs to HA's native edge gesture. Start beside it so
-      // that opening the sidebar cannot be triggered twice.
-      if (touch.clientX <= ATZE_HOME_SWIPE_NATIVE_EDGE || touch.clientX > 64 ||
+      // Use one ATZE gesture across the full left 100px of the home card.
+      // HA's own edge swipe is unreliable while the native header is hidden.
+      if (touch.clientX < 0 || touch.clientX > 100 ||
           atzeGestureHitsInteractiveControl(event)) {
         this._sidebarSwipeStart = null;
         return;
@@ -7548,6 +7548,24 @@ class AtzeHomeOverviewCard extends HTMLElement {
         x: touch.clientX,
         y: touch.clientY,
       };
+    };
+    this._onSidebarSwipeMove = event => {
+      const start = this._sidebarSwipeStart;
+      if (!start || event.touches.length !== 1) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      const touch = Array.from(event.touches).find(item => item.identifier === start.id);
+      if (!touch) {
+        this._sidebarSwipeStart = null;
+        return;
+      }
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      // A vertical scroll must never turn into a sidebar swipe.
+      if (Math.abs(dy) > 35 && Math.abs(dy) > Math.abs(dx)) {
+        this._sidebarSwipeStart = null;
+      }
     };
     this._onSidebarSwipeEnd = event => {
       const start = this._sidebarSwipeStart;
@@ -7627,6 +7645,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   connectedCallback() {
     this.addEventListener("touchstart", this._onSidebarSwipeStart, { passive: true });
+    this.addEventListener("touchmove", this._onSidebarSwipeMove, { passive: true });
     this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
     this.addEventListener("touchcancel", this._onSidebarSwipeCancel, { passive: true });
     this._startClock();
@@ -7667,6 +7686,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   disconnectedCallback() {
     this.removeEventListener("touchstart", this._onSidebarSwipeStart);
+    this.removeEventListener("touchmove", this._onSidebarSwipeMove);
     this.removeEventListener("touchend", this._onSidebarSwipeEnd);
     this.removeEventListener("touchcancel", this._onSidebarSwipeCancel);
     this._sidebarSwipeStart = null;
