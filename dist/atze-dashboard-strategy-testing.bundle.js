@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "388751F";
+const ATZE_TESTING_REVISION = "5924A82";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6908,6 +6908,51 @@ function applyAtzeKioskQueryFallback(config) {
 }
 
 const ATZE_NATIVE_HEADER_STYLE_ID = "atze-native-header-style";
+const ATZE_SIDEBAR_GLASS_STYLE_ID = "atze-sidebar-glass-style";
+
+// Style only the original Home Assistant sidebar inside its own shadow root.
+// The style element can be removed without touching HA themes or user settings.
+function syncAtzeSidebarGlass(enabled) {
+  const visit = root => {
+    if (!root?.querySelectorAll) return;
+    for (const element of root.querySelectorAll("*")) {
+      if (element.localName === "ha-sidebar" && element.shadowRoot) {
+        const existing = element.shadowRoot.getElementById(ATZE_SIDEBAR_GLASS_STYLE_ID);
+        if (!enabled) {
+          existing?.remove();
+        } else if (!existing) {
+          const style = document.createElement("style");
+          style.id = ATZE_SIDEBAR_GLASS_STYLE_ID;
+          style.textContent = `
+            :host {
+              --sidebar-background-color: rgba(37, 45, 58, 0.88);
+              --sidebar-text-color: #e4ebf5;
+              --sidebar-icon-color: #b8c5d7;
+              --sidebar-selected-icon-color: #83c6ff;
+              --sidebar-menu-button-text-color: #e4ebf5;
+              --sidebar-menu-button-background-color: transparent;
+              background-color: rgba(37, 45, 58, 0.88) !important;
+              -webkit-backdrop-filter: blur(16px) saturate(135%);
+              backdrop-filter: blur(16px) saturate(135%);
+            }
+            .menu {
+              border-bottom-color: rgba(210, 225, 245, 0.12);
+            }
+            ha-list-item-button.selected::before {
+              opacity: 0.16 !important;
+              border-radius: 11px;
+            }
+          `;
+          element.shadowRoot.appendChild(style);
+        }
+      }
+      if (element.shadowRoot) visit(element.shadowRoot);
+    }
+  };
+  visit(document);
+}
+
+
 let atzeNativeHeaderHidden = true;
 
 // The clock toggles our own header style without navigating or reloading.
@@ -7014,6 +7059,7 @@ function applyAtzeSidebarAccess(config) {
       if (currentRoot !== dashboardRoot) {
         syncAtzeSidebarAccessButton(false);
         syncAtzeNativeHeader(false);
+        syncAtzeSidebarGlass(false);
         atzeNativeHeaderObserver?.disconnect();
         atzeNativeHeaderObserver = null;
       }
@@ -7030,6 +7076,7 @@ function applyAtzeSidebarAccess(config) {
     try {
       syncAtzeSidebarAccessButton();
       syncAtzeNativeHeader(enabled && atzeNativeHeaderHidden);
+      syncAtzeSidebarGlass(enabled);
     } catch (_error) {
       // Never block dashboard generation due to optional native navigation.
     }
@@ -7042,21 +7089,24 @@ function applyAtzeSidebarAccess(config) {
   atzeNativeHeaderObserver = null;
   if (enabled) {
     const isReady = () => {
-      let found = false;
+      let headerReady = !atzeNativeHeaderHidden;
+      let sidebarReady = false;
       const walk = root => {
-        if (!root?.querySelectorAll || found) return;
+        if (!root?.querySelectorAll) return;
         for (const node of root.querySelectorAll("*")) {
           if (node.localName === "hui-root" && node.shadowRoot) {
-            found = Boolean(node.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID));
-            if (found) return;
+            headerReady ||= Boolean(node.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID));
           }
-          if (node.shadowRoot) walk(node.shadowRoot);
+          if (node.localName === "ha-sidebar" && node.shadowRoot) {
+            sidebarReady ||= Boolean(node.shadowRoot.getElementById(ATZE_SIDEBAR_GLASS_STYLE_ID));
+          }
+          if (node.shadowRoot && !(headerReady && sidebarReady)) walk(node.shadowRoot);
         }
       };
       walk(document);
-      return found;
+      return headerReady && sidebarReady;
     };
-    if (atzeNativeHeaderHidden && !isReady()) {
+    if (!isReady()) {
       // Observe the shadow-root chain as Home Assistant creates it.
       // Stop permanently once the header style has been installed.
       const observed = new WeakSet();
