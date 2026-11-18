@@ -6,6 +6,13 @@
 - Seitenleiste mit deckendem Midnight-Blue-Farbschema versehen. Navigation, Uhr-Umschaltung und Farbgebung wurden vom Benutzer auf dem iPhone bestätigt.
 - Bestehende Home-Assistant-Konfiguration und Zählerstände bleiben unverändert.
 
+## v0.424.0
+
+- Strom · Gesamtstrom und Strom · Einzelerfassung über das azurblaue Zahnrad mittig unten auf dem Strom-Titelbild öffnen; die bisherigen allgemeinen Settings-Oberflächen entfallen.
+- Vorhandene kWh-/W-Zuordnungen, Zähler und Helper bleiben beim UI-Umzug erhalten. Öffnen löst keine Anlage aus; Quelländerungen nutzen die bestehende Einrichtungslogik. Keine neuen Timer oder Pollingmechanismen.
+- Direkt gespeicherte und verschachtelte Custom-Strategien werden unterstützt; Speicherfehler bleiben sichtbar und können erneut versucht werden.
+- Popup und finale Position/Farbe vom Benutzer auf dem iPhone bestätigt.
+
 ## v0.423.0
 
 - Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
