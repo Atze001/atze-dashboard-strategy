@@ -125,65 +125,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _toggleKioskMode() {
-    const rawQuery = String(
-      window.location.search || ""
-    );
-
-    let parts = rawQuery.startsWith("?")
-      ? rawQuery.slice(1).split("&").filter(Boolean)
-      : rawQuery
-        ? rawQuery.split("&").filter(Boolean)
-        : [];
-
-    const keyOf = (part) =>
-      decodeURIComponent(
-        String(part).split("=")[0] || ""
-      );
-
-    const hasKey = (key) =>
-      parts.some((part) => keyOf(part) === key);
-
-    const removeKey = (key) => {
-      parts = parts.filter(
-        (part) => keyOf(part) !== key
-      );
-    };
-
-    const active =
-      !hasKey("disable_km") &&
-      (
-        hasKey("hide_header") ||
-        hasKey("kiosk") ||
-        this._config?.force_kiosk === true
-      );
-
-    for (const key of [
-      "kiosk",
-      "hide_header",
-      "hide_sidebar",
-      "disable_km",
-      "atze_km_auto",
-    ]) {
-      removeKey(key);
-    }
-
-    if (active) {
-      parts.push("disable_km");
-    } else {
-      parts.push("hide_header");
-
-      if (this._config?.force_kiosk === true) {
-        parts.push("atze_km_auto=1");
-      }
-    }
-
-    const query = parts.length
-      ? `?${parts.join("&")}`
-      : "";
-
-    window.location.replace(
-      `${window.location.pathname}${query}${window.location.hash || ""}`
-    );
+    // Native ATZE header control; Kiosk Mode is no longer required.
+    toggleAtzeNativeHeaderVisibility();
   }
 
   _state(entityId) {
@@ -3924,7 +3867,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 }"
                 ${
                   this._config.clock_kiosk_toggle !== false
-                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Kiosk-Modus umschalten"'
+                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Home-Assistant-Kopfzeile ein-/ausblenden"'
                     : ""
                 }
               >${time}</div>
