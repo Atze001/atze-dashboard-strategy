@@ -7121,9 +7121,11 @@ function applyAtzeSidebarAccess(config) {
       // Stop permanently once the header style has been installed.
       const observed = new WeakSet();
       const watch = root => {
-        if (!root?.querySelectorAll || observed.has(root)) return;
-        observed.add(root);
-        observer.observe(root, { childList: true, subtree: true });
+        if (!root?.querySelectorAll) return;
+        if (!observed.has(root)) {
+          observed.add(root);
+          observer.observe(root, { childList: true, subtree: true });
+        }
         root.querySelectorAll("*").forEach(el => {
           if (el.shadowRoot) watch(el.shadowRoot);
         });
