@@ -230,6 +230,14 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.425.0
+
+- Native Home-Assistant-Kopfzeile ohne HACS Kiosk Mode direkt durch ATZE Strategy ausblendbar; durch Antippen der Uhr wieder ein- und ausblendbar.
+- Originale Home-Assistant-Seitenleiste auf der Hauptseite per Wisch von links nach rechts öffnen; die funktionierende Raum-Zurück-Geste bleibt erhalten.
+- Floating-Menübutton entfernt und den Wischbereich der Hauptseite auf die ersten 100 Pixel erweitert; vertikales Scrollen bleibt geschützt.
+- Seitenleiste mit deckendem Midnight-Blue-Farbschema versehen. Navigation, Uhr-Umschaltung und Farbgebung wurden vom Benutzer auf dem iPhone bestätigt.
+- Bestehende Home-Assistant-Konfiguration und Zählerstände bleiben unverändert.
+
 ## v0.423.0
 
 - Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
@@ -239,11 +247,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 
 - Strom-Popup erkennt direkt gespeicherte Custom-Strategien sowie Konfigurationen mit äußerem Strategy-Block. Die bestehende Struktur und Typkennung bleiben beim Speichern erhalten.
 - Regressionstests für beide Speicherformen ergänzt. iPhone-Praxistest nach vollständigem Neustart weiterhin offen.
-
-## v0.421.0
-
-- Zahnrad oben rechts direkt auf dem Strom-Titelbild platziert. Es bleibt mit dem fixierten Bild sichtbar und bedienbar.
-- iPhone-Praxistest nach vollständigem App-Neustart noch offen.
 <!-- latest-changes:end -->
 
 ## Lizenz
