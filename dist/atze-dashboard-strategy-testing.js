@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6A76BD7";
+const ATZE_TESTING_REVISION = "1C7F766";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6909,10 +6909,10 @@ function applyAtzeKioskQueryFallback(config) {
 
 const ATZE_NATIVE_HEADER_STYLE_ID = "atze-native-header-style";
 
-// Opt-in for the first iPhone test: ?atze_native_nav=1.
-// Keep the installed Kiosk Mode untouched until this works on-device.
+// Native shell handling is enabled for ATZE Strategy dashboards.
+// The previous URL-only opt-in did not work inside the native iPhone app.
 function atzeNativeNavigationEnabled() {
-  return new URLSearchParams(window.location.search).get("atze_native_nav") === "1";
+  return true;
 }
 
 function syncAtzeNativeHeader(enabled) {
@@ -6944,6 +6944,7 @@ function syncAtzeNativeHeader(enabled) {
 const ATZE_SIDEBAR_BUTTON_ID =
   "atze-dashboard-sidebar-button";
 let atzeNativeNavRouteCleanup = null;
+let atzeNativeHeaderObserver = null;
 
 function openAtzeHomeAssistantSidebar() {
   const homeAssistant =
@@ -7070,6 +7071,8 @@ function applyAtzeSidebarAccess(config) {
       if (currentRoot !== dashboardRoot) {
         syncAtzeSidebarAccessButton(false);
         syncAtzeNativeHeader(false);
+        atzeNativeHeaderObserver?.disconnect();
+        atzeNativeHeaderObserver = null;
       }
     };
     window.addEventListener("location-changed", onLocationChange);
@@ -7090,10 +7093,45 @@ function applyAtzeSidebarAccess(config) {
   };
 
   apply();
-  requestAnimationFrame(() => {
-    apply();
-    requestAnimationFrame(apply);
-  });
+  // Strategy generation can run before Home Assistant has attached hui-root.
+  // Watch only until its own shadow root exists; no polling or recurring timer.
+  atzeNativeHeaderObserver?.disconnect();
+  atzeNativeHeaderObserver = null;
+  if (enabled) {
+    const isReady = () => {
+      let found = false;
+      const walk = root => {
+        if (!root?.querySelectorAll || found) return;
+        for (const node of root.querySelectorAll("*")) {
+          if (node.localName === "hui-root" && node.shadowRoot) {
+            found = Boolean(node.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID));
+            if (found) return;
+          }
+          if (node.shadowRoot) walk(node.shadowRoot);
+        }
+      };
+      walk(document);
+      return found;
+    };
+    if (!isReady()) {
+      const observer = new MutationObserver(() => {
+        apply();
+        if (isReady()) {
+          observer.disconnect();
+          if (atzeNativeHeaderObserver === observer) atzeNativeHeaderObserver = null;
+        }
+      });
+      // Observe the existing shadow roots, which host hui-root asynchronously.
+      const watch = root => {
+        observer.observe(root, { childList: true, subtree: true });
+        root.querySelectorAll?.("*").forEach(el => {
+          if (el.shadowRoot) watch(el.shadowRoot);
+        });
+      };
+      watch(document);
+      atzeNativeHeaderObserver = observer;
+    }
+  }
 }
 
 
