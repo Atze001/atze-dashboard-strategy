@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.423.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "1C7F766";
+const ATZE_TESTING_REVISION = "83DE7AA";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7114,20 +7114,25 @@ function applyAtzeSidebarAccess(config) {
       return found;
     };
     if (!isReady()) {
+      // Observe the shadow-root chain as Home Assistant creates it.
+      // Stop permanently once the header style has been installed.
+      const observed = new WeakSet();
+      const watch = root => {
+        if (!root?.querySelectorAll || observed.has(root)) return;
+        observed.add(root);
+        observer.observe(root, { childList: true, subtree: true });
+        root.querySelectorAll("*").forEach(el => {
+          if (el.shadowRoot) watch(el.shadowRoot);
+        });
+      };
       const observer = new MutationObserver(() => {
+        watch(document);
         apply();
         if (isReady()) {
           observer.disconnect();
           if (atzeNativeHeaderObserver === observer) atzeNativeHeaderObserver = null;
         }
       });
-      // Observe the existing shadow roots, which host hui-root asynchronously.
-      const watch = root => {
-        observer.observe(root, { childList: true, subtree: true });
-        root.querySelectorAll?.("*").forEach(el => {
-          if (el.shadowRoot) watch(el.shadowRoot);
-        });
-      };
       watch(document);
       atzeNativeHeaderObserver = observer;
     }
