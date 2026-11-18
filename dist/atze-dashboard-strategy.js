@@ -6911,6 +6911,14 @@ function applyAtzeKioskQueryFallback(config) {
 }
 
 const ATZE_NATIVE_HEADER_STYLE_ID = "atze-native-header-style";
+let atzeNativeHeaderHidden = true;
+
+// The clock toggles our own header style without navigating or reloading.
+function toggleAtzeNativeHeaderVisibility() {
+  atzeNativeHeaderHidden = !atzeNativeHeaderHidden;
+  syncAtzeNativeHeader(atzeNativeHeaderHidden);
+  syncAtzeSidebarAccessButton(atzeNativeHeaderHidden);
+}
 
 // Native shell handling is enabled for ATZE Strategy dashboards.
 // The previous URL-only opt-in did not work inside the native iPhone app.
@@ -7088,8 +7096,8 @@ function applyAtzeSidebarAccess(config) {
 
   const apply = () => {
     try {
-      syncAtzeSidebarAccessButton(enabled);
-      syncAtzeNativeHeader(enabled);
+      syncAtzeSidebarAccessButton(enabled && atzeNativeHeaderHidden);
+      syncAtzeNativeHeader(enabled && atzeNativeHeaderHidden);
     } catch (_error) {
       // Never block dashboard generation due to optional native navigation.
     }
@@ -7116,7 +7124,7 @@ function applyAtzeSidebarAccess(config) {
       walk(document);
       return found;
     };
-    if (!isReady()) {
+    if (atzeNativeHeaderHidden && !isReady()) {
       // Observe the shadow-root chain as Home Assistant creates it.
       // Stop permanently once the header style has been installed.
       const observed = new WeakSet();
@@ -7709,65 +7717,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   _toggleKioskMode() {
-    const rawQuery = String(
-      window.location.search || ""
-    );
-
-    let parts = rawQuery.startsWith("?")
-      ? rawQuery.slice(1).split("&").filter(Boolean)
-      : rawQuery
-        ? rawQuery.split("&").filter(Boolean)
-        : [];
-
-    const keyOf = (part) =>
-      decodeURIComponent(
-        String(part).split("=")[0] || ""
-      );
-
-    const hasKey = (key) =>
-      parts.some((part) => keyOf(part) === key);
-
-    const removeKey = (key) => {
-      parts = parts.filter(
-        (part) => keyOf(part) !== key
-      );
-    };
-
-    const active =
-      !hasKey("disable_km") &&
-      (
-        hasKey("hide_header") ||
-        hasKey("kiosk") ||
-        this._config?.force_kiosk === true
-      );
-
-    for (const key of [
-      "kiosk",
-      "hide_header",
-      "hide_sidebar",
-      "disable_km",
-      "atze_km_auto",
-    ]) {
-      removeKey(key);
-    }
-
-    if (active) {
-      parts.push("disable_km");
-    } else {
-      parts.push("hide_header");
-
-      if (this._config?.force_kiosk === true) {
-        parts.push("atze_km_auto=1");
-      }
-    }
-
-    const query = parts.length
-      ? `?${parts.join("&")}`
-      : "";
-
-    window.location.replace(
-      `${window.location.pathname}${query}${window.location.hash || ""}`
-    );
+    // Native ATZE header control; Kiosk Mode is no longer required.
+    toggleAtzeNativeHeaderVisibility();
   }
 
   _state(entityId) {
@@ -11508,7 +11459,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 }"
                 ${
                   this._config.clock_kiosk_toggle !== false
-                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Kiosk-Modus umschalten"'
+                    ? 'id="kiosk-clock" role="button" tabindex="0" title="Home-Assistant-Kopfzeile ein-/ausblenden"'
                     : ""
                 }
               >${time}</div>
