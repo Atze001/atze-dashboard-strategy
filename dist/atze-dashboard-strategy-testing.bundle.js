@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "0235D99";
+const ATZE_TESTING_REVISION = "E2CCFF1";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7750,6 +7750,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._linkHintCleanup?.();
+    this._linkHintCleanup = null;
+    this._linkHintGrid = null;
     this._favoriteHintCleanup?.();
     this._favoriteHintCleanup = null;
     this._favoriteHintGrid = null;
@@ -9232,15 +9235,41 @@ class AtzeHomeOverviewCard extends HTMLElement {
     };
   }
 
+  _bindLinkScrollHints() {
+    const grid = this.shadowRoot.querySelector(".custom-page-links");
+    if (grid === this._linkHintGrid) return;
+    this._linkHintCleanup?.();
+    this._linkHintCleanup = null;
+    this._linkHintGrid = grid;
+    if (!grid) return;
+    const update = () => {
+      const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
+      const left = grid.scrollLeft;
+      const row = grid.parentElement;
+      row.querySelector(".link-hint-left").hidden = !(left > 2);
+      row.querySelector(".link-hint-right").hidden = !(left < max - 2);
+    };
+    grid.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(update) : null;
+    observer?.observe(grid);
+    if (!observer) update();
+    this._linkHintCleanup = () => {
+      grid.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }
+
   // Keep the favorites scroller connected throughout ordinary home renders.
   // All other sections still follow the existing render and binding path.
-  _renderHomeKeepingFavorites(markup) {
-    const grid = this.shadowRoot.querySelector(".favorite-grid");
+  _renderHomeKeepingFavorites(markup, keepLinks) {
+    const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
+    const grid = favoriteGrid || (keepLinks ? this.shadowRoot.querySelector(".custom-page-links") : null);
     if (!grid) return false;
     const template = document.createElement("template");
     template.innerHTML = markup;
-    const nextGrid = template.content.querySelector(".favorite-grid");
+    const nextGrid = template.content.querySelector(favoriteGrid ? ".favorite-grid" : ".custom-page-links");
     if (!nextGrid) return false;
+    if (!favoriteGrid && template.content.querySelector(".favorite-grid")) return false;
     const path = node => {
       const result = [];
       while (node && node.nodeType === 1) { result.unshift(node); node = node.parentNode; }
@@ -9269,6 +9298,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }
       const replace = (oldNodes, newNodes, append) => {
         for (let i = 0; i < Math.min(oldNodes.length, newNodes.length); i++) {
+          if (keepLinks && oldNodes[i].classList?.contains("custom-page-row") && newNodes[i].classList?.contains("custom-page-row")) continue;
           if (!oldNodes[i].isEqualNode(newNodes[i])) oldNodes[i].replaceWith(newNodes[i]);
           else if (oldNodes[i].nodeType === 1 && oldNodes[i].localName !== "style") oldNodes[i].replaceWith(newNodes[i]);
         }
@@ -9281,11 +9311,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
     for (let i = 0; i < currentPath.length; i++) {
       const current = currentPath[i];
       const next = nextPath[i];
+      // A links-only home also retains its passive indicators and listeners.
+      if (!favoriteGrid && current === grid) continue;
       replaceSiblings(current.parentNode, current, next);
       for (const attr of [...current.attributes]) if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
       for (const attr of next.attributes) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
     }
-    buttons.forEach((button, i) => {
+    if (favoriteGrid) buttons.forEach((button, i) => {
       const next = nextButtons[i];
       button.classList.toggle("active", next.classList.contains("active"));
       if (button.title !== next.title) button.title = next.title;
@@ -9552,8 +9584,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           page?.title && (page?.path || page?.popup_hash || page?.navigation_path)
       );
 
+    let localLinkOrder = "";
+    try { localLinkOrder = localStorage.getItem("atze-dashboard:home-navigation-order") || ""; } catch (_error) {}
+    const linkSignature = JSON.stringify([customPageLinks, atzeLayoutValue(this._config, "home_navigation_order", []), localLinkOrder]);
+
     const customPageLinksHtml = customPageLinks.length
       ? `
+          <div class="custom-page-row">
           <nav class="custom-page-links" aria-label="Eigene Seiten">
             ${customPageLinks
               .map((page) => `
@@ -9578,6 +9615,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
               `)
               .join("")}
           </nav>
+          <span class="link-hint link-hint-left" aria-hidden="true" hidden>‹</span>
+          <span class="link-hint link-hint-right" aria-hidden="true" hidden>›</span>
+          </div>
         `
       : "";
 
@@ -10528,13 +10568,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
             );
         }
 
-        .control-center .custom-page-links {
+        .control-center .custom-page-row {
           position: relative;
           z-index: 1;
           margin-bottom: 22px;
         }
 
-        .control-center:not(.has-favorites) .custom-page-links {
+        .control-center:not(.has-favorites) .custom-page-row {
           margin-bottom: 0;
         }
 
@@ -10552,11 +10592,32 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .custom-page-links {
-          margin: 0 0 20px;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
+          margin: 0;
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: calc((100% - 27px) / 4);
           gap: 9px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          scroll-snap-type: x mandatory;
+        }
+        .custom-page-links::-webkit-scrollbar { display: none; }
+        .custom-page-row { position: relative; }
+        .link-hint { position: absolute; top: 50%; transform: translateY(-50%); width: 12px; text-align: center; font-size: 22px; line-height: 1; color: var(--primary-text-color); opacity: .85; text-shadow: 0 1px 4px #000; pointer-events: none; user-select: none; }
+        .link-hint-left { left: -13px; }
+        .link-hint-right { right: -13px; }
+        .link-hint[hidden] { display: none; }
+        @media (min-width: 901px) {
+          .custom-page-links > .custom-page-link:nth-child(4n+1) { scroll-snap-align: start; scroll-snap-stop: always; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(4n+1))::after { content: ""; grid-column: span 3; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(4n+2))::after { content: ""; grid-column: span 2; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(4n+3))::after { content: ""; }
+        }
+        @media (max-width: 900px) {
+          .custom-page-links { grid-auto-columns: calc((100% - 9px) / 2); }
+          .custom-page-links > .custom-page-link:nth-child(2n+1) { scroll-snap-align: start; scroll-snap-stop: always; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(2n+1))::after { content: ""; }
         }
 
         .custom-page-link {
@@ -11318,9 +11379,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .custom-page-links {
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-            overflow-x: visible;
+            margin-bottom: 0;
           }
 
           .custom-page-link {
@@ -11694,8 +11753,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </ha-card>
     `;
 
-    const favoritesRetained = this._renderHomeKeepingFavorites(homeMarkup);
+    const oldNavigation = this.shadowRoot.querySelector(".custom-page-links");
+    const keepLinks = Boolean(oldNavigation && this._homeLinkSignature === linkSignature);
+    const favoritesRetained = this._renderHomeKeepingFavorites(homeMarkup, keepLinks);
     if (!favoritesRetained) this.shadowRoot.innerHTML = homeMarkup;
+    this._homeLinkSignature = linkSignature;
+    const linksRetained = Boolean(oldNavigation && oldNavigation === this.shadowRoot.querySelector(".custom-page-links"));
 
     for (const position of popupScrollPositions) {
       const element = this.shadowRoot.querySelector(position.selector);
@@ -12020,7 +12083,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     // Navigation pills: long-press to reorder on iOS, native drag on desktop.
     // Keep the order in the strategy layout, not just in this device's browser.
     const navigationBar = this.shadowRoot.querySelector(".custom-page-links");
-    if (navigationBar) {
+    if (navigationBar && !linksRetained) {
       const navSelector = ".custom-page-link";
       const navKey = (element) => element.dataset.navigationPath
         ? "navigation:" + element.dataset.navigationPath
@@ -12121,7 +12184,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }, true);
       for (const entry of entries()) {
         entry.draggable = true;
-        entry.style.touchAction = "pan-y";
+        entry.style.touchAction = "auto";
         entry.addEventListener("dragstart", (event) => {
           dragged = entry;
           entry.classList.add("dragging");
@@ -12146,7 +12209,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }
     }
 
-    this.shadowRoot
+    if (!linksRetained) this.shadowRoot
       .querySelectorAll(".custom-page-link[data-navigation-path]")
       .forEach((element) => {
         element.addEventListener("click", () => {
@@ -12157,7 +12220,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
 
-    this.shadowRoot
+    if (!linksRetained) this.shadowRoot
       .querySelectorAll(".custom-page-link[data-path]")
       .forEach((element) => {
         element.addEventListener("click", () =>
@@ -12165,7 +12228,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         );
       });
 
-    this.shadowRoot
+    if (!linksRetained) this.shadowRoot
       .querySelectorAll(".custom-page-link[data-popup-hash]")
       .forEach((element) => {
         element.addEventListener("click", () =>
@@ -12469,6 +12532,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ?.addEventListener("click", () => this._toggleNight());
 
     this._bindFavoriteScrollHints();
+    this._bindLinkScrollHints();
 
   }
 
