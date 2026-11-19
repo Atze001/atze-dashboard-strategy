@@ -158,6 +158,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this._favoriteHintCleanup?.();
+    this._favoriteHintCleanup = null;
+    this._favoriteHintGrid = null;
     this.removeEventListener("touchstart", this._onSidebarSwipeStart);
     this.removeEventListener("touchmove", this._onSidebarSwipeMove);
     this.removeEventListener("touchend", this._onSidebarSwipeEnd);
@@ -1609,6 +1612,34 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
+  _bindFavoriteScrollHints() {
+    const grid = this.shadowRoot.querySelector(".favorite-grid");
+    if (grid === this._favoriteHintGrid) return;
+    this._favoriteHintCleanup?.();
+    this._favoriteHintCleanup = null;
+    this._favoriteHintGrid = grid;
+    if (!grid) return;
+    const update = () => {
+      const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
+      const left = grid.scrollLeft;
+      this._favoriteCanScrollLeft = left > 2;
+      this._favoriteCanScrollRight = left < max - 2;
+      const section = grid.closest(".favorites");
+      const previous = section?.querySelector(".favorite-hint-left");
+      const next = section?.querySelector(".favorite-hint-right");
+      if (previous) previous.hidden = !this._favoriteCanScrollLeft;
+      if (next) next.hidden = !this._favoriteCanScrollRight;
+    };
+    grid.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(update) : null;
+    observer?.observe(grid);
+    if (!observer) update();
+    this._favoriteHintCleanup = () => {
+      grid.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }
+
   // Keep the favorites scroller connected throughout ordinary home renders.
   // All other sections still follow the existing render and binding path.
   _renderHomeKeepingFavorites(markup) {
@@ -2002,6 +2033,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 })
                 .join("")}
             </div>
+            <span class="favorite-hint favorite-hint-left" aria-hidden="true" ${this._favoriteCanScrollLeft ? "" : "hidden"}>‹</span>
+            <span class="favorite-hint favorite-hint-right" aria-hidden="true" ${this._favoriteCanScrollRight ? "" : "hidden"}>›</span>
           </section>
         `
       : "";
@@ -3012,6 +3045,24 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .favorite-grid::-webkit-scrollbar {
           display: none;
         }
+
+        .favorite-hint {
+          position: absolute;
+          bottom: 28px;
+          transform: translateY(50%);
+          width: 12px;
+          text-align: center;
+          font-size: 22px;
+          line-height: 1;
+          color: var(--primary-text-color);
+          opacity: .85;
+          text-shadow: 0 1px 4px #000;
+          pointer-events: none;
+          user-select: none;
+        }
+        .favorite-hint-left { left: -13px; }
+        .favorite-hint-right { right: -13px; }
+        .favorite-hint[hidden] { display: none; }
 
         .favorite-grid > .favorite-card {
           scroll-snap-align: none;
@@ -4824,6 +4875,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
+
+    this._bindFavoriteScrollHints();
 
   }
 
