@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "9895903";
+const ATZE_TESTING_REVISION = "DBE4FC4";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7673,6 +7673,47 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._roomDrag = null;
     this._hiddenRoomIds = [];
     this._statusExpanded = false;
+    // Keep the DOM stable during finger-driven scrolling. HA may update
+    // entity data many times while a swipe or inertial scroll is in progress.
+    this._scrollGestureActive = false;
+    this._scrollGestureTouchDown = false;
+    this._scrollGestureDidScroll = false;
+    this._scrollGestureEnded = false;
+    this._pendingScrollRender = false;
+    this._scrollGestureTarget = null;
+    this._onScrollGestureStart = () => {
+      if (this._hasOpenDashboardPopup()) return;
+      this._scrollGestureActive = true;
+      this._scrollGestureTouchDown = true;
+      this._scrollGestureDidScroll = false;
+      this._scrollGestureEnded = false;
+    };
+    this._onScrollGestureScroll = () => {
+      if (this._scrollGestureActive) this._scrollGestureDidScroll = true;
+    };
+    this._finishScrollGesture = () => {
+      if (!this._scrollGestureActive) return;
+      this._scrollGestureActive = false;
+      this._scrollGestureTouchDown = false;
+      this._scrollGestureDidScroll = false;
+      this._scrollGestureEnded = false;
+      if (this._pendingScrollRender) {
+        this._pendingScrollRender = false;
+        this._render();
+      }
+    };
+    this._onScrollGestureEnd = () => {
+      this._scrollGestureTouchDown = false;
+      if (!this._scrollGestureDidScroll || this._scrollGestureEnded) {
+        this._finishScrollGesture();
+      }
+      // Otherwise wait for the native scrollend event (after momentum).
+    };
+    this._onScrollGestureScrollEnd = () => {
+      if (!this._scrollGestureActive) return;
+      this._scrollGestureEnded = true;
+      if (!this._scrollGestureTouchDown) this._finishScrollGesture();
+    };
   }
 
   setConfig(config) {
@@ -7713,6 +7754,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.addEventListener("touchmove", this._onSidebarSwipeMove, { passive: true });
     this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
     this.addEventListener("touchcancel", this._onSidebarSwipeCancel, { passive: true });
+    this.addEventListener("touchstart", this._onScrollGestureStart, { passive: true });
+    this.addEventListener("touchend", this._onScrollGestureEnd, { passive: true });
+    this.addEventListener("touchcancel", this._finishScrollGesture, { passive: true });
     this._startClock();
 
     if (!this._scrollTopCleanup) {
@@ -7729,6 +7773,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     this._render();
+    // Observe the real HA page scroller, not the horizontally scrollable tiles.
+    const scrollTarget = atzeFindScrollContainer(this);
+    this._scrollGestureTarget = scrollTarget === document.scrollingElement ||
+      scrollTarget === document.documentElement || scrollTarget === document.body
+      ? document : scrollTarget;
+    this._scrollGestureTarget.addEventListener("scroll", this._onScrollGestureScroll, { passive: true });
+    this._scrollGestureTarget.addEventListener("scrollend", this._onScrollGestureScrollEnd, { passive: true });
     // Restore only after returning from a room, never on a fresh dashboard load.
     const saved = window.__atzeHomeReturnScroll;
     if (saved?.path === window.location.pathname) {
@@ -7754,6 +7805,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.removeEventListener("touchmove", this._onSidebarSwipeMove);
     this.removeEventListener("touchend", this._onSidebarSwipeEnd);
     this.removeEventListener("touchcancel", this._onSidebarSwipeCancel);
+    this.removeEventListener("touchstart", this._onScrollGestureStart);
+    this.removeEventListener("touchend", this._onScrollGestureEnd);
+    this.removeEventListener("touchcancel", this._finishScrollGesture);
+    this._scrollGestureTarget?.removeEventListener("scroll", this._onScrollGestureScroll);
+    this._scrollGestureTarget?.removeEventListener("scrollend", this._onScrollGestureScrollEnd);
+    this._scrollGestureTarget = null;
+    this._scrollGestureActive = false;
+    this._pendingScrollRender = false;
     this._sidebarSwipeStart = null;
     if (this._clockTimer) {
       clearInterval(this._clockTimer);
@@ -9203,6 +9262,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
+    if (this._scrollGestureActive) {
+      this._pendingScrollRender = true;
+      return;
+    }
 
     // Preserve scroll positions when HA state updates rebuild the popup DOM.
     const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
