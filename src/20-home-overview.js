@@ -158,6 +158,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    for (const stop of this._activeEdgeDrags || []) stop();
     this._linkHintCleanup?.();
     this._linkHintCleanup = null;
     this._linkHintGrid = null;
@@ -1643,6 +1644,71 @@ class AtzeHomeOverviewCard extends HTMLElement {
     };
   }
 
+  _installHorizontalDragScroll(grid) {
+    let active = false;
+    let frame = null;
+    let pointer = null;
+    let lastTime = null;
+    const cancelFrame = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      lastTime = null;
+    };
+    const stop = () => {
+      active = false;
+      pointer = null;
+      cancelFrame();
+      grid.style.removeProperty("scroll-snap-type");
+      this._activeEdgeDrags?.delete(stop);
+    };
+    stop.grid = grid;
+    const velocity = () => {
+      if (!pointer) return 0;
+      const rect = grid.getBoundingClientRect();
+      if (pointer.y < rect.top - 12 || pointer.y > rect.bottom + 12) return 0;
+      const edge = Math.min(36, rect.width / 4);
+      if (edge <= 0) return 0;
+      if (pointer.x < rect.left + edge && pointer.x >= rect.left - 14) return -Math.min(1, (rect.left + edge - pointer.x) / edge) * 320;
+      if (pointer.x > rect.right - edge && pointer.x <= rect.right + 14) return Math.min(1, (pointer.x - rect.right + edge) / edge) * 320;
+      return 0;
+    };
+    const tick = time => {
+      frame = null;
+      if (!active || !grid.isConnected) { stop(); return; }
+      const speed = velocity();
+      const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
+      if (!speed || (speed < 0 && grid.scrollLeft <= 0) || (speed > 0 && grid.scrollLeft >= max - 1)) { lastTime = null; return; }
+      const dt = lastTime == null ? 16 : Math.min(32, time - lastTime);
+      lastTime = time;
+      grid.scrollLeft = Math.max(0, Math.min(max, grid.scrollLeft + speed * dt / 1000));
+      frame = requestAnimationFrame(tick);
+    };
+    const start = () => {
+      if (active) return;
+      active = true;
+      grid.style.scrollSnapType = "none";
+      (this._activeEdgeDrags ||= new Set()).add(stop);
+    };
+    const move = (x, y) => {
+      if (!active) return;
+      pointer = { x, y };
+      if (velocity()) { if (frame === null) frame = requestAnimationFrame(tick); }
+      else cancelFrame();
+    };
+    grid.addEventListener("dragstart", start);
+    grid.addEventListener("dragover", event => {
+      if (!active) return;
+      event.preventDefault();
+      move(event.clientX, event.clientY);
+    });
+    grid.addEventListener("dragleave", event => {
+      if (!grid.contains(event.relatedTarget)) { pointer = null; cancelFrame(); }
+    });
+    grid.addEventListener("drop", stop);
+    grid.addEventListener("dragend", stop);
+    return { start, move, stop };
+  }
+
   _bindLinkScrollHints() {
     const grid = this.shadowRoot.querySelector(".custom-page-links");
     if (grid === this._linkHintGrid) return;
@@ -1722,7 +1788,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       // A links-only home also retains its passive indicators and listeners.
       if (!favoriteGrid && current === grid) continue;
       replaceSiblings(current.parentNode, current, next);
-      for (const attr of [...current.attributes]) if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+      for (const attr of [...current.attributes]) {
+        if (attr.name === "style" && current === grid && current.style.scrollSnapType === "none") continue;
+        if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+      }
       for (const attr of next.attributes) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
     }
     if (favoriteGrid) buttons.forEach((button, i) => {
@@ -4165,6 +4234,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const keepLinks = Boolean(oldNavigation && this._homeLinkSignature === linkSignature);
     const favoritesRetained = this._renderHomeKeepingFavorites(homeMarkup, keepLinks);
     if (!favoritesRetained) this.shadowRoot.innerHTML = homeMarkup;
+    for (const stop of this._activeEdgeDrags || []) if (!this.shadowRoot.contains(stop.grid)) stop();
     this._homeLinkSignature = linkSignature;
     const linksRetained = Boolean(oldNavigation && oldNavigation === this.shadowRoot.querySelector(".custom-page-links"));
 
@@ -4433,6 +4503,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const installProvenDrag = (container, selector, idGetter, storageKey) => {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
+      const isFavorite = storageKey === "atze-dashboard:favorite-order";
+      if (isFavorite) this._installHorizontalDragScroll(container);
       let dragIndex = null;
 
       elements.forEach((element, index) => {
@@ -4441,9 +4513,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
         // actually starts a native long-press drag.
         element.style.touchAction = storageKey === "atze-dashboard:favorite-order" ? "auto" : "pan-y";
         element.addEventListener("dragstart", (event) => {
-          dragIndex = index;
+          dragIndex = isFavorite ? [...container.querySelectorAll(selector)].indexOf(element) : index;
           element.classList.add("dragging");
-          event.dataTransfer?.setData("text/plain", String(index));
+          event.dataTransfer?.setData("text/plain", String(dragIndex));
         });
         element.addEventListener("dragend", () => {
           dragIndex = null;
@@ -4460,12 +4532,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.preventDefault();
           element.classList.remove("drag-over");
           const from = dragIndex ?? Number(event.dataTransfer?.getData("text/plain"));
-          if (!Number.isInteger(from) || from === index) return;
           const current = [...container.querySelectorAll(selector)];
+          const targetIndex = isFavorite ? current.indexOf(element) : index;
+          if (!Number.isInteger(from) || from === targetIndex) return;
           const source = current[from];
-          const target = current[index];
+          const target = current[targetIndex];
           if (!source || !target) return;
-          if (from < index) target.after(source); else target.before(source);
+          if (from < targetIndex) target.after(source); else target.before(source);
           const ids = [...container.querySelectorAll(selector)].map(idGetter).filter(Boolean);
           try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch (_e) {}
           const field = storageKey === roomOrderKey ? "home_room_order" : "favorite_order";
@@ -4492,6 +4565,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     // Keep the order in the strategy layout, not just in this device's browser.
     const navigationBar = this.shadowRoot.querySelector(".custom-page-links");
     if (navigationBar && !linksRetained) {
+      const edgeDrag = this._installHorizontalDragScroll(navigationBar);
       const navSelector = ".custom-page-link";
       const navKey = (element) => element.dataset.navigationPath
         ? "navigation:" + element.dataset.navigationPath
@@ -4539,6 +4613,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         return found && navigationBar.contains(found) ? found : null;
       };
       const resetTouch = () => {
+        if (touchDrag?.active) edgeDrag.stop();
         if (touchTimer !== null) clearTimeout(touchTimer);
         touchTimer = null;
         entries().forEach((entry) => entry.classList.remove("dragging", "drag-over"));
@@ -4554,6 +4629,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         touchTimer = setTimeout(() => {
           if (!touchDrag) return;
           touchDrag.active = true;
+          edgeDrag.start();
+          edgeDrag.move(touchDrag.x, touchDrag.y);
           touchDrag.source.classList.add("dragging");
           suppressUntil = Date.now() + 700;
         }, 450);
@@ -4566,6 +4643,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           return;
         }
         event.preventDefault();
+        edgeDrag.move(touch.clientX, touch.clientY);
         const target = atPoint(touch.clientX, touch.clientY);
         if (target !== touchDrag.target) {
           touchDrag.target?.classList.remove("drag-over");
