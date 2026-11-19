@@ -1,3 +1,7 @@
+## v0.428.0
+
+- Mittiger horizontaler Balken am unteren Kartenrand zum Auf- und Zuklappen der Statusübersicht. Die gesamte Zeile ist antippbar.
+
 ## v0.427.0
 
 - Favoriten und Navigationslinks auf der Startseite horizontal durchblättern. Richtungshinweise zeigen weitere Einträge an. Beim Umsortieren scrollen die Leisten am Rand automatisch weiter.

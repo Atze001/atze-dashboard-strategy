@@ -2489,7 +2489,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           position: relative;
           isolation: isolate;
           margin-bottom: 26px;
-          padding: 28px;
+          padding: 28px 28px 4px;
           overflow: hidden;
           border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
@@ -2839,42 +2839,34 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: none;
         }
 
-        .status-expand-row {
-          position: absolute;
-          right: 0;
-          bottom: 0;
-          z-index: 2;
-        }
-
         .status-expand-toggle {
-          display: block;
-          position: relative;
-          width: 48px;
-          height: 48px;
-          padding: 0;
+          display: grid;
+          place-items: end center;
+          width: 100%;
+          min-height: 32px;
+          padding: 0 0 4px;
           border: 0;
+          border-radius: 8px;
           background: transparent;
-          color: rgba(210, 210, 210, .78);
-          clip-path: polygon(100% 0, 100% 100%, 0 100%);
+          color: rgba(230, 230, 235, .72);
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
         }
 
-        .status-expand-toggle[hidden],
         .status-expand-row[hidden] {
           display: none;
         }
 
-        .status-expand-toggle svg {
-          position: absolute;
-          width: 48px;
-          height: 48px;
-          right: 0;
-          bottom: 0;
-          pointer-events: none;
+        .status-expand-toggle::before {
+          content: "";
+          width: 36px;
+          height: 4px;
+          border-radius: 999px;
+          background: currentColor;
         }
 
-        .status-expand-toggle:focus-visible { background: rgba(255,255,255,.18); }
+        .status-expand-toggle:active { color: #fff; }
+        .status-expand-toggle:focus-visible { outline: 2px solid currentColor; }
 
         .status {
           box-sizing: border-box;
@@ -3772,7 +3764,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .home-status-panel {
             margin-bottom: 20px;
-            padding: 20px 14px;
+            padding: 20px 14px 4px;
             border-radius: 28px;
           }
 
@@ -4188,9 +4180,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
                 aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
                 title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
-                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.0">
-                  <path d="M21 48 L48 21 M24.5 48 L48 24.5 M28 48 L48 28" />
-                </svg>
               </button>
             </div>
           </section>
