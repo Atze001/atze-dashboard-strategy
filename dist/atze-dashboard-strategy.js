@@ -10084,7 +10084,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           position: relative;
           isolation: isolate;
           margin-bottom: 26px;
-          padding: 28px;
+          padding: 28px 28px 4px;
           overflow: hidden;
           border: 1px solid rgba(210, 210, 210, 0.78);
           border-radius: 34px;
@@ -10436,10 +10436,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .status-expand-toggle {
           display: grid;
-          place-items: center;
+          place-items: end center;
           width: 100%;
           min-height: 32px;
-          padding: 0;
+          padding: 0 0 4px;
           border: 0;
           border-radius: 8px;
           background: transparent;
@@ -11359,7 +11359,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .home-status-panel {
             margin-bottom: 20px;
-            padding: 20px 14px;
+            padding: 20px 14px 4px;
             border-radius: 28px;
           }
 
