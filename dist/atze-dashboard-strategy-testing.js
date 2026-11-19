@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "47C4686";
+const ATZE_TESTING_REVISION = "330DA59";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10446,7 +10446,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           padding: 0;
           border: 0;
           background: transparent;
-          color: rgba(255, 255, 255, .78);
+          color: rgba(210, 210, 210, .78);
           clip-path: polygon(100% 0, 100% 100%, 0 100%);
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
@@ -10459,10 +10459,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .status-expand-toggle svg {
           position: absolute;
-          width: 36px;
-          height: 36px;
-          right: 4px;
-          bottom: 4px;
+          width: 48px;
+          height: 48px;
+          right: 0;
+          bottom: 0;
           pointer-events: none;
         }
 
@@ -11780,8 +11780,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
                 aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
                 title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
-                <svg viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-                  <path d="M5 31 L31 5 M10 32 L32 10 M17 34 L34 17" />
+                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+                  <path d="M6 48 L48 6 M15 48 L48 15 M24 48 L48 24" />
                 </svg>
               </button>
             </div>
