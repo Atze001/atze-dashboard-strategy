@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "956D85F";
+const ATZE_TESTING_REVISION = "47C4686";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10432,22 +10432,22 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .status-expand-row {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 9px;
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          z-index: 2;
         }
 
         .status-expand-toggle {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 34px;
-          height: 30px;
+          display: block;
+          position: relative;
+          width: 48px;
+          height: 48px;
           padding: 0;
-          border: 1px solid var(--home-card-border);
-          border-radius: 11px;
-          background: rgba(55, 58, 67, 0.48);
-          color: var(--primary-text-color);
+          border: 0;
+          background: transparent;
+          color: rgba(255, 255, 255, .78);
+          clip-path: polygon(100% 0, 100% 100%, 0 100%);
           cursor: pointer;
           -webkit-tap-highlight-color: transparent;
         }
@@ -10457,9 +10457,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
           display: none;
         }
 
-        .status-expand-toggle ha-icon {
-          --mdc-icon-size: 20px;
+        .status-expand-toggle svg {
+          position: absolute;
+          width: 36px;
+          height: 36px;
+          right: 4px;
+          bottom: 4px;
+          pointer-events: none;
         }
+
+        .status-expand-toggle:focus-visible { background: rgba(255,255,255,.18); }
 
         .status {
           box-sizing: border-box;
@@ -11773,7 +11780,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
                 aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
                 title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
-                <ha-icon icon="${this._statusExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>
+                <svg viewBox="0 0 36 36" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                  <path d="M5 31 L31 5 M10 32 L32 10 M17 34 L34 17" />
+                </svg>
               </button>
             </div>
           </section>
@@ -11886,7 +11895,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
         expandToggle.setAttribute("aria-expanded", String(this._statusExpanded));
         expandToggle.setAttribute("aria-label", this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
         expandToggle.title = this._statusExpanded ? "Einklappen" : "Aufklappen";
-        expandToggle.querySelector("ha-icon")?.setAttribute("icon", this._statusExpanded ? "mdi:chevron-up" : "mdi:chevron-down");
       });
 
       let draggedTile = null;
