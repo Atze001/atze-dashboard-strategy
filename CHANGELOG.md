@@ -1,3 +1,8 @@
+## v0.426.0
+
+- Externe AlertTicker-Card samt Einbindung auf der Startseite entfernt. Bestehende Sicherheitsanzeigen und Alarmfunktionen bleiben unverändert.
+- Eigene Warnanzeige für einen späteren Entwicklungsschritt vorgesehen.
+
 ## v0.425.0
 
 - Native Home-Assistant-Kopfzeile ohne HACS Kiosk Mode direkt durch ATZE Strategy ausblendbar; durch Antippen der Uhr wieder ein- und ausblendbar.
