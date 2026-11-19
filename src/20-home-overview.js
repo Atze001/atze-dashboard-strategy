@@ -3006,10 +3006,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
           overflow-x: auto;
           overflow-y: hidden;
           scrollbar-width: none;
+          scroll-snap-type: x mandatory;
         }
 
         .favorite-grid::-webkit-scrollbar {
           display: none;
+        }
+
+        .favorite-grid > .favorite-card {
+          scroll-snap-align: none;
+        }
+
+        @media (min-width: 901px) {
+          .favorite-grid > .favorite-card:nth-child(4n+1) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+          }
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(4n+1))::after { content: ""; grid-column: span 3; }
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(4n+2))::after { content: ""; grid-column: span 2; }
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(4n+3))::after { content: ""; }
         }
 
         .favorite-card {
@@ -3546,6 +3561,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .favorite-grid {
             grid-auto-columns: calc((100% - 12px) / 2);
+          }
+
+          .favorite-grid > .favorite-card:nth-child(2n+1) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+          }
+
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(2n+1))::after {
+            content: "";
           }
 
           .quick {
