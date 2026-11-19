@@ -81,6 +81,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._roomDrag = null;
     this._hiddenRoomIds = [];
     this._statusExpanded = false;
+    // Testing-only, bounded diagnostics. No polling, no scroll changes.
+    this._diagnosticVisible = false;
+    this._diagnosticEvents = [];
+    this._diagnosticCounts = { render: 0, deferred: 0, restore: 0 };
+    this._diagnosticLastReason = "UI";
     // Keep the DOM stable during finger-driven scrolling. HA may update
     // entity data many times while a swipe or inertial scroll is in progress.
     this._scrollGestureActive = false;
@@ -107,7 +112,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this._scrollGestureEnded = false;
       if (this._pendingScrollRender) {
         this._pendingScrollRender = false;
-        this._render();
+        this._render("Nachholen");
       }
     };
     this._onScrollGestureEnd = () => {
@@ -124,9 +129,78 @@ class AtzeHomeOverviewCard extends HTMLElement {
     };
   }
 
+  _recordScrollDiagnostic(kind, detail = "") {
+    if (!ATZE_TESTING_BUILD) return;
+    const event = {
+      at: new Date().toLocaleTimeString("de-DE", { hour12: false }),
+      kind,
+      detail,
+    };
+    this._diagnosticEvents.push(event);
+    if (this._diagnosticEvents.length > 18) this._diagnosticEvents.shift();
+    this._updateScrollDiagnosticPanel();
+  }
+
+  _updateScrollDiagnosticPanel() {
+    if (!ATZE_TESTING_BUILD || !this._diagnosticVisible) return;
+    const panel = this.shadowRoot?.querySelector("#atze-scroll-diagnostic");
+    if (!panel) return;
+    const count = this._diagnosticCounts;
+    const header = panel.querySelector("#atze-diag-counts");
+    if (header) header.textContent = `Render ${count.render} · Aufgeschoben ${count.deferred} · Korrektur ${count.restore}`;
+    const log = panel.querySelector("#atze-diag-log");
+    if (log) log.textContent = this._diagnosticEvents.map(item =>
+      `${item.at} ${item.kind} ${item.detail}`).reverse().join("\n");
+  }
+
+  _mountScrollDiagnostic() {
+    if (!ATZE_TESTING_BUILD) return;
+    const host = this.shadowRoot?.querySelector(".home-status-panel");
+    if (!host) return;
+    const button = document.createElement("button");
+    button.id = "atze-diag-toggle";
+    button.type = "button";
+    button.textContent = "DIAG";
+    button.style.cssText = "position:absolute;right:8px;top:8px;z-index:12;font-size:10px;padding:3px 6px;border:1px solid #888;border-radius:6px;background:#303030;color:white;";
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      this._diagnosticVisible = !this._diagnosticVisible;
+      this._mountScrollDiagnosticPanel();
+    });
+    host.appendChild(button);
+    this._mountScrollDiagnosticPanel();
+  }
+
+  _mountScrollDiagnosticPanel() {
+    this.shadowRoot?.querySelector("#atze-scroll-diagnostic")?.remove();
+    if (!this._diagnosticVisible) return;
+    const panel = document.createElement("div");
+    panel.id = "atze-scroll-diagnostic";
+    panel.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top, 0px) + 54px);left:12px;right:12px;max-height:55vh;overflow:auto;z-index:20000;background:rgba(15,15,18,.96);color:#f5f5f5;border:1px solid #777;border-radius:10px;padding:12px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 8px 25px #0008;";
+    const title = document.createElement("div");
+    title.textContent = "ATZE Scroll-Diagnose (Testing)";
+    title.style.cssText = "font-weight:bold;margin-bottom:6px;";
+    const counts = document.createElement("div");
+    counts.id = "atze-diag-counts";
+    const log = document.createElement("div");
+    log.id = "atze-diag-log";
+    log.style.cssText = "margin-top:8px;overflow-wrap:anywhere;";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "Schließen";
+    close.style.cssText = "float:right;background:#555;color:#fff;border:0;padding:5px;border-radius:5px;";
+    close.addEventListener("click", () => {
+      this._diagnosticVisible = false;
+      panel.remove();
+    });
+    panel.append(close, title, counts, log);
+    this.shadowRoot.appendChild(panel);
+    this._updateScrollDiagnosticPanel();
+  }
+
   setConfig(config) {
     this._config = { ...config };
-    this._render();
+    this._render("Konfiguration");
   }
 
   set hass(value) {
@@ -149,7 +223,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._schedulerCard) this._schedulerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
-      else this._render();
+      else this._render("HA");
     }
   }
 
@@ -237,7 +311,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._clockTimer) return;
 
     this._clockTimer = setInterval(
-      () => { if (!this._hasOpenDashboardPopup()) this._render(); },
+      () => { if (!this._hasOpenDashboardPopup()) this._render("Uhr"); },
       30000
     );
   }
@@ -1668,12 +1742,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
-  _render() {
+  _render(reason = "UI") {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
     if (this._scrollGestureActive) {
       this._pendingScrollRender = true;
+      if (ATZE_TESTING_BUILD) {
+        this._diagnosticCounts.deferred++;
+        this._recordScrollDiagnostic("Aufschub", reason);
+      }
       return;
     }
+    const diagnosticStarted = ATZE_TESTING_BUILD ? performance.now() : 0;
+    const wasTouchDown = this._scrollGestureTouchDown;
 
     // Preserve scroll positions when HA state updates rebuild the popup DOM.
     const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
@@ -4817,6 +4897,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
 
+    this._mountScrollDiagnostic();
+    if (ATZE_TESTING_BUILD) {
+      this._diagnosticCounts.render++;
+      this._recordScrollDiagnostic("Render", `${reason} ${Math.round(performance.now() - diagnosticStarted)}ms · Scroll ${Math.round(pageScrollTop)} · Touch ${wasTouchDown ? "ja" : "nein"}`);
+    }
+
     // Restore horizontal positions only after the favorites and navigation
     // have been reordered and their DOM children are in their final order.
     // Moving children with appendChild can otherwise reset scrollLeft to 0.
@@ -4838,6 +4924,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
           : Math.max(0, target.scrollHeight - target.clientHeight);
         const top = Math.min(pageScrollTop, maxTop);
+        if (ATZE_TESTING_BUILD) {
+          const actual = isDocument ? (window.scrollY || document.documentElement.scrollTop || 0) : target.scrollTop;
+          if (Math.abs(top - actual) > 5) {
+            this._diagnosticCounts.restore++;
+            this._recordScrollDiagnostic("Scroll-Korrektur", `${Math.round(actual)} → ${Math.round(top)}`);
+          }
+        }
         if (isDocument) window.scrollTo({ top, behavior: "instant" });
         else target.scrollTop = top;
       });
