@@ -4188,8 +4188,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
                 aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
                 title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
-                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
-                  <path d="M14 48 L48 14 M20 48 L48 20 M26 48 L48 26" />
+                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.0">
+                  <path d="M21 48 L48 21 M24.5 48 L48 24.5 M28 48 L48 28" />
                 </svg>
               </button>
             </div>
