@@ -12356,15 +12356,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollLeft = position.left;
     }
-    // Restore after all status, favorite and navigation DOM changes.
-    // Do not modify the scroll position on an initial (top-of-page) render.
+    // WebKit can clamp the outer scroller while shadowRoot.innerHTML is
+    // replaced and apply the resulting layout after this synchronous render.
+    // Restore once after layout rather than writing scrollTop too early.
     if (pageScrollTop > 0) {
-      const maxTop = pageScrollIsDocument
-        ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
-        : Math.max(0, pageScrollTarget.scrollHeight - pageScrollTarget.clientHeight);
-      const top = Math.min(pageScrollTop, maxTop);
-      if (pageScrollIsDocument) window.scrollTo({ top, behavior: "instant" });
-      else pageScrollTarget.scrollTop = top;
+      const currentRender = this._scrollRestoreRevision = (this._scrollRestoreRevision || 0) + 1;
+      requestAnimationFrame(() => {
+        if (!this.isConnected || currentRender !== this._scrollRestoreRevision) return;
+        const target = atzeFindScrollContainer(this);
+        const isDocument = target === document.scrollingElement ||
+          target === document.documentElement || target === document.body;
+        const maxTop = isDocument
+          ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+          : Math.max(0, target.scrollHeight - target.clientHeight);
+        const top = Math.min(pageScrollTop, maxTop);
+        if (isDocument) window.scrollTo({ top, behavior: "instant" });
+        else target.scrollTop = top;
+      });
     }
   }
 
