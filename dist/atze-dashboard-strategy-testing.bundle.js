@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "09E37E4";
+const ATZE_TESTING_REVISION = "D129031";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7672,118 +7672,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecastLoading = false;
     this._roomDrag = null;
     this._hiddenRoomIds = [];
-    this._diagnosticVisible = false;
-    this._diagnosticEvents = [];
-    this._diagnosticCounts = { render: 0, changed: 0 };
-  }
-
-  _recordScrollDiagnostic(kind, detail = "") {
-    if (!ATZE_TESTING_BUILD) return;
-    const event = {
-      at: new Date().toLocaleTimeString("de-DE", { hour12: false }),
-      kind,
-      detail,
-    };
-    this._diagnosticEvents.push(event);
-    if (this._diagnosticEvents.length > 18) this._diagnosticEvents.shift();
-    this._updateScrollDiagnosticPanel();
-  }
-
-  _updateScrollDiagnosticPanel() {
-    if (!ATZE_TESTING_BUILD || !this._diagnosticVisible) return;
-    const panel = this.shadowRoot?.querySelector("#atze-scroll-diagnostic");
-    if (!panel) return;
-    const count = this._diagnosticCounts;
-    const header = panel.querySelector("#atze-diag-counts");
-    if (header) header.textContent = `Render ${count.render} · Positionsänderung ${count.changed}`;
-    const log = panel.querySelector("#atze-diag-log");
-    if (log) log.textContent = this._diagnosticEvents.map(item =>
-      `${item.at} ${item.kind} ${item.detail}`).reverse().join("\n");
-  }
-
-  _mountScrollDiagnostic() {
-    if (!ATZE_TESTING_BUILD) return;
-    if (!this.shadowRoot) return;
-    const button = document.createElement("button");
-    button.id = "atze-diag-toggle";
-    button.type = "button";
-    button.textContent = "DIAG";
-    button.style.cssText = "position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom, 0px) + 86px);z-index:20001;font-size:12px;font-weight:600;padding:8px 10px;border:1px solid #999;border-radius:9px;background:rgba(40,40,45,.94);color:white;box-shadow:0 3px 12px #0007;touch-action:manipulation;";
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      this._diagnosticVisible = !this._diagnosticVisible;
-      this._mountScrollDiagnosticPanel();
-    });
-    this.shadowRoot.appendChild(button);
-    this._mountScrollDiagnosticPanel();
-  }
-
-  _mountScrollDiagnosticPanel() {
-    this.shadowRoot?.querySelector("#atze-scroll-diagnostic")?.remove();
-    if (!this._diagnosticVisible) return;
-    const panel = document.createElement("div");
-    panel.id = "atze-scroll-diagnostic";
-    panel.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top, 0px) + 20px);left:12px;right:12px;max-height:55vh;overflow:auto;z-index:20000;background:rgba(15,15,18,.96);color:#f5f5f5;border:1px solid #777;border-radius:10px;padding:12px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 8px 25px #0008;";
-    const title = document.createElement("div");
-    title.textContent = "ATZE Scroll-Diagnose (Testing)";
-    title.style.cssText = "font-weight:bold;margin-bottom:6px;";
-    const counts = document.createElement("div");
-    counts.id = "atze-diag-counts";
-    const log = document.createElement("div");
-    log.id = "atze-diag-log";
-    log.style.cssText = "margin-top:8px;overflow-wrap:anywhere;";
-    const close = document.createElement("button");
-    close.type = "button";
-    close.textContent = "Schließen";
-    close.style.cssText = "float:right;background:#555;color:#fff;border:0;padding:5px;border-radius:5px;";
-    close.addEventListener("click", () => {
-      this._diagnosticVisible = false;
-      panel.remove();
-    });
-    const copy = document.createElement("button");
-    copy.type = "button";
-    copy.textContent = "Protokoll kopieren";
-    copy.style.cssText = "background:#34577a;color:white;border:0;padding:5px 8px;border-radius:5px;margin-right:8px;";
-    copy.addEventListener("click", async () => {
-      const countsText = `Render ${this._diagnosticCounts.render}, Positionsänderung ${this._diagnosticCounts.changed}`;
-      const entries = this._diagnosticEvents.map(e => `${e.at} ${e.kind} ${e.detail}`).join("\n");
-      const content = `ATZE Scroll-Diagnose · ${ATZE_TESTING_REVISION}\n${countsText}\n${entries}`;
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(content);
-        } else {
-          const field = document.createElement("textarea");
-          field.value = content;
-          field.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
-          panel.appendChild(field);
-          field.select();
-          const copied = document.execCommand("copy");
-          field.remove();
-          if (!copied) throw new Error("Kopieren nicht unterstützt");
-        }
-        copy.textContent = "Kopiert ✓";
-      } catch (_error) {
-        copy.textContent = "Kopieren fehlgeschlagen";
-      }
-    });
-    const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px;";
-    actions.append(copy, close);
-    panel.append(actions, title, counts, log);
-    this.shadowRoot.appendChild(panel);
-    this._updateScrollDiagnosticPanel();
-  }
-
-  _diagnosticScrollTop() {
-    const target = atzeFindScrollContainer(this);
-    const isDocument = target === document.scrollingElement ||
-      target === document.documentElement || target === document.body;
-    return isDocument ? (window.scrollY || document.documentElement.scrollTop || 0) : (target?.scrollTop ?? 0);
   }
 
   setConfig(config) {
     this._config = { ...config };
-    this._render("Konfiguration");
+    this._render();
   }
 
   set hass(value) {
@@ -7806,7 +7699,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._schedulerCard) this._schedulerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
-      else this._render("HA");
+      else this._render();
     }
   }
 
@@ -7876,7 +7769,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._clockTimer) return;
 
     this._clockTimer = setInterval(
-      () => { if (!this._hasOpenDashboardPopup()) this._render("Uhr"); },
+      () => { if (!this._hasOpenDashboardPopup()) this._render(); },
       30000
     );
   }
@@ -9307,10 +9200,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
-  _render(reason = "UI") {
+  _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
-    const diagnosticStarted = ATZE_TESTING_BUILD ? performance.now() : 0;
-    const diagnosticTop = ATZE_TESTING_BUILD ? this._diagnosticScrollTop() : 0;
 
     // Preserve scroll positions when HA state updates rebuild the popup DOM.
     const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
@@ -12366,17 +12257,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
-
-    if (ATZE_TESTING_BUILD) {
-      this._mountScrollDiagnostic();
-      const actual = this._diagnosticScrollTop();
-      this._diagnosticCounts.render++;
-      this._recordScrollDiagnostic("Render", `${reason} ${Math.round(performance.now() - diagnosticStarted)}ms · Scroll ${Math.round(diagnosticTop)} → ${Math.round(actual)}`);
-      if (Math.abs(actual - diagnosticTop) > 5) {
-        this._diagnosticCounts.changed++;
-        this._recordScrollDiagnostic("Positionsänderung", `${Math.round(diagnosticTop)} → ${Math.round(actual)}`);
-      }
-    }
   }
 
   getCardSize() {
