@@ -3974,10 +3974,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
-    for (const position of horizontalScrollPositions) {
-      const element = this.shadowRoot.querySelector(position.selector);
-      if (element) element.scrollLeft = position.left;
-    }
 
     // Mount the actual room thermostat controls, not the generic device-popup card.
     // The native thermostat service dialog is rendered inside each control.
@@ -4744,6 +4740,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
+
+    // Restore horizontal positions only after the favorites and navigation
+    // have been reordered and their DOM children are in their final order.
+    // Moving children with appendChild can otherwise reset scrollLeft to 0.
+    for (const position of horizontalScrollPositions) {
+      const element = this.shadowRoot.querySelector(position.selector);
+      if (element) element.scrollLeft = position.left;
+    }
   }
 
   getCardSize() {
