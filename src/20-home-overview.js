@@ -1624,6 +1624,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const horizontalScrollPositions = [".custom-page-links", ".favorite-grid"]
       .map((selector) => ({ selector, left: this.shadowRoot.querySelector(selector)?.scrollLeft ?? 0 }));
 
+    // HA state updates rebuild this entire shadow root. Keep the current
+    // page position while replacing the DOM so it does not jump to the top.
+    const pageScrollTarget = atzeFindScrollContainer(this);
+    const pageScrollIsDocument = pageScrollTarget === document.scrollingElement ||
+      pageScrollTarget === document.documentElement || pageScrollTarget === document.body;
+    const pageScrollTop = pageScrollIsDocument
+      ? (window.scrollY || document.documentElement.scrollTop || 0)
+      : pageScrollTarget.scrollTop;
+
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
     const heroImage = heroIsDay
@@ -2628,7 +2637,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 0;
         }
 
-        .status-grid:not(.expanded) > .status:nth-child(n+5) {
+        .status-grid:not(.expanded) {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .status-grid:not(.expanded) > .status:nth-child(n+3) {
           display: none;
         }
 
@@ -4019,7 +4032,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       // Collapse based on the current user-defined tile order, not fixed ids.
       const expandRow = this.shadowRoot.querySelector("#status-expand-row");
       const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
-      if (expandRow) expandRow.hidden = tiles.length <= 4;
+      if (expandRow) expandRow.hidden = tiles.length <= 2;
       expandToggle?.addEventListener("click", () => {
         this._statusExpanded = !this._statusExpanded;
         statusGrid.classList.toggle("expanded", this._statusExpanded);
@@ -4747,6 +4760,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
     for (const position of horizontalScrollPositions) {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollLeft = position.left;
+    }
+    // Restore after all status, favorite and navigation DOM changes.
+    // Do not modify the scroll position on an initial (top-of-page) render.
+    if (pageScrollTop > 0) {
+      const maxTop = pageScrollIsDocument
+        ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+        : Math.max(0, pageScrollTarget.scrollHeight - pageScrollTarget.clientHeight);
+      const top = Math.min(pageScrollTop, maxTop);
+      if (pageScrollIsDocument) window.scrollTo({ top, behavior: "instant" });
+      else pageScrollTarget.scrollTop = top;
     }
   }
 
