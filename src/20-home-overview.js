@@ -81,52 +81,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._roomDrag = null;
     this._hiddenRoomIds = [];
     this._statusExpanded = false;
-    // Testing-only, bounded diagnostics. No polling, no scroll changes.
     this._diagnosticVisible = false;
     this._diagnosticEvents = [];
-    this._diagnosticCounts = { render: 0, deferred: 0, restore: 0, direct: 0 };
-    this._diagnosticLastReason = "UI";
-    // Keep the DOM stable during finger-driven scrolling. HA may update
-    // entity data many times while a swipe or inertial scroll is in progress.
-    this._scrollGestureActive = false;
-    this._scrollGestureTouchDown = false;
-    this._scrollGestureDidScroll = false;
-    this._scrollGestureEnded = false;
-    this._pendingScrollRender = false;
-    this._scrollGestureTarget = null;
-    this._onScrollGestureStart = () => {
-      if (this._hasOpenDashboardPopup()) return;
-      this._scrollGestureActive = true;
-      this._scrollGestureTouchDown = true;
-      this._scrollGestureDidScroll = false;
-      this._scrollGestureEnded = false;
-    };
-    this._onScrollGestureScroll = () => {
-      if (this._scrollGestureActive) this._scrollGestureDidScroll = true;
-    };
-    this._finishScrollGesture = () => {
-      if (!this._scrollGestureActive) return;
-      this._scrollGestureActive = false;
-      this._scrollGestureTouchDown = false;
-      this._scrollGestureDidScroll = false;
-      this._scrollGestureEnded = false;
-      if (this._pendingScrollRender) {
-        this._pendingScrollRender = false;
-        this._render("Nachholen");
-      }
-    };
-    this._onScrollGestureEnd = () => {
-      this._scrollGestureTouchDown = false;
-      if (!this._scrollGestureDidScroll || this._scrollGestureEnded) {
-        this._finishScrollGesture();
-      }
-      // Otherwise wait for the native scrollend event (after momentum).
-    };
-    this._onScrollGestureScrollEnd = () => {
-      if (!this._scrollGestureActive) return;
-      this._scrollGestureEnded = true;
-      if (!this._scrollGestureTouchDown) this._finishScrollGesture();
-    };
+    this._diagnosticCounts = { render: 0, changed: 0 };
   }
 
   _recordScrollDiagnostic(kind, detail = "") {
@@ -147,7 +104,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (!panel) return;
     const count = this._diagnosticCounts;
     const header = panel.querySelector("#atze-diag-counts");
-    if (header) header.textContent = `Render ${count.render} · Direkt ${count.direct} · Aufgeschoben ${count.deferred} · Korrektur ${count.restore}`;
+    if (header) header.textContent = `Render ${count.render} · Positionsänderung ${count.changed}`;
     const log = panel.querySelector("#atze-diag-log");
     if (log) log.textContent = this._diagnosticEvents.map(item =>
       `${item.at} ${item.kind} ${item.detail}`).reverse().join("\n");
@@ -197,7 +154,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     copy.textContent = "Protokoll kopieren";
     copy.style.cssText = "background:#34577a;color:white;border:0;padding:5px 8px;border-radius:5px;margin-right:8px;";
     copy.addEventListener("click", async () => {
-      const countsText = `Render ${this._diagnosticCounts.render}, Direkt ${this._diagnosticCounts.direct}, Aufgeschoben ${this._diagnosticCounts.deferred}, Korrektur ${this._diagnosticCounts.restore}`;
+      const countsText = `Render ${this._diagnosticCounts.render}, Positionsänderung ${this._diagnosticCounts.changed}`;
       const entries = this._diagnosticEvents.map(e => `${e.at} ${e.kind} ${e.detail}`).join("\n");
       const content = `ATZE Scroll-Diagnose · ${ATZE_TESTING_REVISION}\n${countsText}\n${entries}`;
       try {
@@ -226,13 +183,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._updateScrollDiagnosticPanel();
   }
 
+  _diagnosticScrollTop() {
+    const target = atzeFindScrollContainer(this);
+    const isDocument = target === document.scrollingElement ||
+      target === document.documentElement || target === document.body;
+    return isDocument ? (window.scrollY || document.documentElement.scrollTop || 0) : (target?.scrollTop ?? 0);
+  }
+
   setConfig(config) {
     this._config = { ...config };
     this._render("Konfiguration");
   }
 
   set hass(value) {
-    const previousHass = this._hass;
     this._hass = value;
 
     if (
@@ -252,118 +215,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._schedulerCard) this._schedulerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
-      else if (!this._updateSimpleSensorStates(previousHass, value)) this._render("HA");
+      else this._render("HA");
     }
-  }
-
-  // Handle only safe, purely numeric sensor updates without replacing any
-  // scroll containers, room cards, favorites, or their event listeners.
-  // Unrecognized changes always retain the original full-render path.
-  _updateSimpleSensorStates(previousHass, nextHass) {
-    if (!this._config || !this.shadowRoot?.querySelector("#home-status-grid") ||
-        !previousHass?.states || !nextHass?.states) return false;
-    const oldStates = previousHass.states;
-    const newStates = nextHass.states;
-    if (oldStates === newStates) return false;
-
-    // Exact configured references ensure that a sensor used for alarms,
-    // presence, forecasts, favorites, automations etc. never takes this path.
-    const supported = new Map();
-    const addRef = (id, entry) => {
-      if (!id || typeof id !== "string") return;
-      if (!supported.has(id)) supported.set(id, []);
-      supported.get(id).push(entry);
-    };
-    addRef(this._config.power_entity, { type: "total-power" });
-    for (const room of this._config.room_tiles || []) {
-      for (const type of ["temperature", "humidity", "power"]) {
-        addRef(room[type], { type, room });
-      }
-    }
-
-    // Reject IDs also referenced elsewhere in the configuration.
-    const otherReferences = new Set();
-    const scan = (value, path = "") => {
-      if (typeof value === "string") {
-        if (supported.has(value) && !(
-          path === "power_entity" ||
-          /^room_tiles\.\d+\.(temperature|humidity|power)$/.test(path)
-        )) otherReferences.add(value);
-      } else if (Array.isArray(value)) {
-        value.forEach((item, i) => scan(item, path ? `${path}.${i}` : String(i)));
-      } else if (value && typeof value === "object") {
-        Object.entries(value).forEach(([key, item]) =>
-          scan(item, path ? `${path}.${key}` : key));
-      }
-    };
-    scan(this._config);
-
-    const changedIds = [];
-    for (const [id, nextState] of Object.entries(newStates)) {
-      const oldState = oldStates[id];
-      if (nextState === oldState) continue;
-      if (!oldState || !supported.has(id) || otherReferences.has(id) ||
-          oldState.state === nextState?.state ||
-          JSON.stringify(oldState.attributes) !== JSON.stringify(nextState?.attributes)) return false;
-      const prevValue = Number(oldState.state);
-      const nextValue = Number(nextState?.state);
-      if (!Number.isFinite(prevValue) || !Number.isFinite(nextValue)) return false;
-      changedIds.push(id);
-    }
-    if (!changedIds.length || Object.keys(newStates).length !== Object.keys(oldStates).length) return false;
-
-    // Validate every target before touching the DOM: no partial updates.
-    const patches = [];
-    const findRoom = room => [...this.shadowRoot.querySelectorAll(".room")]
-      .find(element => element.dataset.areaId === String(room.area_id));
-    for (const id of changedIds) {
-      const formatted = this._formatted(id);
-      for (const ref of supported.get(id)) {
-        if (ref.type === "total-power") {
-          const target = this.shadowRoot.querySelector("#power-status .status-sub");
-          if (!target) return false;
-          patches.push(() => { target.textContent = `${this._formatPower()} · Gesamt`; });
-          continue;
-        }
-        const room = findRoom(ref.room);
-        if (!room) return false;
-        const target = ref.type === "temperature"
-          ? room.querySelector(".room-temperature .room-meta-value")
-          : ref.type === "humidity"
-            ? room.querySelector(".room-humidity .room-meta-value")
-            : room.querySelector(".room-power > span");
-        if (!target) return false;
-        patches.push(() => { target.textContent = formatted; });
-        const iconName = {
-          temperature: "mdi:thermometer",
-          humidity: "mdi:water-percent",
-          power: "mdi:lightning-bolt"
-        }[ref.type];
-        const compact = [...room.querySelectorAll(".room-compact-climate > span")]
-          .find(span => span.querySelector("ha-icon")?.getAttribute("icon") === iconName);
-        if (!compact) return false;
-        patches.push(() => {
-          // Preserve the icon node, replacing only the numeric text.
-          for (const node of [...compact.childNodes]) {
-            if (node.nodeType === 3) node.textContent = formatted;
-          }
-        });
-        if (ref.type === "power") {
-          const power = room.querySelector(".room-power");
-          if (!power) return false;
-          patches.push(() => {
-            power.title = `Leistung ${formatted}`;
-            power.setAttribute("aria-label", `Leistung ${formatted}`);
-          });
-        }
-      }
-    }
-    patches.forEach(patch => patch());
-    if (ATZE_TESTING_BUILD) {
-      this._diagnosticCounts.direct++;
-      this._recordScrollDiagnostic("Direkt", changedIds.join(", "));
-    }
-    return true;
   }
 
   get hass() {
@@ -375,9 +228,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.addEventListener("touchmove", this._onSidebarSwipeMove, { passive: true });
     this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
     this.addEventListener("touchcancel", this._onSidebarSwipeCancel, { passive: true });
-    this.addEventListener("touchstart", this._onScrollGestureStart, { passive: true });
-    this.addEventListener("touchend", this._onScrollGestureEnd, { passive: true });
-    this.addEventListener("touchcancel", this._finishScrollGesture, { passive: true });
     this._startClock();
 
     if (!this._scrollTopCleanup) {
@@ -394,13 +244,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     this._render();
-    // Observe the real HA page scroller, not the horizontally scrollable tiles.
-    const scrollTarget = atzeFindScrollContainer(this);
-    this._scrollGestureTarget = scrollTarget === document.scrollingElement ||
-      scrollTarget === document.documentElement || scrollTarget === document.body
-      ? document : scrollTarget;
-    this._scrollGestureTarget.addEventListener("scroll", this._onScrollGestureScroll, { passive: true });
-    this._scrollGestureTarget.addEventListener("scrollend", this._onScrollGestureScrollEnd, { passive: true });
     // Restore only after returning from a room, never on a fresh dashboard load.
     const saved = window.__atzeHomeReturnScroll;
     if (saved?.path === window.location.pathname) {
@@ -426,14 +269,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.removeEventListener("touchmove", this._onSidebarSwipeMove);
     this.removeEventListener("touchend", this._onSidebarSwipeEnd);
     this.removeEventListener("touchcancel", this._onSidebarSwipeCancel);
-    this.removeEventListener("touchstart", this._onScrollGestureStart);
-    this.removeEventListener("touchend", this._onScrollGestureEnd);
-    this.removeEventListener("touchcancel", this._finishScrollGesture);
-    this._scrollGestureTarget?.removeEventListener("scroll", this._onScrollGestureScroll);
-    this._scrollGestureTarget?.removeEventListener("scrollend", this._onScrollGestureScrollEnd);
-    this._scrollGestureTarget = null;
-    this._scrollGestureActive = false;
-    this._pendingScrollRender = false;
     this._sidebarSwipeStart = null;
     if (this._clockTimer) {
       clearInterval(this._clockTimer);
@@ -1883,16 +1718,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _render(reason = "UI") {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
-    if (this._scrollGestureActive) {
-      this._pendingScrollRender = true;
-      if (ATZE_TESTING_BUILD) {
-        this._diagnosticCounts.deferred++;
-        this._recordScrollDiagnostic("Aufschub", reason);
-      }
-      return;
-    }
     const diagnosticStarted = ATZE_TESTING_BUILD ? performance.now() : 0;
-    const wasTouchDown = this._scrollGestureTouchDown;
+    const diagnosticTop = ATZE_TESTING_BUILD ? this._diagnosticScrollTop() : 0;
 
     // Preserve scroll positions when HA state updates rebuild the popup DOM.
     const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
@@ -1903,17 +1730,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const presenceList = this.shadowRoot.querySelector(".presence-event-list");
     const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
     const presenceListScrollTop = presenceList?.scrollTop ?? 0;
-    const horizontalScrollPositions = [".custom-page-links", ".favorite-grid"]
-      .map((selector) => ({ selector, left: this.shadowRoot.querySelector(selector)?.scrollLeft ?? 0 }));
-
-    // HA state updates rebuild this entire shadow root. Keep the current
-    // page position while replacing the DOM so it does not jump to the top.
-    const pageScrollTarget = atzeFindScrollContainer(this);
-    const pageScrollIsDocument = pageScrollTarget === document.scrollingElement ||
-      pageScrollTarget === document.documentElement || pageScrollTarget === document.body;
-    const pageScrollTop = pageScrollIsDocument
-      ? (window.scrollY || document.documentElement.scrollTop || 0)
-      : pageScrollTarget.scrollTop;
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -2919,11 +2735,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 0;
         }
 
-        .status-grid:not(.expanded) {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .status-grid:not(.expanded) > .status:nth-child(n+3) {
+        .status-grid:not(.expanded) > .status:nth-child(n+5) {
           display: none;
         }
 
@@ -3159,23 +2971,12 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .custom-page-links {
           margin: 0 0 20px;
           display: flex;
-          flex-wrap: nowrap;
-          justify-content: flex-start;
+          flex-wrap: wrap;
+          justify-content: center;
           gap: 9px;
-          overflow-x: auto;
-          overflow-y: hidden;
-          overscroll-behavior-x: contain;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-        }
-
-        .custom-page-links::-webkit-scrollbar,
-        .favorite-grid::-webkit-scrollbar {
-          display: none;
         }
 
         .custom-page-link {
-          flex: 0 0 auto;
           min-width: 0;
           min-height: 42px;
           padding: 7px 14px 7px 10px;
@@ -3241,15 +3042,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-grid {
           display: grid;
-          grid-auto-flow: column;
-          grid-auto-columns: calc((100% - 36px) / 4);
-          grid-template-columns: none;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 12px;
-          overflow-x: auto;
-          overflow-y: hidden;
-          overscroll-behavior-x: contain;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
         }
 
         .favorite-card {
@@ -3785,7 +3579,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .favorite-grid {
-            grid-auto-columns: calc((100% - 12px) / 2);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
           .quick {
@@ -3892,6 +3686,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .custom-page-links {
             margin-bottom: 18px;
+            flex-wrap: wrap;
+            overflow-x: visible;
           }
 
           .custom-page-link {
@@ -3906,7 +3702,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .favorite-grid {
             gap: 10px;
-            grid-auto-columns: calc((100% - 10px) / 2);
           }
 
           .favorite-card {
@@ -4314,7 +4109,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       // Collapse based on the current user-defined tile order, not fixed ids.
       const expandRow = this.shadowRoot.querySelector("#status-expand-row");
       const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
-      if (expandRow) expandRow.hidden = tiles.length <= 2;
+      if (expandRow) expandRow.hidden = tiles.length <= 4;
       expandToggle?.addEventListener("click", () => {
         this._statusExpanded = !this._statusExpanded;
         statusGrid.classList.toggle("expanded", this._statusExpanded);
@@ -4536,7 +4331,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.draggable = true;
         // Keep normal vertical page scrolling available until the browser
         // actually starts a native long-press drag.
-        element.style.touchAction = storageKey === "atze-dashboard:favorite-order" ? "auto" : "pan-y";
+        element.style.touchAction = "pan-y";
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
@@ -4689,7 +4484,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }, true);
       for (const entry of entries()) {
         entry.draggable = true;
-        entry.style.touchAction = "auto";
+        entry.style.touchAction = "pan-y";
         entry.addEventListener("dragstart", (event) => {
           dragged = entry;
           entry.classList.add("dragging");
@@ -5036,43 +4831,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
 
-    this._mountScrollDiagnostic();
     if (ATZE_TESTING_BUILD) {
+      this._mountScrollDiagnostic();
+      const actual = this._diagnosticScrollTop();
       this._diagnosticCounts.render++;
-      this._recordScrollDiagnostic("Render", `${reason} ${Math.round(performance.now() - diagnosticStarted)}ms · Scroll ${Math.round(pageScrollTop)} · Touch ${wasTouchDown ? "ja" : "nein"}`);
-    }
-
-    // Restore horizontal positions only after the favorites and navigation
-    // have been reordered and their DOM children are in their final order.
-    // Moving children with appendChild can otherwise reset scrollLeft to 0.
-    for (const position of horizontalScrollPositions) {
-      const element = this.shadowRoot.querySelector(position.selector);
-      if (element) element.scrollLeft = position.left;
-    }
-    // WebKit can clamp the outer scroller while shadowRoot.innerHTML is
-    // replaced and apply the resulting layout after this synchronous render.
-    // Restore once after layout rather than writing scrollTop too early.
-    if (pageScrollTop > 0) {
-      const currentRender = this._scrollRestoreRevision = (this._scrollRestoreRevision || 0) + 1;
-      requestAnimationFrame(() => {
-        if (!this.isConnected || currentRender !== this._scrollRestoreRevision) return;
-        const target = atzeFindScrollContainer(this);
-        const isDocument = target === document.scrollingElement ||
-          target === document.documentElement || target === document.body;
-        const maxTop = isDocument
-          ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
-          : Math.max(0, target.scrollHeight - target.clientHeight);
-        const top = Math.min(pageScrollTop, maxTop);
-        if (ATZE_TESTING_BUILD) {
-          const actual = isDocument ? (window.scrollY || document.documentElement.scrollTop || 0) : target.scrollTop;
-          if (Math.abs(top - actual) > 5) {
-            this._diagnosticCounts.restore++;
-            this._recordScrollDiagnostic("Scroll-Korrektur", `${Math.round(actual)} → ${Math.round(top)}`);
-          }
-        }
-        if (isDocument) window.scrollTo({ top, behavior: "instant" });
-        else target.scrollTop = top;
-      });
+      this._recordScrollDiagnostic("Render", `${reason} ${Math.round(performance.now() - diagnosticStarted)}ms · Scroll ${Math.round(diagnosticTop)} → ${Math.round(actual)}`);
+      if (Math.abs(actual - diagnosticTop) > 5) {
+        this._diagnosticCounts.changed++;
+        this._recordScrollDiagnostic("Positionsänderung", `${Math.round(diagnosticTop)} → ${Math.round(actual)}`);
+      }
     }
   }
 
