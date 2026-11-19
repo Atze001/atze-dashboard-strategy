@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.425.0**
+Version **0.426.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,11 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.426.0
+
+- Externe AlertTicker-Card samt Einbindung auf der Startseite entfernt. Bestehende Sicherheitsanzeigen und Alarmfunktionen bleiben unverändert.
+- Eigene Warnanzeige für einen späteren Entwicklungsschritt vorgesehen.
+
 ## v0.425.0
 
 - Native Home-Assistant-Kopfzeile ohne HACS Kiosk Mode direkt durch ATZE Strategy ausblendbar; durch Antippen der Uhr wieder ein- und ausblendbar.
@@ -244,11 +249,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Vorhandene kWh-/W-Zuordnungen, Zähler und Helper bleiben beim UI-Umzug erhalten. Öffnen löst keine Anlage aus; Quelländerungen nutzen die bestehende Einrichtungslogik. Keine neuen Timer oder Pollingmechanismen.
 - Direkt gespeicherte und verschachtelte Custom-Strategien werden unterstützt; Speicherfehler bleiben sichtbar und können erneut versucht werden.
 - Popup und finale Position/Farbe vom Benutzer auf dem iPhone bestätigt.
-
-## v0.423.0
-
-- Strom-Zahnrad mittig unten auf dem Titelbild platziert und das Symbol azurblau eingefärbt.
-- Popup-Funktion vom Benutzer bestätigt; iPhone-Sichtprüfung der neuen Position nach vollständigem Neustart noch offen.
 <!-- latest-changes:end -->
 
 ## Lizenz
