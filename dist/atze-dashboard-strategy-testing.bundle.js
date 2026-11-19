@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6F75453";
+const ATZE_TESTING_REVISION = "58814F3";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9203,6 +9203,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
+    const favoriteScrollLeft = this.shadowRoot.querySelector(".favorite-grid")?.scrollLeft ?? 0;
 
     // Preserve scroll positions when HA state updates rebuild the popup DOM.
     const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
@@ -12322,6 +12323,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
+
+    // Restore only the favorites row, after its children are in final order.
+    const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
+    if (favoriteGrid && favoriteScrollLeft > 0) favoriteGrid.scrollLeft = favoriteScrollLeft;
   }
 
   getCardSize() {
