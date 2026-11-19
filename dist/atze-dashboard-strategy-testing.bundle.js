@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "E7EBCE9";
+const ATZE_TESTING_REVISION = "C76A214";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7699,11 +7699,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this._scrollGestureEnded = false;
       if (this._pendingScrollRender) {
         this._pendingScrollRender = false;
-        // Keep the scrollend/touchend event itself free from the expensive
-        // full DOM replacement. A new gesture can safely defer it again.
-        requestAnimationFrame(() => {
-          if (this.isConnected) this._render();
-        });
+        this._render();
       }
     };
     this._onScrollGestureEnd = () => {
@@ -12434,15 +12430,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
           ? Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
           : Math.max(0, target.scrollHeight - target.clientHeight);
         const top = Math.min(pageScrollTop, maxTop);
-        const currentTop = isDocument
-          ? (window.scrollY || document.documentElement.scrollTop || 0)
-          : target.scrollTop;
-        // Restore only if the DOM rebuild really displaced the page.
-        // Never pull the viewport backwards during normal native scrolling.
-        if (currentTop < top - 24 && !this._scrollGestureActive) {
-          if (isDocument) window.scrollTo({ top, behavior: "instant" });
-          else target.scrollTop = top;
-        }
+        if (isDocument) window.scrollTo({ top, behavior: "instant" });
+        else target.scrollTop = top;
       });
     }
   }
