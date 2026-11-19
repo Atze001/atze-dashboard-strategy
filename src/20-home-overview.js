@@ -80,7 +80,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecastLoading = false;
     this._roomDrag = null;
     this._hiddenRoomIds = [];
-    this._statusExpanded = false;
     this._diagnosticVisible = false;
     this._diagnosticEvents = [];
     this._diagnosticCounts = { render: 0, changed: 0 };
@@ -2735,40 +2734,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 0;
         }
 
-        .status-grid:not(.expanded) > .status:nth-child(n+5) {
-          display: none;
-        }
-
-        .status-expand-row {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 9px;
-        }
-
-        .status-expand-toggle {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 34px;
-          height: 30px;
-          padding: 0;
-          border: 1px solid var(--home-card-border);
-          border-radius: 11px;
-          background: rgba(55, 58, 67, 0.48);
-          color: var(--primary-text-color);
-          cursor: pointer;
-          -webkit-tap-highlight-color: transparent;
-        }
-
-        .status-expand-toggle[hidden],
-        .status-expand-row[hidden] {
-          display: none;
-        }
-
-        .status-expand-toggle ha-icon {
-          --mdc-icon-size: 20px;
-        }
-
         .status {
           box-sizing: border-box;
           width: 100%;
@@ -3928,7 +3893,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
             </div>
 
-            <div class="status-grid ${this._statusExpanded ? "expanded" : ""}" id="home-status-grid">
+            <div class="status-grid">
             <div class="status weather" id="weather-status" role="button" tabindex="0">
               <ha-icon icon="${weatherIcon}"></ha-icon>
               <div>
@@ -4005,14 +3970,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
               <button type="button" class="status group-control-tile ${this._groupControlEntities("lights").some((id) => this._state(id)?.state === "on") ? "" : "lights-off"}" id="group-lights"><ha-icon icon="mdi:lightbulb-group"></ha-icon><div><div class="status-main">Lichter</div><div class="status-sub">${this._groupControlStatus("lights")}</div></div></button>
               <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="${this._groupControlEntities("covers").some((id) => { const st = this._state(id)?.state; const pos = this._coverPosition(id); return pos != null ? pos > 0 : ["open", "opening"].includes(st); }) ? "mdi:window-shutter-open" : "mdi:window-shutter"}"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
               <button type="button" class="status group-control-tile" id="group-thermostats"><ha-icon icon="mdi:thermometer"></ha-icon><div><div class="status-main">Thermostate</div><div class="status-sub">${this._homeThermostatStatus()}</div></div></button>
-            </div>
-            <div class="status-expand-row" id="status-expand-row">
-              <button type="button" class="status-expand-toggle" id="status-expand-toggle"
-                aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
-                aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
-                title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
-                <ha-icon icon="${this._statusExpanded ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>
-              </button>
             </div>
           </section>
 
@@ -4105,19 +4062,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const original = new Map(tiles.map((tile, index) => [tile.id, index]));
       tiles.sort((a, b) => (ranks.get(a.id) ?? (ranks.size + original.get(a.id))) - (ranks.get(b.id) ?? (ranks.size + original.get(b.id))))
         .forEach((tile) => statusGrid.appendChild(tile));
-
-      // Collapse based on the current user-defined tile order, not fixed ids.
-      const expandRow = this.shadowRoot.querySelector("#status-expand-row");
-      const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
-      if (expandRow) expandRow.hidden = tiles.length <= 4;
-      expandToggle?.addEventListener("click", () => {
-        this._statusExpanded = !this._statusExpanded;
-        statusGrid.classList.toggle("expanded", this._statusExpanded);
-        expandToggle.setAttribute("aria-expanded", String(this._statusExpanded));
-        expandToggle.setAttribute("aria-label", this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
-        expandToggle.title = this._statusExpanded ? "Einklappen" : "Aufklappen";
-        expandToggle.querySelector("ha-icon")?.setAttribute("icon", this._statusExpanded ? "mdi:chevron-up" : "mdi:chevron-down");
-      });
 
       let draggedTile = null;
       let suppressStatusClick = false;
