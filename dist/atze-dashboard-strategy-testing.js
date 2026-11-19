@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "DBE4FC4";
+const ATZE_TESTING_REVISION = "CEF5CEE";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7722,6 +7722,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   set hass(value) {
+    const previousHass = this._hass;
     this._hass = value;
 
     if (
@@ -7741,8 +7742,56 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._schedulerCard) this._schedulerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
-      else this._render();
+      else if (!this._updatePowerStatusInPlace(previousHass, value)) this._render();
     }
+  }
+
+  // A pure total-power sensor update does not require replacing the home card.
+  // Only use this fast path when the tile already exists and the sensor's
+  // availability is unchanged; all other state/config changes use full render.
+  _updatePowerStatusInPlace(previousHass, nextHass) {
+    const entityId = this._config?.power_entity;
+    const previous = previousHass?.states;
+    const next = nextHass?.states;
+    const tile = this.shadowRoot?.querySelector("#power-status .status-sub");
+    if (!entityId || !previous || !next || !tile || previous === next ||
+        !previous[entityId] || !next[entityId]) return false;
+    const ids = Object.keys(next);
+    if (ids.length !== Object.keys(previous).length) return false;
+    let powerChanged = false;
+    for (const id of ids) {
+      if (previous[id] === next[id]) continue;
+      if (id !== entityId || previous[id]?.state === "unavailable" ||
+          next[id]?.state === "unavailable" ||
+          previous[id]?.state === "unknown" || next[id]?.state === "unknown") return false;
+      powerChanged = true;
+    }
+    if (!powerChanged) return false;
+    const value = Number.parseFloat(next[entityId].state);
+    if (!Number.isFinite(value)) return false;
+    // If the same sensor is shown elsewhere (rooms/favorites), retain the
+    // regular render so those secondary presentations stay up to date.
+    if (asArray(this._config.favorite_entities).includes(entityId) ||
+        asArray(this._config.room_tiles).some(room =>
+          Object.values(room || {}).some(field => field === entityId))) return false;
+    tile.textContent = `${this._formatPower()} · Gesamt`;
+    return true;
+  }
+
+  _updateClockInPlace() {
+    if (!this.shadowRoot || !this._config || !this._hass) return;
+    const now = new Date();
+    const time = this.shadowRoot.querySelector(".clock .time");
+    const date = this.shadowRoot.querySelector(".clock .date");
+    if (!time || !date) return;
+    const nextTime = new Intl.DateTimeFormat("de-DE", {
+      hour: "2-digit", minute: "2-digit"
+    }).format(now);
+    const nextDate = new Intl.DateTimeFormat("de-DE", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric"
+    }).format(now);
+    if (time.textContent !== nextTime) time.textContent = nextTime;
+    if (date.textContent !== nextDate) date.textContent = nextDate;
   }
 
   get hass() {
@@ -7829,7 +7878,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._clockTimer) return;
 
     this._clockTimer = setInterval(
-      () => { if (!this._hasOpenDashboardPopup()) this._render(); },
+      () => this._updateClockInPlace(),
       30000
     );
   }
