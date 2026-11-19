@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "2B2F0B0";
+const ATZE_TESTING_REVISION = "8033E0F";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10218,7 +10218,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 0;
         }
 
-        .status-grid:not(.expanded) > .status:nth-child(n+5) {
+        .status-grid:not(.expanded) > .status:nth-child(n+3) {
           display: none;
         }
 
@@ -11592,7 +11592,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       // Collapse based on the current user-defined tile order, not fixed ids.
       const expandRow = this.shadowRoot.querySelector("#status-expand-row");
       const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
-      if (expandRow) expandRow.hidden = tiles.length <= 4;
+      if (expandRow) expandRow.hidden = tiles.length <= 2;
       expandToggle?.addEventListener("click", () => {
         this._statusExpanded = !this._statusExpanded;
         statusGrid.classList.toggle("expanded", this._statusExpanded);
