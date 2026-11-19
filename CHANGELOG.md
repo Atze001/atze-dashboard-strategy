@@ -1,3 +1,9 @@
+## v0.427.0
+
+- Favoriten und Navigationslinks auf der Startseite horizontal durchblättern. Richtungshinweise zeigen weitere Einträge an. Beim Umsortieren scrollen die Leisten am Rand automatisch weiter.
+- Eingeklappte Statusübersicht mit zwei Kacheln und diagonalem Griff zum Auf- und Zuklappen.
+- Scrollposition der Startseite bei Zustandsaktualisierungen stabilisiert und die native Home-Assistant-Kopfzeile beim Wechsel zwischen Dashboards korrigiert.
+
 ## v0.426.0
 
 - Externe AlertTicker-Card samt Einbindung auf der Startseite entfernt. Bestehende Sicherheitsanzeigen und Alarmfunktionen bleiben unverändert.
