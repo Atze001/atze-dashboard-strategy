@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "58814F3";
+const ATZE_TESTING_REVISION = "2E09085";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9201,9 +9201,75 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
+  // Keep the favorites scroller connected throughout ordinary home renders.
+  // All other sections still follow the existing render and binding path.
+  _renderHomeKeepingFavorites(markup) {
+    const grid = this.shadowRoot.querySelector(".favorite-grid");
+    if (!grid) return false;
+    const template = document.createElement("template");
+    template.innerHTML = markup;
+    const nextGrid = template.content.querySelector(".favorite-grid");
+    if (!nextGrid) return false;
+    const path = node => {
+      const result = [];
+      while (node && node.nodeType === 1) { result.unshift(node); node = node.parentNode; }
+      return result;
+    };
+    const currentPath = path(grid);
+    const nextPath = path(nextGrid);
+    if (currentPath.length !== nextPath.length || currentPath.some((node, i) => node.localName !== nextPath[i].localName)) return false;
+    const buttons = [...grid.children];
+    const nextButtons = [...nextGrid.children];
+    if (buttons.length !== nextButtons.length || buttons.some((button, i) => button.dataset.entityId !== nextButtons[i].dataset.entityId)) return false;
+
+    // Replace siblings on either side of the retained branch, never detach it.
+    const replaceSiblings = (parent, keep, nextKeep) => {
+      const before = [], after = [];
+      let seen = false;
+      for (const node of [...nextKeep.parentNode.childNodes]) {
+        if (node === nextKeep) { seen = true; continue; }
+        (seen ? after : before).push(node);
+      }
+      const oldBefore = [], oldAfter = [];
+      seen = false;
+      for (const node of [...parent.childNodes]) {
+        if (node === keep) { seen = true; continue; }
+        (seen ? oldAfter : oldBefore).push(node);
+      }
+      const replace = (oldNodes, newNodes, append) => {
+        for (let i = 0; i < Math.min(oldNodes.length, newNodes.length); i++) {
+          if (!oldNodes[i].isEqualNode(newNodes[i])) oldNodes[i].replaceWith(newNodes[i]);
+          else if (oldNodes[i].nodeType === 1 && oldNodes[i].localName !== "style") oldNodes[i].replaceWith(newNodes[i]);
+        }
+        for (const node of oldNodes.slice(newNodes.length)) node.remove();
+        append(newNodes.slice(oldNodes.length));
+      };
+      replace(oldBefore, before, nodes => keep.before(...nodes));
+      replace(oldAfter, after, nodes => parent.append(...nodes));
+    };
+    for (let i = 0; i < currentPath.length; i++) {
+      const current = currentPath[i];
+      const next = nextPath[i];
+      replaceSiblings(current.parentNode, current, next);
+      for (const attr of [...current.attributes]) if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+      for (const attr of next.attributes) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+    }
+    buttons.forEach((button, i) => {
+      const next = nextButtons[i];
+      button.classList.toggle("active", next.classList.contains("active"));
+      if (button.title !== next.title) button.title = next.title;
+      const icon = button.querySelector("ha-icon");
+      const nextIcon = next.querySelector("ha-icon")?.getAttribute("icon");
+      if (icon && nextIcon && icon.getAttribute("icon") !== nextIcon) icon.setAttribute("icon", nextIcon);
+      const name = button.querySelector(".favorite-name");
+      const nextName = next.querySelector(".favorite-name")?.textContent;
+      if (name && nextName != null && name.textContent !== nextName) name.textContent = nextName;
+    });
+    return true;
+  }
+
   _render() {
     if (!this.shadowRoot || !this._config || !this._hass || this._interactionActive) return;
-    const favoriteScrollLeft = this.shadowRoot.querySelector(".favorite-grid")?.scrollLeft ?? 0;
 
     // Preserve scroll positions when HA state updates rebuild the popup DOM.
     const popupScrollPositions = [...this.shadowRoot.querySelectorAll(".weather-popup, .presence-event-list, .group-control-list")]
@@ -9760,7 +9826,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ? this._formatted(this._config.lock_entity)
       : "";
 
-    this.shadowRoot.innerHTML = `
+    const homeMarkup = `
       <style>
         .room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:99999; display:flex; align-items:center; gap:8px; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); } .room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; } .room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
 
@@ -11553,6 +11619,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </ha-card>
     `;
 
+    const favoritesRetained = this._renderHomeKeepingFavorites(homeMarkup);
+    if (!favoritesRetained) this.shadowRoot.innerHTML = homeMarkup;
+
     for (const position of popupScrollPositions) {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
@@ -11866,7 +11935,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       (element) => element.dataset.areaId,
       roomOrderKey
     );
-    installProvenDrag(
+    if (!favoritesRetained) installProvenDrag(
       this.shadowRoot.querySelector(".favorite-grid"),
       ".favorite-card",
       (element) => element.dataset.entityId,
@@ -12046,7 +12115,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
 
-    this.shadowRoot
+    if (!favoritesRetained) this.shadowRoot
       .querySelectorAll(".favorite-card[data-entity-id]")
       .forEach((element) => {
         element.addEventListener("click", (event) => {
@@ -12324,9 +12393,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
 
-    // Restore only the favorites row, after its children are in final order.
-    const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
-    if (favoriteGrid && favoriteScrollLeft > 0) favoriteGrid.scrollLeft = favoriteScrollLeft;
   }
 
   getCardSize() {
