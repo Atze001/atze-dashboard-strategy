@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "535D0BB";
+const ATZE_TESTING_REVISION = "4C10482";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9213,6 +9213,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const presenceList = this.shadowRoot.querySelector(".presence-event-list");
     const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
     const presenceListScrollTop = presenceList?.scrollTop ?? 0;
+    const horizontalScrollPositions = [".custom-page-links", ".favorite-grid"]
+      .map((selector) => ({ selector, left: this.shadowRoot.querySelector(selector)?.scrollLeft ?? 0 }));
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -10454,12 +10456,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
         .custom-page-links {
           margin: 0 0 20px;
           display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
+          flex-wrap: nowrap;
+          justify-content: flex-start;
           gap: 9px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .custom-page-links::-webkit-scrollbar,
+        .favorite-grid::-webkit-scrollbar {
+          display: none;
         }
 
         .custom-page-link {
+          flex: 0 0 auto;
           min-width: 0;
           min-height: 42px;
           padding: 7px 14px 7px 10px;
@@ -10525,8 +10538,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-auto-flow: column;
+          grid-auto-columns: calc((100% - 36px) / 4);
+          grid-template-columns: none;
           gap: 12px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
         }
 
         .favorite-card {
@@ -11062,7 +11082,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .favorite-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-columns: calc((100% - 12px) / 2);
           }
 
           .quick {
@@ -11169,8 +11189,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .custom-page-links {
             margin-bottom: 18px;
-            flex-wrap: wrap;
-            overflow-x: visible;
           }
 
           .custom-page-link {
@@ -11185,6 +11203,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .favorite-grid {
             gap: 10px;
+            grid-auto-columns: calc((100% - 10px) / 2);
           }
 
           .favorite-card {
@@ -11547,6 +11566,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
+    for (const position of horizontalScrollPositions) {
+      const element = this.shadowRoot.querySelector(position.selector);
+      if (element) element.scrollLeft = position.left;
+    }
 
     // Mount the actual room thermostat controls, not the generic device-popup card.
     // The native thermostat service dialog is rendered inside each control.
@@ -11814,7 +11837,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.draggable = true;
         // Keep normal vertical page scrolling available until the browser
         // actually starts a native long-press drag.
-        element.style.touchAction = "pan-y";
+        element.style.touchAction = storageKey === "atze-dashboard:favorite-order" ? "auto" : "pan-y";
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
@@ -11967,7 +11990,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }, true);
       for (const entry of entries()) {
         entry.draggable = true;
-        entry.style.touchAction = "pan-y";
+        entry.style.touchAction = "auto";
         entry.addEventListener("dragstart", (event) => {
           dragged = entry;
           entry.classList.add("dragging");
