@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "6D5515B";
+const ATZE_TESTING_REVISION = "B7E35C4";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7056,6 +7056,13 @@ function applyAtzeSidebarAccess(config) {
   if (enabled) {
     const onLocationChange = () => {
       const currentRoot = window.location.pathname.split("/").filter(Boolean)[0];
+      // Both ATZE dashboards share the same native HA header. A lingering
+      // testing route listener must not undo the main dashboard's header style
+      // when navigating from /atze-test to /atze-dashboard (or vice versa).
+      const atzeDashboardRoots = ["atze-dashboard", "atze-test"];
+      if (atzeDashboardRoots.includes(dashboardRoot) &&
+          atzeDashboardRoots.includes(currentRoot) &&
+          currentRoot !== dashboardRoot) return;
       if (currentRoot !== dashboardRoot) {
         // Other dashboards and Home Assistant sections keep their own header.
         syncAtzeSidebarAccessButton(false);
