@@ -155,19 +155,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
   _mountScrollDiagnostic() {
     if (!ATZE_TESTING_BUILD) return;
-    const host = this.shadowRoot?.querySelector(".home-status-panel");
-    if (!host) return;
+    if (!this.shadowRoot) return;
     const button = document.createElement("button");
     button.id = "atze-diag-toggle";
     button.type = "button";
     button.textContent = "DIAG";
-    button.style.cssText = "position:absolute;right:8px;top:8px;z-index:12;font-size:10px;padding:3px 6px;border:1px solid #888;border-radius:6px;background:#303030;color:white;";
+    button.style.cssText = "position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom, 0px) + 86px);z-index:20001;font-size:12px;font-weight:600;padding:8px 10px;border:1px solid #999;border-radius:9px;background:rgba(40,40,45,.94);color:white;box-shadow:0 3px 12px #0007;touch-action:manipulation;";
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       this._diagnosticVisible = !this._diagnosticVisible;
       this._mountScrollDiagnosticPanel();
     });
-    host.appendChild(button);
+    this.shadowRoot.appendChild(button);
     this._mountScrollDiagnosticPanel();
   }
 
@@ -176,7 +175,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (!this._diagnosticVisible) return;
     const panel = document.createElement("div");
     panel.id = "atze-scroll-diagnostic";
-    panel.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top, 0px) + 54px);left:12px;right:12px;max-height:55vh;overflow:auto;z-index:20000;background:rgba(15,15,18,.96);color:#f5f5f5;border:1px solid #777;border-radius:10px;padding:12px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 8px 25px #0008;";
+    panel.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top, 0px) + 20px);left:12px;right:12px;max-height:55vh;overflow:auto;z-index:20000;background:rgba(15,15,18,.96);color:#f5f5f5;border:1px solid #777;border-radius:10px;padding:12px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;box-shadow:0 8px 25px #0008;";
     const title = document.createElement("div");
     title.textContent = "ATZE Scroll-Diagnose (Testing)";
     title.style.cssText = "font-weight:bold;margin-bottom:6px;";
@@ -193,7 +192,36 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this._diagnosticVisible = false;
       panel.remove();
     });
-    panel.append(close, title, counts, log);
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.textContent = "Protokoll kopieren";
+    copy.style.cssText = "background:#34577a;color:white;border:0;padding:5px 8px;border-radius:5px;margin-right:8px;";
+    copy.addEventListener("click", async () => {
+      const countsText = `Render ${this._diagnosticCounts.render}, Aufgeschoben ${this._diagnosticCounts.deferred}, Korrektur ${this._diagnosticCounts.restore}`;
+      const entries = this._diagnosticEvents.map(e => `${e.at} ${e.kind} ${e.detail}`).join("\n");
+      const content = `ATZE Scroll-Diagnose · ${ATZE_TESTING_REVISION}\n${countsText}\n${entries}`;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(content);
+        } else {
+          const field = document.createElement("textarea");
+          field.value = content;
+          field.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
+          panel.appendChild(field);
+          field.select();
+          const copied = document.execCommand("copy");
+          field.remove();
+          if (!copied) throw new Error("Kopieren nicht unterstützt");
+        }
+        copy.textContent = "Kopiert ✓";
+      } catch (_error) {
+        copy.textContent = "Kopieren fehlgeschlagen";
+      }
+    });
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;gap:8px;justify-content:flex-end;margin-bottom:8px;";
+    actions.append(copy, close);
+    panel.append(actions, title, counts, log);
     this.shadowRoot.appendChild(panel);
     this._updateScrollDiagnosticPanel();
   }
