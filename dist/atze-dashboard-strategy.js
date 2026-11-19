@@ -7679,7 +7679,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     // Testing-only, bounded diagnostics. No polling, no scroll changes.
     this._diagnosticVisible = false;
     this._diagnosticEvents = [];
-    this._diagnosticCounts = { render: 0, deferred: 0, restore: 0 };
+    this._diagnosticCounts = { render: 0, deferred: 0, restore: 0, direct: 0 };
     this._diagnosticLastReason = "UI";
     // Keep the DOM stable during finger-driven scrolling. HA may update
     // entity data many times while a swipe or inertial scroll is in progress.
@@ -7742,7 +7742,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (!panel) return;
     const count = this._diagnosticCounts;
     const header = panel.querySelector("#atze-diag-counts");
-    if (header) header.textContent = `Render ${count.render} · Aufgeschoben ${count.deferred} · Korrektur ${count.restore}`;
+    if (header) header.textContent = `Render ${count.render} · Direkt ${count.direct} · Aufgeschoben ${count.deferred} · Korrektur ${count.restore}`;
     const log = panel.querySelector("#atze-diag-log");
     if (log) log.textContent = this._diagnosticEvents.map(item =>
       `${item.at} ${item.kind} ${item.detail}`).reverse().join("\n");
@@ -7792,7 +7792,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     copy.textContent = "Protokoll kopieren";
     copy.style.cssText = "background:#34577a;color:white;border:0;padding:5px 8px;border-radius:5px;margin-right:8px;";
     copy.addEventListener("click", async () => {
-      const countsText = `Render ${this._diagnosticCounts.render}, Aufgeschoben ${this._diagnosticCounts.deferred}, Korrektur ${this._diagnosticCounts.restore}`;
+      const countsText = `Render ${this._diagnosticCounts.render}, Direkt ${this._diagnosticCounts.direct}, Aufgeschoben ${this._diagnosticCounts.deferred}, Korrektur ${this._diagnosticCounts.restore}`;
       const entries = this._diagnosticEvents.map(e => `${e.at} ${e.kind} ${e.detail}`).join("\n");
       const content = `ATZE Scroll-Diagnose · ${ATZE_TESTING_REVISION}\n${countsText}\n${entries}`;
       try {
@@ -7827,6 +7827,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   set hass(value) {
+    const previousHass = this._hass;
     this._hass = value;
 
     if (
@@ -7846,8 +7847,118 @@ class AtzeHomeOverviewCard extends HTMLElement {
     if (this._schedulerCard) this._schedulerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
-      else this._render("HA");
+      else if (!this._updateSimpleSensorStates(previousHass, value)) this._render("HA");
     }
+  }
+
+  // Handle only safe, purely numeric sensor updates without replacing any
+  // scroll containers, room cards, favorites, or their event listeners.
+  // Unrecognized changes always retain the original full-render path.
+  _updateSimpleSensorStates(previousHass, nextHass) {
+    if (!this._config || !this.shadowRoot?.querySelector("#home-status-grid") ||
+        !previousHass?.states || !nextHass?.states) return false;
+    const oldStates = previousHass.states;
+    const newStates = nextHass.states;
+    if (oldStates === newStates) return false;
+
+    // Exact configured references ensure that a sensor used for alarms,
+    // presence, forecasts, favorites, automations etc. never takes this path.
+    const supported = new Map();
+    const addRef = (id, entry) => {
+      if (!id || typeof id !== "string") return;
+      if (!supported.has(id)) supported.set(id, []);
+      supported.get(id).push(entry);
+    };
+    addRef(this._config.power_entity, { type: "total-power" });
+    for (const room of this._config.room_tiles || []) {
+      for (const type of ["temperature", "humidity", "power"]) {
+        addRef(room[type], { type, room });
+      }
+    }
+
+    // Reject IDs also referenced elsewhere in the configuration.
+    const otherReferences = new Set();
+    const scan = (value, path = "") => {
+      if (typeof value === "string") {
+        if (supported.has(value) && !(
+          path === "power_entity" ||
+          /^room_tiles\.\d+\.(temperature|humidity|power)$/.test(path)
+        )) otherReferences.add(value);
+      } else if (Array.isArray(value)) {
+        value.forEach((item, i) => scan(item, path ? `${path}.${i}` : String(i)));
+      } else if (value && typeof value === "object") {
+        Object.entries(value).forEach(([key, item]) =>
+          scan(item, path ? `${path}.${key}` : key));
+      }
+    };
+    scan(this._config);
+
+    const changedIds = [];
+    for (const [id, nextState] of Object.entries(newStates)) {
+      const oldState = oldStates[id];
+      if (nextState === oldState) continue;
+      if (!oldState || !supported.has(id) || otherReferences.has(id) ||
+          oldState.state === nextState?.state ||
+          JSON.stringify(oldState.attributes) !== JSON.stringify(nextState?.attributes)) return false;
+      const prevValue = Number(oldState.state);
+      const nextValue = Number(nextState?.state);
+      if (!Number.isFinite(prevValue) || !Number.isFinite(nextValue)) return false;
+      changedIds.push(id);
+    }
+    if (!changedIds.length || Object.keys(newStates).length !== Object.keys(oldStates).length) return false;
+
+    // Validate every target before touching the DOM: no partial updates.
+    const patches = [];
+    const findRoom = room => [...this.shadowRoot.querySelectorAll(".room")]
+      .find(element => element.dataset.areaId === String(room.area_id));
+    for (const id of changedIds) {
+      const formatted = this._formatted(id);
+      for (const ref of supported.get(id)) {
+        if (ref.type === "total-power") {
+          const target = this.shadowRoot.querySelector("#power-status .status-sub");
+          if (!target) return false;
+          patches.push(() => { target.textContent = `${this._formatPower()} · Gesamt`; });
+          continue;
+        }
+        const room = findRoom(ref.room);
+        if (!room) return false;
+        const target = ref.type === "temperature"
+          ? room.querySelector(".room-temperature .room-meta-value")
+          : ref.type === "humidity"
+            ? room.querySelector(".room-humidity .room-meta-value")
+            : room.querySelector(".room-power > span");
+        if (!target) return false;
+        patches.push(() => { target.textContent = formatted; });
+        const iconName = {
+          temperature: "mdi:thermometer",
+          humidity: "mdi:water-percent",
+          power: "mdi:lightning-bolt"
+        }[ref.type];
+        const compact = [...room.querySelectorAll(".room-compact-climate > span")]
+          .find(span => span.querySelector("ha-icon")?.getAttribute("icon") === iconName);
+        if (!compact) return false;
+        patches.push(() => {
+          // Preserve the icon node, replacing only the numeric text.
+          for (const node of [...compact.childNodes]) {
+            if (node.nodeType === 3) node.textContent = formatted;
+          }
+        });
+        if (ref.type === "power") {
+          const power = room.querySelector(".room-power");
+          if (!power) return false;
+          patches.push(() => {
+            power.title = `Leistung ${formatted}`;
+            power.setAttribute("aria-label", `Leistung ${formatted}`);
+          });
+        }
+      }
+    }
+    patches.forEach(patch => patch());
+    if (ATZE_TESTING_BUILD) {
+      this._diagnosticCounts.direct++;
+      this._recordScrollDiagnostic("Direkt", changedIds.join(", "));
+    }
+    return true;
   }
 
   get hass() {
