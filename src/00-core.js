@@ -8,7 +8,7 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.426.0";
+const ATZE_VERSION = "0.427.0";
 const STRATEGY_TYPE = "atze-dashboard";
 const ATZE_TESTING_BUILD = false;
 const ATZE_TESTING_REVISION = "";
@@ -7059,13 +7059,31 @@ function applyAtzeSidebarAccess(config) {
   if (enabled) {
     const onLocationChange = () => {
       const currentRoot = window.location.pathname.split("/").filter(Boolean)[0];
+      // Both ATZE dashboards share the same native HA header. A lingering
+      // testing route listener must not undo the main dashboard's header style
+      // when navigating from /atze-test to /atze-dashboard (or vice versa).
+      const atzeDashboardRoots = ["atze-dashboard", "atze-test"];
+      if (atzeDashboardRoots.includes(dashboardRoot) &&
+          atzeDashboardRoots.includes(currentRoot) &&
+          currentRoot !== dashboardRoot) return;
       if (currentRoot !== dashboardRoot) {
+        // Other dashboards and Home Assistant sections keep their own header.
         syncAtzeSidebarAccessButton(false);
         syncAtzeNativeHeader(false);
         syncAtzeSidebarGlass(false);
         atzeNativeHeaderObserver?.disconnect();
         atzeNativeHeaderObserver = null;
+        return;
       }
+
+      // Home Assistant may recreate hui-root during navigation. Restore our
+      // styles after its route render, including when returning from a page
+      // outside this dashboard. Reusing applyAtzeSidebarAccess also restarts
+      // its one-shot observer if the new hui-root is not attached yet.
+      requestAnimationFrame(() => {
+        if (window.location.pathname.split("/").filter(Boolean)[0] !== dashboardRoot) return;
+        applyAtzeSidebarAccess(config);
+      });
     };
     window.addEventListener("location-changed", onLocationChange);
     window.addEventListener("popstate", onLocationChange);

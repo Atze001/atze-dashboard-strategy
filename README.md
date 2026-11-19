@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.426.0**
+Version **0.427.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.427.0
+
+- Favoriten und Navigationslinks auf der Startseite horizontal durchblättern. Richtungshinweise zeigen weitere Einträge an. Beim Umsortieren scrollen die Leisten am Rand automatisch weiter.
+- Eingeklappte Statusübersicht mit zwei Kacheln und diagonalem Griff zum Auf- und Zuklappen.
+- Scrollposition der Startseite bei Zustandsaktualisierungen stabilisiert und die native Home-Assistant-Kopfzeile beim Wechsel zwischen Dashboards korrigiert.
+
 ## v0.426.0
 
 - Externe AlertTicker-Card samt Einbindung auf der Startseite entfernt. Bestehende Sicherheitsanzeigen und Alarmfunktionen bleiben unverändert.
@@ -242,13 +248,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Floating-Menübutton entfernt und den Wischbereich der Hauptseite auf die ersten 100 Pixel erweitert; vertikales Scrollen bleibt geschützt.
 - Seitenleiste mit deckendem Midnight-Blue-Farbschema versehen. Navigation, Uhr-Umschaltung und Farbgebung wurden vom Benutzer auf dem iPhone bestätigt.
 - Bestehende Home-Assistant-Konfiguration und Zählerstände bleiben unverändert.
-
-## v0.424.0
-
-- Strom · Gesamtstrom und Strom · Einzelerfassung über das azurblaue Zahnrad mittig unten auf dem Strom-Titelbild öffnen; die bisherigen allgemeinen Settings-Oberflächen entfallen.
-- Vorhandene kWh-/W-Zuordnungen, Zähler und Helper bleiben beim UI-Umzug erhalten. Öffnen löst keine Anlage aus; Quelländerungen nutzen die bestehende Einrichtungslogik. Keine neuen Timer oder Pollingmechanismen.
-- Direkt gespeicherte und verschachtelte Custom-Strategien werden unterstützt; Speicherfehler bleiben sichtbar und können erneut versucht werden.
-- Popup und finale Position/Farbe vom Benutzer auf dem iPhone bestätigt.
 <!-- latest-changes:end -->
 
 ## Lizenz

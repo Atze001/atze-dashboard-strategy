@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.425.0";
+const ATZE_VERSION = "0.427.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "14938CD";
+const ATZE_TESTING_REVISION = "F912DF0";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -7056,13 +7056,31 @@ function applyAtzeSidebarAccess(config) {
   if (enabled) {
     const onLocationChange = () => {
       const currentRoot = window.location.pathname.split("/").filter(Boolean)[0];
+      // Both ATZE dashboards share the same native HA header. A lingering
+      // testing route listener must not undo the main dashboard's header style
+      // when navigating from /atze-test to /atze-dashboard (or vice versa).
+      const atzeDashboardRoots = ["atze-dashboard", "atze-test"];
+      if (atzeDashboardRoots.includes(dashboardRoot) &&
+          atzeDashboardRoots.includes(currentRoot) &&
+          currentRoot !== dashboardRoot) return;
       if (currentRoot !== dashboardRoot) {
+        // Other dashboards and Home Assistant sections keep their own header.
         syncAtzeSidebarAccessButton(false);
         syncAtzeNativeHeader(false);
         syncAtzeSidebarGlass(false);
         atzeNativeHeaderObserver?.disconnect();
         atzeNativeHeaderObserver = null;
+        return;
       }
+
+      // Home Assistant may recreate hui-root during navigation. Restore our
+      // styles after its route render, including when returning from a page
+      // outside this dashboard. Reusing applyAtzeSidebarAccess also restarts
+      // its one-shot observer if the new hui-root is not attached yet.
+      requestAnimationFrame(() => {
+        if (window.location.pathname.split("/").filter(Boolean)[0] !== dashboardRoot) return;
+        applyAtzeSidebarAccess(config);
+      });
     };
     window.addEventListener("location-changed", onLocationChange);
     window.addEventListener("popstate", onLocationChange);
@@ -7654,9 +7672,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._weatherForecastLoading = false;
     this._roomDrag = null;
     this._hiddenRoomIds = [];
-    this._alertTickerCard = null;
-    this._alertTickerSignature = "";
-    this._alertTickerAwaitingResource = false;
+    this._statusExpanded = false;
   }
 
   setConfig(config) {
@@ -7682,7 +7698,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     }
 
     if (this._schedulerCard) this._schedulerCard.hass = value;
-    if (this._alertTickerCard) this._alertTickerCard.hass = value;
     if (!this._interactionActive) {
       if (this._hasOpenDashboardPopup()) this._refreshOpenPopup();
       else this._render();
@@ -7735,6 +7750,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    for (const stop of this._activeEdgeDrags || []) stop();
+    this._linkHintCleanup?.();
+    this._linkHintCleanup = null;
+    this._linkHintGrid = null;
+    this._favoriteHintCleanup?.();
+    this._favoriteHintCleanup = null;
+    this._favoriteHintGrid = null;
     this.removeEventListener("touchstart", this._onSidebarSwipeStart);
     this.removeEventListener("touchmove", this._onSidebarSwipeMove);
     this.removeEventListener("touchend", this._onSidebarSwipeEnd);
@@ -9185,147 +9207,197 @@ class AtzeHomeOverviewCard extends HTMLElement {
       this._groupControlPopup || this._climateHistoryPopup || this._presenceHistoryPopup || this._schedulerPopupOpen);
   }
 
-  _alertTickerConfig() {
-    // Reuse the sensors already selected by the Strategy; do not create
-    // another sensor scan, automation, polling loop or notification channel.
-    const candidates = new Set([
-      ...asArray(this._config.warning_entities),
-      ...asArray(this._config.smoke_entities),
-      ...asArray(this._config.security_entities),
-    ]);
-    const kinds = {
-      smoke: { theme: "fire", message: "Rauch erkannt: {name}", priority: 1 },
-      gas: { theme: "toxic", message: "Gaswarnung: {name}", priority: 1 },
-      moisture: { theme: "flood", message: "Wasser erkannt: {name}", priority: 1 },
-      problem: { theme: "caution", message: "Störung: {name}", priority: 2 },
-      safety: { theme: "caution", message: "Sicherheitswarnung: {name}", priority: 2 },
-      tamper: { theme: "caution", message: "Manipulationswarnung: {name}", priority: 2 },
-      window: { theme: "door", message: "Fenster geöffnet: {name}", priority: 3 },
-      door: { theme: "door", message: "Tür geöffnet: {name}", priority: 3 },
-      opening: { theme: "door", message: "Öffnung erkannt: {name}", priority: 3 },
+
+  _bindFavoriteScrollHints() {
+    const grid = this.shadowRoot.querySelector(".favorite-grid");
+    if (grid === this._favoriteHintGrid) return;
+    this._favoriteHintCleanup?.();
+    this._favoriteHintCleanup = null;
+    this._favoriteHintGrid = grid;
+    if (!grid) return;
+    const update = () => {
+      const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
+      const left = grid.scrollLeft;
+      this._favoriteCanScrollLeft = left > 2;
+      this._favoriteCanScrollRight = left < max - 2;
+      const section = grid.closest(".favorites");
+      const previous = section?.querySelector(".favorite-hint-left");
+      const next = section?.querySelector(".favorite-hint-right");
+      if (previous) previous.hidden = !this._favoriteCanScrollLeft;
+      if (next) next.hidden = !this._favoriteCanScrollRight;
     };
-    const alerts = [...candidates].flatMap(entityId => {
-      if (!entityId.startsWith("binary_sensor.")) return [];
-      const state = this._hass?.states?.[entityId];
-      const kind = kinds[state?.attributes?.device_class];
-      if (!kind) return [];
-      return [{
-        entity: entityId,
-        state: "on",
-        name: state.attributes.friendly_name || entityId,
-        message: kind.message,
-        theme: kind.theme,
-        priority: kind.priority,
-      }];
+    grid.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(update) : null;
+    observer?.observe(grid);
+    if (!observer) update();
+    this._favoriteHintCleanup = () => {
+      grid.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }
+
+  _installHorizontalDragScroll(grid) {
+    let active = false;
+    let frame = null;
+    let pointer = null;
+    let lastTime = null;
+    const cancelFrame = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      lastTime = null;
+    };
+    const stop = () => {
+      active = false;
+      pointer = null;
+      cancelFrame();
+      grid.style.removeProperty("scroll-snap-type");
+      this._activeEdgeDrags?.delete(stop);
+    };
+    stop.grid = grid;
+    const velocity = () => {
+      if (!pointer) return 0;
+      const rect = grid.getBoundingClientRect();
+      if (pointer.y < rect.top - 12 || pointer.y > rect.bottom + 12) return 0;
+      const edge = Math.min(36, rect.width / 4);
+      if (edge <= 0) return 0;
+      if (pointer.x < rect.left + edge && pointer.x >= rect.left - 14) return -Math.min(1, (rect.left + edge - pointer.x) / edge) * 320;
+      if (pointer.x > rect.right - edge && pointer.x <= rect.right + 14) return Math.min(1, (pointer.x - rect.right + edge) / edge) * 320;
+      return 0;
+    };
+    const tick = time => {
+      frame = null;
+      if (!active || !grid.isConnected) { stop(); return; }
+      const speed = velocity();
+      const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
+      if (!speed || (speed < 0 && grid.scrollLeft <= 0) || (speed > 0 && grid.scrollLeft >= max - 1)) { lastTime = null; return; }
+      const dt = lastTime == null ? 16 : Math.min(32, time - lastTime);
+      lastTime = time;
+      grid.scrollLeft = Math.max(0, Math.min(max, grid.scrollLeft + speed * dt / 1000));
+      frame = requestAnimationFrame(tick);
+    };
+    const start = () => {
+      if (active) return;
+      active = true;
+      grid.style.scrollSnapType = "none";
+      (this._activeEdgeDrags ||= new Set()).add(stop);
+    };
+    const move = (x, y) => {
+      if (!active) return;
+      pointer = { x, y };
+      if (velocity()) { if (frame === null) frame = requestAnimationFrame(tick); }
+      else cancelFrame();
+    };
+    grid.addEventListener("dragstart", start);
+    grid.addEventListener("dragover", event => {
+      if (!active) return;
+      event.preventDefault();
+      move(event.clientX, event.clientY);
     });
-    return {
-      type: "custom:alert-ticker-card",
-      alerts,
-      show_when_clear: true,
-      clear_message: "Keine aktiven Warnungen",
-      clear_theme: "success",
-      overlay_mode: false,
-      tts_enabled: false,
-      push_enabled: false,
+    grid.addEventListener("dragleave", event => {
+      if (!grid.contains(event.relatedTarget)) { pointer = null; cancelFrame(); }
+    });
+    grid.addEventListener("drop", stop);
+    grid.addEventListener("dragend", stop);
+    return { start, move, stop };
+  }
+
+  _bindLinkScrollHints() {
+    const grid = this.shadowRoot.querySelector(".custom-page-links");
+    if (grid === this._linkHintGrid) return;
+    this._linkHintCleanup?.();
+    this._linkHintCleanup = null;
+    this._linkHintGrid = grid;
+    if (!grid) return;
+    const update = () => {
+      const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
+      const left = grid.scrollLeft;
+      const row = grid.parentElement;
+      row.querySelector(".link-hint-left").hidden = !(left > 2);
+      row.querySelector(".link-hint-right").hidden = !(left < max - 2);
+    };
+    grid.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(update) : null;
+    observer?.observe(grid);
+    if (!observer) update();
+    this._linkHintCleanup = () => {
+      grid.removeEventListener("scroll", update);
+      observer?.disconnect();
     };
   }
 
-  _styleAlertTicker() {
-    const root = this._alertTickerCard?.shadowRoot;
-    if (!root || root.querySelector("#atze-ticker-style")) return;
-    // Style only our embedded HACS card. Never change the installed resource.
-    const style = document.createElement("style");
-    style.id = "atze-ticker-style";
-    style.textContent = `
-      :host {
-        --ha-card-border-radius: 22px;
-        --ha-card-box-shadow: none;
-        border-radius: 22px !important;
-        box-shadow: 0 6px 22px rgba(0,0,0,.16) !important;
-      }
-      .atc-card-root, .atc-inner-clip, .at-fold-wrapper {
-        border-radius: 22px !important;
-      }
-      .at-fold-wrapper > div:not(.atc-history-card) {
-        min-height: 92px;
-        padding: 15px 17px !important;
-        border: 1px solid rgba(235,235,245,.34) !important;
-        border-radius: 22px !important;
-        background: linear-gradient(125deg,rgba(31,39,52,.89),rgba(37,40,47,.87)) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.07) !important;
-        color: #f5f5f7 !important;
-        animation: none !important;
-      }
-      .at-fold-wrapper > div:not(.atc-history-card)::before,
-      .at-fold-wrapper > div:not(.atc-history-card)::after,
-      .dr-ray, .fl-waves {
-        display: none !important;
-      }
-      .at-fold-wrapper :is(.ca-icon,.wn-icon,.dr-icon,.fi-icon,.fl-icon,.su-icon-wrap,
-        .in-icon-wrap,.ga-icon,.le-icon,.sa-icon,.tm-icon) {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        flex: 0 0 56px !important;
-        width: 56px !important;
-        height: 56px !important;
-        border: 1px solid rgba(235,235,245,.17) !important;
-        border-radius: 16px !important;
-        background: rgba(59,62,71,.48) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
-        filter: none !important;
-        transform: none !important;
-        animation: none !important;
-      }
-      .at-fold-wrapper :is(.ca-badge,.wn-badge,.dr-badge,.fi-badge,.fl-badge,.su-badge) {
-        color: #ffd60a !important;
-        letter-spacing: 1.5px !important;
-        font-weight: 700 !important;
-      }
-      .at-fold-wrapper :is(.ca-title,.wn-title,.dr-title,.fi-title,.fl-title,.su-title,
-        .in-title) {
-        color: #f5f5f7 !important;
-        font-size: 15px !important;
-        font-weight: 650 !important;
-        line-height: 1.4 !important;
-        overflow-wrap: anywhere;
-      }
-      .at-fold-wrapper :is(.ca-right,.wn-right,.dr-right,.fi-right,.fl-right,.in-right) {
-        margin-left: auto !important;
-        color: rgba(235,235,245,.7) !important;
-      }
-      .at-fold-wrapper :is(.ca-dot,.wn-dot) {
-        display: none !important;
-      }
-    `;
-    root.appendChild(style);
-  }
+  // Keep the favorites scroller connected throughout ordinary home renders.
+  // All other sections still follow the existing render and binding path.
+  _renderHomeKeepingFavorites(markup, keepLinks) {
+    const favoriteGrid = this.shadowRoot.querySelector(".favorite-grid");
+    const grid = favoriteGrid || (keepLinks ? this.shadowRoot.querySelector(".custom-page-links") : null);
+    if (!grid) return false;
+    const template = document.createElement("template");
+    template.innerHTML = markup;
+    const nextGrid = template.content.querySelector(favoriteGrid ? ".favorite-grid" : ".custom-page-links");
+    if (!nextGrid) return false;
+    if (!favoriteGrid && template.content.querySelector(".favorite-grid")) return false;
+    const path = node => {
+      const result = [];
+      while (node && node.nodeType === 1) { result.unshift(node); node = node.parentNode; }
+      return result;
+    };
+    const currentPath = path(grid);
+    const nextPath = path(nextGrid);
+    if (currentPath.length !== nextPath.length || currentPath.some((node, i) => node.localName !== nextPath[i].localName)) return false;
+    const buttons = [...grid.children];
+    const nextButtons = [...nextGrid.children];
+    if (buttons.length !== nextButtons.length || buttons.some((button, i) => button.dataset.entityId !== nextButtons[i].dataset.entityId)) return false;
 
-  _mountAlertTicker() {
-    const slot = this.shadowRoot?.querySelector("#atze-alert-ticker-slot");
-    if (!slot) return;
-    if (!customElements.get("alert-ticker-card")) {
-      // HACS loads Lovelace resources asynchronously. Wait for the resource
-      // without polling; leave the informative placeholder if never installed.
-      if (!this._alertTickerAwaitingResource) {
-        this._alertTickerAwaitingResource = true;
-        customElements.whenDefined("alert-ticker-card").then(() => {
-          this._alertTickerAwaitingResource = false;
-          if (this.isConnected) this._mountAlertTicker();
-        });
+    // Replace siblings on either side of the retained branch, never detach it.
+    const replaceSiblings = (parent, keep, nextKeep) => {
+      const before = [], after = [];
+      let seen = false;
+      for (const node of [...nextKeep.parentNode.childNodes]) {
+        if (node === nextKeep) { seen = true; continue; }
+        (seen ? after : before).push(node);
       }
-      return;
+      const oldBefore = [], oldAfter = [];
+      seen = false;
+      for (const node of [...parent.childNodes]) {
+        if (node === keep) { seen = true; continue; }
+        (seen ? oldAfter : oldBefore).push(node);
+      }
+      const replace = (oldNodes, newNodes, append) => {
+        for (let i = 0; i < Math.min(oldNodes.length, newNodes.length); i++) {
+          if (keepLinks && oldNodes[i].classList?.contains("custom-page-row") && newNodes[i].classList?.contains("custom-page-row")) continue;
+          if (!oldNodes[i].isEqualNode(newNodes[i])) oldNodes[i].replaceWith(newNodes[i]);
+          else if (oldNodes[i].nodeType === 1 && oldNodes[i].localName !== "style") oldNodes[i].replaceWith(newNodes[i]);
+        }
+        for (const node of oldNodes.slice(newNodes.length)) node.remove();
+        append(newNodes.slice(oldNodes.length));
+      };
+      replace(oldBefore, before, nodes => keep.before(...nodes));
+      replace(oldAfter, after, nodes => parent.append(...nodes));
+    };
+    for (let i = 0; i < currentPath.length; i++) {
+      const current = currentPath[i];
+      const next = nextPath[i];
+      // A links-only home also retains its passive indicators and listeners.
+      if (!favoriteGrid && current === grid) continue;
+      replaceSiblings(current.parentNode, current, next);
+      for (const attr of [...current.attributes]) {
+        if (attr.name === "style" && current === grid && current.style.scrollSnapType === "none") continue;
+        if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+      }
+      for (const attr of next.attributes) if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
     }
-    const config = this._alertTickerConfig();
-    const signature = JSON.stringify(config);
-    if (!this._alertTickerCard) this._alertTickerCard = document.createElement("alert-ticker-card");
-    if (signature !== this._alertTickerSignature) {
-      this._alertTickerCard.setConfig(config);
-      this._alertTickerSignature = signature;
-    }
-    slot.replaceChildren(this._alertTickerCard);
-    this._alertTickerCard.hass = this._hass;
-    this._styleAlertTicker();
+    if (favoriteGrid) buttons.forEach((button, i) => {
+      const next = nextButtons[i];
+      button.classList.toggle("active", next.classList.contains("active"));
+      if (button.title !== next.title) button.title = next.title;
+      const icon = button.querySelector("ha-icon");
+      const nextIcon = next.querySelector("ha-icon")?.getAttribute("icon");
+      if (icon && nextIcon && icon.getAttribute("icon") !== nextIcon) icon.setAttribute("icon", nextIcon);
+      const name = button.querySelector(".favorite-name");
+      const nextName = next.querySelector(".favorite-name")?.textContent;
+      if (name && nextName != null && name.textContent !== nextName) name.textContent = nextName;
+    });
+    return true;
   }
 
   _render() {
@@ -9340,9 +9412,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const presenceList = this.shadowRoot.querySelector(".presence-event-list");
     const presencePopupScrollTop = presenceScroll?.scrollTop ?? 0;
     const presenceListScrollTop = presenceList?.scrollTop ?? 0;
-
-    // Preserve the HACS card instance across frequent HA state renders.
-    this._alertTickerCard?.remove();
 
     const now = new Date();
     const heroIsDay = now.getHours() >= 7 && now.getHours() < 20;
@@ -9584,8 +9653,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           page?.title && (page?.path || page?.popup_hash || page?.navigation_path)
       );
 
+    let localLinkOrder = "";
+    try { localLinkOrder = localStorage.getItem("atze-dashboard:home-navigation-order") || ""; } catch (_error) {}
+    const linkSignature = JSON.stringify([customPageLinks, atzeLayoutValue(this._config, "home_navigation_order", []), localLinkOrder]);
+
     const customPageLinksHtml = customPageLinks.length
       ? `
+          <div class="custom-page-row">
           <nav class="custom-page-links" aria-label="Eigene Seiten">
             ${customPageLinks
               .map((page) => `
@@ -9610,6 +9684,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
               `)
               .join("")}
           </nav>
+          <span class="link-hint link-hint-left" aria-hidden="true" hidden>‹</span>
+          <span class="link-hint link-hint-right" aria-hidden="true" hidden>›</span>
+          </div>
         `
       : "";
 
@@ -9657,6 +9734,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 })
                 .join("")}
             </div>
+            <span class="favorite-hint favorite-hint-left" aria-hidden="true" ${this._favoriteCanScrollLeft ? "" : "hidden"}>‹</span>
+            <span class="favorite-hint favorite-hint-right" aria-hidden="true" ${this._favoriteCanScrollRight ? "" : "hidden"}>›</span>
           </section>
         `
       : "";
@@ -9889,7 +9968,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       ? this._formatted(this._config.lock_entity)
       : "";
 
-    this.shadowRoot.innerHTML = `
+    const homeMarkup = `
       <style>
         .room-trash { position:fixed; left:50%; bottom:28px; transform:translate(-50%,24px); z-index:99999; display:flex; align-items:center; gap:8px; padding:12px 18px; border-radius:24px; background:rgba(40,40,42,.96); color:#fff; opacity:0; pointer-events:none; transition:.18s ease; box-shadow:0 6px 24px rgba(0,0,0,.35); } .room-trash.visible { opacity:1; transform:translate(-50%,0); pointer-events:auto; } .room-trash.over { background:#c62828; transform:translate(-50%,0) scale(1.08); }
 
@@ -9949,10 +10028,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           min-height: 100vh;
           overflow: hidden;
         }
-
-        .atze-alert-ticker-slot { margin: 12px 0 16px; width: 100%; min-width: 0; }
-        .atze-alert-ticker-slot > alert-ticker-card { display: block; width: 100%; border-radius: 22px; overflow: hidden; }
-        .atze-alert-ticker-help { border: 1px dashed rgba(255,255,255,.2); border-radius: 14px; padding: 14px; color: var(--secondary-text-color); font-size: 13px; }
 
         .page {
           width: min(1180px, 100%);
@@ -10352,6 +10427,47 @@ class AtzeHomeOverviewCard extends HTMLElement {
           margin-bottom: 0;
         }
 
+        .status-grid:not(.expanded) > .status:nth-child(n+3) {
+          display: none;
+        }
+
+        .status-expand-row {
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          z-index: 2;
+        }
+
+        .status-expand-toggle {
+          display: block;
+          position: relative;
+          width: 48px;
+          height: 48px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: rgba(210, 210, 210, .78);
+          clip-path: polygon(100% 0, 100% 100%, 0 100%);
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .status-expand-toggle[hidden],
+        .status-expand-row[hidden] {
+          display: none;
+        }
+
+        .status-expand-toggle svg {
+          position: absolute;
+          width: 48px;
+          height: 48px;
+          right: 0;
+          bottom: 0;
+          pointer-events: none;
+        }
+
+        .status-expand-toggle:focus-visible { background: rgba(255,255,255,.18); }
+
         .status {
           box-sizing: border-box;
           width: 100%;
@@ -10528,13 +10644,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
             );
         }
 
-        .control-center .custom-page-links {
+        .control-center .custom-page-row {
           position: relative;
           z-index: 1;
           margin-bottom: 22px;
         }
 
-        .control-center:not(.has-favorites) .custom-page-links {
+        .control-center:not(.has-favorites) .custom-page-row {
           margin-bottom: 0;
         }
 
@@ -10552,11 +10668,32 @@ class AtzeHomeOverviewCard extends HTMLElement {
         }
 
         .custom-page-links {
-          margin: 0 0 20px;
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
+          margin: 0;
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: calc((100% - 27px) / 4);
           gap: 9px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          scroll-snap-type: x mandatory;
+        }
+        .custom-page-links::-webkit-scrollbar { display: none; }
+        .custom-page-row { position: relative; }
+        .link-hint { position: absolute; top: 50%; transform: translateY(-50%); width: 12px; text-align: center; font-size: 22px; line-height: 1; color: var(--primary-text-color); opacity: .85; text-shadow: 0 1px 4px #000; pointer-events: none; user-select: none; }
+        .link-hint-left { left: -13px; }
+        .link-hint-right { right: -13px; }
+        .link-hint[hidden] { display: none; }
+        @media (min-width: 901px) {
+          .custom-page-links > .custom-page-link:nth-child(4n+1) { scroll-snap-align: start; scroll-snap-stop: always; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(4n+1))::after { content: ""; grid-column: span 3; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(4n+2))::after { content: ""; grid-column: span 2; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(4n+3))::after { content: ""; }
+        }
+        @media (max-width: 900px) {
+          .custom-page-links { grid-auto-columns: calc((100% - 9px) / 2); }
+          .custom-page-links > .custom-page-link:nth-child(2n+1) { scroll-snap-align: start; scroll-snap-stop: always; }
+          .custom-page-links:has(> .custom-page-link:last-child:nth-child(2n+1))::after { content: ""; }
         }
 
         .custom-page-link {
@@ -10625,8 +10762,49 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-auto-flow: column;
+          grid-auto-columns: calc((100% - 36px) / 4);
           gap: 12px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          scroll-snap-type: x mandatory;
+        }
+
+        .favorite-grid::-webkit-scrollbar {
+          display: none;
+        }
+
+        .favorite-hint {
+          position: absolute;
+          bottom: 28px;
+          transform: translateY(50%);
+          width: 12px;
+          text-align: center;
+          font-size: 22px;
+          line-height: 1;
+          color: var(--primary-text-color);
+          opacity: .85;
+          text-shadow: 0 1px 4px #000;
+          pointer-events: none;
+          user-select: none;
+        }
+        .favorite-hint-left { left: -13px; }
+        .favorite-hint-right { right: -13px; }
+        .favorite-hint[hidden] { display: none; }
+
+        .favorite-grid > .favorite-card {
+          scroll-snap-align: none;
+        }
+
+        @media (min-width: 901px) {
+          .favorite-grid > .favorite-card:nth-child(4n+1) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+          }
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(4n+1))::after { content: ""; grid-column: span 3; }
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(4n+2))::after { content: ""; grid-column: span 2; }
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(4n+3))::after { content: ""; }
         }
 
         .favorite-card {
@@ -11162,7 +11340,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .favorite-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-columns: calc((100% - 12px) / 2);
+          }
+
+          .favorite-grid > .favorite-card:nth-child(2n+1) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+          }
+
+          .favorite-grid:has(> .favorite-card:last-child:nth-child(2n+1))::after {
+            content: "";
           }
 
           .quick {
@@ -11268,9 +11455,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .custom-page-links {
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-            overflow-x: visible;
+            margin-bottom: 0;
           }
 
           .custom-page-link {
@@ -11285,6 +11470,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .favorite-grid {
             gap: 10px;
+            grid-auto-columns: calc((100% - 10px) / 2);
           }
 
           .favorite-card {
@@ -11511,7 +11697,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             </div>
             </div>
 
-            <div class="status-grid">
+            <div class="status-grid ${this._statusExpanded ? "expanded" : ""}" id="home-status-grid">
             <div class="status weather" id="weather-status" role="button" tabindex="0">
               <ha-icon icon="${weatherIcon}"></ha-icon>
               <div>
@@ -11589,11 +11775,17 @@ class AtzeHomeOverviewCard extends HTMLElement {
               <button type="button" class="status group-control-tile" id="group-covers"><ha-icon icon="${this._groupControlEntities("covers").some((id) => { const st = this._state(id)?.state; const pos = this._coverPosition(id); return pos != null ? pos > 0 : ["open", "opening"].includes(st); }) ? "mdi:window-shutter-open" : "mdi:window-shutter"}"></ha-icon><div><div class="status-main">Rollläden</div><div class="status-sub">${this._groupControlStatus("covers")}</div></div></button>
               <button type="button" class="status group-control-tile" id="group-thermostats"><ha-icon icon="mdi:thermometer"></ha-icon><div><div class="status-main">Thermostate</div><div class="status-sub">${this._homeThermostatStatus()}</div></div></button>
             </div>
+            <div class="status-expand-row" id="status-expand-row">
+              <button type="button" class="status-expand-toggle" id="status-expand-toggle"
+                aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
+                aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
+                title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
+                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.0">
+                  <path d="M21 48 L48 21 M24.5 48 L48 24.5 M28 48 L48 28" />
+                </svg>
+              </button>
+            </div>
           </section>
-
-          <div class="atze-alert-ticker-slot" id="atze-alert-ticker-slot" aria-label="Aktuelle Warnmeldungen">
-            <div class="atze-alert-ticker-help">AlertTicker-Card über HACS installieren und die Dashboard-Ressource laden, um Warnmeldungen hier anzuzeigen.</div>
-          </div>
 
           ${controlCenterHtml}
 
@@ -11639,11 +11831,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
       </ha-card>
     `;
 
+    const oldNavigation = this.shadowRoot.querySelector(".custom-page-links");
+    const keepLinks = Boolean(oldNavigation && this._homeLinkSignature === linkSignature);
+    const favoritesRetained = this._renderHomeKeepingFavorites(homeMarkup, keepLinks);
+    if (!favoritesRetained) this.shadowRoot.innerHTML = homeMarkup;
+    for (const stop of this._activeEdgeDrags || []) if (!this.shadowRoot.contains(stop.grid)) stop();
+    this._homeLinkSignature = linkSignature;
+    const linksRetained = Boolean(oldNavigation && oldNavigation === this.shadowRoot.querySelector(".custom-page-links"));
+
     for (const position of popupScrollPositions) {
       const element = this.shadowRoot.querySelector(position.selector);
       if (element) element.scrollTop = position.scrollTop;
     }
-    this._mountAlertTicker();
 
     // Mount the actual room thermostat controls, not the generic device-popup card.
     // The native thermostat service dialog is rendered inside each control.
@@ -11685,6 +11884,18 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const original = new Map(tiles.map((tile, index) => [tile.id, index]));
       tiles.sort((a, b) => (ranks.get(a.id) ?? (ranks.size + original.get(a.id))) - (ranks.get(b.id) ?? (ranks.size + original.get(b.id))))
         .forEach((tile) => statusGrid.appendChild(tile));
+
+      // Collapse based on the current user-defined tile order, not fixed ids.
+      const expandRow = this.shadowRoot.querySelector("#status-expand-row");
+      const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
+      if (expandRow) expandRow.hidden = tiles.length <= 2;
+      expandToggle?.addEventListener("click", () => {
+        this._statusExpanded = !this._statusExpanded;
+        statusGrid.classList.toggle("expanded", this._statusExpanded);
+        expandToggle.setAttribute("aria-expanded", String(this._statusExpanded));
+        expandToggle.setAttribute("aria-label", this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
+        expandToggle.title = this._statusExpanded ? "Einklappen" : "Aufklappen";
+      });
 
       let draggedTile = null;
       let suppressStatusClick = false;
@@ -11892,17 +12103,19 @@ class AtzeHomeOverviewCard extends HTMLElement {
     const installProvenDrag = (container, selector, idGetter, storageKey) => {
       if (!container) return;
       const elements = [...container.querySelectorAll(selector)];
+      const isFavorite = storageKey === "atze-dashboard:favorite-order";
+      if (isFavorite) this._installHorizontalDragScroll(container);
       let dragIndex = null;
 
       elements.forEach((element, index) => {
         element.draggable = true;
         // Keep normal vertical page scrolling available until the browser
         // actually starts a native long-press drag.
-        element.style.touchAction = "pan-y";
+        element.style.touchAction = storageKey === "atze-dashboard:favorite-order" ? "auto" : "pan-y";
         element.addEventListener("dragstart", (event) => {
-          dragIndex = index;
+          dragIndex = isFavorite ? [...container.querySelectorAll(selector)].indexOf(element) : index;
           element.classList.add("dragging");
-          event.dataTransfer?.setData("text/plain", String(index));
+          event.dataTransfer?.setData("text/plain", String(dragIndex));
         });
         element.addEventListener("dragend", () => {
           dragIndex = null;
@@ -11919,12 +12132,13 @@ class AtzeHomeOverviewCard extends HTMLElement {
           event.preventDefault();
           element.classList.remove("drag-over");
           const from = dragIndex ?? Number(event.dataTransfer?.getData("text/plain"));
-          if (!Number.isInteger(from) || from === index) return;
           const current = [...container.querySelectorAll(selector)];
+          const targetIndex = isFavorite ? current.indexOf(element) : index;
+          if (!Number.isInteger(from) || from === targetIndex) return;
           const source = current[from];
-          const target = current[index];
+          const target = current[targetIndex];
           if (!source || !target) return;
-          if (from < index) target.after(source); else target.before(source);
+          if (from < targetIndex) target.after(source); else target.before(source);
           const ids = [...container.querySelectorAll(selector)].map(idGetter).filter(Boolean);
           try { localStorage.setItem(storageKey, JSON.stringify(ids)); } catch (_e) {}
           const field = storageKey === roomOrderKey ? "home_room_order" : "favorite_order";
@@ -11940,7 +12154,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       (element) => element.dataset.areaId,
       roomOrderKey
     );
-    installProvenDrag(
+    if (!favoritesRetained) installProvenDrag(
       this.shadowRoot.querySelector(".favorite-grid"),
       ".favorite-card",
       (element) => element.dataset.entityId,
@@ -11950,7 +12164,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
     // Navigation pills: long-press to reorder on iOS, native drag on desktop.
     // Keep the order in the strategy layout, not just in this device's browser.
     const navigationBar = this.shadowRoot.querySelector(".custom-page-links");
-    if (navigationBar) {
+    if (navigationBar && !linksRetained) {
+      const edgeDrag = this._installHorizontalDragScroll(navigationBar);
       const navSelector = ".custom-page-link";
       const navKey = (element) => element.dataset.navigationPath
         ? "navigation:" + element.dataset.navigationPath
@@ -11998,6 +12213,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         return found && navigationBar.contains(found) ? found : null;
       };
       const resetTouch = () => {
+        if (touchDrag?.active) edgeDrag.stop();
         if (touchTimer !== null) clearTimeout(touchTimer);
         touchTimer = null;
         entries().forEach((entry) => entry.classList.remove("dragging", "drag-over"));
@@ -12013,6 +12229,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         touchTimer = setTimeout(() => {
           if (!touchDrag) return;
           touchDrag.active = true;
+          edgeDrag.start();
+          edgeDrag.move(touchDrag.x, touchDrag.y);
           touchDrag.source.classList.add("dragging");
           suppressUntil = Date.now() + 700;
         }, 450);
@@ -12025,6 +12243,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           return;
         }
         event.preventDefault();
+        edgeDrag.move(touch.clientX, touch.clientY);
         const target = atPoint(touch.clientX, touch.clientY);
         if (target !== touchDrag.target) {
           touchDrag.target?.classList.remove("drag-over");
@@ -12051,7 +12270,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }, true);
       for (const entry of entries()) {
         entry.draggable = true;
-        entry.style.touchAction = "pan-y";
+        entry.style.touchAction = "auto";
         entry.addEventListener("dragstart", (event) => {
           dragged = entry;
           entry.classList.add("dragging");
@@ -12076,7 +12295,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       }
     }
 
-    this.shadowRoot
+    if (!linksRetained) this.shadowRoot
       .querySelectorAll(".custom-page-link[data-navigation-path]")
       .forEach((element) => {
         element.addEventListener("click", () => {
@@ -12087,7 +12306,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
 
-    this.shadowRoot
+    if (!linksRetained) this.shadowRoot
       .querySelectorAll(".custom-page-link[data-path]")
       .forEach((element) => {
         element.addEventListener("click", () =>
@@ -12095,7 +12314,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         );
       });
 
-    this.shadowRoot
+    if (!linksRetained) this.shadowRoot
       .querySelectorAll(".custom-page-link[data-popup-hash]")
       .forEach((element) => {
         element.addEventListener("click", () =>
@@ -12120,7 +12339,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         });
       });
 
-    this.shadowRoot
+    if (!favoritesRetained) this.shadowRoot
       .querySelectorAll(".favorite-card[data-entity-id]")
       .forEach((element) => {
         element.addEventListener("click", (event) => {
@@ -12397,6 +12616,10 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this.shadowRoot
       .querySelector("#night-mode")
       ?.addEventListener("click", () => this._toggleNight());
+
+    this._bindFavoriteScrollHints();
+    this._bindLinkScrollHints();
+
   }
 
   getCardSize() {
