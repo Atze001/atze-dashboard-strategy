@@ -2933,8 +2933,16 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
         .favorite-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-auto-flow: column;
+          grid-auto-columns: calc((100% - 36px) / 4);
           gap: 12px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+        }
+
+        .favorite-grid::-webkit-scrollbar {
+          display: none;
         }
 
         .favorite-card {
@@ -3470,7 +3478,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           }
 
           .favorite-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-columns: calc((100% - 12px) / 2);
           }
 
           .quick {
@@ -3593,6 +3601,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
 
           .favorite-grid {
             gap: 10px;
+            grid-auto-columns: calc((100% - 10px) / 2);
           }
 
           .favorite-card {
@@ -4222,7 +4231,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
         element.draggable = true;
         // Keep normal vertical page scrolling available until the browser
         // actually starts a native long-press drag.
-        element.style.touchAction = "pan-y";
+        element.style.touchAction = storageKey === "atze-dashboard:favorite-order" ? "auto" : "pan-y";
         element.addEventListener("dragstart", (event) => {
           dragIndex = index;
           element.classList.add("dragging");
