@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.426.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "330DA59";
+const ATZE_TESTING_REVISION = "854F849";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -11780,8 +11780,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
                 aria-label="${this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen"}"
                 aria-expanded="${this._statusExpanded}" aria-controls="home-status-grid"
                 title="${this._statusExpanded ? "Einklappen" : "Aufklappen"}">
-                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
-                  <path d="M6 48 L48 6 M15 48 L48 15 M24 48 L48 24" />
+                <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <path d="M14 48 L48 14 M20 48 L48 20 M26 48 L48 26" />
                 </svg>
               </button>
             </div>
