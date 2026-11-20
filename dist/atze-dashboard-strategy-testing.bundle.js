@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.428.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "7905041";
+const ATZE_TESTING_REVISION = "D06EAC8";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -9241,6 +9241,61 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
+  _bindHomeScrollReturn(grid) {
+    const returns = this._homeScrollReturns ||= new Map();
+    const state = { touching: false, mouseDown: false, dragging: false, timer: null };
+    const cancel = () => {
+      clearTimeout(state.timer);
+      state.timer = null;
+    };
+    const busy = () => this._activeEdgeDrags?.size || [...returns.values()].some(entry => entry.touching || entry.mouseDown || entry.dragging);
+    const schedule = () => {
+      cancel();
+      if (busy() || !grid.isConnected || grid.scrollLeft <= 2) return;
+      state.timer = setTimeout(() => {
+        state.timer = null;
+        if (!busy() && grid.isConnected) grid.scrollTo({ left: 0, behavior: "smooth" });
+      }, 5000);
+    };
+    state.cancel = cancel;
+    state.schedule = schedule;
+    returns.set(grid, state);
+    const pauseAll = () => { for (const entry of returns.values()) entry.cancel(); };
+    const resumeAll = () => { for (const entry of returns.values()) entry.schedule(); };
+    const touchStart = () => { state.touching = true; pauseAll(); };
+    const touchEnd = event => { if (!event.touches?.length) { state.touching = false; resumeAll(); } };
+    const mouseDown = event => { if (event.pointerType === "mouse") { state.mouseDown = true; pauseAll(); } };
+    const mouseUp = () => { if (state.mouseDown) { state.mouseDown = false; resumeAll(); } };
+    const dragStart = () => { state.touching = false; state.mouseDown = false; state.dragging = true; pauseAll(); };
+    const dragEnd = () => { state.dragging = false; resumeAll(); };
+    grid.addEventListener("scroll", schedule, { passive: true });
+    grid.addEventListener("touchstart", touchStart, { passive: true });
+    grid.addEventListener("touchend", touchEnd, { passive: true });
+    grid.addEventListener("touchcancel", touchEnd, { passive: true });
+    grid.addEventListener("pointerdown", mouseDown, { passive: true });
+    window.addEventListener("pointerup", mouseUp);
+    window.addEventListener("pointercancel", mouseUp);
+    grid.addEventListener("dragstart", dragStart);
+    grid.addEventListener("dragend", dragEnd);
+    grid.addEventListener("drop", dragEnd);
+    schedule();
+    return () => {
+      cancel();
+      returns.delete(grid);
+      grid.removeEventListener("scroll", schedule);
+      grid.removeEventListener("touchstart", touchStart);
+      grid.removeEventListener("touchend", touchEnd);
+      grid.removeEventListener("touchcancel", touchEnd);
+      grid.removeEventListener("pointerdown", mouseDown);
+      window.removeEventListener("pointerup", mouseUp);
+      window.removeEventListener("pointercancel", mouseUp);
+      grid.removeEventListener("dragstart", dragStart);
+      grid.removeEventListener("dragend", dragEnd);
+      grid.removeEventListener("drop", dragEnd);
+      resumeAll();
+    };
+  }
+
   _bindFavoriteScrollHints() {
     const grid = this.shadowRoot.querySelector(".favorite-grid");
     if (grid === this._favoriteHintGrid) return;
@@ -9248,6 +9303,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._favoriteHintCleanup = null;
     this._favoriteHintGrid = grid;
     if (!grid) return;
+    const cleanupReturn = this._bindHomeScrollReturn(grid);
     const update = () => {
       const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
       const left = grid.scrollLeft;
@@ -9264,6 +9320,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     observer?.observe(grid);
     if (!observer) update();
     this._favoriteHintCleanup = () => {
+      cleanupReturn();
       grid.removeEventListener("scroll", update);
       observer?.disconnect();
     };
@@ -9285,6 +9342,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       cancelFrame();
       grid.style.removeProperty("scroll-snap-type");
       this._activeEdgeDrags?.delete(stop);
+      for (const entry of this._homeScrollReturns?.values() || []) entry.schedule();
     };
     stop.grid = grid;
     const velocity = () => {
@@ -9313,6 +9371,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       active = true;
       grid.style.scrollSnapType = "none";
       (this._activeEdgeDrags ||= new Set()).add(stop);
+      for (const entry of this._homeScrollReturns?.values() || []) entry.cancel();
     };
     const move = (x, y) => {
       if (!active) return;
@@ -9341,6 +9400,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._linkHintCleanup = null;
     this._linkHintGrid = grid;
     if (!grid) return;
+    const cleanupReturn = this._bindHomeScrollReturn(grid);
     const update = () => {
       const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
       const left = grid.scrollLeft;
@@ -9353,6 +9413,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     observer?.observe(grid);
     if (!observer) update();
     this._linkHintCleanup = () => {
+      cleanupReturn();
       grid.removeEventListener("scroll", update);
       observer?.disconnect();
     };
