@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.428.0**
+Version **0.429.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,12 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.429.0
+
+- Statusübersicht nach fünf Sekunden automatisch einklappen und beim Wechsel der Dashboard-Unterseite sofort schließen.
+- Weiche Animation beim Auf- und Zuklappen der Statuskacheln.
+- Favoriten und Navigationslinks nach fünf Sekunden ohne Interaktion sanft zur ersten Seite zurückscrollen; beim Anordnen der Buttons pausiert die Rückkehr.
+
 ## v0.428.0
 
 - Mittiger horizontaler Balken am unteren Kartenrand zum Auf- und Zuklappen der Statusübersicht. Die gesamte Zeile ist antippbar.
@@ -239,11 +245,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 - Favoriten und Navigationslinks auf der Startseite horizontal durchblättern. Richtungshinweise zeigen weitere Einträge an. Beim Umsortieren scrollen die Leisten am Rand automatisch weiter.
 - Eingeklappte Statusübersicht mit zwei Kacheln und diagonalem Griff zum Auf- und Zuklappen.
 - Scrollposition der Startseite bei Zustandsaktualisierungen stabilisiert und die native Home-Assistant-Kopfzeile beim Wechsel zwischen Dashboards korrigiert.
-
-## v0.426.0
-
-- Externe AlertTicker-Card samt Einbindung auf der Startseite entfernt. Bestehende Sicherheitsanzeigen und Alarmfunktionen bleiben unverändert.
-- Eigene Warnanzeige für einen späteren Entwicklungsschritt vorgesehen.
 <!-- latest-changes:end -->
 
 ## Lizenz
