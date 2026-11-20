@@ -81,6 +81,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._roomDrag = null;
     this._hiddenRoomIds = [];
     this._statusExpanded = false;
+    this._statusCollapseTimer = null;
+    this._statusPath = null;
+    this._onStatusRouteChange = () => {
+      const path = window.location.pathname;
+      if (path === this._statusPath) return;
+      this._statusPath = path;
+      this._setStatusExpanded(false);
+    };
   }
 
   setConfig(config) {
@@ -117,6 +125,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this._statusPath = window.location.pathname;
+    window.addEventListener("location-changed", this._onStatusRouteChange);
+    window.addEventListener("popstate", this._onStatusRouteChange);
     this.addEventListener("touchstart", this._onSidebarSwipeStart, { passive: true });
     this.addEventListener("touchmove", this._onSidebarSwipeMove, { passive: true });
     this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
@@ -158,6 +169,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    window.removeEventListener("location-changed", this._onStatusRouteChange);
+    window.removeEventListener("popstate", this._onStatusRouteChange);
+    this._setStatusExpanded(false);
     for (const stop of this._activeEdgeDrags || []) stop();
     this._linkHintCleanup?.();
     this._linkHintCleanup = null;
@@ -188,6 +202,23 @@ class AtzeHomeOverviewCard extends HTMLElement {
       () => { if (!this._hasOpenDashboardPopup()) this._render(); },
       30000
     );
+  }
+
+  _setStatusExpanded(expanded) {
+    clearTimeout(this._statusCollapseTimer);
+    this._statusCollapseTimer = null;
+    this._statusExpanded = expanded;
+    // Query the current DOM: Home Assistant updates may have rendered new tiles.
+    this.shadowRoot.querySelector(".status-grid")?.classList.toggle("expanded", expanded);
+    const toggle = this.shadowRoot.querySelector("#status-expand-toggle");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", String(expanded));
+      toggle.setAttribute("aria-label", expanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
+      toggle.title = expanded ? "Einklappen" : "Aufklappen";
+    }
+    if (expanded) {
+      this._statusCollapseTimer = setTimeout(() => this._setStatusExpanded(false), 5000);
+    }
   }
 
   _toggleKioskMode() {
@@ -4287,11 +4318,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
       if (expandRow) expandRow.hidden = tiles.length <= 2;
       expandToggle?.addEventListener("click", () => {
-        this._statusExpanded = !this._statusExpanded;
-        statusGrid.classList.toggle("expanded", this._statusExpanded);
-        expandToggle.setAttribute("aria-expanded", String(this._statusExpanded));
-        expandToggle.setAttribute("aria-label", this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
-        expandToggle.title = this._statusExpanded ? "Einklappen" : "Aufklappen";
+        this._setStatusExpanded(!this._statusExpanded);
       });
 
       let draggedTile = null;
