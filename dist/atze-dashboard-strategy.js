@@ -7804,7 +7804,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._statusCollapseTimer = null;
     this._statusExpanded = expanded;
     // Query the current DOM: Home Assistant updates may have rendered new tiles.
-    this.shadowRoot.querySelector(".status-grid")?.classList.toggle("expanded", expanded);
+    const grid = this.shadowRoot.querySelector(".status-grid");
+    grid?.classList.toggle("expanded", expanded);
+    grid?.querySelectorAll(":scope > .status:nth-child(n+3)").forEach(tile => { tile.inert = !expanded; });
     const toggle = this.shadowRoot.querySelector("#status-expand-toggle");
     if (toggle) {
       toggle.setAttribute("aria-expanded", String(expanded));
@@ -10459,10 +10461,28 @@ class AtzeHomeOverviewCard extends HTMLElement {
           grid-auto-rows: 56px;
           gap: 10px;
           margin-bottom: 0;
+          max-height: 56px;
+          overflow: hidden;
+          transition: max-height 320ms cubic-bezier(.25, .8, .25, 1);
+        }
+
+        .status-grid.expanded { max-height: var(--status-height-wide, 56px); }
+
+        .status-grid > .status:nth-child(n+3) {
+          opacity: 1;
+          visibility: visible;
+          transition: opacity 240ms ease, visibility 0s;
         }
 
         .status-grid:not(.expanded) > .status:nth-child(n+3) {
-          display: none;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity 200ms ease, visibility 0s 320ms;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .status-grid, .status-grid > .status:nth-child(n+3) { transition: none !important; }
         }
 
         .status-expand-toggle {
@@ -11364,6 +11384,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           .status-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
+          .status-grid.expanded { max-height: var(--status-height-medium, 56px); }
 
           .favorite-grid {
             grid-auto-columns: calc((100% - 12px) / 2);
@@ -11460,6 +11481,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             grid-auto-rows: 56px;
             gap: 10px;
           }
+          .status-grid.expanded { max-height: var(--status-height-narrow, 56px); }
 
           .status {
             height: 100%;
@@ -11911,6 +11933,11 @@ class AtzeHomeOverviewCard extends HTMLElement {
       // Collapse based on the current user-defined tile order, not fixed ids.
       const expandRow = this.shadowRoot.querySelector("#status-expand-row");
       const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
+      for (const [size, columns] of [["wide", 6], ["medium", 3], ["narrow", 2]]) {
+        const rows = Math.max(1, Math.ceil(tiles.length / columns));
+        statusGrid.style.setProperty(`--status-height-${size}`, `${rows * 56 + (rows - 1) * 10}px`);
+      }
+      statusGrid.querySelectorAll(":scope > .status:nth-child(n+3)").forEach(tile => { tile.inert = !this._statusExpanded; });
       if (expandRow) expandRow.hidden = tiles.length <= 2;
       expandToggle?.addEventListener("click", () => {
         this._setStatusExpanded(!this._statusExpanded);
@@ -11919,6 +11946,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
       let draggedTile = null;
       let suppressStatusClick = false;
       const saveStatusOrder = () => {
+        [...statusGrid.querySelectorAll(".status[id]")].forEach((tile, index) => {
+          tile.inert = !this._statusExpanded && index >= 2;
+        });
         const visible = [...statusGrid.querySelectorAll(".status[id]")].map((tile) => tile.id);
         const previous = Array.isArray(statusOrder) ? statusOrder : [];
         const merged = [...visible, ...previous.filter((id) => !visible.includes(id))];
