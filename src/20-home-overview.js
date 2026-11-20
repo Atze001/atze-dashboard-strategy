@@ -81,6 +81,14 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._roomDrag = null;
     this._hiddenRoomIds = [];
     this._statusExpanded = false;
+    this._statusCollapseTimer = null;
+    this._statusPath = null;
+    this._onStatusRouteChange = () => {
+      const path = window.location.pathname;
+      if (path === this._statusPath) return;
+      this._statusPath = path;
+      this._setStatusExpanded(false);
+    };
   }
 
   setConfig(config) {
@@ -117,6 +125,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this._statusPath = window.location.pathname;
+    window.addEventListener("location-changed", this._onStatusRouteChange);
+    window.addEventListener("popstate", this._onStatusRouteChange);
     this.addEventListener("touchstart", this._onSidebarSwipeStart, { passive: true });
     this.addEventListener("touchmove", this._onSidebarSwipeMove, { passive: true });
     this.addEventListener("touchend", this._onSidebarSwipeEnd, { passive: true });
@@ -158,6 +169,9 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    window.removeEventListener("location-changed", this._onStatusRouteChange);
+    window.removeEventListener("popstate", this._onStatusRouteChange);
+    this._setStatusExpanded(false);
     for (const stop of this._activeEdgeDrags || []) stop();
     this._linkHintCleanup?.();
     this._linkHintCleanup = null;
@@ -188,6 +202,25 @@ class AtzeHomeOverviewCard extends HTMLElement {
       () => { if (!this._hasOpenDashboardPopup()) this._render(); },
       30000
     );
+  }
+
+  _setStatusExpanded(expanded) {
+    clearTimeout(this._statusCollapseTimer);
+    this._statusCollapseTimer = null;
+    this._statusExpanded = expanded;
+    // Query the current DOM: Home Assistant updates may have rendered new tiles.
+    const grid = this.shadowRoot.querySelector(".status-grid");
+    grid?.classList.toggle("expanded", expanded);
+    grid?.querySelectorAll(":scope > .status:nth-child(n+3)").forEach(tile => { tile.inert = !expanded; });
+    const toggle = this.shadowRoot.querySelector("#status-expand-toggle");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", String(expanded));
+      toggle.setAttribute("aria-label", expanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
+      toggle.title = expanded ? "Einklappen" : "Aufklappen";
+    }
+    if (expanded) {
+      this._statusCollapseTimer = setTimeout(() => this._setStatusExpanded(false), 5000);
+    }
   }
 
   _toggleKioskMode() {
@@ -1616,6 +1649,61 @@ class AtzeHomeOverviewCard extends HTMLElement {
   }
 
 
+  _bindHomeScrollReturn(grid) {
+    const returns = this._homeScrollReturns ||= new Map();
+    const state = { touching: false, mouseDown: false, dragging: false, timer: null };
+    const cancel = () => {
+      clearTimeout(state.timer);
+      state.timer = null;
+    };
+    const busy = () => this._activeEdgeDrags?.size || [...returns.values()].some(entry => entry.touching || entry.mouseDown || entry.dragging);
+    const schedule = () => {
+      cancel();
+      if (busy() || !grid.isConnected || grid.scrollLeft <= 2) return;
+      state.timer = setTimeout(() => {
+        state.timer = null;
+        if (!busy() && grid.isConnected) grid.scrollTo({ left: 0, behavior: "smooth" });
+      }, 5000);
+    };
+    state.cancel = cancel;
+    state.schedule = schedule;
+    returns.set(grid, state);
+    const pauseAll = () => { for (const entry of returns.values()) entry.cancel(); };
+    const resumeAll = () => { for (const entry of returns.values()) entry.schedule(); };
+    const touchStart = () => { state.touching = true; pauseAll(); };
+    const touchEnd = event => { if (!event.touches?.length) { state.touching = false; resumeAll(); } };
+    const mouseDown = event => { if (event.pointerType === "mouse") { state.mouseDown = true; pauseAll(); } };
+    const mouseUp = () => { if (state.mouseDown) { state.mouseDown = false; resumeAll(); } };
+    const dragStart = () => { state.touching = false; state.mouseDown = false; state.dragging = true; pauseAll(); };
+    const dragEnd = () => { state.dragging = false; resumeAll(); };
+    grid.addEventListener("scroll", schedule, { passive: true });
+    grid.addEventListener("touchstart", touchStart, { passive: true });
+    grid.addEventListener("touchend", touchEnd, { passive: true });
+    grid.addEventListener("touchcancel", touchEnd, { passive: true });
+    grid.addEventListener("pointerdown", mouseDown, { passive: true });
+    window.addEventListener("pointerup", mouseUp);
+    window.addEventListener("pointercancel", mouseUp);
+    grid.addEventListener("dragstart", dragStart);
+    grid.addEventListener("dragend", dragEnd);
+    grid.addEventListener("drop", dragEnd);
+    schedule();
+    return () => {
+      cancel();
+      returns.delete(grid);
+      grid.removeEventListener("scroll", schedule);
+      grid.removeEventListener("touchstart", touchStart);
+      grid.removeEventListener("touchend", touchEnd);
+      grid.removeEventListener("touchcancel", touchEnd);
+      grid.removeEventListener("pointerdown", mouseDown);
+      window.removeEventListener("pointerup", mouseUp);
+      window.removeEventListener("pointercancel", mouseUp);
+      grid.removeEventListener("dragstart", dragStart);
+      grid.removeEventListener("dragend", dragEnd);
+      grid.removeEventListener("drop", dragEnd);
+      resumeAll();
+    };
+  }
+
   _bindFavoriteScrollHints() {
     const grid = this.shadowRoot.querySelector(".favorite-grid");
     if (grid === this._favoriteHintGrid) return;
@@ -1623,6 +1711,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._favoriteHintCleanup = null;
     this._favoriteHintGrid = grid;
     if (!grid) return;
+    const cleanupReturn = this._bindHomeScrollReturn(grid);
     const update = () => {
       const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
       const left = grid.scrollLeft;
@@ -1639,6 +1728,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     observer?.observe(grid);
     if (!observer) update();
     this._favoriteHintCleanup = () => {
+      cleanupReturn();
       grid.removeEventListener("scroll", update);
       observer?.disconnect();
     };
@@ -1660,6 +1750,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       cancelFrame();
       grid.style.removeProperty("scroll-snap-type");
       this._activeEdgeDrags?.delete(stop);
+      for (const entry of this._homeScrollReturns?.values() || []) entry.schedule();
     };
     stop.grid = grid;
     const velocity = () => {
@@ -1688,6 +1779,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
       active = true;
       grid.style.scrollSnapType = "none";
       (this._activeEdgeDrags ||= new Set()).add(stop);
+      for (const entry of this._homeScrollReturns?.values() || []) entry.cancel();
     };
     const move = (x, y) => {
       if (!active) return;
@@ -1716,6 +1808,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     this._linkHintCleanup = null;
     this._linkHintGrid = grid;
     if (!grid) return;
+    const cleanupReturn = this._bindHomeScrollReturn(grid);
     const update = () => {
       const max = Math.max(0, grid.scrollWidth - grid.clientWidth);
       const left = grid.scrollLeft;
@@ -1728,6 +1821,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
     observer?.observe(grid);
     if (!observer) update();
     this._linkHintCleanup = () => {
+      cleanupReturn();
       grid.removeEventListener("scroll", update);
       observer?.disconnect();
     };
@@ -2833,10 +2927,28 @@ class AtzeHomeOverviewCard extends HTMLElement {
           grid-auto-rows: 56px;
           gap: 10px;
           margin-bottom: 0;
+          max-height: 56px;
+          overflow: hidden;
+          transition: max-height 320ms cubic-bezier(.25, .8, .25, 1);
+        }
+
+        .status-grid.expanded { max-height: var(--status-height-wide, 56px); }
+
+        .status-grid > .status:nth-child(n+3) {
+          opacity: 1;
+          visibility: visible;
+          transition: opacity 240ms ease, visibility 0s;
         }
 
         .status-grid:not(.expanded) > .status:nth-child(n+3) {
-          display: none;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity 200ms ease, visibility 0s 320ms;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .status-grid, .status-grid > .status:nth-child(n+3) { transition: none !important; }
         }
 
         .status-expand-toggle {
@@ -3738,6 +3850,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
           .status-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
+          .status-grid.expanded { max-height: var(--status-height-medium, 56px); }
 
           .favorite-grid {
             grid-auto-columns: calc((100% - 12px) / 2);
@@ -3834,6 +3947,7 @@ class AtzeHomeOverviewCard extends HTMLElement {
             grid-auto-rows: 56px;
             gap: 10px;
           }
+          .status-grid.expanded { max-height: var(--status-height-narrow, 56px); }
 
           .status {
             height: 100%;
@@ -4285,18 +4399,22 @@ class AtzeHomeOverviewCard extends HTMLElement {
       // Collapse based on the current user-defined tile order, not fixed ids.
       const expandRow = this.shadowRoot.querySelector("#status-expand-row");
       const expandToggle = this.shadowRoot.querySelector("#status-expand-toggle");
+      for (const [size, columns] of [["wide", 6], ["medium", 3], ["narrow", 2]]) {
+        const rows = Math.max(1, Math.ceil(tiles.length / columns));
+        statusGrid.style.setProperty(`--status-height-${size}`, `${rows * 56 + (rows - 1) * 10}px`);
+      }
+      statusGrid.querySelectorAll(":scope > .status:nth-child(n+3)").forEach(tile => { tile.inert = !this._statusExpanded; });
       if (expandRow) expandRow.hidden = tiles.length <= 2;
       expandToggle?.addEventListener("click", () => {
-        this._statusExpanded = !this._statusExpanded;
-        statusGrid.classList.toggle("expanded", this._statusExpanded);
-        expandToggle.setAttribute("aria-expanded", String(this._statusExpanded));
-        expandToggle.setAttribute("aria-label", this._statusExpanded ? "Weniger Statuskacheln anzeigen" : "Alle Statuskacheln anzeigen");
-        expandToggle.title = this._statusExpanded ? "Einklappen" : "Aufklappen";
+        this._setStatusExpanded(!this._statusExpanded);
       });
 
       let draggedTile = null;
       let suppressStatusClick = false;
       const saveStatusOrder = () => {
+        [...statusGrid.querySelectorAll(".status[id]")].forEach((tile, index) => {
+          tile.inert = !this._statusExpanded && index >= 2;
+        });
         const visible = [...statusGrid.querySelectorAll(".status[id]")].map((tile) => tile.id);
         const previous = Array.isArray(statusOrder) ? statusOrder : [];
         const merged = [...visible, ...previous.filter((id) => !visible.includes(id))];

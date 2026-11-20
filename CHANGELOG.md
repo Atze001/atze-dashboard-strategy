@@ -1,3 +1,9 @@
+## v0.429.0
+
+- Statusübersicht nach fünf Sekunden automatisch einklappen und beim Wechsel der Dashboard-Unterseite sofort schließen.
+- Weiche Animation beim Auf- und Zuklappen der Statuskacheln.
+- Favoriten und Navigationslinks nach fünf Sekunden ohne Interaktion sanft zur ersten Seite zurückscrollen; beim Anordnen der Buttons pausiert die Rückkehr.
+
 ## v0.428.0
 
 - Mittiger horizontaler Balken am unteren Kartenrand zum Auf- und Zuklappen der Statusübersicht. Die gesamte Zeile ist antippbar.
