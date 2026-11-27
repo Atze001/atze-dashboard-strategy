@@ -10084,8 +10084,8 @@ class AtzeHomeOverviewCard extends HTMLElement {
         ${ATZE_TESTING_BUILD && window.webkit?.messageHandlers?.atzeReloadTesting ? `
           @media (orientation: portrait) {
             :host {
-              /* Reclaim part of Lovelace's right inset while leaving room for system UI. */
-              margin-right: min(0px, calc(48px - env(safe-area-inset-right, 0px)));
+              /* Reclaim Lovelace's right inset to test the full dashboard width. */
+              margin-right: calc(-1 * env(safe-area-inset-right, 0px));
             }
           }
         ` : ""}
