@@ -11,7 +11,7 @@
 const ATZE_VERSION = "0.429.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "874A00B";
+const ATZE_TESTING_REVISION = "D71188E";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -10077,6 +10077,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
           scrollbar-width: none !important;
           -ms-overflow-style: none !important;
         }
+
+        ${ATZE_TESTING_BUILD && window.webkit?.messageHandlers?.atzeReloadTesting ? `
+          @media (orientation: portrait) {
+            :host {
+              /* Reclaim part of Lovelace's right inset while leaving room for system UI. */
+              margin-right: min(0px, calc(48px - env(safe-area-inset-right, 0px)));
+            }
+          }
+        ` : ""}
 
         ${this._config?.dashboard_background_image && (
           String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||

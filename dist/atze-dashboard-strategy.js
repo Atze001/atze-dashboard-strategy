@@ -10081,6 +10081,15 @@ class AtzeHomeOverviewCard extends HTMLElement {
           -ms-overflow-style: none !important;
         }
 
+        ${ATZE_TESTING_BUILD && window.webkit?.messageHandlers?.atzeReloadTesting ? `
+          @media (orientation: portrait) {
+            :host {
+              /* Reclaim part of Lovelace's right inset while leaving room for system UI. */
+              margin-right: min(0px, calc(48px - env(safe-area-inset-right, 0px)));
+            }
+          }
+        ` : ""}
+
         ${this._config?.dashboard_background_image && (
           String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||
           String(this._config.dashboard_background_image).startsWith("/local/") ||
