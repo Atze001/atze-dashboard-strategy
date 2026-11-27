@@ -11,7 +11,7 @@ Das Projekt wird aktiv weiterentwickelt. Funktionen und Darstellung können sich
 
 ## Aktueller Stand
 
-Version **0.429.0**
+Version **0.430.0**
 
 Neu in v0.408.0: Bekannte Home-Assistant-Zonen werden bei der Personenanzeige grün mit dem jeweiligen Zonensymbol dargestellt; unterwegs bleibt grau.
 
@@ -230,6 +230,10 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## Letzte Änderungen
 
 <!-- latest-changes:start -->
+## v0.430.0
+
+- Das ATZE-Dashboard nutzt in der ATZE Home App auf dem iPhone Duo im Hochformat die volle verfügbare Breite. Das gilt für die Startseite und die Unterseiten.
+
 ## v0.429.0
 
 - Statusübersicht nach fünf Sekunden automatisch einklappen und beim Wechsel der Dashboard-Unterseite sofort schließen.
@@ -239,12 +243,6 @@ Für die Projektdokumentation sind echte Screenshots der laufenden Home-Assistan
 ## v0.428.0
 
 - Mittiger horizontaler Balken am unteren Kartenrand zum Auf- und Zuklappen der Statusübersicht. Die gesamte Zeile ist antippbar.
-
-## v0.427.0
-
-- Favoriten und Navigationslinks auf der Startseite horizontal durchblättern. Richtungshinweise zeigen weitere Einträge an. Beim Umsortieren scrollen die Leisten am Rand automatisch weiter.
-- Eingeklappte Statusübersicht mit zwei Kacheln und diagonalem Griff zum Auf- und Zuklappen.
-- Scrollposition der Startseite bei Zustandsaktualisierungen stabilisiert und die native Home-Assistant-Kopfzeile beim Wechsel zwischen Dashboards korrigiert.
 <!-- latest-changes:end -->
 
 ## Lizenz

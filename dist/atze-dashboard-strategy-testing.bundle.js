@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.429.0";
+const ATZE_VERSION = "0.430.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "3764042";
+const ATZE_TESTING_REVISION = "A2168B0";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6967,13 +6967,13 @@ function atzeNativeNavigationEnabled() {
   return true;
 }
 
-function atzeTestingFullWidthEnabled() {
-  return ATZE_TESTING_BUILD &&
-    window.location.pathname.split("/")[1] === "atze-test" &&
+function atzeFullWidthEnabled() {
+  const dashboardRoot = ATZE_TESTING_BUILD ? "atze-test" : "atze-dashboard";
+  return window.location.pathname.split("/")[1] === dashboardRoot &&
     Boolean(window.webkit?.messageHandlers?.atzeReloadTesting);
 }
 
-function syncAtzeNativeHeader(hidden, fullWidth = atzeTestingFullWidthEnabled()) {
+function syncAtzeNativeHeader(hidden, fullWidth = atzeFullWidthEnabled()) {
   const css = `
     ${hidden ? `
       .header { display: none !important; }
@@ -7126,7 +7126,7 @@ function applyAtzeSidebarAccess(config) {
   atzeNativeHeaderObserver = null;
   if (enabled) {
     const isReady = () => {
-      let headerReady = !atzeNativeHeaderHidden && !atzeTestingFullWidthEnabled();
+      let headerReady = !atzeNativeHeaderHidden && !atzeFullWidthEnabled();
       let sidebarReady = false;
       const walk = root => {
         if (!root?.querySelectorAll) return;
