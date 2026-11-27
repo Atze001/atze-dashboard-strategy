@@ -8,10 +8,10 @@
  * License: MIT
  */
 
-const ATZE_VERSION = "0.429.0";
+const ATZE_VERSION = "0.430.0";
 const STRATEGY_TYPE = "atze-dashboard-testing";
 const ATZE_TESTING_BUILD = true;
-const ATZE_TESTING_REVISION = "874A00B";
+const ATZE_TESTING_REVISION = "A2168B0";
 const ATZE_LAYOUT_FIELD = "direct_layout";
 
 function atzeLayout(config) {
@@ -6967,23 +6967,42 @@ function atzeNativeNavigationEnabled() {
   return true;
 }
 
-function syncAtzeNativeHeader(enabled) {
+function atzeFullWidthEnabled() {
+  const dashboardRoot = ATZE_TESTING_BUILD ? "atze-test" : "atze-dashboard";
+  return window.location.pathname.split("/")[1] === dashboardRoot &&
+    Boolean(window.webkit?.messageHandlers?.atzeReloadTesting);
+}
+
+function syncAtzeNativeHeader(hidden, fullWidth = atzeFullWidthEnabled()) {
+  const css = `
+    ${hidden ? `
+      .header { display: none !important; }
+      hui-view-container {
+        padding-top: var(--safe-area-inset-top, 0px) !important;
+      }
+    ` : ""}
+    ${fullWidth ? `
+      @media (orientation: portrait) {
+        hui-view-container {
+          --view-container-inset-right: 0px;
+          padding-right: 0 !important;
+        }
+      }
+    ` : ""}
+  `;
   const visit = root => {
     if (!root?.querySelectorAll) return;
     for (const element of root.querySelectorAll("*")) {
       if (element.localName === "hui-root" && element.shadowRoot) {
         const existing = element.shadowRoot.getElementById(ATZE_NATIVE_HEADER_STYLE_ID);
-        if (!enabled) {
+        if (!hidden && !fullWidth) {
           existing?.remove();
-        } else if (!existing) {
+        } else if (existing) {
+          if (existing.textContent !== css) existing.textContent = css;
+        } else {
           const style = document.createElement("style");
           style.id = ATZE_NATIVE_HEADER_STYLE_ID;
-          style.textContent = `
-            .header { display: none !important; }
-            hui-view-container {
-              padding-top: var(--safe-area-inset-top, 0px) !important;
-            }
-          `;
+          style.textContent = css;
           element.shadowRoot.appendChild(style);
         }
       }
@@ -7066,7 +7085,7 @@ function applyAtzeSidebarAccess(config) {
       if (currentRoot !== dashboardRoot) {
         // Other dashboards and Home Assistant sections keep their own header.
         syncAtzeSidebarAccessButton(false);
-        syncAtzeNativeHeader(false);
+        syncAtzeNativeHeader(false, false);
         syncAtzeSidebarGlass(false);
         atzeNativeHeaderObserver?.disconnect();
         atzeNativeHeaderObserver = null;
@@ -7107,7 +7126,7 @@ function applyAtzeSidebarAccess(config) {
   atzeNativeHeaderObserver = null;
   if (enabled) {
     const isReady = () => {
-      let headerReady = !atzeNativeHeaderHidden;
+      let headerReady = !atzeNativeHeaderHidden && !atzeFullWidthEnabled();
       let sidebarReady = false;
       const walk = root => {
         if (!root?.querySelectorAll) return;
