@@ -1,3 +1,7 @@
+## v0.430.0
+
+- Das ATZE-Dashboard nutzt in der ATZE Home App auf dem iPhone Duo im Hochformat die volle verfügbare Breite. Das gilt für die Startseite und die Unterseiten.
+
 ## v0.429.0
 
 - Statusübersicht nach fünf Sekunden automatisch einklappen und beim Wechsel der Dashboard-Unterseite sofort schließen.
