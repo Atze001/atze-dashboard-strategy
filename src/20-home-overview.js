@@ -2486,15 +2486,6 @@ class AtzeHomeOverviewCard extends HTMLElement {
           -ms-overflow-style: none !important;
         }
 
-        ${ATZE_TESTING_BUILD && window.webkit?.messageHandlers?.atzeReloadTesting ? `
-          @media (orientation: portrait) {
-            :host {
-              /* Reclaim Lovelace's right inset to test the full dashboard width. */
-              margin-right: calc(-1 * env(safe-area-inset-right, 0px));
-            }
-          }
-        ` : ""}
-
         ${this._config?.dashboard_background_image && (
           String(this._config.dashboard_background_image).startsWith("data:image/jpeg;base64,") ||
           String(this._config.dashboard_background_image).startsWith("/local/") ||
